@@ -14,6 +14,7 @@ const ROUTES = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/foundry", label: "Foundry" },
+  { href: "/passkey", label: "Passkey" },
 ];
 
 /** Enough MON to cover gas on a submit with headroom. */

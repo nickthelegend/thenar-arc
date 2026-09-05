@@ -35,10 +35,10 @@ export default function Home() {
               Find a task
             </Link>
             <Link
-              href="/foundry"
+              href="/passkey"
               className="border border-rule-strong px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-scribe transition-colors hover:border-scribe"
             >
-              See the foundry
+              Sign with a passkey
             </Link>
           </div>
 

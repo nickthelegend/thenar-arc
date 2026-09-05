@@ -22,6 +22,11 @@ export const monadTestnet = defineChain({
 });
 
 export const AXON_ADDRESS = (process.env.NEXT_PUBLIC_AXON_ADDRESS ?? "") as `0x${string}`;
+
+/** PasskeyRegistry — secp256r1 verification through Monad's P256 precompile. */
+export const PASSKEY_ADDRESS = "0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165" as const;
+/** EIP-7951. Present on Monad, absent from Ethereum mainnet. */
+export const P256_PRECOMPILE = "0x0000000000000000000000000000000000000100" as const;
 export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);
 
 export const txUrl = (hash: string) => `${monadTestnet.blockExplorers.default.url}/tx/${hash}`;
