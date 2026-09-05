@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   THE INSPECTION BENCH
+   A surface plate under a lamp: layout dye as the ground, a scribed line as
+   the ink, brass for anything the operator is paid, and a two-value verdict
+   for anything measured. Colour carries data and state only — controls take
+   no colour, they take rule weight, relief and inversion.
+   ========================================================================== */
+
+@theme {
+  /* Ground. Dykem layout dye, thinned in four steps. */
+  --color-ink-0: #070D15;
+  --color-ink-1: #0C1520;
+  --color-ink-2: #121E2C;
+  --color-ink-3: #1A2938;
+  --color-ink-4: #223447;
+
+  /* Rules. Depth is a hairline and a value step, never a shadow. */
+  --color-rule: #24374C;
+  --color-rule-strong: #3A5270;
+
+  /* Ink. The scribed line through the dye. */
+  --color-scribe: #E9F0F7;
+  --color-scribe-2: #A6B8CB;
+  --color-scribe-3: #7C91AB;
+
+  /* Brass — gauge blocks, micrometer thimbles, and every figure of value. */
+  --color-brass: #CB9A4E;
+  --color-brass-hi: #E7BB72;
+  --color-brass-dim: #2C2214;
+
+  /* The verdict pair. Muted on purpose: an acid green would read as a
+     notification, and this is a measurement. */
+  --color-go: #52A472;
+  --color-go-dim: #10251A;
+  --color-reject: #E06A5E;
+  --color-reject-dim: #2E1512;
+
+  /* Datum — the reference edge everything is measured from, and therefore
+     the colour of anything currently selected or active. */
+  --color-datum: #5A8FCC;
+  --color-datum-dim: #12243A;
+
+  --font-display: var(--font-saira), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Hard corners. A radius above 2px belongs to a different world. */
+  --radius-edge: 0px;
+  --radius-cut: 2px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-rule);
+    min-width: 0;
+  }
+
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-ink-1);
+    color: var(--color-scribe);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Every figure in this product is a measurement; none of them may jitter. */
+  :where(table, .tnum, input, output, time, code, kbd, samp) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
+  p, li {
+    text-wrap: pretty;
+  }
+
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+  }
+
+  /* The surfaces the browser draws still belong to the design. */
+  ::selection {
+    background-color: var(--color-brass);
+    color: var(--color-ink-0);
+  }
+
+  :where(input, textarea) {
+    caret-color: var(--color-brass);
+  }
+
+  :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-ink-0);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-rule-strong);
+    border: 3px solid var(--color-ink-0);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scribe-3);
+  }
+}
+
+@layer components {
+  /* A dimension line: the rule that separates two things on a drawing, with
+     its terminators. Used instead of a plain hairline wherever a division is
+     structural rather than incidental. */
+  .dim-rule {
+    position: relative;
+    height: 1px;
+    background-color: var(--color-rule);
+  }
+
+  .dim-rule::before,
+  .dim-rule::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    width: 1px;
+    height: 7px;
+    background-color: var(--color-rule-strong);
+  }
+
+  .dim-rule::before { left: 0; }
+  .dim-rule::after { right: 0; }
+
+  /* Hatching for the region outside a tolerance band, and for any area the
+     operator cannot act in. Drawn, not tinted, so it survives on any ground. */
+  .hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0 3px,
+      color-mix(in oklab, var(--color-rule-strong) 70%, transparent) 3px 4px
+    );
+  }
+
+  .panel {
+    background-color: var(--color-ink-2);
+    border: 1px solid var(--color-rule);
+  }
+
+  /* Uppercase and letterspaced costs legibility, so labels sit a step above
+     the 11px functional floor rather than on it. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-scribe-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
