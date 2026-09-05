@@ -36,7 +36,8 @@ type ViewportProps = {
   running: boolean;
   goal: [number, number];
   start: [number, number];
-  /** Incremented by the station on every new run; changing it resets the scene. */
+  /** Incremented by the station on every new run. The rig is keyed on it, so a
+   *  new run remounts the scene rather than trying to reset it in place. */
   runId: number;
   onTelemetry: (t: Telemetry) => void;
   onSample: (s: Sample) => void;
@@ -206,10 +207,9 @@ function Rig({
   running,
   goal,
   start,
-  runId,
   onTelemetry,
   onSample,
-}: ViewportProps) {
+}: Omit<ViewportProps, "runId">) {
   const { camera } = useThree();
 
   const target = useRef<[number, number, number]>([...INITIAL_TARGET]);
@@ -230,18 +230,6 @@ function Rig({
     camera.position.set(0.92, 0.74, 0.9);
     camera.lookAt(0.06, 0.12, 0.02);
   }, [camera]);
-
-  // `start` is a module-level constant, so keying this on it alone meant the
-  // scene reset once on mount and never again: a second run began with the
-  // payload still sitting wherever the last one left it. runId changes per run.
-  useEffect(() => {
-    object.current = [start[0], start[1], TABLE_Z];
-    target.current = [...INITIAL_TARGET];
-    grip.current = GRIP_OPEN_MM;
-    held.current = false;
-    elapsed.current = 0;
-    keys.current = {};
-  }, [start, runId]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -407,7 +395,7 @@ export function StationViewport(props: ViewportProps) {
       gl={{ antialias: true }}
       style={{ background: "#000000" }}
     >
-      <Rig {...props} />
+      <Rig key={props.runId} {...props} />
     </Canvas>
   );
 }
