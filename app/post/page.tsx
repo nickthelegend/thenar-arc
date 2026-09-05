@@ -29,8 +29,13 @@ export default function PostTaskPage() {
   const validSlots = Number.isInteger(slotsN) && slotsN > 0 && slotsN <= 10_000;
   const validReward = /^\d*\.?\d*$/.test(reward) && rewardN > 0;
   const total = validSlots && validReward ? slotsN * rewardN : 0;
+
+  // Two separate gates. The definition of the task is wrong or right on its
+  // own, and blocks the button whatever the wallet is doing. Affordability can
+  // only be judged once a wallet is connected, so it gates only after that.
+  const formValid = validName && validSlots && validReward;
   const affordable = total > 0 && total <= s.balance;
-  const ok = validName && validSlots && validReward && affordable;
+  const blocked = !formValid || (s.connected && !s.wrongNetwork && !affordable);
 
   return (
     <div className="mx-auto max-w-[720px] px-5 py-8">
@@ -138,7 +143,7 @@ export default function PostTaskPage() {
         </div>
       </div>
 
-      {total > 0 && !affordable ? (
+      {s.connected && !s.wrongNetwork && total > 0 && !affordable ? (
         <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">
           That escrow is more than this wallet holds. Lower the slot count or the
           reward, or top up from the faucet.
@@ -159,7 +164,7 @@ export default function PostTaskPage() {
       <div className="mt-6 flex gap-3">
         <Button
           variant="primary"
-          disabled={tx.busy || (s.connected && !ok)}
+          disabled={tx.busy || blocked}
           onClick={async () => {
             if (!s.connected) return s.connect();
             if (s.wrongNetwork) return s.switchToMonad();
@@ -173,8 +178,10 @@ export default function PostTaskPage() {
         >
           {tx.phase === "signing" ? "Confirm in wallet…"
             : tx.phase === "pending" ? "Posting…"
+            : !formValid ? "Finish the definition"
             : !s.connected ? "Connect a wallet"
             : s.wrongNetwork ? "Switch to Monad"
+            : !affordable ? "Escrow exceeds your balance"
             : "Escrow and post"}
         </Button>
       </div>
