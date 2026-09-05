@@ -1,0 +1,236 @@
+{
+  "name": "AXON-6",
+  "axes": 6,
+  "reach_mm": 512.0,
+  "height_mm": 694.0,
+  "parts": 21,
+  "triangles": 8080,
+  "glb_bytes": 212580,
+  "links": [
+    {
+      "name": "Plinth",
+      "symbol": "PLINTH_H",
+      "value_mm": 12.0,
+      "note": "granite pad the base bolts to"
+    },
+    {
+      "name": "Pedestal",
+      "symbol": "BASE_H",
+      "value_mm": 70.0,
+      "note": "tapered column to the yaw axis"
+    },
+    {
+      "name": "Shoulder",
+      "symbol": "SHOULDER_H",
+      "value_mm": 96.0,
+      "note": "J1 to the pitch axis"
+    },
+    {
+      "name": "Upper arm",
+      "symbol": "L1",
+      "value_mm": 210.0,
+      "note": "J2 to J3"
+    },
+    {
+      "name": "Forearm",
+      "symbol": "L2",
+      "value_mm": 182.0,
+      "note": "J3 to J4"
+    },
+    {
+      "name": "Wrist",
+      "symbol": "WRIST_H",
+      "value_mm": 58.0,
+      "note": "J4 to J5"
+    },
+    {
+      "name": "Yoke",
+      "symbol": "YOKE_H",
+      "value_mm": 52.0,
+      "note": "J5 to J6"
+    },
+    {
+      "name": "Tool flange",
+      "symbol": "FLANGE_H",
+      "value_mm": 10.0,
+      "note": "mounting face"
+    }
+  ],
+  "joints": [
+    {
+      "id": "J1_yaw",
+      "axis": "Z",
+      "drives": "base rotation"
+    },
+    {
+      "id": "J2_pitch",
+      "axis": "Y",
+      "drives": "shoulder"
+    },
+    {
+      "id": "J3_pitch",
+      "axis": "Y",
+      "drives": "elbow"
+    },
+    {
+      "id": "J4_roll",
+      "axis": "Z",
+      "drives": "forearm roll"
+    },
+    {
+      "id": "J5_pitch",
+      "axis": "Y",
+      "drives": "wrist"
+    },
+    {
+      "id": "J6_roll",
+      "axis": "Z",
+      "drives": "tool roll"
+    }
+  ],
+  "gripper": {
+    "type": "parallel jaw",
+    "stroke_mm": 42.0,
+    "finger_length_mm": 62.0,
+    "pad_thickness_mm": 3.0
+  },
+  "materials": [
+    {
+      "key": "shell",
+      "metallic": 0.05,
+      "roughness": 0.52,
+      "color": "#DADDD7"
+    },
+    {
+      "key": "joint",
+      "metallic": 0.35,
+      "roughness": 0.44,
+      "color": "#242927"
+    },
+    {
+      "key": "collar",
+      "metallic": 0.88,
+      "roughness": 0.26,
+      "color": "#C79B49"
+    },
+    {
+      "key": "pad",
+      "metallic": 0.0,
+      "roughness": 0.88,
+      "color": "#181C1A"
+    },
+    {
+      "key": "granite",
+      "metallic": 0.1,
+      "roughness": 0.7,
+      "color": "#2D312F"
+    }
+  ],
+  "part_report": [
+    {
+      "part": "plinth",
+      "triangles": 384,
+      "closed": true
+    },
+    {
+      "part": "pedestal",
+      "triangles": 768,
+      "closed": true
+    },
+    {
+      "part": "collar_j1",
+      "triangles": 640,
+      "closed": true
+    },
+    {
+      "part": "barrel_j1",
+      "triangles": 512,
+      "closed": true
+    },
+    {
+      "part": "shoulder",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "collar_j2",
+      "triangles": 640,
+      "closed": true
+    },
+    {
+      "part": "upper_arm",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "collar_j3",
+      "triangles": 640,
+      "closed": true
+    },
+    {
+      "part": "barrel_j3",
+      "triangles": 512,
+      "closed": true
+    },
+    {
+      "part": "forearm",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "collar_j4",
+      "triangles": 640,
+      "closed": true
+    },
+    {
+      "part": "wrist_housing",
+      "triangles": 384,
+      "closed": true
+    },
+    {
+      "part": "collar_j5",
+      "triangles": 640,
+      "closed": true
+    },
+    {
+      "part": "wrist_yoke",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "flange",
+      "triangles": 384,
+      "closed": true
+    },
+    {
+      "part": "collar_j6",
+      "triangles": 640,
+      "closed": true
+    },
+    {
+      "part": "gripper_body",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "finger_left",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "pad_left",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "finger_right",
+      "triangles": 144,
+      "closed": true
+    },
+    {
+      "part": "pad_right",
+      "triangles": 144,
+      "closed": true
+    }
+  ]
+}
