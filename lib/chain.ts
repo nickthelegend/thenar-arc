@@ -8,6 +8,16 @@ export const monadTestnet = defineChain({
   blockExplorers: {
     default: { name: "MonadScan", url: "https://testnet.monadscan.com" },
   },
+  contracts: {
+    // Monad testnet carries Multicall3 at the canonical address. Declaring it
+    // is what lets a screen full of reads collapse into a single eth_call:
+    // without it every trajectory was a separate request, and the public RPC's
+    // 15/sec cap silently dropped some of them on every poll.
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+      blockCreated: 251449,
+    },
+  },
   testnet: true,
 });
 

@@ -152,6 +152,11 @@ export function useMyRuns() {
         })),
       });
 
+      // Dropping failed reads would silently under-report the ledger; a
+      // partial answer here is wrong, not smaller.
+      const bad = rows.filter((r) => r.status !== "success").length;
+      if (bad) throw new Error(`${bad} of ${rows.length} trajectory reads failed`);
+
       return rows
         .map((r, k) => {
           if (r.status !== "success") return null;
@@ -247,6 +252,9 @@ export function useActivity(limit = 40) {
           args: [BigInt(i)] as const,
         })),
       });
+
+      const bad = rows.filter((r) => r.status !== "success").length;
+      if (bad) throw new Error(`${bad} of ${rows.length} trajectory reads failed`);
 
       const entries = rows
         .map((r, k) => {
@@ -360,6 +368,9 @@ export function usePolicies() {
           args: [BigInt(i)] as const,
         })),
       });
+
+      const badPolicies = rows.filter((r) => r.status !== "success").length;
+      if (badPolicies) throw new Error(`${badPolicies} of ${rows.length} policy reads failed`);
 
       return rows
         .map((r, i) => {
