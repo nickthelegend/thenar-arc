@@ -22,6 +22,19 @@ const SAMPLE_HZ = 20;
 const TRAIL_MAX = 1200;
 const trailCount = { current: 0 };
 
+// Pointer drag is accumulated here rather than in component state: the rig
+// remounts per run and lives inside the react-three-fiber reconciler, so the
+// canvas DOM listeners and the frame loop need a mutable cell that outlives
+// both. The frame loop drains it.
+const drag = { current: [0, 0] as [number, number] };
+
+// The camera is fixed, so the ground-plane basis it projects to is a constant.
+// Dragging right walks the tool along the screen's right; dragging up pushes it
+// away. Derived from the camera position and target set in the rig below.
+const DRAG_RIGHT = [0.716, -0.699];
+const DRAG_AWAY = [0.699, 0.715];
+const DRAG_METRES_PER_PX = 0.0012;
+
 /** Where the tool starts every run, in the arm's own frame. */
 const INITIAL_TARGET: [number, number, number] = [0.3, 0, 0.16];
 
@@ -294,7 +307,7 @@ function Rig({
     const down = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (
-        ["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e", "d"].includes(k)
+        ["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d", "q", "e"].includes(k)
       ) {
         e.preventDefault();
       }
@@ -321,12 +334,22 @@ function Rig({
     const t = target.current;
 
     // Motion is in the camera's ground plane so "up" always means away.
-    if (k["arrowup"]) t[0] += step;
-    if (k["arrowdown"]) t[0] -= step;
-    if (k["arrowleft"]) t[1] += step;
-    if (k["arrowright"]) t[1] -= step;
+    // WASD and the arrows are the same control. Reaching for one and getting
+    // nothing is the most common way an operator concludes the rig is broken.
+    if (k["arrowup"] || k["w"]) t[0] += step;
+    if (k["arrowdown"] || k["s"]) t[0] -= step;
+    if (k["arrowleft"] || k["a"]) t[1] += step;
+    if (k["arrowright"] || k["d"]) t[1] -= step;
     if (k["e"]) t[2] += step;
-    if (k["d"]) t[2] -= step;
+    if (k["q"]) t[2] -= step;
+
+    // Drain whatever the pointer accumulated since the last frame.
+    const [dx, dy] = drag.current;
+    if (dx !== 0 || dy !== 0) {
+      t[0] += DRAG_RIGHT[0] * dx + DRAG_AWAY[0] * dy;
+      t[1] += DRAG_RIGHT[1] * dx + DRAG_AWAY[1] * dy;
+      drag.current = [0, 0];
+    }
 
     t[2] = Math.max(TABLE_Z + 0.012, Math.min(0.46, t[2]));
     const radial = Math.hypot(t[0], t[1]);
@@ -466,6 +489,36 @@ export function StationViewport(props: ViewportProps) {
     const canvas = gl.domElement;
     canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); setLost(true); });
     canvas.addEventListener("webglcontextrestored", () => setLost(false));
+
+    // Dragging the workspace is the first thing anyone tries in a 3D viewport.
+    // It drives the same target the keys do, in the plane the camera shows.
+    let dragging = false;
+    let last: [number, number] = [0, 0];
+    const begin = (e: PointerEvent) => {
+      dragging = true;
+      last = [e.clientX, e.clientY];
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = "grabbing";
+    };
+    const move = (e: PointerEvent) => {
+      if (!dragging) return;
+      drag.current = [
+        drag.current[0] + (e.clientX - last[0]) * DRAG_METRES_PER_PX,
+        drag.current[1] - (e.clientY - last[1]) * DRAG_METRES_PER_PX,
+      ];
+      last = [e.clientX, e.clientY];
+    };
+    const end = (e: PointerEvent) => {
+      dragging = false;
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = "grab";
+    };
+    canvas.style.cursor = "grab";
+    canvas.style.touchAction = "none";
+    canvas.addEventListener("pointerdown", begin);
+    canvas.addEventListener("pointermove", move);
+    canvas.addEventListener("pointerup", end);
+    canvas.addEventListener("pointercancel", end);
   };
 
   return (

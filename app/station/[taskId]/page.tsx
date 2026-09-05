@@ -197,9 +197,10 @@ export default function StationPage() {
           </Section>
           <Section title="Controls">
             <dl className="flex flex-col gap-1.5">
-              <Key keys={["↑", "↓"]} action="Reach out / pull in" />
-              <Key keys={["←", "→"]} action="Swing left / right" />
-              <Key keys={["E", "D"]} action="Raise / lower" />
+              <Key keys={["Drag"]} action="Move the tool in the workspace" />
+              <Key keys={["W", "S"]} action="Reach out / pull in" />
+              <Key keys={["A", "D"]} action="Swing left / right" />
+              <Key keys={["E", "Q"]} action="Raise / lower" />
               <Key keys={["Space"]} action="Open / close the jaws" />
               <Key keys={["?"]} action="All controls" />
             </dl>
@@ -244,9 +245,11 @@ export default function StationPage() {
               <div className="w-full max-w-sm border border-rule-strong bg-ink-1 px-5 py-4">
                 <h2 className="font-display text-lg font-600">Controls</h2>
                 <dl className="mt-4 flex flex-col gap-2">
-                  <Key keys={["↑", "↓"]} action="Reach out / pull in" />
-                  <Key keys={["←", "→"]} action="Swing left / right" />
-                  <Key keys={["E", "D"]} action="Raise / lower" />
+                  <Key keys={["Drag"]} action="Move the tool in the workspace" />
+                  <Key keys={["W", "S"]} action="Reach out / pull in" />
+                  <Key keys={["A", "D"]} action="Swing left / right" />
+                  <Key keys={["↑", "↓", "←", "→"]} action="The same, on the arrows" />
+                  <Key keys={["E", "Q"]} action="Raise / lower" />
                   <Key keys={["Space"]} action="Open / close the jaws" />
                   <Key keys={["?"]} action="Show or hide this" />
                   <Key keys={["Esc"]} action="Close" />
