@@ -48,6 +48,8 @@ export default function StationPage() {
   const [tel, setTel] = useState<Telemetry | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  /** Bumped on every run so the viewport resets its payload and arm. */
+  const [runId, setRunId] = useState(0);
 
   const samples = useRef<Sample[]>([]);
   const settledSince = useRef<number | null>(null);
@@ -111,7 +113,9 @@ export default function StationPage() {
     startedAt.current = performance.now();
     setElapsed(0);
     setVerdict(null);
+    setTel(null);
     tx.reset();
+    setRunId((n) => n + 1);
     setPhase("running");
   };
 
@@ -186,6 +190,7 @@ export default function StationPage() {
             running={phase === "running"}
             goal={GOAL}
             start={START}
+            runId={runId}
             onTelemetry={onTelemetry}
             onSample={onSample}
           />

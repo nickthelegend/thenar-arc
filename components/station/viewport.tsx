@@ -36,6 +36,8 @@ type ViewportProps = {
   running: boolean;
   goal: [number, number];
   start: [number, number];
+  /** Incremented by the station on every new run; changing it resets the scene. */
+  runId: number;
   onTelemetry: (t: Telemetry) => void;
   onSample: (s: Sample) => void;
 };
@@ -204,6 +206,7 @@ function Rig({
   running,
   goal,
   start,
+  runId,
   onTelemetry,
   onSample,
 }: ViewportProps) {
@@ -228,13 +231,17 @@ function Rig({
     camera.lookAt(0.06, 0.12, 0.02);
   }, [camera]);
 
+  // `start` is a module-level constant, so keying this on it alone meant the
+  // scene reset once on mount and never again: a second run began with the
+  // payload still sitting wherever the last one left it. runId changes per run.
   useEffect(() => {
     object.current = [start[0], start[1], TABLE_Z];
     target.current = [...INITIAL_TARGET];
     grip.current = GRIP_OPEN_MM;
     held.current = false;
     elapsed.current = 0;
-  }, [start]);
+    keys.current = {};
+  }, [start, runId]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
