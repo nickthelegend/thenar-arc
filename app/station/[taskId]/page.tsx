@@ -131,7 +131,9 @@ export default function StationPage() {
   if (!task) {
     return (
       <div className="flex h-dvh items-center justify-center bg-ink-1">
-        <span className="label">Reading task #{taskId} from the chain…</span>
+        <span className="font-mono text-[13px] text-scribe-3">
+          Reading task #{taskId} from the chain…
+        </span>
       </div>
     );
   }

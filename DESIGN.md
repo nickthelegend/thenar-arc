@@ -2,106 +2,106 @@
 name: Axon
 description: The data foundry for physical AI — teleoperate, measure, get paid on Monad.
 colors:
-  ink-0: "#070D15"
-  ink-1: "#0C1520"
-  ink-2: "#121E2C"
-  ink-3: "#1A2938"
-  ink-4: "#223447"
-  rule: "#24374C"
-  rule-strong: "#3A5270"
-  scribe: "#E9F0F7"
-  scribe-2: "#A6B8CB"
-  scribe-3: "#7C91AB"
-  brass: "#CB9A4E"
-  brass-hi: "#E7BB72"
-  brass-dim: "#2C2214"
-  go: "#52A472"
-  go-dim: "#10251A"
-  reject: "#E06A5E"
-  reject-dim: "#2E1512"
-  datum: "#5A8FCC"
-  datum-dim: "#12243A"
+  ink-0: "#000000"
+  ink-1: "#080808"
+  ink-2: "#121212"
+  ink-3: "#1C1C1C"
+  ink-4: "#272727"
+  rule: "#262626"
+  rule-strong: "#3D3D3D"
+  scribe: "#FFFFFF"
+  scribe-2: "#E0E0E0"
+  scribe-3: "#8F8F8F"
+  signal: "#FF6A00"
+  signal-hi: "#FF9A3D"
+  signal-dim: "#2B1200"
+  go: "#3DD68C"
+  go-dim: "#062315"
+  reject: "#FF2D55"
+  reject-dim: "#2B0611"
+  probe: "#6E86A6"
+  probe-dim: "#0E1520"
 typography:
   display:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(2.6rem, 6.4vw, 4.6rem)"
     fontWeight: 700
     lineHeight: 0.94
     letterSpacing: "-0.02em"
   display-page:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(2.4rem, 6vw, 3.6rem)"
     fontWeight: 700
     lineHeight: 0.96
     letterSpacing: "-0.02em"
   display-run:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(2.2rem, 5vw, 3.2rem)"
     fontWeight: 700
     lineHeight: 0.96
     letterSpacing: "-0.02em"
   heading:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(1.8rem, 3.4vw, 2.6rem)"
     fontWeight: 600
     lineHeight: 1.04
     letterSpacing: "-0.015em"
   title-page:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "36px"
     fontWeight: 600
     lineHeight: 1
     letterSpacing: "-0.01em"
   title-section:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "30px"
     fontWeight: 600
     lineHeight: 1.05
     letterSpacing: "-0.01em"
   title-card:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "24px"
     fontWeight: 600
     lineHeight: 1.1
     letterSpacing: "normal"
   title-panel:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "20px"
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "normal"
   title-inline:
-    fontFamily: "Saira Condensed, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "18px"
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "normal"
   lede:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
     letterSpacing: "normal"
   body:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 400
     lineHeight: 1.55
     letterSpacing: "normal"
   body-compact:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "normal"
   measure:
-    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontFamily: "DM Mono, ui-monospace, monospace"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.4
     letterSpacing: "normal"
   label:
-    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontFamily: "DM Mono, ui-monospace, monospace"
     fontSize: "12px"
     fontWeight: 500
     lineHeight: 1.3
@@ -125,7 +125,7 @@ components:
     rounded: "{rounded.edge}"
     padding: "10px 20px"
   button-primary-hover:
-    backgroundColor: "{colors.brass-hi}"
+    backgroundColor: "{colors.signal-hi}"
     textColor: "{colors.ink-0}"
   button-secondary:
     backgroundColor: "{colors.ink-3}"
@@ -148,7 +148,7 @@ components:
     rounded: "{rounded.edge}"
     padding: "16px 20px"
   value-figure:
-    textColor: "{colors.brass}"
+    textColor: "{colors.signal}"
     typography: "{typography.measure}"
 ---
 
@@ -156,9 +156,10 @@ components:
 
 ## Overview
 
-**The inspection bench.** A surface plate under a bench lamp: layout dye as the
-ground, a scribed line as the ink, brass for anything the operator is paid, and
-a two-value verdict for anything measured.
+**Orange on black.** Pure black ground, white ink, and one saturated orange
+that carries every figure of value and every live state. The neutral steps are
+the same greys the category's incumbent uses, so the surface reads native to
+it; the accent is ours.
 
 The world is not decoration. Axon's product semantics *are* metrology — a
 trajectory is a physical motion measured against a tolerance, a score is a
@@ -168,8 +169,8 @@ instrument-shop device doing the job it does on a shop floor.
 
 Three rules carry the identity and override convenience everywhere:
 
-1. **Colour means data.** Brass is value, go/reject is a verdict, datum blue is
-   the active reference. Controls take no colour at all — they get their state
+1. **Colour means data.** Signal orange is value and live state, go/reject is a
+   verdict, probe is the reference edge. Controls take no colour at all — they get their state
    from rule weight, relief, and inversion. A coloured button would make colour
    mean two things.
 2. **State the number.** Where a quantity exists, show the quantity. Adjectives
@@ -180,32 +181,32 @@ Three rules carry the identity and override convenience everywhere:
 
 Committed single theme. The operator's real scene is a long session driving a
 bright 3D viewport, so the surface is dark by decision, not by category habit.
-There is no light mode and adding one would break the lamp-on-a-dark-bench
-premise the palette is built from.
+There is no light mode; the palette is built on a pure black ground and a light
+version would be a different product.
 
 ## Colors
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `ink-0` | `#070D15` | Viewport ground, scrollbar track, overlay base |
-| `ink-1` | `#0C1520` | Page ground |
-| `ink-2` | `#121E2C` | Raised panel, table row hover |
-| `ink-3` | `#1A2938` | Input and secondary control fill |
-| `ink-4` | `#223447` | Unlit tally segments |
-| `rule` | `#24374C` | Hairline division |
-| `rule-strong` | `#3A5270` | Emphasised rule, dimension terminators, scrollbar thumb |
-| `scribe` | `#E9F0F7` | Primary text, and the fill of an inverted (active) control |
-| `scribe-2` | `#A6B8CB` | Secondary prose |
-| `scribe-3` | `#7C91AB` | Labels, units, captions |
-| `brass` | `#CB9A4E` | **Money and value only** — MON figures, filled slot tally, cap-table bars |
-| `brass-hi` | `#E7BB72` | Primary control hover, focus ring |
-| `go` | `#52A472` | In tolerance, positive delta |
-| `reject` | `#E06A5E` | Out of tolerance, negative delta |
-| `datum` | `#5A8FCC` | The reference edge: goal zones, transaction hashes, active selection |
+| `ink-0` | `#000000` | Page ground, viewport ground, scrollbar track |
+| `ink-1` | `#080808` | Lifted surface |
+| `ink-2` | `#121212` | Panel, table row hover |
+| `ink-3` | `#1C1C1C` | Input and secondary control fill |
+| `ink-4` | `#272727` | Unlit tally segments |
+| `rule` | `#262626` | Hairline division |
+| `rule-strong` | `#3D3D3D` | Emphasised rule, dimension terminators |
+| `scribe` | `#FFFFFF` | Primary text, and the fill of an inverted control |
+| `scribe-2` | `#E0E0E0` | Secondary prose |
+| `scribe-3` | `#8F8F8F` | Labels, units, captions |
+| `signal` | `#FF6A00` | **The brand. Money, value, live state** — MON figures, slot tally, cap-table bars, joint collars on the arm |
+| `signal-hi` | `#FF9A3D` | Primary control hover, focus ring |
+| `go` | `#3DD68C` | In tolerance |
+| `reject` | `#FF2D55` | Out of tolerance |
+| `probe` | `#6E86A6` | The reference edge a measurement is taken from |
 
-Deliberately muted verdict pair. An acid green would read as a notification;
-this is a measurement, and the two values have to sit at the same visual weight
-so neither pre-empts the reading.
+The verdict pair sits deliberately off the accent's hue. A reject in red-orange
+would be a shade of the payout colour, so it is pushed to pink-red and the pass
+to a cool mint — neither can be mistaken for money.
 
 All text tokens clear 4.5:1 on their own grounds; `scribe-3` at 11px is the
 floor case and was raised from a darker value specifically to clear it.
@@ -214,14 +215,17 @@ floor case and was raised from a darker value specifically to clear it.
 
 Three families, each with one job:
 
-- **Saira Condensed** — display and headings. Industrial condensed signage; the
-  compression is what keeps a four-word headline at poster scale without
-  crowding the instrument panel beside it.
-- **Archivo** — body and UI prose. A grotesque with enough width contrast
-  against Saira that the pairing reads as two voices, not two weights.
-- **IBM Plex Mono** — every measured value, label, address, hash and timecode.
-  Mono here is for measurement and data, which is its legitimate use; it never
-  sets prose.
+The category's incumbent runs Borna, formularMono and Press Start 2P. The first
+two are commercial, so the closest free equivalents carry the same feel:
+
+- **Hanken Grotesk** — display, headings and body. A geometric grotesque with
+  the neutral warmth the category reads as native.
+- **DM Mono** — every measured value, label, address, hash and timecode. Mono
+  here is for measurement and data, which is its legitimate use; it never sets
+  prose.
+- **Press Start 2P** — the pixel voice, and the one face shared with the
+  incumbent because it is free. Used only on the wordmark, never on anything a
+  visitor has to read at length.
 
 Loaded through `next/font/google`, self-hosted at build. No CDN.
 
@@ -312,8 +316,8 @@ circle, that nothing was deducted, and to run it again.
 **Do**
 
 - Show the quantity, its unit, and its comparison to the field.
-- Reserve brass for money and value. If it is not a payment, an earning, or
-  capacity being consumed, it is not brass.
+- Reserve signal orange for money, value and live state. If it is not a
+  payment, an earning, or capacity being consumed, it is not orange.
 - Give a new measurement a tolerance band rather than inventing a second way to
   show a value against a limit.
 - Encode state in shape as well as hue — a pill, a fill, an inversion, a hatch.
@@ -330,8 +334,9 @@ circle, that nothing was deducted, and to run it again.
 - No eyebrow or kicker above a heading; the heading carries itself.
 - No section numbering unless the sequence genuinely carries information the
   reader needs (the run loop on the landing page is ordered; nothing else is).
-- No acid green. It is the incumbent category's colour and it reads as an alert,
-  not a measurement.
+- No acid green. It is the incumbent's colour, and here it would collide with
+  the pass state.
 - No Inter, Space Grotesk, or Geist as a display face.
+- No Press Start 2P outside the wordmark; it is unreadable at length.
 - No emoji or unicode glyph standing in for an icon.
 - No mono for prose. Mono is for measurement, data, and code.
