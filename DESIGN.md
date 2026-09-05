@@ -285,6 +285,10 @@ Recurring drawn devices, all authored SVG or CSS, never an icon font or emoji:
   stage alone prints dark on a pale ground.
 - **Joint callouts** — live readouts pinned to the joints they measure with
   leader lines, annotating the arm the way a drawing dimensions a part.
+- **Ghost trail** — the path the payload actually travelled, drawn in signal
+  orange behind it. It is the exact line the smoothness term scores.
+- **Reach envelope** — a dashed limit circle, drawn only when the operator has
+  hit it, so the boundary appears at the moment it becomes information.
 
 Icons are a drawn set on a 20×20 frame, 1.5 stroke, **butt caps and mitre
 joins** — the vocabulary of a drawing pen, not a rounded UI kit.
@@ -296,6 +300,14 @@ secondary is a filled panel with a strong rule, ghost is a rule that appears on
 hover. Primary hover moves to brass — the single place a control borrows the
 value colour, because the primary action in this product is nearly always
 getting paid.
+
+**Copyable values.** Any hash or address a visitor might want to take away is
+a `Copyable` — it says `copy`, and `copied` for a beat afterwards. Nothing in
+this product is a value you have to retype.
+
+**Status is spoken.** The submit flow drives an `Announce` live region, so a
+screen reader hears verifying, confirm in your wallet, waiting for the block,
+and the payout, in the product's own words.
 
 **Browser surfaces are themed**, not left to the user agent: selection is brass
 on ink, the caret is brass, focus rings are a 2px brass outline at 2px offset,

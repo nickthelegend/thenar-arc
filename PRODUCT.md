@@ -49,6 +49,9 @@ Confirmed and shipping:
 - `mintPolicy` — snapshots the contributor cap table, weighted by cumulative quality
 - `licensePolicy` — fans a licence payment out to every contributor pro-rata in one transaction
 - Portfolio, leaderboard, and a policy market reading directly from chain state
+- `PasskeyRegistry` — binds a secp256r1 public key to an address and verifies
+  signatures through Monad's P256 precompile at `0x0100` (EIP-7951), so a run
+  can be authorised with the curve a passkey uses rather than a seed phrase
 
 Constraints and explicit non-capabilities. These are roadmap and must never be presented as working:
 

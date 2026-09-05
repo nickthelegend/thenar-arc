@@ -66,6 +66,9 @@ Every one of these runs green right now:
 
 ```bash
 cd contracts && forge test              # 19 tests, incl. a 256-run fuzz
+cd contracts && forge test --match-contract PasskeyRegistry \
+  --fork-url https://testnet-rpc.monad.xyz            # 10, against the real precompile
+node scripts/passkey-onchain.mjs                      # register + authorise, on chain
 node --experimental-strip-types scripts/check-loop.ts   # IK + scoring
 node scripts/e2e.mjs http://localhost:3000              # live on-chain proof
 node scripts/lifecycle.mjs http://localhost:3000        # create -> fill -> mint -> licence
@@ -122,6 +125,7 @@ unauditable payout.
 | Verify a run | `/run/[hash]` | Public audit: re-hashes the stored samples and replays the tool path |
 | Post a task | `/post` | Open a bounty and escrow it |
 | Spec sheet | `/spec` | AXON-6, generated from the CAD constants |
+| Passkey | `/passkey` | Generates a real secp256r1 key and has Monad verify it |
 
 **Nothing on these pages is a fixture.** Tasks, slots, escrow, scores, payouts,
 standings and cap tables are all read from the contract. The trajectories behind
@@ -169,8 +173,8 @@ anything measured. It is not decoration — Axon's semantics are metrology, so
 every recurring device (tolerance band, gauge-block slot tally, datum zone,
 leader-line callouts) is a real instrument-shop device doing its actual job.
 
-Verified clean by `npx impeccable detect` across all six routes and the whole
-source tree.
+Verified clean by `npx impeccable detect` across all eleven routes and the
+whole source tree.
 
 ---
 
@@ -184,6 +188,18 @@ cd contracts && forge script script/Deploy.s.sol:Deploy   --rpc-url https://test
 
 It needs `DEPLOYER_PRIVATE_KEY` and `VERIFIER_ADDRESS` in the environment, and
 it seeds eight funded task bounties as part of the same run.
+
+**Passkeys.** Monad ships EIP-7951's P256 precompile at `0x0100`, so a
+secp256r1 signature — the curve a passkey already uses — can be verified by the
+chain itself. `PasskeyRegistry` binds a public key to an address and spends
+signatures through it, and `/passkey` proves the whole thing live: the browser
+generates a key with WebCrypto, signs, the chain accepts it and refuses the
+same signature with one bit flipped, for about 34k gas. Ethereum mainnet has no
+such precompile; verifying secp256r1 there costs hundreds of thousands of gas
+in Solidity.
+
+This exists because Axon's operators are gig workers, and the seed phrase is
+where that funnel dies.
 
 **The economics.** `createTask` escrows MON against a slot count.
 `submitTrajectory` checks a verifier signature, records the trajectory hash and

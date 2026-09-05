@@ -64,13 +64,13 @@ data sitting in the tree reads as faked state to anyone auditing the project.
 
 ### MISSING — Monad capabilities this project does not touch
 
-1. **P256 precompile `0x0100`** — verified working, entirely unused. This is the biggest miss.
+1. ~~**P256 precompile `0x0100`** — verified working, entirely unused.~~ **Now shipped.** `PasskeyRegistry` at [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) binds a secp256r1 key to an address and verifies signatures through the precompile; `register()` and `authorise()` have both executed on chain, replay and forgery are refused, and `/passkey` demonstrates it live for about 34k gas.
 2. **Staking precompile `0x1000`** — unused.
 3. **EIP-7702 delegation** — unused; every submit is a separate signature.
 4. **128 KB contract size** — `AxonProtocol` is ~10 KB. Ethereum's 24 KB limit is not even close to binding here.
 5. **150M block gas limit** — a submit uses ~200 K. Using 0.13% of a block.
 6. **Linear memory pricing / 8 MB transaction memory** — untouched.
-7. **Parallel execution** — worse than unused: the contract has a *contention bug* (below).
+7. **Parallel execution** — worse than unused: the contract has a *contention bug* (below). Still open; fixing it needs a redeploy, which would orphan the 24 trajectories already recorded.
 8. **Asynchronous execution semantics** — gas-on-limit and the reserve balance are not surfaced anywhere.
 
 ---
@@ -80,6 +80,15 @@ data sitting in the tree reads as faked state to anyone auditing the project.
 Monad is **genuinely the settlement layer**, not a logo. The core claim —
 "the trajectory is recorded and paid in one transaction" — is real, on a real
 verified contract, and a judge can fire it live.
+
+**Updated after the passkey work landed.** The audit below was written when
+this could have run on any fast EVM chain. That is no longer true: the P256
+precompile is Monad-specific and now load-bearing, so the project uses a
+capability Ethereum mainnet does not have. Two of the four "biggest misses"
+below — the precompile itself, and Multicall3 batching — are closed. The
+remaining two, the staking precompile and EIP-7702, are still untouched.
+
+The original wording is kept for the record:
 
 But right now this could run on **any** fast EVM chain. Nothing in it needs
 *Monad specifically*. The pitch says "per-trajectory settlement is only

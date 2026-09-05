@@ -1,6 +1,8 @@
 # Axon — test plan
 
-**Result: 56 PASS, 1 untestable. Executed against the live deployment.**
+**Result of the first full run: 56 PASS, 1 untestable.** The plan has since
+grown to cover the passkey work and the station additions; those items carry
+their own verification in the session that added them.
 
 Seven defects were found and fixed during the run:
 
@@ -51,6 +53,7 @@ clean console and no failed network requests. Anything less is a fail.
 | P10 | `/spec` | 200. Every figure is generated from `cad/arm.py` — reach, height, link table, joint chain, 21 parts, 8080 triangles, 21/21 closed surfaces. |
 | P11 | `/post` | 200. Form renders with instruction, slots, reward, scenario, difficulty. Escrow total = slots × reward, live. |
 | P12 | 404 | An unknown path renders the in-world 404, not a stack trace. |
+| P13 | `/passkey` | 200. Pressing the button generates a real secp256r1 key in the browser, signs a message, and the chain accepts the signature and refuses the same one with a bit flipped. Four steps all report done, the gas cost is shown, and the 160-byte precompile payload is listed and copyable. |
 
 ## API
 
@@ -81,6 +84,9 @@ clean console and no failed network requests. Anything less is a fail.
 | C5 | `claim` | A payee that refuses transfers is credited rather than reverting the submission, and can pull the balance later. |
 | C6 | Replay refused | Submitting the same trajectory hash twice reverts `AlreadySubmitted`. |
 | C7 | Forged score refused | Submitting a score the verifier did not sign reverts `BadSignature`. |
+| C8 | `PasskeyRegistry.register` | A real secp256r1 public key binds to an address; `hasPasskey` becomes true. |
+| C9 | `PasskeyRegistry.verify` | The precompile accepts a genuine signature against the registered key and rejects a tampered one. |
+| C10 | `PasskeyRegistry.authorise` | Spends the digest on chain, records it as used, and refuses both a replay and a forgery. |
 
 ## Flows
 
@@ -111,6 +117,12 @@ clean console and no failed network requests. Anything less is a fail.
 | E10 | Leaderboard highlights self | A connected address is marked "you" in the standings. |
 | E11 | Reduced motion | The hero arm holds a legible pose rather than animating. |
 | E12 | Mobile 375×812 | Nav does not overlap; hub filters scroll horizontally; station stacks into one scrolling page. |
+| E13 | Ghost trail | The trail geometry grows during a run — a line strip of tens of vertices where there were none. |
+| E14 | Reach envelope | Driving the tool past the reach limit shows `OUT OF REACH` and draws the limit circle. |
+| E15 | Keyboard help | `?` opens the controls overlay, `Escape` closes it. |
+| E16 | Copyable | Clicking a hash writes it to the clipboard and the control confirms. |
+| E17 | WebGL context loss | Forcing a context loss shows the recovery panel rather than a black rectangle. |
+| E18 | Double submit | A second click on submit cannot send a second transaction. |
 
 ## Global
 
@@ -121,3 +133,5 @@ clean console and no failed network requests. Anything less is a fail.
 | G3 | No mocks | Zero mock/stub/fake/placeholder/TODO in shipped code. |
 | G4 | Design detector | `impeccable detect` clean on every route and the source tree. |
 | G5 | Types and lint | `tsc --noEmit` and `eslint` clean. |
+| G6 | SEO artifacts | `robots.txt`, `sitemap.xml` and `manifest.webmanifest` all serve 200. |
+| G7 | Contract verification | Both AxonProtocol and PasskeyRegistry report `exact_match` on the explorer. |
