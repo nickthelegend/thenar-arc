@@ -51,7 +51,7 @@ export default function SpecPage() {
             <tr key={l.symbol} className="border-b border-rule">
               <td className="py-2.5 text-[14px]">{l.name}</td>
               <td className="py-2.5 font-mono text-[12px] text-scribe-3">{l.symbol}</td>
-              <td className="py-2.5 text-right font-mono text-[14px] tabular-nums text-brass">
+              <td className="py-2.5 text-right font-mono text-[14px] tabular-nums text-signal">
                 {l.value_mm.toFixed(1)}
                 <span className="ml-1 text-[12px] text-scribe-3">mm</span>
               </td>
@@ -66,7 +66,7 @@ export default function SpecPage() {
         {spec.joints.map((j, i) => (
           <li key={j.id} className="flex flex-wrap items-baseline gap-x-5 border-b border-rule py-2.5">
             <span className="w-[92px] shrink-0 font-mono text-[13px] text-scribe">{j.id}</span>
-            <span className="w-[52px] shrink-0 font-mono text-[12px] text-brass">axis {j.axis}</span>
+            <span className="w-[52px] shrink-0 font-mono text-[12px] text-signal">axis {j.axis}</span>
             <span className="text-[14px] text-scribe-2">{j.drives}</span>
             <span className="ml-auto font-mono text-[12px] text-scribe-3">
               {i === spec.joints.length - 1 ? "tool flange" : `→ ${spec.joints[i + 1].id}`}
@@ -131,7 +131,7 @@ export default function SpecPage() {
 
       <Link
         href="/hub"
-        className="mt-8 inline-block border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+        className="mt-8 inline-block border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
       >
         Put it to work
       </Link>

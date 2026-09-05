@@ -1,50 +1,56 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   THE INSPECTION BENCH
-   A surface plate under a lamp: layout dye as the ground, a scribed line as
-   the ink, brass for anything the operator is paid, and a two-value verdict
-   for anything measured. Colour carries data and state only — controls take
-   no colour, they take rule weight, relief and inversion.
+   AXON — orange on black.
+
+   Pure black ground, white ink, and one saturated orange that carries every
+   figure of value and every live state. The neutral steps are the same greys
+   the category's incumbent uses, so the surface reads native to it; the
+   accent is ours.
+
+   Colour means data. Controls take no colour — they get their state from rule
+   weight, relief, and inversion. A coloured button would make colour mean two
+   things.
    ========================================================================== */
 
 @theme {
-  /* Ground. Dykem layout dye, thinned in four steps. */
-  --color-ink-0: #070D15;
-  --color-ink-1: #0C1520;
-  --color-ink-2: #121E2C;
-  --color-ink-3: #1A2938;
-  --color-ink-4: #223447;
+  /* Ground. Pure black, opened up in four steps. */
+  --color-ink-0: #000000;
+  --color-ink-1: #080808;
+  --color-ink-2: #121212;
+  --color-ink-3: #1C1C1C;
+  --color-ink-4: #272727;
 
   /* Rules. Depth is a hairline and a value step, never a shadow. */
-  --color-rule: #24374C;
-  --color-rule-strong: #3A5270;
+  --color-rule: #262626;
+  --color-rule-strong: #3D3D3D;
 
-  /* Ink. The scribed line through the dye. */
-  --color-scribe: #E9F0F7;
-  --color-scribe-2: #A6B8CB;
-  --color-scribe-3: #7C91AB;
+  /* Ink. */
+  --color-scribe: #FFFFFF;
+  --color-scribe-2: #E0E0E0;
+  --color-scribe-3: #8F8F8F;
 
-  /* Brass — gauge blocks, micrometer thimbles, and every figure of value. */
-  --color-brass: #CB9A4E;
-  --color-brass-hi: #E7BB72;
-  --color-brass-dim: #2C2214;
+  /* Signal — the brand, and every figure of value. */
+  --color-signal: #FF6A00;
+  --color-signal-hi: #FF9A3D;
+  --color-signal-dim: #2B1200;
 
-  /* The verdict pair. Muted on purpose: an acid green would read as a
-     notification, and this is a measurement. */
-  --color-go: #52A472;
-  --color-go-dim: #10251A;
-  --color-reject: #E06A5E;
-  --color-reject-dim: #2E1512;
+  /* The verdict pair. Kept away from the accent's hue so a reject can never be
+     mistaken for a payout: the mint sits cool, the reject sits pink-red. */
+  --color-go: #3DD68C;
+  --color-go-dim: #062315;
+  --color-reject: #FF2D55;
+  --color-reject-dim: #2B0611;
 
-  /* Datum — the reference edge everything is measured from, and therefore
-     the colour of anything currently selected or active. */
-  --color-datum: #5A8FCC;
-  --color-datum-dim: #12243A;
+  /* Probe — the reference edge a measurement is taken from. Deliberately cool
+     and quiet so it recedes behind the orange. */
+  --color-probe: #6E86A6;
+  --color-probe-dim: #0E1520;
 
-  --font-display: var(--font-saira), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-display: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+  --font-pixel: var(--font-pixel), ui-monospace, monospace;
 
   /* Hard corners. A radius above 2px belongs to a different world. */
   --radius-edge: 0px;
@@ -63,7 +69,7 @@
   }
 
   body {
-    background-color: var(--color-ink-1);
+    background-color: var(--color-ink-0);
     color: var(--color-scribe);
     font-family: var(--font-sans);
     font-size: 15px;
@@ -79,8 +85,8 @@
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.005em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
@@ -94,16 +100,16 @@
 
   /* The surfaces the browser draws still belong to the design. */
   ::selection {
-    background-color: var(--color-brass);
+    background-color: var(--color-signal);
     color: var(--color-ink-0);
   }
 
   :where(input, textarea) {
-    caret-color: var(--color-brass);
+    caret-color: var(--color-signal);
   }
 
   :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
-    outline: 2px solid var(--color-brass);
+    outline: 2px solid var(--color-signal);
     outline-offset: 2px;
   }
 
@@ -112,29 +118,18 @@
     scrollbar-color: var(--color-rule-strong) transparent;
   }
 
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--color-ink-0);
-  }
-
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--color-ink-0); }
   ::-webkit-scrollbar-thumb {
     background: var(--color-rule-strong);
     border: 3px solid var(--color-ink-0);
   }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-scribe-3);
-  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-signal); }
 }
 
 @layer components {
   /* A dimension line: the rule that separates two things on a drawing, with
-     its terminators. Used instead of a plain hairline wherever a division is
-     structural rather than incidental. */
+     its terminators. Used wherever a division is structural. */
   .dim-rule {
     position: relative;
     height: 1px;
@@ -154,13 +149,13 @@
   .dim-rule::before { left: 0; }
   .dim-rule::after { right: 0; }
 
-  /* Hatching for the region outside a tolerance band, and for any area the
-     operator cannot act in. Drawn, not tinted, so it survives on any ground. */
+  /* Hatching for out-of-tolerance regions and any area the operator cannot act
+     in. Drawn, not tinted, so it survives without depending on colour. */
   .hatch {
     background-image: repeating-linear-gradient(
       45deg,
       transparent 0 3px,
-      color-mix(in oklab, var(--color-rule-strong) 70%, transparent) 3px 4px
+      color-mix(in oklab, var(--color-rule-strong) 80%, transparent) 3px 4px
     );
   }
 
@@ -179,12 +174,18 @@
     text-transform: uppercase;
     color: var(--color-scribe-3);
   }
+
+  /* The pixel face, used only where the product shouts: the wordmark and the
+     payout. Never for anything a visitor has to read at length. */
+  .pixel {
+    font-family: var(--font-pixel);
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

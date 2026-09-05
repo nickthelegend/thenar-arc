@@ -118,16 +118,16 @@ export default function RunPage() {
       {path ? (
         <div className="mt-5 flex flex-col gap-3">
           <svg viewBox="0 0 300 300" className="w-full max-w-[420px] border border-rule bg-ink-0" role="img" aria-label="Path the payload travelled">
-            <polyline points={path.full} fill="none" stroke="#24374C" strokeWidth="1.5" />
-            <polyline points={path.trace} fill="none" stroke="#CB9A4E" strokeWidth="2" />
-            <circle cx={path.head[0]} cy={path.head[1]} r="4" fill={path.grip < 14 ? "#CB9A4E" : "#5A8FCC"} />
+            <polyline points={path.full} fill="none" stroke="#3D3D3D" strokeWidth="1.5" />
+            <polyline points={path.trace} fill="none" stroke="#FF6A00" strokeWidth="2" />
+            <circle cx={path.head[0]} cy={path.head[1]} r="4" fill={path.grip < 14 ? "#FF6A00" : "#6E86A6"} />
           </svg>
           <label className="flex max-w-[420px] items-center gap-3">
             <span className="label shrink-0">Scrub</span>
             <input
               type="range" min={0.02} max={1} step={0.005} value={cursor}
               onChange={(e) => setCursor(Number(e.target.value))}
-              className="flex-1 accent-brass"
+              className="flex-1 accent-signal"
               aria-label="Scrub through the recorded run"
             />
             <span className="w-[64px] shrink-0 text-right font-mono text-[12px] tabular-nums text-scribe-2">
@@ -140,17 +140,17 @@ export default function RunPage() {
       <DimRule className="mt-10" note="Provenance" />
       <dl className="mt-4 flex flex-col gap-2 font-mono text-[12px]">
         <Field label="Task">
-          <Link href={`/task/${data.taskId}`} className="text-datum hover:underline">#{data.taskId}</Link>
+          <Link href={`/task/${data.taskId}`} className="text-probe hover:underline">#{data.taskId}</Link>
         </Field>
         <Field label="Contributor">
-          <a href={addressUrl(data.contributor)} target="_blank" rel="noreferrer" className="text-datum hover:underline">
+          <a href={addressUrl(data.contributor)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
             {data.contributor}
           </a>
         </Field>
         <Field label="Recorded">{new Date(data.createdAt).toLocaleString()}</Field>
         <Field label="Transaction">
           {data.txHash ? (
-            <a href={txUrl(data.txHash)} target="_blank" rel="noreferrer" className="text-datum hover:underline">{data.txHash}</a>
+            <a href={txUrl(data.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">{data.txHash}</a>
           ) : (
             <span className="text-scribe-3">not submitted on chain</span>
           )}

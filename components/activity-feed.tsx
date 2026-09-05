@@ -36,18 +36,18 @@ export function ActivityFeed({ limit = 12 }: { limit?: number }) {
               <span className="text-scribe-2">{shortHash(e.contributor)}</span>
               <span className="text-scribe-3">task {e.taskId}</span>
               <span className="text-scribe">{fmtScore(e.score)}</span>
-              <span className="text-brass tabular-nums">{fmtMon(e.paidMon)} MON</span>
+              <span className="text-signal tabular-nums">{fmtMon(e.paidMon)} MON</span>
               {e.txHash ? (
                 <a
                   href={txUrl(e.txHash)}
                   target="_blank"
                   rel="noreferrer"
-                  className="ml-auto text-datum hover:underline"
+                  className="ml-auto text-probe hover:underline"
                 >
                   {shortHash(e.txHash)}
                 </a>
               ) : (
-                <a href={`/run/${e.trajHash}`} className="ml-auto text-datum hover:underline">
+                <a href={`/run/${e.trajHash}`} className="ml-auto text-probe hover:underline">
                   verify →
                 </a>
               )}

@@ -33,7 +33,7 @@ export default function LeaderboardPage() {
         </span>
         <span className="flex items-baseline gap-2">
           <span className="label">Paid out</span>
-          <span className="font-mono text-[15px] tabular-nums text-brass">
+          <span className="font-mono text-[15px] tabular-nums text-signal">
             {fmtMon(totalPaid, 4)} <span className="text-[12px] text-scribe-3">MON</span>
           </span>
         </span>
@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
                 key={o.address}
                 className={cn(
                   "grid grid-cols-[36px_1fr_auto] items-center gap-4 border-b border-rule py-3.5 sm:grid-cols-[36px_1fr_repeat(4,minmax(64px,auto))]",
-                  you && "bg-brass-dim",
+                  you && "bg-signal-dim",
                 )}
               >
                 <span className="font-mono text-[15px] tabular-nums text-scribe-3">
@@ -75,14 +75,14 @@ export default function LeaderboardPage() {
                   href={addressUrl(o.address)}
                   target="_blank"
                   rel="noreferrer"
-                  className={cn("truncate font-mono text-[13px] hover:text-datum", you ? "text-brass" : "text-scribe")}
+                  className={cn("truncate font-mono text-[13px] hover:text-probe", you ? "text-signal" : "text-scribe")}
                 >
                   {shortHash(o.address)}{you ? " · you" : ""}
                 </a>
                 <Cell label="Runs" value={fmtInt(o.runs)} />
                 <Cell label="Mean" value={fmtScore(o.meanScore)} className="hidden sm:flex" />
                 <Cell label="Tasks" value={String(o.tasks)} className="hidden sm:flex" />
-                <Cell label="Earned" value={fmtMon(o.earned, 4)} tone="brass" className="hidden sm:flex" />
+                <Cell label="Earned" value={fmtMon(o.earned, 4)} tone="signal" className="hidden sm:flex" />
               </li>
             );
           })}
@@ -92,11 +92,11 @@ export default function LeaderboardPage() {
   );
 }
 
-function Cell({ label, value, tone, className = "" }: { label: string; value: string; tone?: "brass"; className?: string }) {
+function Cell({ label, value, tone, className = "" }: { label: string; value: string; tone?: "signal"; className?: string }) {
   return (
     <span className={`flex flex-col items-end gap-0.5 ${className}`}>
       <span className="label">{label}</span>
-      <span className={`font-mono text-[13px] tabular-nums ${tone === "brass" ? "text-brass" : "text-scribe"}`}>{value}</span>
+      <span className={`font-mono text-[13px] tabular-nums ${tone === "signal" ? "text-signal" : "text-scribe"}`}>{value}</span>
     </span>
   );
 }

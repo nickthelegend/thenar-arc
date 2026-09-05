@@ -57,7 +57,7 @@ export default function HubPage() {
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
           <Reading label="Tasks" value={isLoading ? "—" : fmtInt(rows.length)} />
           <Reading label="Unfilled slots" value={isLoading ? "—" : fmtInt(openSlots)} />
-          <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit="MON" tone="brass" />
+          <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit="MON" tone="signal" />
           <Reading label="Cap per operator" value="5" unit="runs / task" />
           <span className="font-mono text-[12px] text-scribe-3 sm:ml-auto">
             Live from the contract on Monad Testnet
@@ -140,7 +140,7 @@ export default function HubPage() {
             </button>
             <Link
               href="/post"
-              className="border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+              className="border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
             >
               Post a task
             </Link>
@@ -168,7 +168,7 @@ export default function HubPage() {
                   <Td><span className="font-mono text-[12px] text-scribe-3">#{t.id}</span></Td>
                   <Td>
                     <div className="flex flex-col gap-0.5">
-                      <Link href={`/task/${t.id}`} className="text-[14px] text-scribe hover:text-brass">
+                      <Link href={`/task/${t.id}`} className="text-[14px] text-scribe hover:text-signal">
                         {t.name}
                       </Link>
                       <span className="font-mono text-[12px] capitalize text-scribe-3">{t.scenario}</span>
@@ -196,7 +196,7 @@ export default function HubPage() {
                     </span>
                   </Td>
                   <Td align="right">
-                    <span className="font-mono text-[15px] font-medium tabular-nums text-brass">
+                    <span className="font-mono text-[15px] font-medium tabular-nums text-signal">
                       {fmtMon(t.rewardMon)}
                       <span className="ml-1 text-[12px] text-scribe-3">MON</span>
                     </span>
@@ -229,7 +229,7 @@ export default function HubPage() {
                     <Link href={`/task/${t.id}`} className="text-[15px] text-scribe">{t.name}</Link>
                     <span className="font-mono text-[12px] capitalize text-scribe-3">{t.scenario}</span>
                   </div>
-                  <span className="shrink-0 font-mono text-[16px] font-medium tabular-nums text-brass">
+                  <span className="shrink-0 font-mono text-[16px] font-medium tabular-nums text-signal">
                     {fmtMon(t.rewardMon)}
                   </span>
                 </div>
@@ -264,11 +264,11 @@ export default function HubPage() {
   );
 }
 
-function Reading({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "brass" }) {
+function Reading({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "signal" }) {
   return (
     <span className="flex items-baseline gap-2">
       <span className="label">{label}</span>
-      <span className={cn("font-mono text-[15px] font-medium tabular-nums", tone === "brass" ? "text-brass" : "text-scribe")}>
+      <span className={cn("font-mono text-[15px] font-medium tabular-nums", tone === "signal" ? "text-signal" : "text-scribe")}>
         {value}
         {unit ? <span className="ml-1 text-[12px] text-scribe-3">{unit}</span> : null}
       </span>

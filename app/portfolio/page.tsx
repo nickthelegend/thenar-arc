@@ -49,15 +49,15 @@ export default function PortfolioPage() {
           href={s.address ? addressUrl(s.address) : "#"}
           target="_blank"
           rel="noreferrer"
-          className="font-mono text-[12px] text-scribe-3 hover:text-datum"
+          className="font-mono text-[12px] text-scribe-3 hover:text-probe"
         >
           {s.address}
         </a>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-rule py-3">
-        <Reading label="Balance" value={fmtMon(s.balance, 4)} unit="MON" tone="brass" />
-        <Reading label="Earned on chain" value={fmtMon(stats?.earnedMon ?? totalPaid, 4)} unit="MON" tone="brass" />
+        <Reading label="Balance" value={fmtMon(s.balance, 4)} unit="MON" tone="signal" />
+        <Reading label="Earned on chain" value={fmtMon(stats?.earnedMon ?? totalPaid, 4)} unit="MON" tone="signal" />
         <Reading label="Accepted runs" value={String(stats?.runs ?? runs?.length ?? 0)} />
         <Reading label="Mean score" value={stats?.runs ? fmtScore(stats.meanScore) : "—"} />
         <Reading label="Best score" value={best ? fmtScore(best) : "—"} />
@@ -88,7 +88,7 @@ export default function PortfolioPage() {
           </p>
           <Link
             href="/hub"
-            className="mt-5 inline-block border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+            className="mt-5 inline-block border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
           >
             Find a task
           </Link>
@@ -104,19 +104,19 @@ export default function PortfolioPage() {
                     <span className="font-mono text-[12px] text-scribe-3">
                       run #{r.id} · task #{r.taskId} · {new Date(r.at).toLocaleString()}
                     </span>
-                    <Link href={`/task/${r.taskId}`} className="text-[15px] text-scribe hover:text-brass">
+                    <Link href={`/task/${r.taskId}`} className="text-[15px] text-scribe hover:text-signal">
                       {nameOf(r.taskId)}
                     </Link>
                     <Link
                       href={`/run/${r.trajHash}`}
-                      className="font-mono text-[12px] text-scribe-3 hover:text-datum"
+                      className="font-mono text-[12px] text-scribe-3 hover:text-probe"
                     >
                       {r.cid} · verify this run →
                     </Link>
                   </div>
                   <div className="flex items-center gap-6">
                     <Reading label="Score" value={fmtScore(r.score)} tone={inTol ? undefined : "reject"} />
-                    <Reading label="Paid" value={fmtMon(r.paidMon, 4)} tone="brass" />
+                    <Reading label="Paid" value={fmtMon(r.paidMon, 4)} tone="signal" />
                   </div>
                 </div>
               </li>
@@ -130,8 +130,8 @@ export default function PortfolioPage() {
 
 function Reading({
   label, value, unit, tone,
-}: { label: string; value: string; unit?: string; tone?: "brass" | "go" | "reject" }) {
-  const tones = { brass: "text-brass", go: "text-go", reject: "text-reject" } as const;
+}: { label: string; value: string; unit?: string; tone?: "signal" | "go" | "reject" }) {
+  const tones = { signal: "text-signal", go: "text-go", reject: "text-reject" } as const;
   return (
     <span className="flex flex-col gap-0.5">
       <span className="label">{label}</span>

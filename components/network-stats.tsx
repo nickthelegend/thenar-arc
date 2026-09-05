@@ -32,13 +32,13 @@ export function NetworkStats() {
         <Reading label="Trajectories recorded" value={fmtInt(n(1))} />
         <Reading label="Policies minted" value={fmtInt(n(2))} />
         <Reading label="Open slots" value={fmtInt(openSlots)} />
-        <Reading label="Escrowed" value={fmtMon(escrow, 3)} unit="MON" tone="brass" />
+        <Reading label="Escrowed" value={fmtMon(escrow, 3)} unit="MON" tone="signal" />
       </div>
       <a
         href={addressUrl(AXON_ADDRESS)}
         target="_blank"
         rel="noreferrer"
-        className="font-mono text-[12px] text-scribe-3 transition-colors hover:text-datum"
+        className="font-mono text-[12px] text-scribe-3 transition-colors hover:text-probe"
       >
         AxonProtocol · {shortHash(AXON_ADDRESS)} · verified on Monad Testnet →
       </a>
@@ -48,13 +48,13 @@ export function NetworkStats() {
 
 function Reading({
   label, value, unit, tone,
-}: { label: string; value: string; unit?: string; tone?: "brass" }) {
+}: { label: string; value: string; unit?: string; tone?: "signal" }) {
   return (
     <span className="flex items-baseline gap-2">
       <span className="label">{label}</span>
       <span
         className={`font-mono text-[16px] font-medium tabular-nums ${
-          tone === "brass" ? "text-brass" : "text-scribe"
+          tone === "signal" ? "text-signal" : "text-scribe"
         }`}
       >
         {value}

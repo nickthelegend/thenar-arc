@@ -123,7 +123,7 @@ export default function PostTaskPage() {
       <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border border-rule px-5 py-4">
         <div className="flex flex-col gap-1">
           <span className="label">To escrow now</span>
-          <span className="font-mono text-3xl leading-none text-brass">
+          <span className="font-mono text-3xl leading-none text-signal">
             {fmtMon(total, 4)}<span className="ml-1.5 text-[12px] text-scribe-3">MON</span>
           </span>
           <span className="mt-1 font-mono text-[12px] text-scribe-3">
@@ -150,7 +150,7 @@ export default function PostTaskPage() {
       {tx.phase === "confirmed" && tx.txHash ? (
         <p className="mt-3 max-w-[62ch] text-[13px] text-go">
           Task posted ·{" "}
-          <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="font-mono text-datum hover:underline">
+          <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="font-mono text-probe hover:underline">
             {shortHash(tx.txHash)}
           </a>
         </p>

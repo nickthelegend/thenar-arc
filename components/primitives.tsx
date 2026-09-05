@@ -20,16 +20,16 @@ export function Measure({
   label: string;
   value: React.ReactNode;
   unit?: string;
-  tone?: "scribe" | "brass" | "go" | "reject" | "datum";
+  tone?: "scribe" | "signal" | "go" | "reject" | "probe";
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
 }) {
   const tones = {
     scribe: "text-scribe",
-    brass: "text-brass",
+    signal: "text-signal",
     go: "text-go",
     reject: "text-reject",
-    datum: "text-datum",
+    probe: "text-probe",
   } as const;
 
   const sizes = {
@@ -162,7 +162,7 @@ export function SlotTally({
           key={i}
           className={cn(
             "flex-1",
-            i < lit ? "bg-brass" : "bg-ink-4",
+            i < lit ? "bg-signal" : "bg-ink-4",
             // Every fourth block is taller: a ruler needs major divisions
             i % 4 === 3 && "border-r border-ink-1",
           )}
@@ -246,7 +246,7 @@ export function Button({
 }) {
   const variants = {
     primary:
-      "border-scribe bg-scribe text-ink-0 hover:bg-brass-hi hover:border-brass-hi",
+      "border-scribe bg-scribe text-ink-0 hover:bg-signal-hi hover:border-signal-hi",
     secondary:
       "border-rule-strong bg-ink-3 text-scribe hover:border-scribe-3 hover:bg-ink-4",
     ghost:

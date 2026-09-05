@@ -54,7 +54,7 @@ export default function FoundryPage() {
           </p>
           <Link
             href="/hub"
-            className="mt-5 inline-block border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+            className="mt-5 inline-block border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
           >
             Open the hub
           </Link>
@@ -90,7 +90,7 @@ function MintRow({
           inputMode="decimal"
           aria-label="Licence fee in MON"
           className={cn(
-            "w-[92px] border bg-ink-2 px-2 py-1 text-right font-mono text-[13px] tabular-nums text-brass focus:outline-none",
+            "w-[92px] border bg-ink-2 px-2 py-1 text-right font-mono text-[13px] tabular-nums text-signal focus:outline-none",
             bad ? "border-reject" : "border-rule focus:border-rule-strong",
           )}
         />
@@ -135,7 +135,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
         <Cell label="Trajectories" value={fmtInt(p.trajectories)} />
         <Cell label="Contributors" value={fmtInt(cap?.length ?? 0)} />
         <Cell label="Licences sold" value={fmtInt(p.licencesSold)} />
-        <Cell label="Licence" value={`${fmtMon(p.licenceMon, 3)} MON`} tone="brass" />
+        <Cell label="Licence" value={`${fmtMon(p.licenceMon, 3)} MON`} tone="signal" />
       </div>
 
       <div className="px-5 py-4">
@@ -150,17 +150,17 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
                   href={addressUrl(c.address)}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-[118px] shrink-0 font-mono text-[12px] text-scribe-2 hover:text-datum"
+                  className="w-[118px] shrink-0 font-mono text-[12px] text-scribe-2 hover:text-probe"
                 >
                   {shortHash(c.address)}
                 </a>
                 <span className="h-2.5 flex-1 bg-ink-3">
-                  <span className="block h-full bg-brass transition-[width] duration-500" style={{ width: `${(c.weightBps / top) * 100}%` }} />
+                  <span className="block h-full bg-signal transition-[width] duration-500" style={{ width: `${(c.weightBps / top) * 100}%` }} />
                 </span>
                 <span className="w-[86px] shrink-0 text-right font-mono text-[12px] tabular-nums text-scribe-2">
                   {(c.weightBps / 100).toFixed(2)}%
                 </span>
-                <span className="w-[92px] shrink-0 text-right font-mono text-[12px] tabular-nums text-brass">
+                <span className="w-[92px] shrink-0 text-right font-mono text-[12px] tabular-nums text-signal">
                   {fmtMon(c.payoutMon, 4)}
                 </span>
               </li>
@@ -174,7 +174,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
           {tx.phase === "confirmed" && tx.txHash ? (
             <>
               Paid {cap?.length ?? 0} contributors in one transaction ·{" "}
-              <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="font-mono text-datum hover:underline">
+              <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="font-mono text-probe hover:underline">
                 {shortHash(tx.txHash)}
               </a>
               {tx.elapsedMs ? <span className="ml-2 font-mono text-scribe-3">{(tx.elapsedMs / 1000).toFixed(2)}s</span> : null}
@@ -206,11 +206,11 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
   );
 }
 
-function Cell({ label, value, tone }: { label: string; value: string; tone?: "brass" }) {
+function Cell({ label, value, tone }: { label: string; value: string; tone?: "signal" }) {
   return (
     <div className="flex flex-col gap-1 bg-ink-1 px-5 py-3">
       <span className="label">{label}</span>
-      <span className={cn("font-mono text-[16px] tabular-nums", tone === "brass" ? "text-brass" : "text-scribe")}>{value}</span>
+      <span className={cn("font-mono text-[16px] tabular-nums", tone === "signal" ? "text-signal" : "text-scribe")}>{value}</span>
     </div>
   );
 }

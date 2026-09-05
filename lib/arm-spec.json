@@ -5,7 +5,7 @@
   "height_mm": 694.0,
   "parts": 21,
   "triangles": 8080,
-  "glb_bytes": 212580,
+  "glb_bytes": 212576,
   "links": [
     {
       "name": "Plinth",
@@ -97,33 +97,33 @@
   "materials": [
     {
       "key": "shell",
-      "metallic": 0.05,
-      "roughness": 0.52,
-      "color": "#DADDD7"
+      "metallic": 0.04,
+      "roughness": 0.48,
+      "color": "#DFE0DE"
     },
     {
       "key": "joint",
-      "metallic": 0.35,
-      "roughness": 0.44,
-      "color": "#242927"
+      "metallic": 0.4,
+      "roughness": 0.42,
+      "color": "#151515"
     },
     {
       "key": "collar",
-      "metallic": 0.88,
-      "roughness": 0.26,
-      "color": "#C79B49"
+      "metallic": 0.7,
+      "roughness": 0.34,
+      "color": "#FF6A00"
     },
     {
       "key": "pad",
       "metallic": 0.0,
-      "roughness": 0.88,
-      "color": "#181C1A"
+      "roughness": 0.9,
+      "color": "#0E0E0E"
     },
     {
       "key": "granite",
-      "metallic": 0.1,
-      "roughness": 0.7,
-      "color": "#2D312F"
+      "metallic": 0.08,
+      "roughness": 0.76,
+      "color": "#1C1C1C"
     }
   ],
   "part_report": [

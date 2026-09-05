@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBlockNumber } from "wagmi";
 import { cn } from "@/lib/cn";
+import { AxonWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
 import { addressUrl, IS_DEPLOYED } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
@@ -31,14 +32,8 @@ export function SiteNav() {
     <>
       <header className="sticky top-0 z-40 border-b border-rule bg-ink-1/95 backdrop-blur-[2px]">
         <div className="mx-auto flex h-14 max-w-[1400px] items-stretch gap-3 px-4 sm:gap-6 sm:px-5">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5 self-center" aria-label="Axon home">
-            <svg viewBox="0 0 20 20" className="size-[18px] text-brass" aria-hidden="true">
-              <path d="M10 1v18M1 10h18" stroke="currentColor" strokeWidth="1" />
-              <circle cx="10" cy="10" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-            <span className="font-display text-xl font-700 leading-none tracking-[0.02em] text-scribe">
-              AXON
-            </span>
+          <Link href="/" className="flex shrink-0 items-center self-center" aria-label="Axon home">
+            <AxonWordmark />
           </Link>
 
           <nav
@@ -55,7 +50,7 @@ export function SiteNav() {
                   className={cn(
                     "flex shrink-0 items-center whitespace-nowrap border-b-2 px-3 font-mono text-[12px] font-medium uppercase tracking-[0.14em] transition-colors sm:px-4",
                     active
-                      ? "border-brass text-scribe"
+                      ? "border-signal text-scribe"
                       : "border-transparent text-scribe-3 hover:text-scribe-2",
                   )}
                 >
@@ -77,7 +72,7 @@ export function SiteNav() {
 
             {s.connected ? (
               <div className="flex items-stretch border border-rule-strong">
-                <span className="flex items-center border-r border-rule-strong px-2.5 font-mono text-[12px] tabular-nums text-brass sm:px-3">
+                <span className="flex items-center border-r border-rule-strong px-2.5 font-mono text-[12px] tabular-nums text-signal sm:px-3">
                   {fmtMon(s.balance, 3)}
                   <span className="ml-1 text-[12px] text-scribe-3">MON</span>
                 </span>
@@ -102,7 +97,7 @@ export function SiteNav() {
               <button
                 onClick={s.connect}
                 disabled={s.connecting}
-                className="border border-scribe bg-scribe px-4 py-1.5 font-mono text-[12px] font-medium uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi disabled:opacity-60"
+                className="border border-scribe bg-scribe px-4 py-1.5 font-mono text-[12px] font-medium uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi disabled:opacity-60"
               >
                 {s.connecting ? "Connecting…" : "Connect"}
               </button>
@@ -131,13 +126,13 @@ export function SiteNav() {
       ) : null}
 
       {lowOnGas ? (
-        <Banner tone="brass">
+        <Banner tone="signal">
           Balance is {fmtMon(s.balance, 4)} MON — not much runway for gas.
           <a
             href="https://faucet.monad.xyz"
             target="_blank"
             rel="noreferrer"
-            className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-brass hover:text-ink-0"
+            className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-signal hover:text-ink-0"
           >
             Open the faucet
           </a>
@@ -155,7 +150,7 @@ export function SiteNav() {
   );
 }
 
-function Banner({ tone, children }: { tone: "reject" | "brass"; children: React.ReactNode }) {
+function Banner({ tone, children }: { tone: "reject" | "signal"; children: React.ReactNode }) {
   return (
     <div
       role="status"
@@ -163,7 +158,7 @@ function Banner({ tone, children }: { tone: "reject" | "brass"; children: React.
         "flex flex-wrap items-center gap-y-1 border-b px-5 py-2 text-[13px]",
         tone === "reject"
           ? "border-reject bg-reject-dim text-reject"
-          : "border-brass bg-brass-dim text-brass",
+          : "border-signal bg-signal-dim text-signal",
       )}
     >
       {children}

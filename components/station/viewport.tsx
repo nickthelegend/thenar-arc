@@ -118,10 +118,10 @@ function SurfacePlate() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <boxGeometry args={[TABLE_HALF * 2, TABLE_HALF * 2, 0.001]} />
-        <meshStandardMaterial color="#2A312E" roughness={0.82} metalness={0.08} />
+        <meshStandardMaterial color="#141414" roughness={0.84} metalness={0.06} />
       </mesh>
       <lineSegments geometry={grid}>
-        <lineBasicMaterial color="#3A5270" transparent opacity={0.32} />
+        <lineBasicMaterial color="#3D3D3D" transparent opacity={0.5} />
       </lineSegments>
     </group>
   );
@@ -154,10 +154,10 @@ function GoalZone({ at }: { at: [number, number] }) {
     <group position={[at[0], TABLE_Z + 0.0012, at[1]]}>
       <line>
         <primitive object={ring} attach="geometry" />
-        <lineBasicMaterial color="#5A8FCC" />
+        <lineBasicMaterial color="#FF6A00" />
       </line>
       <lineSegments geometry={ticks}>
-        <lineBasicMaterial color="#5A8FCC" />
+        <lineBasicMaterial color="#FF6A00" />
       </lineSegments>
     </group>
   );
@@ -173,7 +173,7 @@ function Payload({ pos }: { pos: React.RefObject<[number, number, number]> }) {
   return (
     <mesh ref={ref} castShadow>
       <cylinderGeometry args={[PAYLOAD_R, PAYLOAD_R, PAYLOAD_H, 24]} />
-      <meshStandardMaterial color="#C6CBC2" roughness={0.42} metalness={0.22} />
+      <meshStandardMaterial color="#D6D8D2" roughness={0.4} metalness={0.2} />
     </mesh>
   );
 }
@@ -191,8 +191,8 @@ function JointCallout({
   return (
     <Html position={position} center={false} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
       <div className="flex translate-x-3 -translate-y-1/2 items-center gap-1.5 whitespace-nowrap">
-        <span className="h-px w-5 bg-brass/70" />
-        <span className="font-mono text-[12px] leading-none text-brass">
+        <span className="h-px w-5 bg-signal/80" />
+        <span className="font-mono text-[12px] leading-none text-signal">
           <span className="text-scribe-3">{label}</span> {value}
         </span>
       </div>
@@ -333,7 +333,7 @@ function Rig({
 
   return (
     <>
-      <hemisphereLight args={["#7C91AB", "#0A1119", 0.42]} />
+      <hemisphereLight args={["#8F8F8F", "#000000", 0.4]} />
       <directionalLight
         position={[0.9, 1.25, 0.6]}
         intensity={2.3}
@@ -344,7 +344,7 @@ function Rig({
         shadow-camera-top={0.8}
         shadow-camera-bottom={-0.8}
       />
-      <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.5} color="#5A8FCC" />
+      <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.45} color="#FF9A3D" />
 
       <SurfacePlate />
       <GoalZone at={goal} />
@@ -370,7 +370,7 @@ function Rig({
           )}
           attach="geometry"
         />
-        <lineBasicMaterial color="#3A5270" />
+        <lineBasicMaterial color="#3D3D3D" />
       </line>
 
       {running ? (
@@ -398,7 +398,7 @@ export function StationViewport(props: ViewportProps) {
       dpr={[1, 2]}
       camera={{ fov: 34, near: 0.02, far: 12 }}
       gl={{ antialias: true }}
-      style={{ background: "#070D15" }}
+      style={{ background: "#000000" }}
     >
       <Rig {...props} />
     </Canvas>

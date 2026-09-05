@@ -58,13 +58,13 @@ export default function TaskPage() {
         <Difficulty level={task.difficulty} />
         <StageTrack stage={task.policyMinted ? "post" : task.open ? "pre" : "training"} />
         <span className="font-mono text-[12px] capitalize text-scribe-3">{task.scenario}</span>
-        <a href={addressUrl(task.funder)} target="_blank" rel="noreferrer" className="font-mono text-[12px] text-scribe-3 hover:text-datum">
+        <a href={addressUrl(task.funder)} target="_blank" rel="noreferrer" className="font-mono text-[12px] text-scribe-3 hover:text-probe">
           funded by {shortHash(task.funder)}
         </a>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
-        <Cell label="Per run" value={`${fmtMon(task.rewardMon)} MON`} tone="brass" />
+        <Cell label="Per run" value={`${fmtMon(task.rewardMon)} MON`} tone="signal" />
         <Cell label="Escrow left" value={`${fmtMon(Number(formatEther(task.escrowWei)), 3)} MON`} />
         <Cell label="Par" value={fmtSeconds(task.parSeconds)} />
         <Cell label="Slots" value={`${task.slotsFilled} / ${task.slotsTotal}`} />
@@ -75,7 +75,7 @@ export default function TaskPage() {
       {task.open ? (
         <Link
           href={`/station/${task.id}`}
-          className="mt-6 inline-block border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+          className="mt-6 inline-block border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
         >
           Run this task
         </Link>
@@ -99,7 +99,7 @@ export default function TaskPage() {
               <div key={d.label} className="flex flex-1 flex-col items-center gap-1">
                 <span className="font-mono text-[12px] tabular-nums text-scribe-3">{d.n || ""}</span>
                 <div className="w-full bg-ink-3" style={{ height: `${8 + d.h * 56}px` }}>
-                  <div className="h-full w-full bg-brass" style={{ opacity: d.n ? 1 : 0.12 }} />
+                  <div className="h-full w-full bg-signal" style={{ opacity: d.n ? 1 : 0.12 }} />
                 </div>
                 <span className="font-mono text-[12px] text-scribe-3">{d.label}</span>
               </div>
@@ -109,15 +109,15 @@ export default function TaskPage() {
           <ul className="mt-6 flex flex-col">
             {runs!.map((r) => (
               <li key={r.traj_hash} className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-rule py-2.5 font-mono text-[12px]">
-                <a href={addressUrl(r.contributor)} target="_blank" rel="noreferrer" className="text-scribe-2 hover:text-datum">
+                <a href={addressUrl(r.contributor)} target="_blank" rel="noreferrer" className="text-scribe-2 hover:text-probe">
                   {shortHash(r.contributor)}
                 </a>
                 <span className="text-scribe">{fmtScore(r.score)}</span>
                 <span className="text-scribe-3">{r.deviation_mm.toFixed(1)} mm</span>
                 <span className="text-scribe-3">{fmtSeconds(r.duration_s)}</span>
-                <Link href={`/run/${r.traj_hash}`} className="ml-auto text-datum hover:underline">verify →</Link>
+                <Link href={`/run/${r.traj_hash}`} className="ml-auto text-probe hover:underline">verify →</Link>
                 {r.tx_hash ? (
-                  <a href={txUrl(r.tx_hash)} target="_blank" rel="noreferrer" className="text-datum hover:underline">
+                  <a href={txUrl(r.tx_hash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
                     {shortHash(r.tx_hash)}
                   </a>
                 ) : null}
@@ -143,11 +143,11 @@ function bucket(runs: Row[]) {
   return labels.map((label, i) => ({ label, n: counts[i], h: counts[i] / max }));
 }
 
-function Cell({ label, value, tone }: { label: string; value: string; tone?: "brass" }) {
+function Cell({ label, value, tone }: { label: string; value: string; tone?: "signal" }) {
   return (
     <div className="flex flex-col gap-1 bg-ink-1 px-4 py-3">
       <span className="label">{label}</span>
-      <span className={cn("font-mono text-[15px] tabular-nums", tone === "brass" ? "text-brass" : "text-scribe")}>{value}</span>
+      <span className={cn("font-mono text-[15px] tabular-nums", tone === "signal" ? "text-signal" : "text-scribe")}>{value}</span>
     </div>
   );
 }

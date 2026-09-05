@@ -46,14 +46,15 @@ PAD_T = 3.0
 SEG = 64                             # revolve resolution
 
 MATERIALS = {
-    # Pale structural shells, graphite joints, one brass ring per axis. The
-    # brass is the only warm value on the arm and it marks exactly the six
-    # places the operator can move.
-    "shell":   {"color": [0.855, 0.867, 0.847, 1.0], "metallic": 0.05, "roughness": 0.52},
-    "joint":   {"color": [0.145, 0.161, 0.153, 1.0], "metallic": 0.35, "roughness": 0.44},
-    "collar":  {"color": [0.784, 0.608, 0.290, 1.0], "metallic": 0.88, "roughness": 0.26},
-    "pad":     {"color": [0.098, 0.110, 0.102, 1.0], "metallic": 0.00, "roughness": 0.88},
-    "granite": {"color": [0.180, 0.196, 0.188, 1.0], "metallic": 0.10, "roughness": 0.70},
+    # Pale structural shells, near-black joints, one orange ring per axis. The
+    # orange is the only chromatic value on the arm and it marks exactly the
+    # six places the operator can move — the same signal colour the interface
+    # uses for anything live.
+    "shell":   {"color": [0.878, 0.882, 0.871, 1.0], "metallic": 0.04, "roughness": 0.48},
+    "joint":   {"color": [0.086, 0.086, 0.086, 1.0], "metallic": 0.40, "roughness": 0.42},
+    "collar":  {"color": [1.000, 0.416, 0.000, 1.0], "metallic": 0.70, "roughness": 0.34},
+    "pad":     {"color": [0.055, 0.055, 0.055, 1.0], "metallic": 0.00, "roughness": 0.90},
+    "granite": {"color": [0.110, 0.110, 0.110, 1.0], "metallic": 0.08, "roughness": 0.76},
 }
 
 

@@ -181,7 +181,7 @@ export default function StationPage() {
               <span className="text-scribe-3">Y <span className="text-scribe">{tel.tool[1].toFixed(3)}</span></span>
               <span className="text-scribe-3">Z <span className="text-scribe">{tel.tool[2].toFixed(3)}</span></span>
               <span className="text-scribe-3">JAW <span className="text-scribe">{tel.grip.toFixed(0)}</span> mm</span>
-              <span className={cn(tel.held ? "text-brass" : "text-scribe-3")}>
+              <span className={cn(tel.held ? "text-signal" : "text-scribe-3")}>
                 {tel.held ? "PAYLOAD HELD" : "JAWS EMPTY"}
               </span>
               {tel.joints.clamped ? <span className="ml-auto text-reject">OUT OF REACH</span> : null}
@@ -242,7 +242,7 @@ export default function StationPage() {
                 <span className="label">Difficulty</span>
                 <Difficulty level={task.difficulty} />
               </div>
-              <Row label="Per run" value={`${fmtMon(task.rewardMon)} MON`} tone="brass" />
+              <Row label="Per run" value={`${fmtMon(task.rewardMon)} MON`} tone="signal" />
               <Row label="Slots left" value={String(task.slotsTotal - task.slotsFilled)} />
               <Row label="Escrow" value={`${fmtMon(Number(task.escrowWei) / 1e18, 3)} MON`} />
             </div>
@@ -329,7 +329,7 @@ function MeasurementSnap({
           {accepted ? (
             <div className="flex items-end justify-between border-t border-rule pt-4">
               <span className="label">{done ? "Paid to your wallet" : "Payable on submit"}</span>
-              <span className="font-mono text-4xl font-medium leading-none tracking-[-0.02em] text-brass">
+              <span className="font-mono text-4xl font-medium leading-none tracking-[-0.02em] text-signal">
                 {done ? <CountUp to={tx.paidMon ?? verdict.payoutMon} /> : fmtMon(verdict.payoutMon)}
                 <span className="ml-1.5 text-[12px] text-scribe-3">MON</span>
               </span>
@@ -346,7 +346,7 @@ function MeasurementSnap({
             <div className="flex flex-col gap-1.5 border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
               <span>
                 Recorded and paid in one transaction ·{" "}
-                <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="text-datum hover:underline">
+                <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
                   {shortHash(tx.txHash)}
                 </a>
               </span>
@@ -409,11 +409,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ label, value, tone }: { label: string; value: string; tone?: "brass" }) {
+function Row({ label, value, tone }: { label: string; value: string; tone?: "signal" }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <span className="label">{label}</span>
-      <span className={cn("font-mono text-[13px] capitalize tabular-nums", tone === "brass" ? "text-brass" : "text-scribe")}>{value}</span>
+      <span className={cn("font-mono text-[13px] capitalize tabular-nums", tone === "signal" ? "text-signal" : "text-scribe")}>{value}</span>
     </div>
   );
 }

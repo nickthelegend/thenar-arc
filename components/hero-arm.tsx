@@ -14,6 +14,8 @@ import { solve, toolPosition } from "@/lib/kinematics";
 const PICK: [number, number] = [0.3, 0.2];
 const PLACE: [number, number] = [0.17, -0.24];
 const CYCLE = 9.2; // seconds
+/** The frame the arm holds on when motion is reduced: mid-traverse, extended. */
+const HOLD_AT = CYCLE * 0.46;
 
 function easeInOut(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -94,7 +96,7 @@ function Rig({ paused }: { paused: boolean }) {
   useFrame((_, dt) => {
     // A paused hero costs nothing: reduced-motion holds the arm mid-cycle.
     if (!paused) clock.current += dt;
-    const { target, grip } = poseAt(paused ? 2.6 : clock.current);
+    const { target, grip } = poseAt(paused ? HOLD_AT : clock.current);
     const j = solve(target);
 
     const n = nodes.current;
@@ -108,7 +110,7 @@ function Rig({ paused }: { paused: boolean }) {
     if (payload.current) {
       const tool = toolPosition(j);
       const held = grip < 14;
-      const t = (paused ? 2.6 : clock.current) % CYCLE;
+      const t = (paused ? HOLD_AT : clock.current) % CYCLE;
       const onPlace = t > 0.76 * CYCLE;
       const rest: [number, number] = onPlace ? PLACE : PICK;
       payload.current.position.set(
@@ -124,18 +126,18 @@ function Rig({ paused }: { paused: boolean }) {
   // working end instead of the empty table in front of it.
   return (
     <group position={[0, -0.22, 0]}>
-      <hemisphereLight args={["#7C91AB", "#070D15", 0.5]} />
+      <hemisphereLight args={["#8F8F8F", "#000000", 0.46]} />
       <directionalLight position={[0.9, 1.3, 0.7]} intensity={2.4} castShadow />
-      <directionalLight position={[-0.9, 0.4, -0.7]} intensity={0.55} color="#5A8FCC" />
+      <directionalLight position={[-0.9, 0.4, -0.7]} intensity={0.5} color="#FF9A3D" />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[0.5, 64]} />
-        <meshStandardMaterial color="#232A28" roughness={0.85} />
+        <meshStandardMaterial color="#0F0F0F" roughness={0.86} />
       </mesh>
 
       <mesh ref={payload} castShadow>
         <cylinderGeometry args={[0.028, 0.028, 0.075, 24]} />
-        <meshStandardMaterial color="#C6CBC2" roughness={0.42} metalness={0.22} />
+        <meshStandardMaterial color="#D6D8D2" roughness={0.4} metalness={0.2} />
       </mesh>
 
       <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />

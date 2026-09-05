@@ -30,7 +30,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/hub"
-              className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+              className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
             >
               Find a task
             </Link>
@@ -53,7 +53,7 @@ export default function Home() {
             <span>AXON-6</span>
             <span>6 revolute axes</span>
             <span>parallel jaw, 42 mm</span>
-            <Link href="/spec" className="text-brass transition-colors hover:text-brass-hi">
+            <Link href="/spec" className="text-signal transition-colors hover:text-signal-hi">
               generated from cad/arm.py →
             </Link>
           </div>
@@ -128,7 +128,7 @@ export default function Home() {
             },
           ].map((s) => (
             <li key={s.n} className="flex flex-col gap-2 bg-ink-1 p-5">
-              <span className="font-mono text-[12px] tabular-nums text-brass">{s.n}</span>
+              <span className="font-mono text-[12px] tabular-nums text-signal">{s.n}</span>
               <h3 className="font-display text-lg font-600">{s.h}</h3>
               <p className="text-[14px] leading-relaxed text-scribe-2">{s.p}</p>
             </li>
@@ -148,7 +148,7 @@ export default function Home() {
         </p>
         <Link
           href="/hub"
-          className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-brass-hi hover:bg-brass-hi"
+          className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
         >
           Open the hub
         </Link>
