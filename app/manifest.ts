@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Axon — the data foundry for physical AI",
-    short_name: "Axon",
+    name: "Thenar — the data foundry for physical AI",
+    short_name: "Thenar",
     description:
       "Teleoperate a robot arm in the browser. Every accepted trajectory is measured, recorded, and paid in the same Monad transaction.",
     start_url: "/hub",

@@ -9,7 +9,7 @@ import { explainTxError } from "./submit";
 export type TxPhase = "idle" | "signing" | "pending" | "confirmed" | "error";
 
 /** One shared write path so every transaction reports the same way. */
-export function useAxonWrite() {
+export function useThenarWrite() {
   const client = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [phase, setPhase] = useState<TxPhase>("idle");

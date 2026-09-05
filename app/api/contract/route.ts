@@ -4,7 +4,7 @@ import { AXON_ADDRESS, IS_DEPLOYED, monadTestnet } from "@/lib/chain";
 
 export const runtime = "nodejs";
 
-/** Everything needed to talk to Axon without reading the source. */
+/** Everything needed to talk to Thenar without reading the source. */
 export async function GET() {
   return NextResponse.json({
     name: "AxonProtocol",

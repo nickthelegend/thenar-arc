@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBlockNumber } from "wagmi";
 import { cn } from "@/lib/cn";
-import { AxonWordmark } from "@/components/brand";
+import { ThenarWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
 import { addressUrl, IS_DEPLOYED } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
@@ -14,7 +14,6 @@ const ROUTES = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/foundry", label: "Foundry" },
-  { href: "/passkey", label: "Passkey" },
 ];
 
 /** Enough MON to cover gas on a submit with headroom. */
@@ -33,8 +32,8 @@ export function SiteNav() {
     <>
       <header className="sticky top-0 z-40 border-b border-rule bg-ink-1/95 backdrop-blur-[2px]">
         <div className="mx-auto flex h-14 max-w-[1400px] items-stretch gap-3 px-4 sm:gap-6 sm:px-5">
-          <Link href="/" className="flex shrink-0 items-center self-center" aria-label="Axon home">
-            <AxonWordmark />
+          <Link href="/" className="flex shrink-0 items-center self-center" aria-label="Thenar home">
+            <ThenarWordmark />
           </Link>
 
           <nav
@@ -115,7 +114,7 @@ export function SiteNav() {
 
       {s.wrongNetwork ? (
         <Banner tone="reject">
-          Your wallet is on the wrong network. Axon settles on Monad Testnet.
+          Your wallet is on the wrong network. Thenar settles on Monad Testnet.
           <button
             onClick={s.switchToMonad}
             disabled={s.switching}
@@ -142,9 +141,7 @@ export function SiteNav() {
 
       {s.connectError && !s.connected ? (
         <Banner tone="reject">
-          {s.hasWallet
-            ? "That wallet refused the connection. Unlock it and try again."
-            : "No browser wallet found. Install MetaMask, or any injected wallet, to submit runs."}
+          That wallet refused the connection. Unlock it and try again.
         </Banner>
       ) : null}
     </>

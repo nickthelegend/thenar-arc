@@ -20,13 +20,13 @@ Delegated. Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4, chosen
 
 ## Product Purpose
 
-Physical AI is bottlenecked by data, not compute. Robot manipulation data is collected today in closed labs: slow, expensive, and too narrow to generalize. Axon crowdsources it — anyone teleoperates a simulated arm in the browser and every accepted run becomes a training trajectory.
+Physical AI is bottlenecked by data, not compute. Robot manipulation data is collected today in closed labs: slow, expensive, and too narrow to generalize. Thenar crowdsources it — anyone teleoperates a simulated arm in the browser and every accepted run becomes a training trajectory.
 
 The part that is ours: the economy settles on-chain, per run, in the same transaction that records provenance. Success is an operator finishing a task and seeing MON arrive before they have let go of the mouse, and a policy licence fee fanning out to every contributor who trained it.
 
 ## Positioning
 
-Existing crowdsourced robot-data networks anchor a *receipt* on-chain — a data ID bound to a task and a wallet — and keep the money off-chain in fortnightly, non-transferable points redeemable for a possible future airdrop. Axon settles the money itself: the task is a funded escrow, the accepted trajectory pays out in the same call that records it, and the trained policy is an on-chain asset whose licence revenue routes back to contributors by quality weight in one transaction.
+Existing crowdsourced robot-data networks anchor a *receipt* on-chain — a data ID bound to a task and a wallet — and keep the money off-chain in fortnightly, non-transferable points redeemable for a possible future airdrop. Thenar settles the money itself: the task is a funded escrow, the accepted trajectory pays out in the same call that records it, and the trained policy is an on-chain asset whose licence revenue routes back to contributors by quality weight in one transaction.
 
 That is only affordable at Monad's throughput. Per-trajectory settlement plus royalty fan-out is several times the state writes of a bare anchor, and those writes are almost entirely independent — different contributors, different tasks, no shared hot state except a slot counter. It is the workload parallel execution exists for.
 
@@ -65,7 +65,7 @@ Networks: Monad Testnet, chain 10143, `https://testnet-rpc.monad.xyz`. Monad Mai
 
 ## Brand Commitments
 
-Name: **Axon** — the fiber that carries motor output away from a neuron. Lowercase in body copy, uppercase in the wordmark.
+Name: **Thenar** — the fiber that carries motor output away from a neuron. Lowercase in body copy, uppercase in the wordmark.
 
 Voice: industrial and exact. Machine-shop plain speech. Numbers instead of adjectives — "1,200 slots, 0.4 MON each, 81% pass rate," never "incredible rewards." No exclamation marks, no "seamless," "revolutionary," "unleash," "supercharge," or "the future of." Labels are imperative and literal: Run, Submit, Sign, Licence. The interface talks like a work order.
 
@@ -87,11 +87,11 @@ Binding anti-references. This product must not look like any of these, which are
 
 Real and citable:
 
-- The incumbent network's public figures: 153,157 contributors, 3,954,581 trajectories, 3,569,236 on-chain records, 1,200-slot tasks, 81.54% pass rate on a representative task, 2:05 average completion — used only as market evidence, never as Axon's own numbers
+- The incumbent network's public figures: 153,157 contributors, 3,954,581 trajectories, 3,569,236 on-chain records, 1,200-slot tasks, 81.54% pass rate on a representative task, 2:05 average completion — used only as market evidence, never as Thenar's own numbers
 - Monad network parameters above
 - The event's judging rubric, which the build is scoped against
 
-Absent, and never to be fabricated: Axon has no users, no revenue, no partners, no benchmarks, no trained policy, and no licence sales. Every number rendered in the app must come from live chain state or be visibly labeled as seeded demonstration data. Task names, scenario art, and score distributions shown before real traffic exist are synthetic and must be labeled as such.
+Absent, and never to be fabricated: Thenar has no users, no revenue, no partners, no benchmarks, no trained policy, and no licence sales. Every number rendered in the app must come from live chain state or be visibly labeled as seeded demonstration data. Task names, scenario art, and score distributions shown before real traffic exist are synthetic and must be labeled as such.
 
 ## Product Principles
 

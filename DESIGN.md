@@ -1,5 +1,5 @@
 ---
-name: Axon
+name: Thenar
 description: The data foundry for physical AI — teleoperate, measure, get paid on Monad.
 colors:
   ink-0: "#000000"
@@ -152,7 +152,7 @@ components:
     typography: "{typography.measure}"
 ---
 
-# Axon design system
+# Thenar design system
 
 ## Overview
 
@@ -161,7 +161,7 @@ that carries every figure of value and every live state. The neutral steps are
 the same greys the category's incumbent uses, so the surface reads native to
 it; the accent is ours.
 
-The world is not decoration. Axon's product semantics *are* metrology — a
+The world is not decoration. Thenar's product semantics *are* metrology — a
 trajectory is a physical motion measured against a tolerance, a score is a
 measurement and not a rating, slots are a production run count, pass rate is
 process capability. Every recurring device in this interface is a real

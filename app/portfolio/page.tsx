@@ -29,11 +29,6 @@ export default function PortfolioPage() {
         <Button variant="primary" className="mt-6" onClick={s.connect} disabled={s.connecting}>
           {s.connecting ? "Connecting…" : "Connect a wallet"}
         </Button>
-        {!s.hasWallet ? (
-          <p className="mt-3 text-[13px] text-scribe-3">
-            No injected wallet detected. Install MetaMask or any EVM wallet first.
-          </p>
-        ) : null}
       </div>
     );
   }

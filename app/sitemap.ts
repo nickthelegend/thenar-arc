@@ -7,7 +7,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${BASE}/`, lastModified: now, priority: 1 },
     { url: `${BASE}/hub`, lastModified: now, priority: 0.9 },
-    { url: `${BASE}/passkey`, lastModified: now, priority: 0.8 },
     { url: `${BASE}/foundry`, lastModified: now, priority: 0.8 },
     { url: `${BASE}/leaderboard`, lastModified: now, priority: 0.7 },
     { url: `${BASE}/spec`, lastModified: now, priority: 0.7 },

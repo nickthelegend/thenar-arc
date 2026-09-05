@@ -3,7 +3,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import { wagmiConfig } from "@/lib/wagmi";
+import { monadTestnet } from "@/lib/chain";
+
+// The modal is the one surface we do not draw ourselves, so it is pulled onto
+// the product's palette rather than left on RainbowKit's default purple.
+const theme = darkTheme({
+  accentColor: "#FF6A00",
+  accentColorForeground: "#000000",
+  borderRadius: "none",
+  fontStack: "system",
+  overlayBlur: "small",
+});
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,7 +36,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={theme} initialChain={monadTestnet} modalSize="compact">
+          {children}
+        </RainbowKitProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }

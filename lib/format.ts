@@ -1,4 +1,4 @@
-/** Measurement formatting. Every figure in Axon is rendered through here. */
+/** Measurement formatting. Every figure in Thenar is rendered through here. */
 
 export const fmtInt = (n: number) => n.toLocaleString("en-US");
 

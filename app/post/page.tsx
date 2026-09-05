@@ -5,7 +5,7 @@ import { useState } from "react";
 import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
-import { useAxonWrite } from "@/lib/write";
+import { useThenarWrite } from "@/lib/write";
 import { SCENARIOS, txUrl } from "@/lib/chain";
 import { parSecondsFor } from "@/lib/par";
 import { cn } from "@/lib/cn";
@@ -14,7 +14,7 @@ import { fmtMon, fmtSeconds, shortHash } from "@/lib/format";
 /** Anyone can open work here: the escrow is what makes the bounty real. */
 export default function PostTaskPage() {
   const s = useSession();
-  const tx = useAxonWrite();
+  const tx = useThenarWrite();
   const router = useRouter();
 
   const [name, setName] = useState("");

@@ -1,5 +1,5 @@
 /**
- * Inverse kinematics for AXON-6.
+ * Inverse kinematics for THENAR-6.
  *
  * The link lengths below are read off cad/arm.py — they are the same numbers
  * the GLB was generated from, converted to metres. Changing a dimension there

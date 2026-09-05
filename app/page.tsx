@@ -21,7 +21,7 @@ export default function Home() {
 
           <p className="max-w-[58ch] text-[16px] leading-relaxed text-scribe-2">
             Robot manipulation data is collected in closed labs, slowly and
-            narrowly. Axon collects it in the browser instead: you drive a
+            narrowly. Thenar collects it in the browser instead: you drive a
             simulated arm through a task, the run is measured against the goal
             datum, and if it passes, Monad records the trajectory and pays you
             in the same transaction.
@@ -35,10 +35,10 @@ export default function Home() {
               Find a task
             </Link>
             <Link
-              href="/passkey"
+              href="/foundry"
               className="border border-rule-strong px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-scribe transition-colors hover:border-scribe"
             >
-              Sign with a passkey
+              See a cap table
             </Link>
           </div>
 
@@ -50,7 +50,7 @@ export default function Home() {
         <div className="relative h-[340px] border border-rule bg-ink-0 sm:h-[440px] lg:h-[520px]">
           <HeroArm />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-rule bg-ink-1/90 px-4 py-2 font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3">
-            <span>AXON-6</span>
+            <span>THENAR-6</span>
             <span>6 revolute axes</span>
             <span>parallel jaw, 42 mm</span>
             <Link href="/spec" className="text-signal transition-colors hover:text-signal-hi">
@@ -79,7 +79,7 @@ export default function Home() {
             them has written more than 3.5 million of those records.
           </p>
           <p>
-            Axon writes the payment instead. A task is an escrow. An accepted
+            Thenar writes the payment instead. A task is an escrow. An accepted
             trajectory pays out in the call that records it. A policy is minted
             with its contributor list attached, so a licence fee splits to
             everyone who trained it without anyone claiming anything. All of it
@@ -157,7 +157,7 @@ export default function Home() {
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-rule py-6 font-mono text-[12px] text-scribe-3">
         <span className="text-scribe-2">AXON</span>
         <span>Monad Testnet · chain 10143</span>
-        <Link href="/spec" className="hover:text-scribe">AXON-6 spec sheet</Link>
+        <Link href="/spec" className="hover:text-scribe">THENAR-6 spec sheet</Link>
         <a href="/api/contract" className="hover:text-scribe">Contract ABI</a>
         <a href="/api/health" className="hover:text-scribe">Health</a>
         <span className="ml-auto">Built at Monad Blitz Hyderabad</span>

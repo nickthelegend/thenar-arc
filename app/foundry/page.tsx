@@ -6,7 +6,7 @@ import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useCapTable, usePolicies, useTasks, type ChainPolicy } from "@/lib/hooks";
-import { useAxonWrite } from "@/lib/write";
+import { useThenarWrite } from "@/lib/write";
 import { txUrl, addressUrl } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
@@ -73,7 +73,7 @@ export default function FoundryPage() {
 function MintRow({
   taskId, name, onDone, connected, onConnect,
 }: { taskId: number; name: string; onDone: () => void; connected: boolean; onConnect: () => void }) {
-  const tx = useAxonWrite();
+  const tx = useThenarWrite();
   const [fee, setFee] = useState("0.05");
 
   const bad = !/^\d*\.?\d*$/.test(fee) || Number(fee) <= 0;
@@ -114,7 +114,7 @@ function MintRow({
 
 function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; taskName?: string; onDone: () => void }) {
   const s = useSession();
-  const tx = useAxonWrite();
+  const tx = useThenarWrite();
   const { data: cap } = useCapTable(p.id);
 
   const top = cap?.length ? Math.max(...cap.map((c) => c.weightBps)) : 1;

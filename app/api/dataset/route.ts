@@ -67,8 +67,8 @@ export async function GET(req: Request) {
 
   const body = JSON.stringify(
     {
-      dataset: `axon-task-${taskId}`,
-      embodiment: "AXON-6",
+      dataset: `thenar-task-${taskId}`,
+      embodiment: "THENAR-6",
       degrees_of_freedom: 6,
       gripper: "parallel-jaw, 42 mm",
       control_frequency_hz: 20,
@@ -84,7 +84,7 @@ export async function GET(req: Request) {
   return new NextResponse(body, {
     headers: {
       "content-type": "application/json",
-      "content-disposition": `attachment; filename="axon-task-${taskId}.json"`,
+      "content-disposition": `attachment; filename="thenar-task-${taskId}.json"`,
     },
   });
 }

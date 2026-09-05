@@ -99,7 +99,7 @@ export async function verifyAndSign(args: {
   const account = privateKeyToAccount(pk as `0x${string}`);
   const signature = await account.signTypedData({
     domain: {
-      name: "Axon",
+      name: "Thenar",
       version: "1",
       chainId: args.chainId,
       verifyingContract: args.contractAddress,

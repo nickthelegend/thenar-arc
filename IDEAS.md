@@ -50,7 +50,7 @@ tier. Build status is tracked in the final report, not here.
 | 34 | Live tx status strip (pending → mined) with elapsed ms | Shows off 1s blocks |
 | 35 | Task detail page with the real submission history | Depth |
 | 36 | Cursor becomes a crosshair over the viewport | Small, memorable |
-| 37 | AXON-6 spec sheet page from the real CAD constants | Nobody else will have generated their robot |
+| 37 | THENAR-6 spec sheet page from the real CAD constants | Nobody else will have generated their robot |
 | 38 | Dataset export for a filled task (LIBERO-shaped JSON) | Makes "data foundry" concrete |
 | 39 | Per-run certificate page, printable | Judges screenshot these |
 | 40 | Aria-live tx announcements + focus management | Real accessibility, not a checkbox |

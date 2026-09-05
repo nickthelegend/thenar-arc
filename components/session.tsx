@@ -4,19 +4,22 @@ import { useCallback, useMemo } from "react";
 import {
   useAccount, useBalance, useConnect, useDisconnect, useSwitchChain,
 } from "wagmi";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { monadTestnet } from "@/lib/chain";
 
 /**
  * The operator's wallet, as the rest of the app sees it.
  *
- * Everything here is real: the address comes from an injected wallet, the
- * balance from the Monad RPC. There is no local shadow of either — if the
- * chain says the balance is zero, the UI says zero.
+ * Everything here is real: the address comes from the wallet the operator
+ * picks in the RainbowKit modal, the balance from the Monad RPC. There is no
+ * local shadow of either — if the chain says the balance is zero, the UI says
+ * zero.
  */
 export function useSession() {
   const { address, isConnected, chainId, status } = useAccount();
-  const { connectors, connect, isPending: connecting, error: connectError } = useConnect();
+  const { isPending: connecting, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
+  const { openConnectModal, connectModalOpen } = useConnectModal();
   const { switchChain, isPending: switching } = useSwitchChain();
 
   const { data: bal, refetch: refetchBalance } = useBalance({
@@ -24,11 +27,10 @@ export function useSession() {
     query: { enabled: Boolean(address), refetchInterval: 8_000 },
   });
 
-  const injected = connectors.find((c) => c.id === "injected") ?? connectors[0];
-
+  // The wallet choice belongs to the modal, so this only has to open it.
   const doConnect = useCallback(() => {
-    if (injected) connect({ connector: injected });
-  }, [connect, injected]);
+    openConnectModal?.();
+  }, [openConnectModal]);
 
   const wrongNetwork = isConnected && chainId !== monadTestnet.id;
 
@@ -39,8 +41,7 @@ export function useSession() {
     balance,
     balanceWei: bal?.value ?? 0n,
     connected: isConnected,
-    connecting: connecting || status === "connecting" || status === "reconnecting",
-    hasWallet: Boolean(injected),
+    connecting: connecting || connectModalOpen || status === "connecting" || status === "reconnecting",
     connectError,
     wrongNetwork,
     switching,

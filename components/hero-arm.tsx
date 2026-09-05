@@ -66,7 +66,7 @@ function poseAt(time: number): { target: [number, number, number]; grip: number 
 }
 
 function Rig({ paused }: { paused: boolean }) {
-  const { scene } = useGLTF("/models/axon-6.glb");
+  const { scene } = useGLTF("/models/thenar-6.glb");
   const model = useMemo(() => {
     const c = scene.clone(true);
     c.traverse((o) => {
@@ -156,7 +156,7 @@ export function HeroArm() {
       dpr={[1, 2]}
       camera={{ fov: 32, position: [0.72, 0.42, 0.68], near: 0.02, far: 12 }}
       style={{ background: "transparent" }}
-      aria-label="An AXON-6 arm running a pick-and-place cycle"
+      aria-label="An THENAR-6 arm running a pick-and-place cycle"
     >
       <Rig paused={paused} />
     </Canvas>

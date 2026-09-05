@@ -59,7 +59,7 @@ type ViewportProps = {
   onSample: (s: Sample) => void;
 };
 
-useGLTF.preload("/models/axon-6.glb");
+useGLTF.preload("/models/thenar-6.glb");
 
 function Arm({
   target,
@@ -70,7 +70,7 @@ function Arm({
   grip: React.RefObject<number>;
   onJoints: (j: ReturnType<typeof solve>) => void;
 }) {
-  const { scene } = useGLTF("/models/axon-6.glb");
+  const { scene } = useGLTF("/models/thenar-6.glb");
 
   // One instance per mount; the GLB cache hands back a shared graph otherwise.
   const model = useMemo(() => {

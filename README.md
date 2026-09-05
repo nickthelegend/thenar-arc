@@ -1,4 +1,4 @@
-# Axon
+# Thenar
 
 **The data foundry for physical AI.** Teleoperate a robot arm in the browser,
 have the run measured against the goal datum, and get paid on Monad in the same
@@ -17,7 +17,7 @@ chain (a data ID bound to a task and a wallet) and keep the economics off chain:
 points, non-transferable, settled by hand every fortnight, redeemable for a
 possible future airdrop.
 
-Axon writes the payment instead. A task is a funded escrow. An accepted
+Thenar writes the payment instead. A task is a funded escrow. An accepted
 trajectory pays out in the call that records it. A policy is minted with its
 contributor cap table attached, so a licence fee splits to everyone who trained
 it without anyone claiming anything. That is several times the state writes of a
@@ -104,7 +104,7 @@ still fail the next transaction until the balance actually appears.
 
 | Surface | Route | What it does |
 | --- | --- | --- |
-| Landing | `/` | The thesis, with a live AXON-6 running a pick-and-place cycle |
+| Landing | `/` | The thesis, with a live THENAR-6 running a pick-and-place cycle |
 | Hub | `/hub` | Task board — scenario, skill, difficulty, lifecycle, slots, reward |
 | Station | `/station/[taskId]` | The teleoperation console: 3D viewport, recorder, live measurement |
 | Portfolio | `/portfolio` | Run history, measurements, earnings, held runs |
@@ -125,7 +125,7 @@ unauditable payout.
 | Task detail | `/task/[id]` | Chain state plus every recorded submission and its score distribution |
 | Verify a run | `/run/[hash]` | Public audit: re-hashes the stored samples and replays the tool path |
 | Post a task | `/post` | Open a bounty and escrow it |
-| Spec sheet | `/spec` | AXON-6, generated from the CAD constants |
+| Spec sheet | `/spec` | THENAR-6, generated from the CAD constants |
 | Passkey | `/passkey` | Generates a real secp256r1 key and has Monad verify it |
 
 **Nothing on these pages is a fixture.** Tasks, slots, escrow, scores, payouts,
@@ -152,7 +152,7 @@ closure before export and fails the build if any part is open.
 21 parts, 8080 triangles, 0 not closed
 ```
 
-It writes `public/models/axon-6.glb` as a **named node hierarchy** — `J1_yaw`,
+It writes `public/models/thenar-6.glb` as a **named node hierarchy** — `J1_yaw`,
 `J2_pitch`, `J3_pitch`, `J5_pitch`, `jaw_left`, `jaw_right` — which is what lets
 the viewport drive the arm joint by joint from the IK solver rather than playing
 a baked animation. It also writes one STL per part to `cad/exports/`.
@@ -170,7 +170,7 @@ it serves in [PRODUCT.md](PRODUCT.md).
 
 The world is **the inspection bench**: layout dye as the ground, a scribed line
 as the ink, brass for anything the operator is paid, and a two-value verdict for
-anything measured. It is not decoration — Axon's semantics are metrology, so
+anything measured. It is not decoration — Thenar's semantics are metrology, so
 every recurring device (tolerance band, gauge-block slot tally, datum zone,
 leader-line callouts) is a real instrument-shop device doing its actual job.
 
@@ -214,7 +214,7 @@ same signature with one bit flipped, for about 34k gas. Ethereum mainnet has no
 such precompile; verifying secp256r1 there costs hundreds of thousands of gas
 in Solidity.
 
-This exists because Axon's operators are gig workers, and the seed phrase is
+This exists because Thenar's operators are gig workers, and the seed phrase is
 where that funnel dies.
 
 **The economics.** `createTask` escrows MON against a slot count.

@@ -1,4 +1,4 @@
-# Axon — test plan
+# Thenar — test plan
 
 **Result of the first full run: 56 PASS, 1 untestable.** The plan has since
 grown to cover the passkey work and the station additions; those items carry
@@ -41,7 +41,7 @@ clean console and no failed network requests. Anything less is a fail.
 
 | # | Item | Correct means |
 | --- | --- | --- |
-| P1 | `/` landing | 200. Headline renders in Hanken Grotesk. AXON-6 renders in the hero canvas at full panel size (not 300×150) and runs its pick-and-place cycle. Live figures read from chain: tasks, trajectories recorded, policies minted, open slots, escrowed MON. Contract line links to the explorer. Console clean. |
+| P1 | `/` landing | 200. Headline renders in Hanken Grotesk. THENAR-6 renders in the hero canvas at full panel size (not 300×150) and runs its pick-and-place cycle. Live figures read from chain: tasks, trajectories recorded, policies minted, open slots, escrowed MON. Contract line links to the explorer. Console clean. |
 | P2 | `/hub` | 200. Task table lists every task the contract reports, with id, instruction, difficulty squares, stage track, slot tally, par, escrow, per-run reward. Header strip totals match the sum of the listed rows. Block number in nav ticks. Console clean. |
 | P3 | `/hub` filters | Scenario chips filter the list; sort chips reorder it; search narrows by instruction text and by task id. "Accepting runs" hides filled tasks; "Every task" shows them. Counts in the header strip update to match the filtered set. |
 | P4 | `/station/[id]` | 200. Reads that task from chain (name, scenario, difficulty, per-run reward, slots left, escrow). 3D viewport fills its cell. Controls legend present. "Begin run" visible. Console clean. |

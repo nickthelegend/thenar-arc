@@ -4,7 +4,7 @@ import spec from "@/lib/arm-spec.json";
 import { DimRule } from "@/components/primitives";
 
 export const metadata: Metadata = {
-  title: "AXON-6 — spec sheet",
+  title: "THENAR-6 — spec sheet",
   description:
     "The six-axis arm the station drives, generated from a parametric Python kernel. Every dimension here is the constant the geometry was built from.",
 };
@@ -19,7 +19,7 @@ export default function SpecPage() {
   return (
     <div className="mx-auto max-w-[900px] px-5 py-10">
       <h1 className="font-display text-[clamp(2.4rem,6vw,3.6rem)] font-700 leading-[0.96] tracking-[-0.02em]">
-        AXON-6
+        THENAR-6
       </h1>
       <p className="mt-4 max-w-[62ch] text-[16px] leading-relaxed text-scribe-2">
         A six-axis arm with a parallel-jaw gripper. There is no CAD file — the
