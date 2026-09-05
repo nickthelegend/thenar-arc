@@ -47,7 +47,18 @@ export function explainTxError(e: unknown): string {
       if (name && map[name]) return map[name];
       if (name) return `The contract rejected this: ${name}.`;
     }
-    if (/insufficient funds/i.test(e.shortMessage ?? e.message)) {
+    const text = `${e.shortMessage ?? ""} ${e.message ?? ""} ${e.details ?? ""}`;
+    // Monad reserves against the gas limit rather than gas used, and the floor
+    // it enforces sits well above value + gas. The wallet's own wording for
+    // this ("Signer had insufficient balance") tells an operator nothing.
+    if (/signer had insufficient balance/i.test(text)) {
+      return (
+        "Monad holds back more than the transaction costs — it reserves against " +
+        "your whole gas limit, not what the transaction actually uses. Top up " +
+        "from faucet.monad.xyz and try again."
+      );
+    }
+    if (/insufficient funds/i.test(text)) {
       return "Not enough MON to cover gas. Top up from the faucet and try again.";
     }
     if (/user rejected/i.test(e.shortMessage ?? e.message)) {

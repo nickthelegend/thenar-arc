@@ -131,6 +131,11 @@ export default function StationPage() {
 
   const capped = (myRuns ?? 0) >= 5;
   const accepted = verdict?.success ?? false;
+  // Measured on this chain: a submit reserves roughly 0.03 MON against the gas
+  // limit regardless of what it spends, and Monad rejects the transaction
+  // outright below that. Warn before the wallet does.
+  const RESERVE_FLOOR = 0.05;
+  const thinOnGas = s.connected && !s.wrongNetwork && s.balance < RESERVE_FLOOR;
 
   return (
     <div className="flex min-h-dvh flex-col bg-ink-1 lg:h-dvh lg:overflow-hidden">
@@ -237,6 +242,7 @@ export default function StationPage() {
               verdict={verdict}
               accepted={accepted}
               session={s}
+              thinOnGas={thinOnGas}
               tx={tx}
               onSubmit={() =>
                 tx.submit({
@@ -295,16 +301,18 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, session, tx, onSubmit, onAgain, onLeave,
+  verdict, accepted, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
   verdict: Verdict;
   accepted: boolean;
   session: ReturnType<typeof useSession>;
   tx: ReturnType<typeof useSubmitRun>;
+  thinOnGas: boolean;
   onSubmit: () => void;
   onAgain: () => void;
   onLeave: () => void;
 }) {
+  const RESERVE_FLOOR = 0.05;
   const busy = tx.phase === "verifying" || tx.phase === "signing" || tx.phase === "pending";
   const done = tx.phase === "confirmed";
 
@@ -312,8 +320,8 @@ function MeasurementSnap({
     tx.phase === "verifying" ? "Verifying the run…"
     : tx.phase === "signing" ? "Confirm in your wallet…"
     : tx.phase === "pending" ? "Waiting for the block…"
-    : session.wrongNetwork ? "Switch to Monad Testnet"
-    : !session.connected ? "Connect a wallet to get paid"
+    : s.wrongNetwork ? "Switch to Monad Testnet"
+    : !s.connected ? "Connect a wallet to get paid"
     : "Submit and get paid";
 
   return (
@@ -383,6 +391,18 @@ function MeasurementSnap({
             </div>
           ) : null}
 
+          {thinOnGas && !done ? (
+            <p className="border border-signal bg-signal-dim px-3 py-2 text-[13px] leading-relaxed text-signal">
+              Your balance is {fmtMon(s.balance, 4)} MON. Monad reserves against
+              the whole gas limit, so a submit needs roughly {RESERVE_FLOOR} MON
+              on hand even though it spends a fraction of that.{" "}
+              <a href="https://faucet.monad.xyz" target="_blank" rel="noreferrer" className="underline">
+                Top up
+              </a>
+              .
+            </p>
+          ) : null}
+
           {tx.phase === "error" && tx.error ? (
             <p role="alert" className="border border-reject bg-reject-dim px-3 py-2 text-[13px] text-reject">
               {tx.error}
@@ -392,10 +412,10 @@ function MeasurementSnap({
 
         <div className="flex flex-wrap items-stretch gap-px border-t border-rule bg-rule">
           {accepted && !done ? (
-            session.wrongNetwork ? (
-              <Button variant="primary" className="flex-1" onClick={session.switchToMonad}>{label}</Button>
-            ) : !session.connected ? (
-              <Button variant="primary" className="flex-1" onClick={session.connect}>{label}</Button>
+            s.wrongNetwork ? (
+              <Button variant="primary" className="flex-1" onClick={s.switchToMonad}>{label}</Button>
+            ) : !s.connected ? (
+              <Button variant="primary" className="flex-1" onClick={s.connect}>{label}</Button>
             ) : (
               <Button variant="primary" className="flex-1" disabled={busy} onClick={onSubmit}>{label}</Button>
             )

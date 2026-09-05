@@ -31,11 +31,13 @@ exists for, which is why it is on Monad.
 
 | | |
 | --- | --- |
+| **Live app** | **https://web-production-2d1d0.up.railway.app** |
 | Contract | [`{axon}`](https://testnet.monadscan.com/address/{axon}) — **verified**, exact match |
 | Network | Monad Testnet, chain `10143` |
 | Verifier key | `{verifier}` |
-| Contract metadata | [`/api/contract`](/api/contract) — address, chain and full ABI |
-| Health | [`/api/health`](/api/health) |
+| Contract metadata | [`https://web-production-2d1d0.up.railway.app/api/contract`](https://web-production-2d1d0.up.railway.app/api/contract) — address, chain and full ABI |
+| Health | [`https://web-production-2d1d0.up.railway.app/api/health`](https://web-production-2d1d0.up.railway.app/api/health) |
+| Hosting | Railway, with a persistent volume for the trajectory store |
 
 ## Run it
 
@@ -66,6 +68,7 @@ Every one of these runs green right now:
 cd contracts && forge test              # 19 tests, incl. a 256-run fuzz
 node --experimental-strip-types scripts/check-loop.ts   # IK + scoring
 node scripts/e2e.mjs http://localhost:3000              # live on-chain proof
+node scripts/lifecycle.mjs http://localhost:3000        # create -> fill -> mint -> licence
 npx impeccable detect app components lib                # design detector
 pnpm exec eslint app components lib && pnpm exec tsc --noEmit
 ```
@@ -74,7 +77,22 @@ pnpm exec eslint app components lib && pnpm exec tsc --noEmit
 score and sign it, submits it on chain, and then asserts that the escrow fell
 by exactly the payout, that the operator's balance rose by exactly the payout
 net of gas, that replaying the same trajectory is refused, and that a forged
-score is refused.
+score is refused. It passes against the live deployment, not just localhost:
+
+```
+node scripts/e2e.mjs https://web-production-2d1d0.up.railway.app
+```
+
+`scripts/lifecycle.mjs` covers the other half — creating a funded task, filling
+every slot, minting its policy, and buying a licence, asserting the cap table
+sums to 100% and that the contributor is paid exactly its share.
+
+Two Monad behaviours are worth knowing before you run these. Gas is reserved
+against the **limit**, not usage, and the floor is higher than `value + gas`:
+the same licence call reverted at 0.3 MON and settled at 2. And consensus and
+execution are pipelined, so a transaction receipt means the transaction was
+*ordered*, not that its state change has landed — a freshly funded account can
+still fail the next transaction until the balance actually appears.
 
 ---
 
