@@ -29,7 +29,7 @@ replaced with the real hash read from the chain, and `scripts/audit-links.mjs`
 now holds the store and the chain to each other so it cannot recur.
 
 Target: the live deployment at `https://web-production-2d1d0.up.railway.app`
-against `AxonProtocol` at `0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`
+against `AxonProtocol` at `0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`
 (Monad Testnet, chain 10143).
 
 A pass means the observed result matches the **Correct** column exactly, with a

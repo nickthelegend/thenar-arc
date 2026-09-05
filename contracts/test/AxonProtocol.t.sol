@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {AxonProtocol} from "../src/AxonProtocol.sol";
+import {PasskeyRegistry} from "../src/PasskeyRegistry.sol";
 
 contract AxonProtocolTest is Test {
     AxonProtocol axon;
@@ -18,9 +19,12 @@ contract AxonProtocolTest is Test {
 
     uint128 constant REWARD = 0.4 ether;
 
+    PasskeyRegistry registry;
+
     function setUp() public {
         verifier = vm.addr(verifierKey);
-        axon = new AxonProtocol(verifier, treasury);
+        registry = new PasskeyRegistry();
+        axon = new AxonProtocol(verifier, treasury, address(registry));
         vm.deal(funder, 100 ether);
         vm.deal(alice, 1 ether);
         vm.deal(bob, 1 ether);
@@ -253,6 +257,74 @@ contract AxonProtocolTest is Test {
         _submit(id, alice, keccak256("e1"), 10_000);
         AxonProtocol.Task memory t = axon.getTask(id);
         assertEq(address(axon).balance, t.escrow);
+    }
+
+    // ------------------------------------------------------- sharding
+
+    function test_shardedCounterStillFillsEveryTask() public {
+        // 8 slots -> 2 shards of 4. Fill it from enough distinct addresses that
+        // both shards are exercised, and check the total is exact.
+        uint32 slots = 8;
+        vm.prank(funder);
+        uint256 id = axon.createTask{value: REWARD * slots}("shard test", slots, REWARD, 1, 1);
+
+        uint256 filled;
+        for (uint160 i = 1; filled < slots && i < 200; ++i) {
+            address who = address(i);
+            if (!axon.shardHasRoom(id, who)) continue;
+            vm.deal(who, 1 ether);
+            _submit(id, who, keccak256(abi.encode("s", i)), 8000);
+            filled += 1;
+        }
+        assertEq(axon.slotsFilledOf(id), slots, "every slot filled across shards");
+        assertEq(axon.getTask(id).slotsFilled, slots, "getTask reports the sharded total");
+    }
+
+    function test_taskFillsExactlyEvenWhenAShardSpills() public {
+        // 16 slots -> 2 shards of 8. Submitting from many addresses forces some
+        // callers past their own shard and onto the fallback, and the task must
+        // still fill to exactly its total and no further.
+        uint32 slots = 16;
+        vm.prank(funder);
+        uint256 id = axon.createTask{value: REWARD * slots}("spill", slots, REWARD, 1, 1);
+
+        uint256 accepted;
+        for (uint160 i = 1; i < 300 && accepted < slots; ++i) {
+            address who = address(uint160(0x1000) + i);
+            vm.deal(who, 1 ether);
+            _submit(id, who, keccak256(abi.encode("sp", i)), 8000);
+            accepted += 1;
+        }
+        assertEq(axon.slotsFilledOf(id), slots, "filled to exactly the total");
+
+        address extra = address(0xDEAD);
+        vm.deal(extra, 1 ether);
+        bytes32 h = keccak256("one-too-many");
+        bytes memory sig = _sign(id, extra, h, "ipfs://cid", 8000);
+        vm.prank(extra);
+        vm.expectRevert(AxonProtocol.NoSlots.selector);
+        axon.submitTrajectory(id, h, "ipfs://cid", 8000, sig);
+    }
+
+    function test_smallTasksUseASingleShard() public {
+        vm.prank(funder);
+        uint256 id = axon.createTask{value: REWARD * 3}("tiny", 3, REWARD, 1, 1);
+        // Under SLOTS_PER_SHARD there is one shard, so any address has room.
+        assertTrue(axon.shardHasRoom(id, alice));
+        assertTrue(axon.shardHasRoom(id, bob));
+        _submit(id, alice, keccak256("t1"), 8000);
+        _submit(id, bob, keccak256("t2"), 8000);
+        _submit(id, carol, keccak256("t3"), 8000);
+        assertEq(axon.slotsFilledOf(id), 3);
+    }
+
+    function test_passkeySubmitRequiresARegisteredKey() public {
+        uint256 id = _task(4);
+        bytes32 h = keccak256("pk1");
+        bytes memory sig = _sign(id, alice, h, "ipfs://cid", 8000);
+        vm.prank(alice);
+        vm.expectRevert(AxonProtocol.NoPasskey.selector);
+        axon.submitTrajectoryWithPasskey(id, h, "ipfs://cid", 8000, sig, bytes32(0), bytes32(0));
     }
 
     function testFuzz_payoutIsProportionalToScore(uint16 score) public {

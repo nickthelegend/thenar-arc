@@ -32,9 +32,10 @@ exists for, which is why it is on Monad.
 | | |
 | --- | --- |
 | **Live app** | **https://web-production-2d1d0.up.railway.app** |
-| Contract | [`{axon}`](https://testnet.monadscan.com/address/{axon}) — **verified**, exact match |
+| AxonProtocol | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — **verified**, exact match |
+| PasskeyRegistry | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — **verified**, exact match |
 | Network | Monad Testnet, chain `10143` |
-| Verifier key | `{verifier}` |
+| Verifier key | `0x5beE0b22906c28F747279217F5C8019c39fB086b` |
 | Contract metadata | [`https://web-production-2d1d0.up.railway.app/api/contract`](https://web-production-2d1d0.up.railway.app/api/contract) — address, chain and full ABI |
 | Health | [`https://web-production-2d1d0.up.railway.app/api/health`](https://web-production-2d1d0.up.railway.app/api/health) |
 | Hosting | Railway, with a persistent volume for the trajectory store |
@@ -189,10 +190,25 @@ cd contracts && forge script script/Deploy.s.sol:Deploy   --rpc-url https://test
 It needs `DEPLOYER_PRIVATE_KEY` and `VERIFIER_ADDRESS` in the environment, and
 it seeds eight funded task bounties as part of the same run.
 
+**Sharded slot accounting.** A single `slotsFilled` counter is one storage
+slot that every operator on a task writes to, which on an optimistically
+parallel chain forces them to re-execute serially — the exact anti-pattern
+Monad punishes. Each operator instead writes only the shard their address
+maps to, and each shard carries its own quota, so concurrent submissions from
+different operators touch no shared state. A caller whose own shard is spent
+falls back to a scan; that is the only path that can contend and it only
+happens at the margin. `slotsFilledOf` sums the shards as a view, so reads
+never contend at all.
+
+The first deployment (`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`) carried the
+single-counter version and is kept for the record.
+
 **Passkeys.** Monad ships EIP-7951's P256 precompile at `0x0100`, so a
 secp256r1 signature — the curve a passkey already uses — can be verified by the
 chain itself. `PasskeyRegistry` binds a public key to an address and spends
-signatures through it, and `/passkey` proves the whole thing live: the browser
+signatures through it, `submitTrajectoryWithPasskey` lets an operator authorise
+a run with that key rather than their wallet, and `/passkey` proves the whole
+thing live: the browser
 generates a key with WebCrypto, signs, the chain accepts it and refuses the
 same signature with one bit flipped, for about 34k gas. Ethereum mainnet has no
 such precompile; verifying secp256r1 there costs hundreds of thousands of gas

@@ -28,6 +28,19 @@ export const AXON_ABI = [
   },
   {
     "type": "function",
+    "name": "MAX_SHARDS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "PROTOCOL_FEE_BPS",
     "inputs": [],
     "outputs": [
@@ -48,6 +61,19 @@ export const AXON_ABI = [
         "name": "",
         "type": "uint8",
         "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SLOTS_PER_SHARD",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
@@ -246,7 +272,7 @@ export const AXON_ABI = [
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "t",
         "type": "tuple",
         "internalType": "struct AxonProtocol.Task",
         "components": [
@@ -466,6 +492,19 @@ export const AXON_ABI = [
   },
   {
     "type": "function",
+    "name": "passkeys",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IPasskeyRegistry"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "policyCount",
     "inputs": [],
     "outputs": [
@@ -566,6 +605,49 @@ export const AXON_ABI = [
   },
   {
     "type": "function",
+    "name": "shardHasRoom",
+    "inputs": [
+      {
+        "name": "taskId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "who",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "slotsFilledOf",
+    "inputs": [
+      {
+        "name": "taskId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "total",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "stats",
     "inputs": [
       {
@@ -621,6 +703,55 @@ export const AXON_ABI = [
         "name": "signature",
         "type": "bytes",
         "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "trajectoryId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "submitTrajectoryWithPasskey",
+    "inputs": [
+      {
+        "name": "taskId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "trajHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "cid",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "score",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "verifierSig",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "pr",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "ps",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "outputs": [
@@ -868,6 +999,25 @@ export const AXON_ABI = [
   },
   {
     "type": "event",
+    "name": "PasskeyRun",
+    "inputs": [
+      {
+        "name": "trajectoryId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "contributor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "PaymentDeferred",
     "inputs": [
       {
@@ -1095,6 +1245,11 @@ export const AXON_ABI = [
   },
   {
     "type": "error",
+    "name": "BadPasskeySignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "BadSignature",
     "inputs": []
   },
@@ -1106,6 +1261,11 @@ export const AXON_ABI = [
   {
     "type": "error",
     "name": "EscrowEmpty",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoPasskey",
     "inputs": []
   },
   {
@@ -1141,6 +1301,11 @@ export const AXON_ABI = [
   {
     "type": "error",
     "name": "ScoreTooLow",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ShardFull",
     "inputs": []
   },
   {

@@ -36,7 +36,7 @@ execution's sensitivity to hot state.**
 
 | Where | What it does |
 | --- | --- |
-| `contracts/src/AxonProtocol.sol` | Deployed at [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.monadscan.com/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F), **verified `exact_match`**. 8 funded tasks, 4 trajectories, 0.35 MON escrowed. |
+| `contracts/src/AxonProtocol.sol` | Deployed at [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4), **verified `exact_match`**. 8 funded tasks, 4 trajectories, 0.35 MON escrowed. |
 | `lib/submit.ts` | The real write path: `submitTrajectory` → `waitForTransactionReceipt`, measuring settlement latency and gas from the receipt. |
 | `lib/write.ts` | `createTask`, `mintPolicy`, `licensePolicy` writes with decoded revert names. |
 | `lib/hooks.ts` | Eight distinct read hooks — `getTasks`, `getTask`, `runsOnTask`, `trajectoriesOf`+`getTrajectory`, `stats`, `trajectoryCount`, `policyCount`+`getPolicy`, `capTable`. |
@@ -70,7 +70,7 @@ data sitting in the tree reads as faked state to anyone auditing the project.
 4. **128 KB contract size** — `AxonProtocol` is ~10 KB. Ethereum's 24 KB limit is not even close to binding here.
 5. **150M block gas limit** — a submit uses ~200 K. Using 0.13% of a block.
 6. **Linear memory pricing / 8 MB transaction memory** — untouched.
-7. **Parallel execution** — worse than unused: the contract has a *contention bug* (below). Still open; fixing it needs a redeploy, which would orphan the 24 trajectories already recorded.
+7. ~~**Parallel execution** — worse than unused: the contract has a *contention bug*.~~ **Fixed and redeployed in v2.** The slot counter is sharded per operator, so concurrent submissions write disjoint state.
 8. **Asynchronous execution semantics** — gas-on-limit and the reserve balance are not surfaced anywhere.
 
 ---
@@ -107,7 +107,7 @@ here.
 
 ## 4. Contract changes I would make
 
-### 4a. Fix the parallel-execution contention bug (highest priority)
+### 4a. ~~Fix the parallel-execution contention bug~~ — shipped
 
 `submitTrajectory` writes `t.slotsFilled += 1` on a **single storage slot
 shared by every operator on that task**. Monad executes optimistically and
@@ -134,8 +134,15 @@ function slotsFilled(uint256 taskId) public view returns (uint32 n) {
 ```
 
 The trade is a more expensive view for a dramatically more parallel write. On
-Monad that is the right side of the trade, and **it is a real, demonstrable
-Monad-specific optimisation** — you can benchmark it.
+Monad that is the right side of the trade.
+
+**Shipped.** The deployed version scales the shard count to the task size,
+gives each shard its own quota so the common path needs no cross-shard read,
+and falls back to a scan only when a caller's own shard is spent. Writing it
+surfaced a real flaw first: address-based sharding confines an operator to one
+shard, so a 4-slot shard quota could block the 5-run allowance the product
+promises. The shard floor now sits above the per-account cap, and a test
+covers it.
 
 Same treatment for `totalEarned` / `totalRuns` / `totalScore`, which are
 per-address and therefore already contention-free — those are fine.
