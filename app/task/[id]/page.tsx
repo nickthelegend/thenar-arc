@@ -43,7 +43,7 @@ export default function TaskPage() {
     );
   }
 
-  if (isLoading || !task) {
+  if ((isLoading && !isError) || (!task && !isError)) {
     return <div className="mx-auto max-w-[900px] px-5 py-16"><span className="label">Reading task #{n}…</span></div>;
   }
 

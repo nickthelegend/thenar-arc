@@ -39,7 +39,10 @@ export default function StationPage() {
   const taskId = Number(params.taskId);
   const valid = Number.isInteger(taskId) && taskId >= 0;
 
-  const { data: task, isLoading, isError } = useTask(valid ? taskId : undefined);
+  // isLoading flips true again on every retry, so an unreadable task would
+  // flicker between the error and the spinner. The error is the settled state,
+  // and the absence of a task is the only thing the spinner needs to know.
+  const { data: task, isError } = useTask(valid ? taskId : undefined);
   const { data: myRuns } = useRunsOnTask(valid ? taskId : undefined);
   const s = useSession();
   const tx = useSubmitRun();
@@ -125,7 +128,7 @@ export default function StationPage() {
     );
   }
 
-  if (isLoading || !task) {
+  if (!task) {
     return (
       <div className="flex h-dvh items-center justify-center bg-ink-1">
         <span className="label">Reading task #{taskId} from the chain…</span>

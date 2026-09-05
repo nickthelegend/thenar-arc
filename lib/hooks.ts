@@ -55,6 +55,15 @@ function shape(raw: RawTask, id: number): ChainTask {
   };
 }
 
+/**
+ * Polling that gives up on a read that cannot succeed.
+ *
+ * A task id that is out of range reverts every time, and re-asking every six
+ * seconds means the error state flickers back to a loading state forever.
+ */
+const pollUnlessBroken = (ms: number) => (query: { state: { error: unknown } }) =>
+  query.state.error ? false : ms;
+
 /** Every task, in one batched call. */
 export function useTasks() {
   return useReadContract({
@@ -64,7 +73,7 @@ export function useTasks() {
     args: [0n, 200n],
     query: {
       enabled: IS_DEPLOYED,
-      refetchInterval: 6_000,
+      refetchInterval: pollUnlessBroken(6_000),
       select: (data) => (data as RawTask[]).map(shape),
     },
   });
@@ -78,7 +87,8 @@ export function useTask(id: number | undefined) {
     args: id === undefined ? undefined : [BigInt(id)],
     query: {
       enabled: IS_DEPLOYED && id !== undefined,
-      refetchInterval: 6_000,
+      refetchInterval: pollUnlessBroken(6_000),
+      retry: 1,
       select: (data) => shape(data as RawTask, id ?? 0),
     },
   });
