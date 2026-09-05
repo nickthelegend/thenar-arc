@@ -5,7 +5,7 @@
  *   node --experimental-strip-types scripts/check-loop.ts
  */
 import { REACH_MAX, solve, toolPosition } from "../lib/kinematics.ts";
-import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "../lib/score.ts";
+import { ACCEPT_FLOOR, evaluate, JERK_CEIL, JERK_FLOOR, TOLERANCE_MM } from "../lib/score.ts";
 import type { Sample } from "../lib/types.ts";
 
 let failures = 0;
@@ -107,6 +107,11 @@ const a = run(5, 100);
 const b = run(5, 100);
 check("evaluation is deterministic", a.score === b.score && a.payoutMon === b.payoutMon);
 check("accept floor is enforced", wide.score < ACCEPT_FLOOR || !wide.success);
+check(
+  "jerk band brackets the measured range",
+  JERK_FLOOR < 25.9 && JERK_CEIL > 51.3,
+  `careful 25.9 and snatchy 51.3 both fall inside ${JERK_FLOOR}..${JERK_CEIL}`,
+);
 
 console.log(
   failures === 0

@@ -52,6 +52,10 @@ export default function StationPage() {
   const samples = useRef<Sample[]>([]);
   const settledSince = useRef<number | null>(null);
   const startedAt = useRef(0);
+  /** The payload starts at rest and ungrasped, so settling only counts once it
+   *  has actually been picked up. Without this the run measures itself before
+   *  the operator has moved. */
+  const everHeld = useRef(false);
 
   const onSample = useCallback((x: Sample) => { samples.current.push(x); }, []);
 
@@ -81,10 +85,15 @@ export default function StationPage() {
     (t: Telemetry) => {
       setTel(t);
       if (phase !== "running") return;
-      if (t.settled && !t.held) {
+
+      if (t.held) everHeld.current = true;
+
+      if (everHeld.current && t.settled && !t.held) {
         settledSince.current ??= performance.now();
         if (performance.now() - settledSince.current > 700) finish(t);
-      } else settledSince.current = null;
+      } else {
+        settledSince.current = null;
+      }
     },
     [phase, finish],
   );
@@ -98,6 +107,7 @@ export default function StationPage() {
   const start = () => {
     samples.current = [];
     settledSince.current = null;
+    everHeld.current = false;
     startedAt.current = performance.now();
     setElapsed(0);
     setVerdict(null);
@@ -188,14 +198,23 @@ export default function StationPage() {
             </div>
           ) : null}
 
+          {phase === "running" ? (
+            <button
+              onClick={() => tel && finish(tel)}
+              className="absolute right-4 top-4 border border-rule-strong bg-ink-1/90 px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-2 transition-colors hover:border-scribe hover:text-scribe"
+            >
+              End run
+            </button>
+          ) : null}
+
           {phase === "brief" ? (
             <div className="absolute inset-0 flex items-center justify-center bg-ink-0/78 px-6">
               <div className="max-w-sm text-center">
                 <h2 className="font-display text-2xl font-600">Ready to record</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-scribe-2">
-                  The timer starts on your first frame. Bring the payload to rest
-                  inside the datum circle and release — the measurement is taken
-                  automatically once it settles.
+                  The timer starts on your first frame. Pick the payload up, bring
+                  it to rest inside the datum circle, and let go — the measurement
+                  is taken automatically once it settles.
                 </p>
                 {capped ? (
                   <p className="mt-4 border border-reject bg-reject-dim px-3 py-2 text-[13px] text-reject">
@@ -316,12 +335,19 @@ function MeasurementSnap({
           <ToleranceBand deviationMm={verdict.deviationMm} toleranceMm={TOLERANCE_MM} label="Final placement" />
 
           <div className="grid grid-cols-3 gap-px bg-rule">
-            {([["Placement", verdict.parts.placement], ["Smoothness", verdict.parts.smoothness], ["Efficiency", verdict.parts.efficiency]] as const).map(([l, v]) => (
+            {(
+              [
+                ["Placement", verdict.parts.placement, `${Math.abs(verdict.deviationMm).toFixed(1)} mm`],
+                ["Smoothness", verdict.parts.smoothness, `${verdict.raw.meanJerk.toFixed(1)} m/s³`],
+                ["Efficiency", verdict.parts.efficiency, fmtSeconds(verdict.raw.seconds)],
+              ] as const
+            ).map(([l, v, raw]) => (
               <div key={l} className="flex flex-col gap-1 bg-ink-1 py-2">
                 <span className="label">{l}</span>
                 <span className="font-mono text-[15px] tabular-nums text-scribe">
                   {(v * 100).toFixed(0)}<span className="ml-0.5 text-[12px] text-scribe-3">%</span>
                 </span>
+                <span className="font-mono text-[12px] tabular-nums text-scribe-3">{raw}</span>
               </div>
             ))}
           </div>

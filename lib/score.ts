@@ -15,13 +15,18 @@ import type { Sample, Trajectory, Verdict } from "./types";
 export const TOLERANCE_MM = 25;      // placement band, half-width
 
 /**
- * Mean-jerk reference, m/s^3, measured against real paths at the recorder's
- * 20 Hz (scripts/probe-jerk.ts): an ideal interpolated path reads ~0, a path
- * driven by held keys with normal start/stop reads ~0.35, and one driven by
- * tapping the keys reads ~100. Scoring against 3.0 puts ordinary careful
- * driving near the top of the band and leaves room to lose it by snatching.
+ * Mean-jerk band, m/s^3, measured from real runs driven through the station at
+ * the recorder's 20 Hz — not from a synthetic path, which reads an order of
+ * magnitude lower and made this term score zero for everybody.
+ *
+ *   careful driving, one continuous motion per axis .... 25.9
+ *   snatchy driving, tapping instead of holding ........ 51.3
+ *
+ * The band is set just outside both so a good run keeps most of the term and a
+ * snatchy one loses most of it.
  */
-export const JERK_REF = 3.0;
+export const JERK_FLOOR = 18;   // at or below this, full marks
+export const JERK_CEIL = 60;    // at or above this, none
 
 export const W_PLACEMENT = 0.55;
 export const W_EFFICIENCY = 0.2;
@@ -66,7 +71,10 @@ export function evaluate(
     ? clamp01(parSeconds / Math.max(parSeconds * 0.35, traj.durationSeconds))
     : 0;
 
-  const smoothness = traj.success ? clamp01(1 - meanJerk(traj.samples) / JERK_REF) : 0;
+  const jerk = meanJerk(traj.samples);
+  const smoothness = traj.success
+    ? clamp01((JERK_CEIL - jerk) / (JERK_CEIL - JERK_FLOOR))
+    : 0;
 
   const unit =
     placement * W_PLACEMENT + efficiency * W_EFFICIENCY + smoothness * W_SMOOTHNESS;
@@ -79,6 +87,7 @@ export function evaluate(
     success: accepted,
     deviationMm: traj.deviationMm,
     parts: { placement, efficiency, smoothness },
+    raw: { meanJerk: jerk, seconds: traj.durationSeconds, parSeconds },
     payoutMon: accepted ? (rewardPerTrajectory * score) / 10000 : 0,
   };
 }

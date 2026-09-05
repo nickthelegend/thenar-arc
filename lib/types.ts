@@ -53,6 +53,8 @@ export type Verdict = {
   deviationMm: number;
   /** Component scores, each 0..1 */
   parts: { placement: number; efficiency: number; smoothness: number };
+  /** The raw measurements the components were derived from. */
+  raw: { meanJerk: number; seconds: number; parSeconds: number };
   payoutMon: number;
 };
 
