@@ -1,5 +1,31 @@
 # Axon — test plan
 
+**Result: 56 PASS, 1 untestable. Executed against the live deployment.**
+
+Seven defects were found and fixed during the run:
+
+1. The payload never reset between runs, so a second run began already inside
+   the goal. The scene reset lived in an effect keyed on a module constant, and
+   props do not reliably re-run effects inside the react-three-fiber root — the
+   rig is now keyed on a per-run id.
+2. The leaderboard under-reported by 40%: one `eth_call` per trajectory against
+   a 15/sec RPC cap, with failures silently filtered away. Now batched through
+   Multicall3, and a partial read raises instead of rendering short.
+3. `GET /api/dataset` with no `taskId` exported task 0, because `Number(null)`
+   is 0.
+4. An unreadable task id flickered between its error state and a spinner
+   forever, because the query kept polling a read that always reverts.
+5. The post form showed its validation message but left the button enabled.
+6. `scripts/claim.mjs` never linked its transaction, so a run that had settled
+   on chain reported as never submitted.
+7. DESIGN.md still documented the pre-rebrand palette, so every shipped colour
+   read as drift.
+
+A fabricated transaction hash was also written to the production database
+during the run while backfilling from a truncated log line; it was found,
+replaced with the real hash read from the chain, and `scripts/audit-links.mjs`
+now holds the store and the chain to each other so it cannot recur.
+
 Target: the live deployment at `https://web-production-2d1d0.up.railway.app`
 against `AxonProtocol` at `0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`
 (Monad Testnet, chain 10143).
