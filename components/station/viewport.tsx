@@ -18,6 +18,9 @@ export const CAPTURE_R = 0.055;
 export const GRIP_CLOSED = 12; // mm jaw opening below which a grasp forms
 export const GRIP_OPEN_MM = 42;
 const SAMPLE_HZ = 20;
+/** Points kept in the ghost trail — about a minute at the sample rate. */
+const TRAIL_MAX = 1200;
+const trailCount = { current: 0 };
 
 /** Where the tool starts every run, in the arm's own frame. */
 const INITIAL_TARGET: [number, number, number] = [0.3, 0, 0.16];
@@ -181,6 +184,58 @@ function Payload({ pos }: { pos: React.RefObject<[number, number, number]> }) {
   );
 }
 
+/**
+ * The path the payload has travelled, drawn behind it.
+ *
+ * The smoothness term scores the jerk of exactly this line, so showing it is
+ * the difference between "you lost 40% on smoothness" and seeing why.
+ */
+function GhostTrail({ points }: { points: React.RefObject<Float32Array> }) {
+  const geom = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 3), 3));
+    g.setDrawRange(0, 0);
+    return g;
+  }, []);
+
+  useFrame(() => {
+    const attr = geom.getAttribute("position") as THREE.BufferAttribute;
+    attr.array.set(points.current);
+    attr.needsUpdate = true;
+    geom.setDrawRange(0, trailCount.current);
+    geom.computeBoundingSphere();
+  });
+
+  return (
+    <line>
+      <primitive object={geom} attach="geometry" />
+      <lineBasicMaterial color="#FF6A00" transparent opacity={0.55} />
+    </line>
+  );
+}
+
+/** How far the tool can reach, drawn only when the operator hits the limit. */
+function ReachEnvelope({ visible }: { visible: boolean }) {
+  const ring = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 128; i += 1) {
+      const a = (i / 128) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * REACH_MAX, 0, Math.sin(a) * REACH_MAX));
+    }
+    return new THREE.BufferGeometry().setFromPoints(pts);
+  }, []);
+
+  if (!visible) return null;
+  return (
+    <group position={[0, TABLE_Z + 0.002, 0]}>
+      <line>
+        <primitive object={ring} attach="geometry" />
+        <lineBasicMaterial color="#FF2D55" transparent opacity={0.75} />
+      </line>
+    </group>
+  );
+}
+
 /** Live joint readouts pinned to the joints themselves, drawing style. */
 function JointCallout({
   position,
@@ -223,6 +278,10 @@ function Rig({
   // The frame loop drives the ref; this mirrors it at the telemetry cadence so
   // the pinned callouts can render without reading a ref during render.
   const [jointsView, setJointsView] = useState(() => solve(INITIAL_TARGET));
+  const trail = useRef(new Float32Array(TRAIL_MAX * 3));
+  // The rig remounts per run, so the trail starts empty with it.
+  useState(() => { trailCount.current = 0; });
+  const [outOfReach, setOutOfReach] = useState(false);
 
   // Frame the whole workspace: the base, the full reach, the payload and the
   // goal all have to be readable without the operator moving the camera.
@@ -302,6 +361,15 @@ function Rig({
     acc.current += dt;
     if (acc.current >= 1 / SAMPLE_HZ) {
       acc.current = 0;
+
+      // The trail follows the payload, which is what the score measures.
+      if (running && trailCount.current < TRAIL_MAX) {
+        const k = trailCount.current * 3;
+        trail.current[k] = o[0];
+        trail.current[k + 1] = o[2] + PAYLOAD_H / 2;
+        trail.current[k + 2] = o[1];
+        trailCount.current += 1;
+      }
       const j = joints.current;
       if (running) {
         onSample({
@@ -311,6 +379,7 @@ function Rig({
           object: [o[0], o[1], o[2]],
         });
       }
+      setOutOfReach(j.clamped);
       onTelemetry({
         joints: j,
         tool,
@@ -342,6 +411,8 @@ function Rig({
       <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.45} color="#FF9A3D" />
 
       <SurfacePlate />
+      <ReachEnvelope visible={outOfReach} />
+      <GhostTrail points={trail} />
       <GoalZone at={goal} />
       <Payload pos={object} />
       <Arm
@@ -387,8 +458,38 @@ function Rig({
 }
 
 export function StationViewport(props: ViewportProps) {
+  const [lost, setLost] = useState(false);
+
+  // A lost context leaves a black rectangle and no error anyone can see. Catch
+  // it, tell the operator, and let the browser hand the context back.
+  const onCreated = ({ gl }: { gl: THREE.WebGLRenderer }) => {
+    const canvas = gl.domElement;
+    canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); setLost(true); });
+    canvas.addEventListener("webglcontextrestored", () => setLost(false));
+  };
+
   return (
+    <>
+      {lost ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink-0/92 px-6">
+          <div className="max-w-sm text-center">
+            <p className="font-display text-xl font-600 text-reject">The 3D context was lost</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-scribe-2">
+              The browser took the graphics context back, usually under memory
+              pressure. Nothing recorded so far is affected. Reload the page to
+              carry on.
+            </p>
+            <button
+              onClick={() => location.reload()}
+              className="mt-5 border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      ) : null}
     <Canvas
+      onCreated={onCreated}
       shadows="percentage"
       dpr={[1, 2]}
       camera={{ fov: 34, near: 0.02, far: 12 }}
@@ -397,5 +498,6 @@ export function StationViewport(props: ViewportProps) {
     >
       <Rig key={props.runId} {...props} />
     </Canvas>
+    </>
   );
 }

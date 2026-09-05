@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Telemetry } from "@/components/station/viewport";
 import { GOAL_R } from "@/components/station/viewport";
-import { Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
+import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useRunsOnTask, useTask } from "@/lib/hooks";
 import { useSubmitRun } from "@/lib/submit";
@@ -53,6 +53,7 @@ export default function StationPage() {
   const [elapsed, setElapsed] = useState(0);
   /** Bumped on every run so the viewport resets its payload and arm. */
   const [runId, setRunId] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const samples = useRef<Sample[]>([]);
   const settledSince = useRef<number | null>(null);
@@ -109,6 +110,16 @@ export default function StationPage() {
     return () => clearInterval(id);
   }, [phase]);
 
+  // The station is driven entirely by the keyboard, so its help belongs on a key.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "?" || (e.key === "/" && e.shiftKey)) { e.preventDefault(); setHelpOpen((v) => !v); }
+      if (e.key === "Escape") setHelpOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const start = () => {
     samples.current = [];
     settledSince.current = null;
@@ -138,6 +149,16 @@ export default function StationPage() {
     );
   }
 
+  // Spoken status for the submit flow, which was silent to a screen reader.
+  const announcement =
+    tx.phase === "verifying" ? "Verifying the run."
+    : tx.phase === "signing" ? "Waiting for you to confirm in your wallet."
+    : tx.phase === "pending" ? "Transaction sent. Waiting for the block."
+    : tx.phase === "confirmed" ? `Run recorded and paid. ${fmtMon(tx.paidMon ?? 0)} MON.`
+    : tx.phase === "error" ? `Submission failed. ${tx.error ?? ""}`
+    : verdict ? `Measurement taken. ${verdict.success ? "In tolerance" : "Out of tolerance"}, score ${fmtScore(verdict.score)}.`
+    : null;
+
   const capped = (myRuns ?? 0) >= 5;
   const accepted = verdict?.success ?? false;
   // Measured on this chain: a submit reserves roughly 0.03 MON against the gas
@@ -148,6 +169,7 @@ export default function StationPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-ink-1 lg:h-dvh lg:overflow-hidden">
+      <Announce message={announcement} />
       <header className="flex shrink-0 items-stretch border-b border-rule">
         <Link
           href="/hub"
@@ -179,6 +201,7 @@ export default function StationPage() {
               <Key keys={["←", "→"]} action="Swing left / right" />
               <Key keys={["E", "D"]} action="Raise / lower" />
               <Key keys={["Space"]} action="Open / close the jaws" />
+              <Key keys={["?"]} action="All controls" />
             </dl>
           </Section>
           <Section title="Settlement">
@@ -210,6 +233,29 @@ export default function StationPage() {
                 {tel.held ? "PAYLOAD HELD" : "JAWS EMPTY"}
               </span>
               {tel.joints.clamped ? <span className="ml-auto text-reject">OUT OF REACH</span> : null}
+            </div>
+          ) : null}
+
+          {helpOpen ? (
+            <div
+              className="absolute inset-0 z-20 flex items-center justify-center bg-ink-0/90 px-6"
+              onClick={() => setHelpOpen(false)}
+            >
+              <div className="w-full max-w-sm border border-rule-strong bg-ink-1 px-5 py-4">
+                <h2 className="font-display text-lg font-600">Controls</h2>
+                <dl className="mt-4 flex flex-col gap-2">
+                  <Key keys={["↑", "↓"]} action="Reach out / pull in" />
+                  <Key keys={["←", "→"]} action="Swing left / right" />
+                  <Key keys={["E", "D"]} action="Raise / lower" />
+                  <Key keys={["Space"]} action="Open / close the jaws" />
+                  <Key keys={["?"]} action="Show or hide this" />
+                  <Key keys={["Esc"]} action="Close" />
+                </dl>
+                <p className="mt-4 text-[13px] leading-relaxed text-scribe-3">
+                  A run is measured once the payload has been picked up and let
+                  go again, so nothing is scored until you have actually moved it.
+                </p>
+              </div>
             </div>
           ) : null}
 
@@ -427,7 +473,19 @@ function MeasurementSnap({
             ) : !s.connected ? (
               <Button variant="primary" className="flex-1" onClick={s.connect}>{label}</Button>
             ) : (
-              <Button variant="primary" className="flex-1" disabled={busy} onClick={onSubmit}>{label}</Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                disabled={busy}
+                onClick={(e) => {
+                  // A fast double click can fire twice before React re-renders,
+                  // and each one is a real transaction.
+                  (e.currentTarget as HTMLButtonElement).disabled = true;
+                  onSubmit();
+                }}
+              >
+                {label}
+              </Button>
             )
           ) : null}
           <Button variant="secondary" className="flex-1" disabled={busy} onClick={onAgain}>Run again</Button>

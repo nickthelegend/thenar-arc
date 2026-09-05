@@ -335,3 +335,61 @@ export function CountUp({
     </span>
   );
 }
+
+
+/* -------------------------------------------------------------------------
+   Copyable — a hash or address that can actually be taken away. Judges copy
+   things; nothing here was copyable before.
+   ------------------------------------------------------------------------- */
+
+export function Copyable({
+  value,
+  label,
+  className,
+}: {
+  value: string;
+  label?: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1400);
+        } catch {
+          // Clipboard access can be refused; the value stays selectable.
+        }
+      }}
+      title={`Copy ${value}`}
+      className={cn(
+        "group inline-flex items-center gap-1.5 font-mono transition-colors",
+        copied ? "text-go" : "text-scribe-3 hover:text-signal",
+        className,
+      )}
+    >
+      <span>{label ?? value}</span>
+      <span aria-hidden="true" className="text-[0.85em]">
+        {copied ? "copied" : "copy"}
+      </span>
+      <span className="sr-only">{copied ? "Copied to clipboard" : "Copy to clipboard"}</span>
+    </button>
+  );
+}
+
+/* -------------------------------------------------------------------------
+   Live region for transaction status. The whole submit flow was invisible to
+   a screen reader before this.
+   ------------------------------------------------------------------------- */
+
+export function Announce({ message }: { message: string | null }) {
+  return (
+    <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+      {message ?? ""}
+    </div>
+  );
+}

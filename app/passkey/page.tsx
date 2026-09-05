@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { usePublicClient } from "wagmi";
 import { encodeFunctionData } from "viem";
-import { Button, DimRule } from "@/components/primitives";
+import { Button, Copyable, DimRule } from "@/components/primitives";
 import { PASSKEY_ABI } from "@/lib/passkey-abi";
 import { addressUrl, P256_PRECOMPILE, PASSKEY_ADDRESS } from "@/lib/chain";
 import { cn } from "@/lib/cn";
@@ -195,7 +195,9 @@ export default function PasskeyPage() {
             {Object.entries(payload).map(([k, v]) => (
               <div key={k} className="flex flex-wrap gap-x-3 border-b border-rule py-1.5">
                 <dt className="label w-[72px] shrink-0">{k}</dt>
-                <dd className="min-w-0 break-all text-scribe-2">{v}</dd>
+                <dd className="min-w-0 break-all text-scribe-2">
+                  <Copyable value={v} className="break-all text-[12px] text-scribe-2" />
+                </dd>
               </div>
             ))}
           </dl>

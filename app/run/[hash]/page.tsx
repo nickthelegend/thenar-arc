@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { DimRule, ToleranceBand } from "@/components/primitives";
+import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
 import { TOLERANCE_MM } from "@/lib/score";
 import { txUrl, addressUrl } from "@/lib/chain";
 import { cn } from "@/lib/cn";
@@ -84,7 +84,9 @@ export default function RunPage() {
         One recorded trajectory, its measurement, and the transaction that paid
         for it. Anyone can open this and check what a payout was actually for.
       </p>
-      <p className="mt-4 break-all font-mono text-[13px] text-scribe-3">{data.trajHash}</p>
+      <div className="mt-4">
+        <Copyable value={data.trajHash} className="break-all text-[13px]" />
+      </div>
 
       <div
         className={cn(
