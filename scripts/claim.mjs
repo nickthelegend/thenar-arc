@@ -70,6 +70,15 @@ const h = await wallet.writeContract({ address: ref, abi: refAbi, functionName: 
 const r = await pub.waitForTransactionReceipt({ hash: h });
 check(r.status === "success", "submission succeeded even though the payee refuses transfers", h.slice(0, 20));
 
+// Any run that reaches the chain has to carry its transaction in the store,
+// or the feed and the dataset export will report it as never submitted.
+await fetch(`${BASE}/api/submitted`, {
+  method: "POST", headers: { "content-type": "application/json" },
+  body: JSON.stringify({ trajHash: v.trajHash, txHash: h }),
+});
+const linked = await (await fetch(`${BASE}/api/trajectory/${v.trajHash}`)).json();
+check(linked.txHash === h, "transaction linked to the stored trajectory");
+
 const bal = await pub.getBalance({ address: ref });
 const owed = await pub.readContract({ address: env.AXON_ADDRESS, abi: axonAbi, functionName: "claimable", args: [ref] });
 check(bal === 0n, "the push was refused, so nothing landed", `${formatEther(bal)} MON`);

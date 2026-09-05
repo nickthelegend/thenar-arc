@@ -14,9 +14,17 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const taskId = Number(url.searchParams.get("taskId"));
-  if (!Number.isInteger(taskId) || taskId < 0) {
+  const raw = url.searchParams.get("taskId");
+  // Number(null) is 0, so an absent parameter would silently export task 0.
+  if (raw === null || raw.trim() === "") {
     return NextResponse.json({ error: "taskId is required" }, { status: 400 });
+  }
+  const taskId = Number(raw);
+  if (!Number.isInteger(taskId) || taskId < 0) {
+    return NextResponse.json(
+      { error: `taskId must be a non-negative integer, got "${raw}"` },
+      { status: 400 },
+    );
   }
 
   const rows = getDb()
