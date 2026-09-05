@@ -120,7 +120,7 @@ export default function PasskeyPage() {
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <Button variant="primary" onClick={run} disabled={busy}>
-          {busy ? "Verifying…" : "Generate a key and verify on chain"}
+          {busy ? "Verifying…" : "Generate and verify"}
         </Button>
         <a
           href={addressUrl(PASSKEY_ADDRESS)}
