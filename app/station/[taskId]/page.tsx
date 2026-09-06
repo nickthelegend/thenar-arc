@@ -365,6 +365,12 @@ export default function StationPage() {
           <Section title="Live placement">
             {tel ? (
               <ToleranceBand deviationMm={tel.deviationMm} toleranceMm={TOLERANCE_MM} label="Deviation from datum" />
+            ) : phase === "running" ? (
+              // The reading arrives on the first frame the viewport renders.
+              // Gating this on telemetry alone made the panel say the run had
+              // not begun while the button beside it read END RUN — which is
+              // what a throttled tab shows for as long as frames are held.
+              <p className="text-[13px] text-scribe-3">Waiting for the first reading.</p>
             ) : (
               <p className="text-[13px] text-scribe-3">Begin the run to take a live reading.</p>
             )}

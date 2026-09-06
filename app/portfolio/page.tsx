@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useMyRuns, useStats, useTasks } from "@/lib/hooks";
 import { TOLERANCE_MM } from "@/lib/score";
-import { addressUrl, CURRENCY } from "@/lib/chain";
+import { addressUrl, CURRENCY, txUrl } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore } from "@/lib/format";
 
@@ -119,7 +120,100 @@ export default function PortfolioPage() {
           })}
         </ul>
       )}
+
+      <Settlements address={s.address} />
     </div>
+  );
+}
+
+type Settlement = {
+  txHash: string; method: string; succeeded: boolean;
+  at: number; blockNumber: number; gasUsed: number;
+};
+
+/**
+ * The same address, read from Avalanche's own index rather than from us.
+ *
+ * Everything above arrives through this deployment: our RPC calls, our
+ * database's transaction hashes. This asks Glacier instead, so it still answers
+ * if our server is gone — and it shows the calls that reverted, which a ledger
+ * of accepted runs by definition cannot.
+ */
+function Settlements({ address }: { address?: string | null }) {
+  const [rows, setRows] = useState<Settlement[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!address) return;
+    let live = true;
+    fetch(`/api/glacier/${address}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { settlements: Settlement[] }) => { if (live) setRows(d.settlements); })
+      .catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, [address]);
+
+  if (failed) {
+    return (
+      <>
+        <DimRule className="mt-10" note="On-chain activity" />
+        <p className="mt-4 text-[14px] text-scribe-3">
+          Avalanche&rsquo;s index would not answer just now. The run history above is
+          read from the contract directly and is unaffected.
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DimRule className="mt-10" note="On-chain activity" />
+      <p className="mt-4 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
+        Every call this address has made to the protocol, as Avalanche&rsquo;s own
+        indexer recorded it &mdash; including the ones that reverted. This list does
+        not pass through our database, so it still resolves if this deployment does not.
+      </p>
+
+      {rows === null ? (
+        <ul className="mt-4 flex flex-col gap-2" aria-busy="true">
+          {Array.from({ length: 4 }, (_, i) => <li key={i} className="hatch h-8" />)}
+        </ul>
+      ) : rows.length === 0 ? (
+        <p className="mt-4 text-[14px] text-scribe-3">
+          No calls to the protocol from this address yet.
+        </p>
+      ) : (
+        <ol className="mt-3">
+          {rows.map((r) => (
+            <li
+              key={r.txHash}
+              className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule py-3 sm:grid-cols-[minmax(0,1fr)_repeat(3,minmax(72px,auto))]"
+            >
+              <span className="truncate font-mono text-[13px] text-scribe">{r.method}</span>
+              <span className="hidden font-mono text-[12px] tabular-nums text-scribe-3 sm:block">
+                {new Date(r.at).toLocaleDateString()}
+              </span>
+              <span
+                className={cn(
+                  "font-mono text-[12px] uppercase tracking-[0.12em]",
+                  r.succeeded ? "text-scribe-3" : "text-reject",
+                )}
+              >
+                {r.succeeded ? "ok" : "reverted"}
+              </span>
+              <a
+                href={txUrl(r.txHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-[12px] text-scribe-3 hover:text-probe"
+              >
+                {r.txHash.slice(0, 10)}&hellip; &rarr;
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </>
   );
 }
 

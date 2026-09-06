@@ -53,26 +53,29 @@ checked. Concretely:
 Ordered by what blocks what. Phase 1 is the only phase that changes whether the
 project survives a skeptical review; everything after it raises the ceiling.
 
-### Phase 1 — Truthfulness of displayed data · **BLOCKS EVERYTHING**
+### Phase 1 — Truthfulness of displayed data · **CLOSED 30 Aug**
 
-The dealbreaker. The feed reports 25 runs; the contract has 12. The other 13 are
-Monad-era rows migrated with the chain switch, rendered with "verify →" links to
-Snowtrace where the transactions do not exist.
+Was the dealbreaker: the feed reported 25 runs against a contract holding 12.
+The other 13 were Monad-era rows carried across the chain switch and rendered
+with "verify →" links to Snowtrace, where those transactions do not exist.
+
+Now: feed 12, contract 12, archive 13, and every transaction resolves on the
+chain its row claims. `/api/health` fails with 503 if that ever stops holding.
 
 | # | Task | Status |
 |---|---|---|
-| 1.1 | Add `chain_id INTEGER` to the `trajectory` table in `lib/server/db.ts`, defaulting to 43113 for new rows | NOT STARTED |
-| 1.2 | Backfill the 13 pre-migration rows with `chain_id = 10143` — identify them by testing each `tx_hash` against both RPCs, not by date | NOT STARTED |
-| 1.3 | Filter `recentTrajectories`, `trajectoriesForTask` and `countTrajectories` to the active chain, so `/api/feed`, `/leaderboard`, `/task/[id]` and `/portfolio` only show runs from the chain the app is on | NOT STARTED |
-| 1.4 | Add an integrity check to `/api/health`: DB row count for the active chain must equal `trajectoryCount()`; report `ok: false` when it does not | NOT STARTED |
-| 1.5 | Decide and implement the archive surface for the 13 Monad rows — either a `/archive` page that links MonadScan and says plainly they are from the previous deployment, or delete them. Do not leave them unlabelled | NOT STARTED |
-| 1.6 | Re-verify: `/api/feed` total equals `trajectoryCount()`, and every `tx_hash` in the feed resolves on Fuji | NOT STARTED |
+| 1.1 | Add `chain_id` to `trajectory`. Left NULL for existing rows rather than defaulted — guessing is what caused the bug | **DONE** |
+| 1.2 | Resolver in `/api/reconcile` offers each hash to every known chain and records the one returning a receipt. Production: 13 → Monad, 12 → Fuji, 0 unknown | **DONE** |
+| 1.3 | All three read functions scoped to `appChain.id`; every caller goes through them | **DONE** |
+| 1.4 | `ledgerMatchesChain` in `/api/health`. Negative test: mislabelling 3 rows produced HTTP 503 and the exact message | **DONE** |
+| 1.5 | `/archive` + `/api/archive`, linked from the footer and the leaderboard. Runs kept, labelled, linked to MonadScan | **DONE** |
+| 1.6 | Verified on production: feed 12 = `trajectoryCount()` 12; 12/12 feed txs resolve on Fuji; 13/13 archive txs resolve on Monad; 0 leak | **DONE** |
 
 ### Phase 2 — Console and client hygiene
 
 | # | Task | Status |
 |---|---|---|
-| 2.1 | Fix the 8 GSAP warnings on `/`. All six `data-anim` keys exist in markup, so this is mount ordering: run the timeline in `useLayoutEffect` after the targets mount, or guard each `.from()` with a presence check | NOT STARTED |
+| 2.1 | Not mount ordering — two selectors genuinely matched nothing. The hero paragraph never carried `data-anim="hero-copy"`, and `DimRule` emitted `data-anim="rule"` only from its noted branch, so all three landing rules were invisible to it. Both fixed; console clean | **DONE** |
 | 2.2 | Re-run the console check on all 10 pages; zero warnings and zero errors | NOT STARTED |
 | 2.3 | Confirm the station's HUD never shows "Begin the run to take a live reading" while the button reads END RUN — reproduce in a background tab where `rAF` is throttled, and drive state from the run's own clock rather than frame callbacks | NOT STARTED |
 
