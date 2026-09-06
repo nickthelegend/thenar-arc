@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
@@ -11,7 +11,7 @@ import { parSecondsFor } from "@/lib/par";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtSeconds, shortHash } from "@/lib/format";
 import { PropPicker } from "@/components/prop-picker";
-import { payloads, targets, propById } from "@/lib/props";
+import { payloads, targets, propById, type Prop } from "@/lib/props";
 
 /** Anyone can open work here: the escrow is what makes the bounty real. */
 export default function PostTaskPage() {
@@ -23,6 +23,31 @@ export default function PostTaskPage() {
   // The scene is chosen, not inferred from prose. A funder picks the object to
   // move and the landmark to move it to, and the instruction is written from
   // them — so what the operator sees in the viewport is what was escrowed for.
+  // Models a funder uploaded live beside the built-in ones, so a task can be
+  // posted against a scene the library does not ship. Without this the upload
+  // endpoint stores a model nothing can ever select.
+  const [uploaded, setUploaded] = useState<Prop[]>([]);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/props")
+      .then((r) => (r.ok ? r.json() : { props: [] }))
+      .then((d) => {
+        if (!live) return;
+        setUploaded(
+          (d.props ?? []).map((p: Record<string, unknown>) => ({
+            id: String(p.id), label: String(p.label), scenario: "uploaded",
+            role: p.role as "payload" | "target", widthMm: Number(p.width_mm),
+            url: `/api/props/${p.id}`, bytes: Number(p.bytes),
+          })),
+        );
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+
+  const allPayloads = [...payloads(), ...uploaded.filter((p) => p.role === "payload")];
+  const allTargets = [...targets(), ...uploaded.filter((p) => p.role === "target")];
+
   const [payloadId, setPayloadId] = useState("toothpaste");
   const [targetId, setTargetId] = useState("drawer");
   const [slots, setSlots] = useState("10");
@@ -59,17 +84,17 @@ export default function PostTaskPage() {
         <PropPicker
           label="Object to move"
           hint="The payload the operator picks up. This is the model the station loads — the preview is the asset itself, not a picture of it."
-          options={payloads()}
+          options={allPayloads}
           value={payloadId}
-          onChange={(id) => { setPayloadId(id); setName(compose(id, targetId)); }}
+          onChange={(id) => { setPayloadId(id); setName(compose(id, targetId, uploaded)); }}
         />
 
         <PropPicker
           label="Landmark"
           hint="Where it has to end up. The datum circle is placed on this, and the operator sees it in the scene."
-          options={targets()}
+          options={allTargets}
           value={targetId}
-          onChange={(id) => { setTargetId(id); setName(compose(payloadId, id)); }}
+          onChange={(id) => { setTargetId(id); setName(compose(payloadId, id, uploaded)); }}
         />
 
         <Field label="Instruction" hint="Written from the two objects above. Edit the wording if it matters, but keep both names in it — the station reads them back to build the scene.">
@@ -223,9 +248,10 @@ const inputCls =
  * decide what the station renders, so an instruction that drops a name would
  * silently give the operator a different scene from the one funded.
  */
-function compose(payloadId: string, targetId: string): string {
-  const p = propById(payloadId)?.label.toLowerCase() ?? "object";
-  const t = propById(targetId)?.label.toLowerCase() ?? "target";
+function compose(payloadId: string, targetId: string, extra: Prop[] = []): string {
+  const find = (id: string) => propById(id) ?? extra.find((e) => e.id === id);
+  const p = find(payloadId)?.label.toLowerCase() ?? "object";
+  const t = find(targetId)?.label.toLowerCase() ?? "target";
   const into = ["drawer", "crate", "pen cup", "air fryer"].includes(t) ? "into" : "on";
   return `Put the ${p} ${into} the ${t}`;
 }
