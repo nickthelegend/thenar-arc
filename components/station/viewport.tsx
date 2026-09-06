@@ -14,7 +14,17 @@ export const TABLE_HALF = 0.42;
 export const GOAL_R = 0.075;
 export const PAYLOAD_R = 0.028;
 export const PAYLOAD_H = 0.075;
-export const CAPTURE_R = 0.055;
+/**
+ * How close the tool has to be, in the table plane, to close on the payload.
+ *
+ * This used to be the radius of a sphere measured to the payload's waist, which
+ * quietly made the grasp much tighter than it reads: the tool cannot descend
+ * below 12 mm above the table, the waist sits at 37.5 mm, and that 25 mm of
+ * unavoidable vertical error ate most of the budget, leaving under 49 mm in the
+ * plane — with nothing on screen to say whether you were inside it or not.
+ * The test is now a cylinder, so this is the whole plane tolerance.
+ */
+export const CAPTURE_R = 0.09;
 export const GRIP_CLOSED = 12; // mm jaw opening below which a grasp forms
 export const GRIP_OPEN_MM = 42;
 const SAMPLE_HZ = 20;
@@ -44,6 +54,10 @@ export type Telemetry = {
   object: [number, number, number];
   grip: number;
   held: boolean;
+  /** The tool is inside the payload's capture volume — closing will grasp. */
+  inRange: boolean;
+  /** Distance from the tool to the payload in the table plane, metres. */
+  payloadDist: number;
   settled: boolean;
   deviationMm: number;
 };
@@ -361,9 +375,12 @@ function Rig({
     const tool = toolPosition(joints.current);
     const o = object.current;
 
-    // Grasp: the jaws have to be closed and the tool near the payload's waist.
-    const near =
-      Math.hypot(tool[0] - o[0], tool[1] - o[1], tool[2] - (o[2] + PAYLOAD_H / 2)) < CAPTURE_R;
+    // Grasp: the jaws have to be closed and the tool inside the payload's own
+    // cylinder — within CAPTURE_R in the table plane, and somewhere along its
+    // height rather than at one exact point on it.
+    const planar = Math.hypot(tool[0] - o[0], tool[1] - o[1]);
+    const withinHeight = tool[2] > o[2] - 0.02 && tool[2] < o[2] + PAYLOAD_H + 0.04;
+    const near = planar < CAPTURE_R && withinHeight;
 
     if (!held.current && grip.current <= GRIP_CLOSED && near) held.current = true;
     if (held.current && grip.current > GRIP_CLOSED) held.current = false;
@@ -409,6 +426,8 @@ function Rig({
         object: [o[0], o[1], o[2]],
         grip: grip.current,
         held: held.current,
+        inRange: near,
+        payloadDist: planar,
         settled,
         deviationMm,
       });

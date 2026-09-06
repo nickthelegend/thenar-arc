@@ -233,6 +233,18 @@ export default function StationPage() {
               <span className={cn(tel.held ? "text-signal" : "text-scribe-3")}>
                 {tel.held ? "PAYLOAD HELD" : "JAWS EMPTY"}
               </span>
+              {/* Without this the operator is hunting for the payload blind:
+                  the capture volume is invisible, so nothing says whether
+                  closing the jaws will do anything. */}
+              {!tel.held ? (
+                tel.inRange ? (
+                  <span className="text-go">IN RANGE — PRESS SPACE</span>
+                ) : (
+                  <span className="text-scribe-3">
+                    PAYLOAD <span className="text-scribe">{tel.payloadDist.toFixed(2)}</span> m
+                  </span>
+                )
+              ) : null}
               {tel.joints.clamped ? <span className="ml-auto text-reject">OUT OF REACH</span> : null}
             </div>
           ) : null}
