@@ -1,0 +1,12 @@
+# Secrets never leave this machine. The verifier key lives on the backend only.
+.env.deployer
+.env.local
+.env*.local
+
+# Not part of the frontend deployment.
+contracts/
+cad/
+scripts/
+*.db
+*.db-wal
+*.db-shm
