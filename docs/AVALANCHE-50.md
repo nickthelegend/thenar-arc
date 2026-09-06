@@ -1,6 +1,10 @@
 # 50 features that would use Avalanche for real
 
-Ranked by how load-bearing Avalanche's own technology is. Tier 1 cannot be
+Ranked by how load-bearing Avalanche's own technology is. Re-verified 30 Aug
+2026 against a deployment that now settles for real on Fuji — 8 tasks, 7
+trajectories, 1 licensed policy, 6 contracts `exact_match` on Sourcify — which
+changes nothing about the ranking, because none of that uses anything
+Avalanche-specific. Tier 1 cannot be
 built on a generic EVM chain at all. Tier 5 works anywhere and is included only
 so the line is visible.
 

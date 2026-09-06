@@ -1,9 +1,17 @@
 # Is Avalanche actually used here?
 
-Short answer: **no — not in any way an Avalanche judge would count.** The app
-settles on Fuji C-Chain over generic JSON-RPC and touches nothing Avalanche
-built. Everything below was verified against the live chain and the running
-app, not read off a docs page.
+Short answer: **the chain is used properly; Avalanche's own technology is
+not.** Six contracts are deployed and Sourcify-verified on Fuji, a real
+trajectory settles and pays in one transaction, and a policy licence fans out
+to its cap table — all of that works. But every call goes over generic C-Chain
+JSON-RPC. Nothing Avalanche built beyond the EVM is touched.
+
+That distinction is the whole audit. A judge on this track is not asking
+whether the app works on Avalanche. They are asking whether it needed to be.
+
+**State on Fuji, re-verified 30 Aug 2026:** 8 tasks funded, 7 trajectories
+settled, 1 policy minted and licensed, 6 contracts `exact_match` on Sourcify.
+Runtime hosts: `thenar.io` and `api.avax-test.network` only.
 
 ---
 
