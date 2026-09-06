@@ -42,13 +42,26 @@ export function getDb(): Database.Database {
       samples       TEXT NOT NULL,
       signature     TEXT NOT NULL,
       created_at    INTEGER NOT NULL,
-      tx_hash       TEXT
+      tx_hash       TEXT,
+      -- 1 only once the chain has been asked and the receipt came back
+      -- successful. A hash on its own proves nothing: a reverted transaction
+      -- has one too, and recording those made the task pages show runs the
+      -- contract had never accepted.
+      settled       INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS idx_traj_task ON trajectory(task_id);
+    CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
     CREATE INDEX IF NOT EXISTS idx_traj_contributor ON trajectory(contributor);
     CREATE INDEX IF NOT EXISTS idx_traj_created ON trajectory(created_at DESC);
   `);
+
+  // Databases created before `settled` existed still have their rows.
+  const cols = db.prepare(`PRAGMA table_info(trajectory)`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === "settled")) {
+    db.exec(`ALTER TABLE trajectory ADD COLUMN settled INTEGER NOT NULL DEFAULT 0`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled)`);
+  }
 
   return db;
 }
@@ -88,8 +101,24 @@ export function getTrajectory(hash: string): StoredTrajectory | undefined {
     | undefined;
 }
 
-export function markSubmitted(hash: string, txHash: string) {
-  getDb().prepare(`UPDATE trajectory SET tx_hash = ? WHERE traj_hash = ?`).run(txHash, hash);
+/** Only ever called once the receipt has been read back as successful. */
+export function markSettled(hash: string, txHash: string) {
+  getDb()
+    .prepare(`UPDATE trajectory SET tx_hash = ?, settled = 1 WHERE traj_hash = ?`)
+    .run(txHash, hash);
+}
+
+/** Rows whose settlement has not been established, oldest first. */
+export function unsettledWithTx(limit = 500) {
+  return getDb()
+    .prepare(`SELECT traj_hash, tx_hash FROM trajectory
+              WHERE settled = 0 AND tx_hash IS NOT NULL LIMIT ?`)
+    .all(limit) as { traj_hash: string; tx_hash: string }[];
+}
+
+/** Drop a transaction that turned out not to have settled. */
+export function clearTx(hash: string) {
+  getDb().prepare(`UPDATE trajectory SET tx_hash = NULL, settled = 0 WHERE traj_hash = ?`).run(hash);
 }
 
 export function recentTrajectories(limit = 20) {
@@ -97,7 +126,7 @@ export function recentTrajectories(limit = 20) {
     .prepare(
       `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
               sample_count, created_at, tx_hash
-       FROM trajectory ORDER BY created_at DESC LIMIT ?`,
+       FROM trajectory WHERE settled = 1 ORDER BY created_at DESC LIMIT ?`,
     )
     .all(limit) as Omit<StoredTrajectory, "samples" | "signature" | "placement" | "efficiency" | "smoothness">[];
 }
@@ -106,7 +135,7 @@ export function trajectoriesForTask(taskId: number, limit = 200) {
   return getDb()
     .prepare(
       `SELECT traj_hash, contributor, score, deviation_mm, duration_s, created_at, tx_hash
-       FROM trajectory WHERE task_id = ? ORDER BY score DESC LIMIT ?`,
+       FROM trajectory WHERE task_id = ? AND settled = 1 ORDER BY score DESC LIMIT ?`,
     )
     .all(taskId, limit) as {
     traj_hash: string; contributor: string; score: number;
@@ -115,5 +144,5 @@ export function trajectoriesForTask(taskId: number, limit = 200) {
 }
 
 export function countTrajectories(): number {
-  return (getDb().prepare(`SELECT COUNT(*) AS n FROM trajectory`).get() as { n: number }).n;
+  return (getDb().prepare(`SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1`).get() as { n: number }).n;
 }
