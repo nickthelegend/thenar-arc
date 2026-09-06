@@ -2,6 +2,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { DimRule } from "@/components/primitives";
 import { NetworkStats } from "@/components/network-stats";
+import { PropStrip } from "@/components/prop-strip";
 import { LandingMotion } from "@/components/landing-motion";
 import { IconArm, IconDatum, IconTally, IconWallet } from "@/components/icons";
 import { TOLERANCE_MM } from "@/lib/score";
@@ -97,6 +98,10 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      <DimRule />
+
+      <PropStrip />
 
       <DimRule />
 
