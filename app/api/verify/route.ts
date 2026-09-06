@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
 import { AXON_ABI } from "@/lib/abi";
-import { AXON_ADDRESS, IS_DEPLOYED, monadTestnet } from "@/lib/chain";
+import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { insertTrajectory, getTrajectory } from "@/lib/server/db";
 import { validateSamples, verifyAndSign, VerifyError } from "@/lib/server/verifier";
 import { parSecondsFor } from "@/lib/par";
@@ -9,7 +9,7 @@ import { parSecondsFor } from "@/lib/par";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: monadTestnet, transport: http() });
+const client = createPublicClient({ chain: appChain, transport: http() });
 
 /** Crude per-address throttle: a run takes tens of seconds, so this is generous. */
 const lastSeen = new Map<string, number[]>();
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       parSeconds: parSecondsFor(task.difficulty),
       rewardWei: task.rewardPerTrajectory,
       contractAddress: AXON_ADDRESS,
-      chainId: monadTestnet.id,
+      chainId: appChain.id,
     });
 
     // A hash already on file was already scored; hand back the same signature

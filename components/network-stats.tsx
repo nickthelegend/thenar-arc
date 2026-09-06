@@ -40,7 +40,7 @@ export function NetworkStats() {
         rel="noreferrer"
         className="font-mono text-[12px] text-scribe-3 transition-colors hover:text-probe"
       >
-        AxonProtocol · {shortHash(AXON_ADDRESS)} · verified on Monad Testnet →
+        AxonProtocol · {shortHash(AXON_ADDRESS)} · verified on Avalanche Fuji →
       </a>
     </div>
   );

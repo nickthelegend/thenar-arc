@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Thenar — the data foundry for physical AI",
     short_name: "Thenar",
     description:
-      "Teleoperate a robot arm in the browser. Every accepted trajectory is measured, recorded, and paid in the same Monad transaction.",
+      "Teleoperate a robot arm in the browser. Every accepted trajectory is measured, recorded, and paid in the same Avalanche transaction.",
     start_url: "/hub",
     display: "standalone",
     background_color: "#000000",

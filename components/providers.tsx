@@ -5,7 +5,7 @@ import { useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { wagmiConfig } from "@/lib/wagmi";
-import { monadTestnet } from "@/lib/chain";
+import { appChain } from "@/lib/chain";
 
 // The modal is the one surface we do not draw ourselves, so it is pulled onto
 // the product's palette rather than left on RainbowKit's default purple.
@@ -36,7 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={theme} initialChain={monadTestnet} modalSize="compact">
+        <RainbowKitProvider theme={theme} initialChain={appChain} modalSize="compact">
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, hashDomain } from "viem";
-import { AXON_ADDRESS, IS_DEPLOYED, monadTestnet } from "@/lib/chain";
+import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 import { countTrajectories } from "@/lib/server/db";
 import { runDomain } from "@/lib/server/verifier";
@@ -8,7 +8,7 @@ import { runDomain } from "@/lib/server/verifier";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: monadTestnet, transport: http() });
+const client = createPublicClient({ chain: appChain, transport: http() });
 
 /** Everything that has to be true for a run to be recordable. */
 export async function GET() {
@@ -63,7 +63,7 @@ export async function GET() {
       const onchain = await client.readContract({
         address: AXON_ADDRESS, abi: AXON_ABI, functionName: "domainSeparator",
       });
-      const d = runDomain(monadTestnet.id, AXON_ADDRESS);
+      const d = runDomain(appChain.id, AXON_ADDRESS);
       const local = hashDomain({
         domain: { ...d, chainId: BigInt(d.chainId) },
         types: {

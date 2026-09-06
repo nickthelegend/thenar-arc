@@ -26,7 +26,7 @@ export default function Home() {
             Robot manipulation data is collected in closed labs, slowly and
             narrowly. Thenar collects it in the browser instead: you drive a
             simulated arm through a task, the run is measured against the goal
-            datum, and if it passes, Monad records the trajectory and pays you
+            datum, and if it passes, Avalanche records the trajectory and pays you
             in the same transaction.
           </p>
 
@@ -86,14 +86,14 @@ export default function Home() {
             trajectory pays out in the call that records it. A policy is minted
             with its contributor list attached, so a licence fee splits to
             everyone who trained it without anyone claiming anything. All of it
-            is live on Monad Testnet — the figures above are read from the
+            is live on Avalanche Fuji — the figures above are read from the
             contract, not from a fixture.
           </p>
           <p className="text-scribe">
             That is several times the state writes of a bare anchor, and those
             writes barely touch each other — different operators, different
             tasks, one shared slot counter. It is the workload parallel
-            execution exists for, which is the whole reason this is on Monad.
+            execution exists for, which is the whole reason this settles on chain.
           </p>
         </div>
       </section>
@@ -131,7 +131,7 @@ export default function Home() {
               n: "04",
               Icon: IconWallet,
               h: "Get paid",
-              p: "One transaction records the trajectory hash, its task, your address and the score — and transfers the MON. There is no separate signing step.",
+              p: "One transaction records the trajectory hash, its task, your address and the score — and transfers the AVAX. There is no separate signing step.",
             },
           ].map((s) => (
             <li key={s.n} data-anim="step" className="flex flex-col gap-2 bg-ink-1 p-5">
@@ -154,7 +154,7 @@ export default function Home() {
         </h2>
         <p className="max-w-[56ch] text-[16px] leading-relaxed text-scribe-2">
           Pick a task, run it once, and watch the measurement land. If it passes,
-          the MON is in your wallet before you have let go of the keyboard.
+          the AVAX is in your wallet before you have let go of the keyboard.
         </p>
         <Link
           href="/hub"
@@ -166,7 +166,7 @@ export default function Home() {
 
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-rule py-6 font-mono text-[12px] text-scribe-3">
         <span className="text-scribe-2">THENAR</span>
-        <span>Monad Testnet · chain 10143</span>
+        <span>Avalanche Fuji · chain 43113</span>
         <Link href="/spec" className="hover:text-scribe">THENAR-6 spec sheet</Link>
         <a href="/api/contract" className="hover:text-scribe">Contract ABI</a>
         <a href="/api/health" className="hover:text-scribe">Health</a>

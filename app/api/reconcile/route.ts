@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { AXON_ADDRESS, monadTestnet } from "@/lib/chain";
+import { AXON_ADDRESS, appChain } from "@/lib/chain";
 import { unsettledWithTx, markSettled, clearTx } from "@/lib/server/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: monadTestnet, transport: http() });
+const client = createPublicClient({ chain: appChain, transport: http() });
 
 /**
  * Hold the stored ledger to the chain.

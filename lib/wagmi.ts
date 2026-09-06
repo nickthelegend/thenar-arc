@@ -7,7 +7,7 @@ import {
   coinbaseWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { monadTestnet } from "./chain";
+import { appChain } from "./chain";
 
 // WalletConnect-backed wallets need a project id. Without one they would open a
 // modal that can never pair, so they are only offered when the id is present.
@@ -26,10 +26,10 @@ const connectors = connectorsForWallets(
 );
 
 export const wagmiConfig = createConfig({
-  chains: [monadTestnet],
+  chains: [appChain],
   connectors,
   transports: {
-    [monadTestnet.id]: http(monadTestnet.rpcUrls.default.http[0], {
+    [appChain.id]: http(appChain.rpcUrls.default.http[0], {
       batch: true,          // one round trip for a screen full of reads
       retryCount: 3,
       retryDelay: 400,

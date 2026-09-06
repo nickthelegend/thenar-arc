@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { AXON_ADDRESS, monadTestnet } from "@/lib/chain";
+import { AXON_ADDRESS, appChain } from "@/lib/chain";
 import { markSettled } from "@/lib/server/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: monadTestnet, transport: http() });
+const client = createPublicClient({ chain: appChain, transport: http() });
 
 /**
  * Record the transaction that settled a run.
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     receipt = await client.getTransactionReceipt({ hash: txHash as `0x${string}` });
   } catch {
     return NextResponse.json(
-      { error: "no such transaction on Monad Testnet" },
+      { error: "no such transaction on Avalanche Fuji" },
       { status: 409 },
     );
   }

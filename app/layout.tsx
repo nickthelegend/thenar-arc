@@ -40,11 +40,11 @@ const pixel = Press_Start_2P({
 export const metadata: Metadata = {
   title: "Thenar — the data foundry for physical AI",
   description:
-    "Teleoperate a robot arm in the browser. Every accepted trajectory is measured, recorded, and paid in the same Monad transaction.",
+    "Teleoperate a robot arm in the browser. Every accepted trajectory is measured, recorded, and paid in the same Avalanche transaction.",
   openGraph: {
     title: "Thenar — the data foundry for physical AI",
     description:
-      "Drive a robot arm, get measured against the datum, and get paid on Monad in the transaction that records the run.",
+      "Drive a robot arm, get measured against the datum, and get paid on Avalanche in the transaction that records the run.",
     type: "website",
   },
 };

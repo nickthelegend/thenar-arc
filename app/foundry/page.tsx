@@ -7,7 +7,7 @@ import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useCapTable, usePolicies, useTasks, type ChainPolicy } from "@/lib/hooks";
 import { useThenarWrite } from "@/lib/write";
-import { txUrl, addressUrl } from "@/lib/chain";
+import { txUrl, addressUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
 
@@ -88,13 +88,13 @@ function MintRow({
           value={fee}
           onChange={(e) => setFee(e.target.value)}
           inputMode="decimal"
-          aria-label="Licence fee in MON"
+          aria-label="Licence fee in AVAX"
           className={cn(
             "w-[92px] border bg-ink-2 px-2 py-1 text-right font-mono text-[13px] tabular-nums text-signal focus:outline-none",
             bad ? "border-reject" : "border-rule focus:border-rule-strong",
           )}
         />
-        <span className="text-[12px] text-scribe-3">MON</span>
+        <span className="text-[12px] text-scribe-3">{CURRENCY}</span>
       </label>
       <Button
         variant="primary"
@@ -190,7 +190,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
           disabled={tx.busy}
           onClick={async () => {
             if (!s.connected) return s.connect();
-            if (s.wrongNetwork) return s.switchToMonad();
+            if (s.wrongNetwork) return s.switchToChain();
             const r = await tx.run("licensePolicy", [BigInt(p.id)], p.licenceWei);
             if (r) onDone();
           }}

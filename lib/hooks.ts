@@ -220,7 +220,7 @@ export type FeedEntry = {
 /**
  * The network's activity, read straight from the trajectory ledger.
  *
- * Not from event logs: Monad's public RPC caps a getLogs range far below the
+ * Not from event logs: the public RPC caps a getLogs range far below the
  * history this needs, and the contract already stores every trajectory in an
  * array, so counting back from the head is both cheaper and complete. The
  * transaction hash is the one field the contract does not keep, so it is

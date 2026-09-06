@@ -11,7 +11,7 @@ import { useSession } from "@/components/session";
 import { useRunsOnTask, useTask } from "@/lib/hooks";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
-import { txUrl } from "@/lib/chain";
+import { txUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import type { Sample, Verdict } from "@/lib/types";
@@ -164,8 +164,8 @@ export default function StationPage() {
 
   const capped = (myRuns ?? 0) >= 5;
   const accepted = verdict?.success ?? false;
-  // Measured on this chain: a submit reserves roughly 0.03 MON against the gas
-  // limit regardless of what it spends, and Monad rejects the transaction
+  // Measured on this chain: a submit reserves roughly 0.03 AVAX against the gas
+  // limit regardless of what it spends, and the chain rejects the transaction
   // outright below that. Warn before the wallet does.
   const RESERVE_FLOOR = 0.05;
   const thinOnGas = s.connected && !s.wrongNetwork && s.balance < RESERVE_FLOOR;
@@ -211,7 +211,7 @@ export default function StationPage() {
           <Section title="Settlement">
             <p className="text-[13px] leading-relaxed text-scribe-2">
               One transaction records the trajectory hash, its task, your address
-              and the verified score — and transfers the MON. There is no separate
+              and the verified score — and transfers the AVAX. There is no separate
               signing step.
             </p>
           </Section>
@@ -397,7 +397,7 @@ function MeasurementSnap({
     tx.phase === "verifying" ? "Verifying the run…"
     : tx.phase === "signing" ? "Confirm in your wallet…"
     : tx.phase === "pending" ? "Waiting for the block…"
-    : s.wrongNetwork ? "Switch to Monad Testnet"
+    : s.wrongNetwork ? "Switch to Avalanche Fuji"
     : !s.connected ? "Connect a wallet to get paid"
     : "Submit and get paid";
 
@@ -442,7 +442,7 @@ function MeasurementSnap({
               <span className="label">{done ? "Paid to your wallet" : "Payable on submit"}</span>
               <span className="font-mono text-4xl font-medium leading-none tracking-[-0.02em] text-signal">
                 {done ? <CountUp to={tx.paidMon ?? verdict.payoutMon} /> : fmtMon(verdict.payoutMon)}
-                <span className="ml-1.5 text-[12px] text-scribe-3">MON</span>
+                <span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
               </span>
             </div>
           ) : (
@@ -463,15 +463,15 @@ function MeasurementSnap({
               </span>
               <span className="flex flex-wrap gap-x-4">
                 <span>settled in <span className="text-scribe-2 tabular-nums">{((tx.blockMs ?? 0) / 1000).toFixed(2)}s</span></span>
-                <span>gas <span className="text-scribe-2 tabular-nums">{(tx.gasMon ?? 0).toFixed(6)}</span> MON</span>
+                <span>gas <span className="text-scribe-2 tabular-nums">{(tx.gasMon ?? 0).toFixed(6)}</span> {CURRENCY}</span>
               </span>
             </div>
           ) : null}
 
           {thinOnGas && !done ? (
             <p className="border border-signal bg-signal-dim px-3 py-2 text-[13px] leading-relaxed text-signal">
-              Your balance is {fmtMon(s.balance, 4)} MON. Monad reserves against
-              the whole gas limit, so a submit needs roughly {RESERVE_FLOOR} MON
+              Your balance is {fmtMon(s.balance, 4)} {CURRENCY}. The chain reserves against
+              the whole gas limit, so a submit needs roughly {RESERVE_FLOOR} {CURRENCY}
               on hand even though it spends a fraction of that.{" "}
               <a href="https://faucet.monad.xyz" target="_blank" rel="noreferrer" className="underline">
                 Top up
@@ -490,7 +490,7 @@ function MeasurementSnap({
         <div className="flex flex-wrap items-stretch gap-px border-t border-rule bg-rule">
           {accepted && !done ? (
             s.wrongNetwork ? (
-              <Button variant="primary" className="flex-1" onClick={s.switchToMonad}>{label}</Button>
+              <Button variant="primary" className="flex-1" onClick={s.switchToChain}>{label}</Button>
             ) : !s.connected ? (
               <Button variant="primary" className="flex-1" onClick={s.connect}>{label}</Button>
             ) : (

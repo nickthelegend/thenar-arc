@@ -6,7 +6,7 @@ import { useBlockNumber } from "wagmi";
 import { cn } from "@/lib/cn";
 import { ThenarWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
-import { addressUrl, IS_DEPLOYED } from "@/lib/chain";
+import { addressUrl, IS_DEPLOYED, CURRENCY } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
 
 const ROUTES = [
@@ -16,7 +16,7 @@ const ROUTES = [
   { href: "/foundry", label: "Foundry" },
 ];
 
-/** Enough MON to cover gas on a submit with headroom. */
+/** Enough of the native token to cover gas on a submit with headroom. */
 const LOW_BALANCE = 0.02;
 
 export function SiteNav() {
@@ -62,7 +62,7 @@ export function SiteNav() {
 
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
             <span className="hidden items-baseline gap-2 font-mono text-[12px] text-scribe-3 xl:flex">
-              Monad Testnet
+              Avalanche Fuji
               {block ? (
                 <span className="text-scribe-2 tabular-nums" title="Latest block">
                   #{block.toString()}
@@ -74,7 +74,7 @@ export function SiteNav() {
               <div className="flex items-stretch border border-rule-strong">
                 <span className="flex items-center border-r border-rule-strong px-2.5 font-mono text-[12px] tabular-nums text-signal sm:px-3">
                   {fmtMon(s.balance, 3)}
-                  <span className="ml-1 text-[12px] text-scribe-3">MON</span>
+                  <span className="ml-1 text-[12px] text-scribe-3">{CURRENCY}</span>
                 </span>
                 <a
                   href={s.address ? addressUrl(s.address) : "#"}
@@ -114,13 +114,13 @@ export function SiteNav() {
 
       {s.wrongNetwork ? (
         <Banner tone="reject">
-          Your wallet is on the wrong network. Thenar settles on Monad Testnet.
+          Your wallet is on the wrong network. Thenar settles on Avalanche Fuji.
           <button
-            onClick={s.switchToMonad}
+            onClick={s.switchToChain}
             disabled={s.switching}
             className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-reject hover:text-ink-0 disabled:opacity-60"
           >
-            {s.switching ? "Switching…" : "Switch to Monad"}
+            {s.switching ? "Switching…" : "Switch to Avalanche"}
           </button>
         </Banner>
       ) : null}

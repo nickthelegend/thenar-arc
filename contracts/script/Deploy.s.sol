@@ -13,6 +13,13 @@ contract Deploy is Script {
         // composes with it rather than duplicating the precompile call.
         address registry = vm.envAddress("PASSKEY_REGISTRY");
         address deployer = vm.addr(pk);
+        // Bounties are funded from the deployer's balance, and a testnet faucet
+        // does not always hand over enough for the full catalogue. SEED_BPS
+        // scales every reward so the same eight tasks still exist, at a size
+        // the balance can actually cover. 10000 = the rewards as written.
+        uint256 seedBps = vm.envOr("SEED_BPS", uint256(10000));
+
+        seedBpsStore = seedBps;
 
         vm.startBroadcast(pk);
 
@@ -38,12 +45,15 @@ contract Deploy is Script {
         vm.stopBroadcast();
     }
 
+    uint256 internal seedBpsStore;
+
     function _task(
         AxonProtocol axon, string memory name, uint32 slots,
         uint128 reward, uint8 scenario, uint8 difficulty
     ) internal {
-        uint256 id = axon.createTask{value: uint256(reward) * slots}(
-            name, slots, reward, scenario, difficulty
+        uint128 scaled = uint128((uint256(reward) * seedBpsStore) / 10000);
+        uint256 id = axon.createTask{value: uint256(scaled) * slots}(
+            name, slots, scaled, scenario, difficulty
         );
         console.log("task", id, name);
     }

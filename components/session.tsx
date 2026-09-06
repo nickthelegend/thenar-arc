@@ -5,13 +5,13 @@ import {
   useAccount, useBalance, useConnect, useDisconnect, useSwitchChain,
 } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { monadTestnet } from "@/lib/chain";
+import { appChain } from "@/lib/chain";
 
 /**
  * The operator's wallet, as the rest of the app sees it.
  *
  * Everything here is real: the address comes from the wallet the operator
- * picks in the RainbowKit modal, the balance from the Monad RPC. There is no
+ * picks in the RainbowKit modal, the balance from the chain's RPC. There is no
  * local shadow of either — if the chain says the balance is zero, the UI says
  * zero.
  */
@@ -32,7 +32,7 @@ export function useSession() {
     openConnectModal?.();
   }, [openConnectModal]);
 
-  const wrongNetwork = isConnected && chainId !== monadTestnet.id;
+  const wrongNetwork = isConnected && chainId !== appChain.id;
 
   const balance = useMemo(() => (bal ? Number(bal.value) / 1e18 : 0), [bal]);
 
@@ -47,7 +47,7 @@ export function useSession() {
     switching,
     connect: doConnect,
     disconnect,
-    switchToMonad: () => switchChain({ chainId: monadTestnet.id }),
+    switchToChain: () => switchChain({ chainId: appChain.id }),
     refetchBalance,
   };
 }
