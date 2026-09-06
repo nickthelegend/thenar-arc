@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { DM_Mono, Hanken_Grotesk, Press_Start_2P } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteNav } from "@/components/site-nav";
+// Before globals.css on purpose: RainbowKit ships resets that otherwise
+// outrank Tailwind and collapse the station viewport to 300x150.
+import "@rainbow-me/rainbowkit/styles.css";
 import "./globals.css";
 
 /**

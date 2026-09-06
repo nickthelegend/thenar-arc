@@ -515,6 +515,10 @@ export function StationViewport(props: ViewportProps) {
     };
     canvas.style.cursor = "grab";
     canvas.style.touchAction = "none";
+
+    // Belt and braces for the same race: one measurement on the frame after
+    // the context exists, by which point the grid row has its real height.
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
     canvas.addEventListener("pointerdown", begin);
     canvas.addEventListener("pointermove", move);
     canvas.addEventListener("pointerup", end);
@@ -543,6 +547,13 @@ export function StationViewport(props: ViewportProps) {
       ) : null}
     <Canvas
       onCreated={onCreated}
+      // The viewport is code-split and mounts under a grid row whose height is
+      // only settled once the rest of the page has laid out. react-use-measure
+      // takes its first reading before that, gets nothing, and falls back to
+      // 300x150 — and because the row's size never *changes* afterwards, the
+      // observer never fires again and the arm is left in a postage stamp.
+      // Measuring undebounced off offsetWidth/Height reads the settled box.
+      resize={{ debounce: 0, offsetSize: true }}
       shadows="percentage"
       dpr={[1, 2]}
       camera={{ fov: 34, near: 0.02, far: 12 }}
