@@ -37,7 +37,11 @@ export function SiteNav() {
           </Link>
 
           <nav
-            className="flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            /* The scrollbar is hidden, so on a narrow screen the sections past
+               the fold had nothing saying they were there. The mask fades the
+               last few pixels, which is the only cue a horizontal scroll gets
+               once the bar itself is gone. */
+            className="flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)] md:[mask-image:none]"
             aria-label="Sections"
           >
             {ROUTES.map((r) => {
