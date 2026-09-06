@@ -8,6 +8,25 @@ Built at Monad Blitz Hyderabad V3.
 
 ---
 
+## Demo
+
+Two minutes fifty-four, no narration: drive the arm, place the payload, get paid,
+then buy a licence and watch the fee split across every contributor. Both
+transactions in it are real and are linked below.
+
+<video src="https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4" controls muted playsinline width="100%"></video>
+
+[![Watch the demo](docs/demo-poster.png)](https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4)
+
+The two transactions the video shows, on Monad Testnet:
+
+| Step | Transaction | Block |
+| --- | --- | --- |
+| Payout — `submitTrajectory` records the run and pays the operator | [`0x4496b36a…434c5433`](https://testnet.monadscan.com/tx/0x4496b36a16be3f5b622305d058314212c0ab820eebda8fd1dd5cc2c4434c5433) | 55950354 |
+| Licence — `licensePolicy` pays the whole cap table in one call | [`0x139bc19e…73f14b9a`](https://testnet.monadscan.com/tx/0x139bc19e419194a12034059fb92cc864016a4ee5012b679f9acc1ecc73f14b9a) | 55950691 |
+
+---
+
 ## The idea in one paragraph
 
 Physical AI is bottlenecked by data, not compute. Robot manipulation data is

@@ -1,0 +1,45 @@
+{
+  "marks": [
+    {
+      "id": "explorer-tx",
+      "atMs": 0
+    },
+    {
+      "id": "explorer-transfer",
+      "atMs": 13001
+    },
+    {
+      "id": "explorer-address",
+      "atMs": 25003
+    },
+    {
+      "id": "explorer-contract",
+      "atMs": 37004
+    },
+    {
+      "id": "licence-explorer",
+      "atMs": 48004
+    }
+  ],
+  "holds": {
+    "explorer-tx": 13,
+    "explorer-transfer": 12,
+    "explorer-address": 12,
+    "explorer-contract": 11,
+    "licence-explorer": 14
+  },
+  "txs": {
+    "txHash": "0x4496b36a16be3f5b622305d058314212c0ab820eebda8fd1dd5cc2c4434c5433",
+    "task": 7,
+    "operator": "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815",
+    "block": 55950354,
+    "explorer": "https://testnet.monadscan.com/tx/0x4496b36a16be3f5b622305d058314212c0ab820eebda8fd1dd5cc2c4434c5433",
+    "licenceTx": "0x139bc19e419194a12034059fb92cc864016a4ee5012b679f9acc1ecc73f14b9a",
+    "licenceBlock": 55950691,
+    "licenceExplorer": "https://testnet.monadscan.com/tx/0x139bc19e419194a12034059fb92cc864016a4ee5012b679f9acc1ecc73f14b9a",
+    "sent": [
+      "0x4496b36a16be3f5b622305d058314212c0ab820eebda8fd1dd5cc2c4434c5433",
+      "0x139bc19e419194a12034059fb92cc864016a4ee5012b679f9acc1ecc73f14b9a"
+    ]
+  }
+}

@@ -64,3 +64,6 @@ contracts/lib/
 
 # generated CAD exports (regenerate with python3 cad/arm.py)
 cad/exports/
+demo/out/work*/
+demo/out/*.webm
+demo/out/check/

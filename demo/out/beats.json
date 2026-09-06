@@ -7,107 +7,107 @@
     },
     {
       "id": "landing-figures",
-      "atMs": 11001,
+      "atMs": 10999,
       "signing": false
     },
     {
       "id": "hub",
-      "atMs": 23002,
+      "atMs": 22998,
       "signing": false
     },
     {
       "id": "station-open",
-      "atMs": 34004,
+      "atMs": 33999,
       "signing": false
     },
     {
       "id": "station-begin",
-      "atMs": 43005,
+      "atMs": 43002,
       "signing": false
     },
     {
       "id": "station-grasp",
-      "atMs": 52349,
+      "atMs": 50002,
       "signing": false
     },
     {
       "id": "station-place",
-      "atMs": 59413,
+      "atMs": 54618,
       "signing": false
     },
     {
       "id": "station-score",
-      "atMs": 100523,
+      "atMs": 72418,
       "signing": false
     },
     {
       "id": "sign",
-      "atMs": 112569,
+      "atMs": 84463,
       "signing": true
     },
     {
       "id": "confirmed",
-      "atMs": 123223,
+      "atMs": 91702,
       "signing": false
     },
     {
       "id": "explorer-tx",
-      "atMs": 132224,
+      "atMs": 100703,
       "signing": false
     },
     {
       "id": "explorer-transfer",
-      "atMs": 145226,
+      "atMs": 113705,
       "signing": false
     },
     {
       "id": "explorer-address",
-      "atMs": 157226,
+      "atMs": 125706,
       "signing": false
     },
     {
       "id": "explorer-contract",
-      "atMs": 170227,
+      "atMs": 138707,
       "signing": false
     },
     {
       "id": "leaderboard",
-      "atMs": 181228,
+      "atMs": 149707,
       "signing": false
     },
     {
       "id": "task-page",
-      "atMs": 191228,
+      "atMs": 159708,
       "signing": false
     },
     {
       "id": "run-verify",
-      "atMs": 201229,
+      "atMs": 169710,
       "signing": false
     },
     {
       "id": "foundry",
-      "atMs": 211230,
+      "atMs": 179711,
       "signing": false
     },
     {
       "id": "licence-sign",
-      "atMs": 223231,
+      "atMs": 191712,
       "signing": false
     },
     {
       "id": "licence-paid",
-      "atMs": 227233,
+      "atMs": 195713,
       "signing": false
     },
     {
       "id": "licence-explorer",
-      "atMs": 236234,
+      "atMs": 204713,
       "signing": false
     },
     {
       "id": "outro",
-      "atMs": 249234,
+      "atMs": 217715,
       "signing": false
     }
   ],
