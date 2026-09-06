@@ -11,7 +11,7 @@ import { useSession } from "@/components/session";
 import { useRunsOnTask, useTask } from "@/lib/hooks";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
-import { txUrl, CURRENCY } from "@/lib/chain";
+import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { propsForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -485,7 +485,7 @@ function MeasurementSnap({
               Your balance is {fmtMon(s.balance, 4)} {CURRENCY}. The chain reserves against
               the whole gas limit, so a submit needs roughly {RESERVE_FLOOR} {CURRENCY}
               on hand even though it spends a fraction of that.{" "}
-              <a href="https://faucet.monad.xyz" target="_blank" rel="noreferrer" className="underline">
+              <a href={FAUCET_URL} target="_blank" rel="noreferrer" className="underline">
                 Top up
               </a>
               .

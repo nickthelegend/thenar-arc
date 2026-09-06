@@ -16,7 +16,7 @@ app, not read off a docs page.
 | **Glacier / AvaCloud Data API** | `GET /v1/chains`, then our own tx and contract | **200. Indexes our contract, our licence tx, and native balances** |
 | **Warp precompile** `0x02…05` | `eth_getCode` on Fuji C-Chain | **2 bytes — absent.** Subnet-EVM only, so it needs our own L1 |
 | Multicall3 | `eth_getCode` | 3,809 bytes — live, and we do declare it |
-| **P-256 precompile** `0x…0100` | `eth_getCode` | **1 byte — absent.** Monad has it; Avalanche does not |
+| **P-256 precompile** `0x…0100` | Signed with WebCrypto secp256r1, called it | **Present.** Valid signature returns `0x…01`, tampered returns `0x` — the same on Monad and Fuji |
 | P-Chain / info endpoints | `GET` → 405 | Present, POST-only as expected |
 
 Not reachable without our own chain, but real and documented: Subnet-EVM
@@ -41,16 +41,20 @@ descriptions, currency labels, a network-switch button. `lib/chain.ts` is a
 values and this project runs unchanged on any EVM chain. It did, in fact,
 yesterday — it was on Monad.
 
-### The one piece of chain-specific engineering points the other way
+### Correction: the passkey path works here
 
-`contracts/src/PasskeyRegistry.sol` calls the **P-256 precompile at `0x0100`**
-and `AxonProtocol.submitTrajectoryWithPasskey` composes with it. That is
-genuine, load-bearing, chain-specific work — for **Monad**, whose EIP-7951
-precompile makes secp256r1 verification a `staticcall` instead of hundreds of
-thousands of gas of Solidity. Fuji has no such precompile, so on Avalanche the
-contract is deployed (`0x82aE3011…6BCE9F`) and **inert**: `verifyWithKey`
-returns false for every input because a `staticcall` to an empty address
-returns empty data. It fails closed, and nothing in the UI calls it.
+An earlier version of this audit said Fuji had no P-256 precompile and that
+`PasskeyRegistry` was inert on Avalanche. **That was wrong, and the method was
+wrong.** `eth_getCode` is meaningless for a precompile — a precompile has no
+bytecode, so it always answers empty. The only honest test is to call it.
+
+Called with a real WebCrypto secp256r1 signature, the deployed registry at
+`0x82aE3011…6BCE9F` returns **1**, and returns **0** for the same signature
+with one byte of `r` changed. `contracts/src/PasskeyRegistry.sol` is genuine,
+working, chain-specific engineering on Avalanche — it is simply not
+*Avalanche-exclusive*, since RIP-7212 is adopted across several chains.
+
+What remains true: nothing in the interface calls it yet.
 
 So the honest position for an Avalanche track today: **a well-built EVM app
 that happens to be pointed at Fuji.** A judge who checks will see exactly that,

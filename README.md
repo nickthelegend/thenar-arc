@@ -10,9 +10,17 @@ Built at Monad Blitz Hyderabad V3.
 | --- | --- |
 | **Live** | **https://thenar.io** |
 | **Repo** | https://github.com/nickthelegend/axon-monad |
-| **Contract** | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — Monad Testnet (10143), source-verified |
-| **Passkey contract** | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — source-verified |
+| **Chain** | Avalanche Fuji (43113) |
+| **AxonProtocol** | [`0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3`](https://testnet.snowtrace.io/address/0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3) — Sourcify `exact_match` |
+| **PasskeyRegistry** | [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.snowtrace.io/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F) — Sourcify `exact_match` |
 | **Hosting** | Vercel (frontend, custom domain) + Railway (API, persistent SQLite volume) |
+
+> **Built at Monad Blitz Hyderabad V3, where it placed 3rd.** It ran on Monad
+> then; it settles on Avalanche now. The Monad deployment and the two
+> transactions in the demo below are left in place because they happened, and
+> the audits in [MONAD.md](MONAD.md) and [MONAD-2.md](MONAD-2.md) are kept as
+> the record of that build — they describe the Monad deployment, not what
+> thenar.io runs today.
 
 ---
 

@@ -26,6 +26,10 @@ export const avalancheFuji = defineChain({
 /** The one place the chain is named. Everything else reads it from here. */
 export const appChain = avalancheFuji;
 
+/** Where an operator with no gas is sent. Chain-scoped for the same reason the
+ *  explorer is: the app shipped pointing at another chain's faucet. */
+export const FAUCET_URL = "https://core.app/tools/testnet-faucet/?subnet=c&token=c";
+
 /** The ticker shown beside every amount. Hardcoding it is how a UI ends up
  *  quoting one chain's currency while settling in another's. */
 export const CURRENCY = appChain.nativeCurrency.symbol;

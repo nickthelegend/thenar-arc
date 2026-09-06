@@ -1,5 +1,11 @@
 # Monad audit, round two
 
+> **Historical.** This audit describes the Monad deployment the project was
+> built on at Monad Blitz Hyderabad V3. thenar.io now settles on Avalanche
+> Fuji, so the claims below are a record of that build rather than a
+> description of what runs today.
+
+
 Written after the v2 deploy. Everything below was verified against the live
 chain in this session, not read off a docs page. The first audit is in
 [MONAD.md](MONAD.md) and is kept for the record — its verdict has changed.

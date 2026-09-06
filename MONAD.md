@@ -1,5 +1,11 @@
 # Is Monad actually used here?
 
+> **Historical.** This audit describes the Monad deployment the project was
+> built on at Monad Blitz Hyderabad V3. thenar.io now settles on Avalanche
+> Fuji, so the claims below are a record of that build rather than a
+> description of what runs today.
+
+
 Short answer: **yes, load-bearing, not a checkbox** — but only the *EVM-compatible*
 half of Monad. Everything below was verified against the live chain, not read
 off a docs page.

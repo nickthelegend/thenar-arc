@@ -6,7 +6,7 @@ import { BaseError, ContractFunctionRevertedError, UserRejectedRequestError } fr
 import { AXON_ABI } from "./abi";
 import { AXON_ADDRESS } from "./chain";
 import type { Sample } from "./types";
-import { CURRENCY } from "@/lib/chain";
+import { CURRENCY, FAUCET_URL } from "@/lib/chain";
 
 export type SubmitPhase =
   | "idle" | "verifying" | "signing" | "pending" | "confirmed" | "error";
@@ -56,7 +56,7 @@ export function explainTxError(e: unknown): string {
       return (
         "The chain holds back more than the transaction costs — it reserves against " +
         "your whole gas limit, not what the transaction actually uses. Top up " +
-        "from faucet.monad.xyz and try again."
+        `from ${new URL(FAUCET_URL).host} and try again.`
       );
     }
     if (/insufficient funds/i.test(text)) {

@@ -6,7 +6,7 @@ import { useBlockNumber } from "wagmi";
 import { cn } from "@/lib/cn";
 import { ThenarWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
-import { addressUrl, IS_DEPLOYED, CURRENCY } from "@/lib/chain";
+import { addressUrl, IS_DEPLOYED, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
 
 const ROUTES = [
@@ -129,7 +129,7 @@ export function SiteNav() {
         <Banner tone="signal">
           Balance is {fmtMon(s.balance, 4)} {CURRENCY} — not much runway for gas.
           <a
-            href="https://faucet.monad.xyz"
+            href={FAUCET_URL}
             target="_blank"
             rel="noreferrer"
             className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-signal hover:text-ink-0"

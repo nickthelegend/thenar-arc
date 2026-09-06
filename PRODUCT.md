@@ -49,6 +49,11 @@ Confirmed and shipping:
 - `mintPolicy` — snapshots the contributor cap table, weighted by cumulative quality
 - `licensePolicy` — fans a licence payment out to every contributor pro-rata in one transaction
 - Portfolio, leaderboard, and a policy market reading directly from chain state
+- `PasskeyRegistry` — binds a secp256r1 public key to an address and verifies
+  signatures through the P-256 precompile at `0x0100` (EIP-7951 / RIP-7212), so
+  a run can be authorised with the curve a passkey uses rather than a seed
+  phrase. Verified working against the deployed contract on Fuji: a real
+  WebCrypto signature returns 1, a tampered one returns 0
 - Sixteen scene props generated from named dimensions by the same CAD kernel
   that produces the arm, so the object a task names is the object the station
   renders. Task funders pick the payload and the landmark from previews, or
@@ -62,11 +67,7 @@ Constraints and explicit non-capabilities. These are roadmap and must never be p
 - No trained policy exists. Nothing autonomously attempts a task.
 - No post-training / DAgger takeover loop.
 - No mobile ego-centric capture.
-- **No passkey authorisation.** `PasskeyRegistry` verifies secp256r1 through the
-  P-256 precompile at `0x0100`, which Monad ships and Avalanche does not. The
-  contract is deployed on Fuji and inert: a staticcall to an empty address
-  returns empty data, so verification fails closed rather than falsely passing.
-  Nothing in the interface calls it, and it must not be presented as working.
+
 
 Networks: Avalanche Fuji, chain 43113, `https://api.avax-test.network/ext/bc/C/rpc`. Avalanche C-Chain mainnet, chain 43114, `https://api.avax.network/ext/bc/C/rpc`.
 
