@@ -1,20 +1,48 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { AXON_ADDRESS, appChain } from "@/lib/chain";
-import { unsettledWithTx, markSettled, clearTx } from "@/lib/server/db";
+import { AXON_ADDRESS, appChain, KNOWN_CHAINS } from "@/lib/chain";
+import {
+  unsettledWithTx, markSettled, clearTx,
+  unresolvedChain, setChainId, countByChain,
+} from "@/lib/server/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const client = createPublicClient({ chain: appChain, transport: http() });
 
+/** A receipt lookup against an arbitrary chain, by URL rather than by config,
+ *  because the prior chains are no longer part of the app's wagmi setup. */
+async function receiptOn(rpc: string, hash: string): Promise<boolean> {
+  try {
+    const res = await fetch(rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0", id: 1, method: "eth_getTransactionReceipt", params: [hash],
+      }),
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) return false;
+    const json = await res.json();
+    return json?.result != null;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Hold the stored ledger to the chain.
  *
- * Rows written before settlement was verified carry a transaction hash that may
- * belong to a reverted call. This asks the chain about each one and either
- * marks it settled or drops the hash. It only ever reads the chain, so it can
- * confirm and retract but never invent — running it twice changes nothing.
+ * Two things are established here, both by asking a chain rather than by
+ * assuming. First, whether a row with a transaction hash actually settled —
+ * a hash on its own proves nothing, a reverted call has one too. Second, which
+ * chain that transaction is on: this deployment has run on more than one, and
+ * the rows came across with it. Guessing the second is what put transactions on
+ * the public feed that the current chain has never heard of.
+ *
+ * It only ever reads, so it can confirm and retract but never invent. Running
+ * it twice changes nothing.
  */
 export async function POST() {
   const rows = unsettledWithTx();
@@ -31,11 +59,36 @@ export async function POST() {
         cleared += 1;
       }
     } catch {
-      // No such transaction on chain — the claim does not stand.
+      // No such transaction on this chain — the claim does not stand here.
+      // Which chain it *does* belong to is settled below.
       clearTx(row.traj_hash);
       cleared += 1;
     }
   }
 
-  return NextResponse.json({ checked: rows.length, settled, cleared });
+  // Establish the chain of every row that has never had one recorded. Each
+  // hash is offered to every chain this deployment has used, current first.
+  const unresolved = unresolvedChain();
+  const resolved: Record<number, number> = {};
+  let unknown = 0;
+
+  for (const row of unresolved) {
+    let found = false;
+    for (const chain of KNOWN_CHAINS) {
+      if (await receiptOn(chain.rpc, row.tx_hash)) {
+        setChainId(row.traj_hash, chain.id);
+        resolved[chain.id] = (resolved[chain.id] ?? 0) + 1;
+        found = true;
+        break;
+      }
+    }
+    // Left NULL. A row no chain will vouch for is not shown anywhere.
+    if (!found) unknown += 1;
+  }
+
+  return NextResponse.json({
+    checked: rows.length, settled, cleared,
+    chainResolution: { attempted: unresolved.length, resolved, unknown },
+    byChain: countByChain(),
+  });
 }

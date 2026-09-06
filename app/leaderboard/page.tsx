@@ -20,6 +20,8 @@ export default function LeaderboardPage() {
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
         Every accepted run on this contract, read back from its trajectory ledger.
         Nothing here is a fixture — an address appears the moment its first run is paid.
+        Runs from before the move to Avalanche settled on a different chain and are
+        kept in the <a href="/archive" className="text-scribe-2 underline underline-offset-2 hover:text-probe">archive</a> instead.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">

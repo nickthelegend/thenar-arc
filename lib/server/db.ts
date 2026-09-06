@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
+import { appChain } from "@/lib/chain";
 
 /**
  * Trajectory store.
@@ -62,7 +63,11 @@ export function getDb(): Database.Database {
       -- successful. A hash on its own proves nothing: a reverted transaction
       -- has one too, and recording those made the task pages show runs the
       -- contract had never accepted.
-      settled       INTEGER NOT NULL DEFAULT 0
+      settled       INTEGER NOT NULL DEFAULT 0,
+      -- Which chain the tx_hash resolves on. NULL means not yet established.
+      -- This deployment has settled on more than one chain, and a run is only
+      -- verifiable against the chain it was actually written to.
+      chain_id      INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_traj_task ON trajectory(task_id);
@@ -75,8 +80,16 @@ export function getDb(): Database.Database {
   if (!cols.some((c) => c.name === "settled")) {
     db.exec(`ALTER TABLE trajectory ADD COLUMN settled INTEGER NOT NULL DEFAULT 0`);
   }
-  // Safe either way: the column exists by now, freshly created or just added.
+  // Databases created before the move off Monad have no idea which chain their
+  // rows belong to. The column is left NULL rather than defaulted to the
+  // current chain: guessing here is exactly what put unverifiable transactions
+  // on the public feed. /api/reconcile establishes it by asking each chain.
+  if (!cols.some((c) => c.name === "chain_id")) {
+    db.exec(`ALTER TABLE trajectory ADD COLUMN chain_id INTEGER`);
+  }
+  // Safe either way: the columns exist by now, freshly created or just added.
   db.exec(`CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_traj_chain ON trajectory(chain_id)`);
 
   return db;
 }
@@ -96,18 +109,20 @@ export type StoredTrajectory = {
   signature: string;
   created_at: number;
   tx_hash: string | null;
+  chain_id: number | null;
 };
 
-export function insertTrajectory(row: Omit<StoredTrajectory, "tx_hash">) {
+export function insertTrajectory(row: Omit<StoredTrajectory, "tx_hash" | "chain_id">) {
   getDb()
     .prepare(
       `INSERT OR REPLACE INTO trajectory
        (traj_hash, task_id, contributor, score, deviation_mm, duration_s,
-        placement, efficiency, smoothness, sample_count, samples, signature, created_at)
+        placement, efficiency, smoothness, sample_count, samples, signature, created_at, chain_id)
        VALUES (@traj_hash, @task_id, @contributor, @score, @deviation_mm, @duration_s,
-               @placement, @efficiency, @smoothness, @sample_count, @samples, @signature, @created_at)`,
+               @placement, @efficiency, @smoothness, @sample_count, @samples, @signature,
+               @created_at, @chain_id)`,
     )
-    .run(row);
+    .run({ ...row, chain_id: appChain.id });
 }
 
 export function getTrajectory(hash: string): StoredTrajectory | undefined {
@@ -141,25 +156,62 @@ export function recentTrajectories(limit = 20) {
     .prepare(
       `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
               sample_count, created_at, tx_hash
-       FROM trajectory WHERE settled = 1 ORDER BY created_at DESC LIMIT ?`,
+       FROM trajectory WHERE settled = 1 AND chain_id = ? ORDER BY created_at DESC LIMIT ?`,
     )
-    .all(limit) as Omit<StoredTrajectory, "samples" | "signature" | "placement" | "efficiency" | "smoothness">[];
+    .all(appChain.id, limit) as Omit<StoredTrajectory, "samples" | "signature" | "placement" | "efficiency" | "smoothness">[];
 }
 
 export function trajectoriesForTask(taskId: number, limit = 200) {
   return getDb()
     .prepare(
       `SELECT traj_hash, contributor, score, deviation_mm, duration_s, created_at, tx_hash
-       FROM trajectory WHERE task_id = ? AND settled = 1 ORDER BY score DESC LIMIT ?`,
+       FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ?
+        ORDER BY score DESC LIMIT ?`,
     )
-    .all(taskId, limit) as {
+    .all(taskId, appChain.id, limit) as {
     traj_hash: string; contributor: string; score: number;
     deviation_mm: number; duration_s: number; created_at: number; tx_hash: string | null;
   }[];
 }
 
 export function countTrajectories(): number {
-  return (getDb().prepare(`SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1`).get() as { n: number }).n;
+  return (getDb()
+    .prepare(`SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1 AND chain_id = ?`)
+    .get(appChain.id) as { n: number }).n;
+}
+
+/** Settled rows whose chain has never been established. */
+export function unresolvedChain(limit = 500) {
+  return getDb()
+    .prepare(`SELECT traj_hash, tx_hash FROM trajectory
+              WHERE chain_id IS NULL AND tx_hash IS NOT NULL LIMIT ?`)
+    .all(limit) as { traj_hash: string; tx_hash: string }[];
+}
+
+/** Record the chain a transaction was found on. Only ever called after a
+ *  receipt for that exact hash came back from that exact chain. */
+export function setChainId(hash: string, chainId: number) {
+  getDb().prepare(`UPDATE trajectory SET chain_id = ? WHERE traj_hash = ?`).run(chainId, hash);
+}
+
+/** How the stored runs divide across chains, for the integrity check. */
+export function countByChain(): { chain_id: number | null; n: number }[] {
+  return getDb()
+    .prepare(`SELECT chain_id, COUNT(*) AS n FROM trajectory
+              WHERE settled = 1 GROUP BY chain_id ORDER BY n DESC`)
+    .all() as { chain_id: number | null; n: number }[];
+}
+
+/** Runs recorded under a previous deployment, for the archive. */
+export function trajectoriesOnChain(chainId: number, limit = 500) {
+  return getDb()
+    .prepare(
+      `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
+              sample_count, created_at, tx_hash, chain_id
+       FROM trajectory WHERE settled = 1 AND chain_id = ?
+       ORDER BY created_at DESC LIMIT ?`,
+    )
+    .all(chainId, limit) as (Omit<StoredTrajectory, "samples" | "signature" | "placement" | "efficiency" | "smoothness">)[];
 }
 
 // ---------------------------------------------------------------- props

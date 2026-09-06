@@ -23,7 +23,7 @@ export default function Home() {
             not compute.
           </h1>
 
-          <p className="max-w-[58ch] text-[16px] leading-relaxed text-scribe-2">
+          <p data-anim="hero-copy" className="max-w-[58ch] text-[16px] leading-relaxed text-scribe-2">
             Robot manipulation data is collected in closed labs, slowly and
             narrowly. Thenar collects it in the browser instead: you drive a
             simulated arm through a task, the run is measured against the goal

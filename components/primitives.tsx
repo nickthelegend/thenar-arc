@@ -273,7 +273,10 @@ export function Button({
 /* A dimension line with an optional callout, used to divide structural
    regions of a page the way a drawing divides views. */
 export function DimRule({ note, className }: { note?: string; className?: string }) {
-  if (!note) return <div className={cn("dim-rule", className)} />;
+  // Both branches carry the hook. Only the noted branch used to, so every plain
+  // rule on the landing page was invisible to the boot timeline that claims to
+  // draw them — the selector matched nothing and GSAP warned on every load.
+  if (!note) return <div data-anim="rule" className={cn("dim-rule", className)} />;
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div data-anim="rule" className="dim-rule flex-1" />

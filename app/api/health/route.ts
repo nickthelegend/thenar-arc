@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createPublicClient, http, hashDomain } from "viem";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
-import { countTrajectories } from "@/lib/server/db";
+import { countTrajectories, countByChain } from "@/lib/server/db";
 import { runDomain } from "@/lib/server/verifier";
 
 export const runtime = "nodejs";
@@ -83,6 +83,32 @@ export async function GET() {
       };
     } catch (e) {
       checks.signingDomain = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
+    }
+  }
+
+  // The number on the feed and the number on the chain have to be the same
+  // number. They were not: rows recorded under a previous deployment carried
+  // across and were rendered with explorer links the current chain could not
+  // resolve. Anything that lets them diverge again should fail this check, not
+  // wait to be noticed on the public feed.
+  if (IS_DEPLOYED) {
+    try {
+      const onchain = Number(await client.readContract({
+        address: AXON_ADDRESS, abi: AXON_ABI, functionName: "trajectoryCount",
+      }));
+      const stored = countTrajectories();
+      const other = countByChain()
+        .filter((r) => r.chain_id !== appChain.id)
+        .map((r) => `${r.n} on ${r.chain_id ?? "unresolved"}`)
+        .join(", ");
+      checks.ledgerMatchesChain = {
+        ok: stored === onchain,
+        detail: stored === onchain
+          ? `${stored} runs stored, ${onchain} on chain${other ? ` (plus ${other}, not shown)` : ""}`
+          : `${stored} runs stored for chain ${appChain.id} but the contract reports ${onchain}`,
+      };
+    } catch (e) {
+      checks.ledgerMatchesChain = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
     }
   }
 
