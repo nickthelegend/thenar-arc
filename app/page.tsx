@@ -109,7 +109,7 @@ export default function Home() {
             {
               n: "01",
               h: "Drive the arm",
-              p: "Arrow keys reach and swing, E and D raise and lower, space works the jaws. The pose is logged twenty times a second.",
+              p: "Drag the workspace, or use WASD to reach and swing and E and Q to raise and lower. Space works the jaws. The pose is logged twenty times a second.",
             },
             {
               n: "02",
@@ -155,7 +155,7 @@ export default function Home() {
       </section>
 
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-rule py-6 font-mono text-[12px] text-scribe-3">
-        <span className="text-scribe-2">AXON</span>
+        <span className="text-scribe-2">THENAR</span>
         <span>Monad Testnet · chain 10143</span>
         <Link href="/spec" className="hover:text-scribe">THENAR-6 spec sheet</Link>
         <a href="/api/contract" className="hover:text-scribe">Contract ABI</a>

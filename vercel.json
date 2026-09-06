@@ -2,5 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "next build",
-  "installCommand": "pnpm install --no-frozen-lockfile"
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_AXON_ADDRESS": "0x89384f46e430F37DB61Afb98810eba995C0d6Ed4",
+      "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app"
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_AXON_ADDRESS": "0x89384f46e430F37DB61Afb98810eba995C0d6Ed4",
+    "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app"
+  }
 }
