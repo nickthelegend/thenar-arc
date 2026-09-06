@@ -26,13 +26,15 @@ export function PropStrip() {
         modelling file to lose. Funders pick from these or upload their own glTF.
       </p>
 
-      <div className="mt-8 grid grid-cols-3 gap-px bg-rule sm:grid-cols-4 lg:grid-cols-6">
+      <div className="mt-8 grid grid-cols-2 gap-px bg-rule sm:grid-cols-3 lg:grid-cols-6">
         {shown.map((p) => (
           <div key={p.id} className="bg-ink-1">
             <PropPreview url={p.url} className="h-[104px] w-full" />
-            <div className="flex items-baseline justify-between border-t border-rule px-2 py-1.5">
-              <span className="font-mono text-[10px] text-scribe-2">{p.label}</span>
-              <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-scribe-3">
+            {/* Name over role rather than beside it: at the label step the two
+                will not share a tile this narrow without one of them truncating. */}
+            <div className="border-t border-rule px-2 py-1.5">
+              <span className="block truncate font-mono text-[12px] text-scribe-2">{p.label}</span>
+              <span className="block font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-3">
                 {p.role === "target" ? "landmark" : p.scenario}
               </span>
             </div>

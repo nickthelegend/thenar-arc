@@ -58,9 +58,9 @@ export function PropPicker({
 }) {
   return (
     <div className="border-t border-rule py-5">
-      <div className="mb-1 font-mono text-[11px] uppercase tracking-[0.1em] text-scribe-3">{label}</div>
-      <p className="mb-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">{hint}</p>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-8">
+      <div className="mb-1 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-3">{label}</div>
+      <p className="mb-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">{hint}</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {options.map((p) => {
           const on = p.id === value;
           return (
@@ -77,7 +77,9 @@ export function PropPicker({
               <PropPreview url={p.url} className="h-[74px] w-full" />
               <span
                 className={cn(
-                  "border-t px-2 py-1 font-mono text-[10px] leading-tight",
+                  // The label step is the documented floor; a tile narrower
+                  // than its own caption is a layout problem, not a type one.
+                  "block truncate border-t px-2 py-1 font-mono text-[12px] leading-tight",
                   on ? "border-signal/40 text-signal-hi" : "border-rule text-scribe-3",
                 )}
               >
