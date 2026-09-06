@@ -128,7 +128,7 @@ python3 -m pip install numpy && python3 cad/arm.py
 Every one of these runs green right now:
 
 ```bash
-cd contracts && forge test              # 19 tests, incl. a 256-run fuzz
+cd contracts && forge test              # 23 tests, incl. a 256-run fuzz
 cd contracts && forge test --match-contract PasskeyRegistry \
   --fork-url https://testnet-rpc.monad.xyz            # 10, against the real precompile
 node scripts/passkey-onchain.mjs                      # register + authorise, on chain
