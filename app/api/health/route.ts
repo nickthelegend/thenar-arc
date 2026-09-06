@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, hashDomain } from "viem";
 import { AXON_ADDRESS, IS_DEPLOYED, monadTestnet } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 import { countTrajectories } from "@/lib/server/db";
+import { runDomain } from "@/lib/server/verifier";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +51,38 @@ export async function GET() {
       };
     } catch (e) {
       checks.verifierMatches = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
+    }
+  }
+
+  if (IS_DEPLOYED) {
+    // A signature is only worth anything if the domain matches the one the
+    // contract hashes against. Renaming the product once changed this and every
+    // submission started reverting with BadSignature, so it is checked here
+    // rather than trusted.
+    try {
+      const onchain = await client.readContract({
+        address: AXON_ADDRESS, abi: AXON_ABI, functionName: "domainSeparator",
+      });
+      const d = runDomain(monadTestnet.id, AXON_ADDRESS);
+      const local = hashDomain({
+        domain: { ...d, chainId: BigInt(d.chainId) },
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+        },
+      });
+      checks.signingDomain = {
+        ok: local === onchain,
+        detail: local === onchain
+          ? "signing domain matches the contract"
+          : `signing domain ${local} does not match the contract's ${onchain}`,
+      };
+    } catch (e) {
+      checks.signingDomain = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
     }
   }
 

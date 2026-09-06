@@ -1,6 +1,13 @@
 // Generated from contracts/out/AxonProtocol.sol/AxonProtocol.json — do not edit by hand.
 export const AXON_ABI = [
   {
+    "inputs": [],
+    "name": "domainSeparator",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "type": "function",
     "name": "ACCEPT_FLOOR",
     "inputs": [],

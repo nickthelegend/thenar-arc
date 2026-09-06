@@ -65,6 +65,19 @@ export type VerifyResult = {
  * evaluated here with the same deterministic function, and only this signature
  * makes a payout possible on chain.
  */
+/**
+ * The EIP-712 domain the contract verifies against.
+ *
+ * `name` is NOT the product name. The deployed contract hardcodes
+ * keccak256("Axon"), so this has to match byte for byte or every signature is
+ * rejected with BadSignature(). It does not get renamed with the brand —
+ * changing it means redeploying the contract. /api/health asserts this against
+ * the chain on every call so a rename can never silently break submissions.
+ */
+export function runDomain(chainId: number, verifyingContract: `0x${string}`) {
+  return { name: "Axon", version: "1", chainId, verifyingContract } as const;
+}
+
 export async function verifyAndSign(args: {
   taskId: number;
   contributor: `0x${string}`;
@@ -98,12 +111,7 @@ export async function verifyAndSign(args: {
 
   const account = privateKeyToAccount(pk as `0x${string}`);
   const signature = await account.signTypedData({
-    domain: {
-      name: "Thenar",
-      version: "1",
-      chainId: args.chainId,
-      verifyingContract: args.contractAddress,
-    },
+    domain: runDomain(args.chainId, args.contractAddress),
     types: {
       Run: [
         { name: "taskId", type: "uint256" },
