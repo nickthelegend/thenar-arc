@@ -28,6 +28,21 @@ export function getDb(): Database.Database {
   db.pragma("synchronous = NORMAL");
 
   db.exec(`
+    -- Props a task funder uploaded. The bytes live on the same persistent
+    -- volume as the trajectories, because a scene whose model disappears makes
+    -- every run recorded against it unreproducible.
+    CREATE TABLE IF NOT EXISTS prop (
+      id          TEXT PRIMARY KEY,
+      label       TEXT NOT NULL,
+      role        TEXT NOT NULL,
+      width_mm    REAL NOT NULL,
+      bytes       INTEGER NOT NULL,
+      sha256      TEXT NOT NULL,
+      uploader    TEXT NOT NULL,
+      created_at  INTEGER NOT NULL,
+      glb         BLOB NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS trajectory (
       traj_hash     TEXT PRIMARY KEY,
       task_id       INTEGER NOT NULL,
@@ -145,4 +160,51 @@ export function trajectoriesForTask(taskId: number, limit = 200) {
 
 export function countTrajectories(): number {
   return (getDb().prepare(`SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1`).get() as { n: number }).n;
+}
+
+// ---------------------------------------------------------------- props
+
+export type StoredProp = {
+  id: string;
+  label: string;
+  role: "payload" | "target";
+  width_mm: number;
+  bytes: number;
+  sha256: string;
+  uploader: string;
+  created_at: number;
+};
+
+/**
+ * Store a funder's own model.
+ *
+ * The GLB itself goes in the row rather than on disk: the volume is what
+ * survives a redeploy, and a scene whose model went missing would make every
+ * run recorded against it unreproducible.
+ */
+export function insertProp(row: StoredProp & { glb: Buffer }) {
+  getDb().prepare(
+    `INSERT INTO prop (id, label, role, width_mm, bytes, sha256, uploader, created_at, glb)
+     VALUES (@id, @label, @role, @width_mm, @bytes, @sha256, @uploader, @created_at, @glb)`,
+  ).run(row);
+}
+
+export function getPropBlob(id: string): { glb: Buffer; bytes: number } | undefined {
+  return getDb().prepare("SELECT glb, bytes FROM prop WHERE id = ?").get(id) as
+    | { glb: Buffer; bytes: number }
+    | undefined;
+}
+
+export function listProps(limit = 200): StoredProp[] {
+  return getDb().prepare(
+    `SELECT id, label, role, width_mm, bytes, sha256, uploader, created_at
+       FROM prop ORDER BY created_at DESC LIMIT ?`,
+  ).all(limit) as StoredProp[];
+}
+
+export function propBySha(sha: string): StoredProp | undefined {
+  return getDb().prepare(
+    `SELECT id, label, role, width_mm, bytes, sha256, uploader, created_at
+       FROM prop WHERE sha256 = ?`,
+  ).get(sha) as StoredProp | undefined;
 }
