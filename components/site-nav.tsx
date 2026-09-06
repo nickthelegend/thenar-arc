@@ -30,7 +30,7 @@ export function SiteNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-rule bg-ink-1/95 backdrop-blur-[2px]">
+      <header className="sticky top-0 z-40 border-b border-rule bg-ink-1">
         <div className="mx-auto flex h-14 max-w-[1400px] items-stretch gap-3 px-4 sm:gap-6 sm:px-5">
           <Link href="/" className="flex shrink-0 items-center self-center" aria-label="Thenar home">
             <ThenarWordmark />

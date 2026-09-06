@@ -1,6 +1,6 @@
 ---
 name: Thenar
-description: The data foundry for physical AI — teleoperate, measure, get paid on Monad.
+description: The data foundry for physical AI — teleoperate, measure, get paid on Avalanche.
 colors:
   ink-0: "#000000"
   ink-1: "#080808"
@@ -198,7 +198,7 @@ version would be a different product.
 | `scribe` | `#FFFFFF` | Primary text, and the fill of an inverted control |
 | `scribe-2` | `#E0E0E0` | Secondary prose |
 | `scribe-3` | `#8F8F8F` | Labels, units, captions |
-| `signal` | `#FF6A00` | **The brand. Money, value, live state** — MON figures, slot tally, cap-table bars, joint collars on the arm |
+| `signal` | `#FF6A00` | **The brand. Money, value, live state** — AVAX figures, slot tally, cap-table bars, joint collars on the arm |
 | `signal-hi` | `#FF9A3D` | Primary control hover, focus ring |
 | `go` | `#3DD68C` | In tolerance |
 | `reject` | `#FF2D55` | Out of tolerance |
