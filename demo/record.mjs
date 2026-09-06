@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const BASE = process.argv[2] ?? "https://web-production-2d1d0.up.railway.app";
+const BASE = process.argv[2] ?? "https://thenar.io";
 const OUT = "demo/out";
 mkdirSync(OUT, { recursive: true });
 

@@ -64,7 +64,7 @@ data sitting in the tree reads as faked state to anyone auditing the project.
 
 ### MISSING — Monad capabilities this project does not touch
 
-1. ~~**P256 precompile `0x0100`** — verified working, entirely unused.~~ **Now shipped.** `PasskeyRegistry` at [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) binds a secp256r1 key to an address and verifies signatures through the precompile; `register()` and `authorise()` have both executed on chain, replay and forgery are refused, and `/passkey` demonstrates it live for about 34k gas.
+1. ~~**P256 precompile `0x0100`** — verified working, entirely unused.~~ **Now shipped.** `PasskeyRegistry` at [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) binds a secp256r1 key to an address and verifies signatures through the precompile; `register()` and `authorise()` have both executed on chain, replay and forgery are refused, and the fork tests exercise it for about 34k gas. (The browser surface was cut when wallet connection moved to RainbowKit; the contract and its tests remain.)
 2. **Staking precompile `0x1000`** — unused.
 3. **EIP-7702 delegation** — unused; every submit is a separate signature.
 4. **128 KB contract size** — `AxonProtocol` is ~10 KB. Ethereum's 24 KB limit is not even close to binding here.

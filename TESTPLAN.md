@@ -1,7 +1,7 @@
 # Thenar — test plan
 
 Target: the deployed product at **https://thenar.io** (frontend, Vercel), whose
-`/api/*` is proxied to **https://web-production-2d1d0.up.railway.app** (backend
+`/api/*` is proxied to **https://thenar.io** (backend
 and SQLite volume, Railway), against **AxonProtocol** at
 `0x89384f46e430F37DB61Afb98810eba995C0d6Ed4` on Monad Testnet (chain 10143).
 

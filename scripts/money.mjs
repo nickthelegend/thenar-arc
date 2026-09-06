@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { createPublicClient, createWalletClient, http, formatEther, parseEther, parseAbi } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-const BASE = process.argv[2] ?? "https://web-production-2d1d0.up.railway.app";
+const BASE = process.argv[2] ?? "https://thenar.io";
 const env = Object.fromEntries(readFileSync(".env.deployer","utf8").split("\n").filter(Boolean).map(l=>{const i=l.indexOf("=");return [l.slice(0,i),l.slice(i+1)];}));
 const chain={id:10143,name:"Monad Testnet",nativeCurrency:{name:"Monad",symbol:"MON",decimals:18},rpcUrls:{default:{http:["https://testnet-rpc.monad.xyz"]}}};
 const abi=parseAbi([

@@ -6,6 +6,14 @@ transaction that records the trajectory.
 
 Built at Monad Blitz Hyderabad V3.
 
+| | |
+| --- | --- |
+| **Live** | **https://thenar.io** |
+| **Repo** | https://github.com/nickthelegend/axon-monad |
+| **Contract** | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — Monad Testnet (10143), source-verified |
+| **Passkey contract** | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — source-verified |
+| **Hosting** | Vercel (frontend, custom domain) + Railway (API, persistent SQLite volume) |
+
 ---
 
 ## Demo
@@ -93,13 +101,13 @@ exists for, which is why it is on Monad.
 
 | | |
 | --- | --- |
-| **Live app** | **https://web-production-2d1d0.up.railway.app** |
+| **Live app** | **https://thenar.io** |
 | AxonProtocol | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — **verified**, exact match |
 | PasskeyRegistry | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — **verified**, exact match |
 | Network | Monad Testnet, chain `10143` |
 | Verifier key | `0x5beE0b22906c28F747279217F5C8019c39fB086b` |
-| Contract metadata | [`https://web-production-2d1d0.up.railway.app/api/contract`](https://web-production-2d1d0.up.railway.app/api/contract) — address, chain and full ABI |
-| Health | [`https://web-production-2d1d0.up.railway.app/api/health`](https://web-production-2d1d0.up.railway.app/api/health) |
+| Contract metadata | [`https://thenar.io/api/contract`](https://thenar.io/api/contract) — address, chain and full ABI |
+| Health | [`https://thenar.io/api/health`](https://thenar.io/api/health) |
 | Hosting | Railway, with a persistent volume for the trajectory store |
 
 ## Run it
@@ -131,7 +139,6 @@ Every one of these runs green right now:
 cd contracts && forge test              # 23 tests, incl. a 256-run fuzz
 cd contracts && forge test --match-contract PasskeyRegistry \
   --fork-url https://testnet-rpc.monad.xyz            # 10, against the real precompile
-node scripts/passkey-onchain.mjs                      # register + authorise, on chain
 node --experimental-strip-types scripts/check-loop.ts   # IK + scoring
 node scripts/e2e.mjs http://localhost:3000              # live on-chain proof
 node scripts/lifecycle.mjs http://localhost:3000        # create -> fill -> mint -> licence
@@ -146,7 +153,7 @@ net of gas, that replaying the same trajectory is refused, and that a forged
 score is refused. It passes against the live deployment, not just localhost:
 
 ```
-node scripts/e2e.mjs https://web-production-2d1d0.up.railway.app
+node scripts/e2e.mjs https://thenar.io
 ```
 
 `scripts/lifecycle.mjs` covers the other half — creating a funded task, filling
@@ -188,7 +195,6 @@ unauditable payout.
 | Verify a run | `/run/[hash]` | Public audit: re-hashes the stored samples and replays the tool path |
 | Post a task | `/post` | Open a bounty and escrow it |
 | Spec sheet | `/spec` | THENAR-6, generated from the CAD constants |
-| Passkey | `/passkey` | Generates a real secp256r1 key and has Monad verify it |
 
 **Nothing on these pages is a fixture.** Tasks, slots, escrow, scores, payouts,
 standings and cap tables are all read from the contract. The trajectories behind
@@ -236,7 +242,7 @@ anything measured. It is not decoration — Thenar's semantics are metrology, so
 every recurring device (tolerance band, gauge-block slot tally, datum zone,
 leader-line callouts) is a real instrument-shop device doing its actual job.
 
-Verified clean by `npx impeccable detect` across all eleven routes and the
+Verified clean by `npx impeccable detect` across all ten routes and the
 whole source tree.
 
 ---
@@ -268,11 +274,11 @@ single-counter version and is kept for the record.
 **Passkeys.** Monad ships EIP-7951's P256 precompile at `0x0100`, so a
 secp256r1 signature — the curve a passkey already uses — can be verified by the
 chain itself. `PasskeyRegistry` binds a public key to an address and spends
-signatures through it, `submitTrajectoryWithPasskey` lets an operator authorise
-a run with that key rather than their wallet, and `/passkey` proves the whole
-thing live: the browser
-generates a key with WebCrypto, signs, the chain accepts it and refuses the
-same signature with one bit flipped, for about 34k gas. Ethereum mainnet has no
+signatures through it, and `submitTrajectoryWithPasskey` lets an operator
+authorise a run with that key rather than their wallet. The browser surface that
+demonstrated it was cut when wallet connection moved to RainbowKit, so the proof
+now lives in the fork tests: a genuine WebCrypto vector is accepted, the same
+signature with one bit flipped is refused, for about 34k gas. Ethereum mainnet has no
 such precompile; verifying secp256r1 there costs hundreds of thousands of gas
 in Solidity.
 
