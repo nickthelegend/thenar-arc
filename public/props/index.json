@@ -1,0 +1,148 @@
+{
+  "props": [
+    {
+      "id": "mug",
+      "label": "Mug",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 82,
+      "url": "/props/mug.glb",
+      "bytes": 43604
+    },
+    {
+      "id": "bottle",
+      "label": "Bottle",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 66,
+      "url": "/props/bottle.glb",
+      "bytes": 19020
+    },
+    {
+      "id": "toothpaste",
+      "label": "Toothpaste",
+      "scenario": "bathroom",
+      "role": "payload",
+      "widthMm": 34,
+      "url": "/props/toothpaste.glb",
+      "bytes": 15768
+    },
+    {
+      "id": "dice",
+      "label": "Dice",
+      "scenario": "play",
+      "role": "payload",
+      "widthMm": 42,
+      "url": "/props/dice.glb",
+      "bytes": 14692
+    },
+    {
+      "id": "pen",
+      "label": "Pen",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 12,
+      "url": "/props/pen.glb",
+      "bytes": 14628
+    },
+    {
+      "id": "eraser",
+      "label": "Eraser",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 46,
+      "url": "/props/eraser.glb",
+      "bytes": 5320
+    },
+    {
+      "id": "jar",
+      "label": "Honey jar",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 76,
+      "url": "/props/jar.glb",
+      "bytes": 16124
+    },
+    {
+      "id": "toast",
+      "label": "Toast",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 96,
+      "url": "/props/toast.glb",
+      "bytes": 11884
+    },
+    {
+      "id": "apricot",
+      "label": "Apricot",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 50,
+      "url": "/props/apricot.glb",
+      "bytes": 12104
+    },
+    {
+      "id": "shrimp",
+      "label": "Shrimp",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 48,
+      "url": "/props/shrimp.glb",
+      "bytes": 20992
+    },
+    {
+      "id": "drawer",
+      "label": "Drawer",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 190,
+      "url": "/props/drawer.glb",
+      "bytes": 21880
+    },
+    {
+      "id": "shelf",
+      "label": "Shelf",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 200,
+      "url": "/props/shelf.glb",
+      "bytes": 12256
+    },
+    {
+      "id": "pen_cup",
+      "label": "Pen cup",
+      "scenario": "office",
+      "role": "target",
+      "widthMm": 76,
+      "url": "/props/pen_cup.glb",
+      "bytes": 18224
+    },
+    {
+      "id": "crate",
+      "label": "Crate",
+      "scenario": "workshop",
+      "role": "target",
+      "widthMm": 150,
+      "url": "/props/crate.glb",
+      "bytes": 19156
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "scenario": "office",
+      "role": "target",
+      "widthMm": 230,
+      "url": "/props/laptop.glb",
+      "bytes": 8808
+    },
+    {
+      "id": "air_fryer",
+      "label": "Air fryer",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 164,
+      "url": "/props/air_fryer.glb",
+      "bytes": 19436
+    }
+  ]
+}

@@ -68,6 +68,13 @@ type ViewportProps = {
   running: boolean;
   goal: [number, number];
   start: [number, number];
+  /** The objects this task is actually about. The instruction names them; the
+   *  scene used to render an anonymous cylinder regardless, which made every
+   *  recorded trajectory a demonstration of moving a grey puck. */
+  payloadUrl: string;
+  payloadWidthMm: number;
+  targetUrl: string;
+  targetWidthMm: number;
   /** Incremented by the station on every new run. The rig is keyed on it, so a
    *  new run remounts the scene rather than trying to reset it in place. */
   runId: number;
@@ -76,6 +83,45 @@ type ViewportProps = {
 };
 
 useGLTF.preload("/models/thenar-6.glb");
+
+/**
+ * A prop, scaled from the millimetres it was authored in into the workspace.
+ *
+ * Every prop is generated Z-up with its origin on the footprint centre, so it
+ * needs the same -90 about X the arm gets, and a scale that makes its declared
+ * width match the space the task gives it.
+ */
+function Prop({ url, widthMm, targetM, position, opacity = 1 }: {
+  url: string; widthMm: number; targetM: number;
+  position: [number, number, number]; opacity?: number;
+}) {
+  const { scene } = useGLTF(url);
+  const model = useMemo(() => {
+    const c = scene.clone(true);
+    c.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+      if (opacity < 1) {
+        const mat = (m.material as THREE.MeshStandardMaterial).clone();
+        mat.transparent = true;
+        mat.opacity = opacity;
+        m.material = mat;
+      }
+    });
+    return c;
+  }, [scene, opacity]);
+  const k = (targetM * 1000) / widthMm / 1000;
+  return (
+    <primitive
+      object={model}
+      position={position}
+      rotation={[-Math.PI / 2, 0, 0]}
+      scale={[k, k, k]}
+    />
+  );
+}
 
 function Arm({
   target,
@@ -198,8 +244,8 @@ function GoalZone({ at }: { at: [number, number] }) {
   );
 }
 
-function Payload({ pos }: { pos: React.RefObject<[number, number, number]> }) {
-  const ref = useRef<THREE.Mesh>(null);
+function Payload({ pos, url, widthMm }: { pos: React.RefObject<[number, number, number]>; url: string; widthMm: number }) {
+  const ref = useRef<THREE.Group>(null);
   useFrame(() => {
     if (ref.current) {
       // Same sign convention as the goal ring: the arm model is rotated -90
@@ -208,10 +254,10 @@ function Payload({ pos }: { pos: React.RefObject<[number, number, number]> }) {
     }
   });
   return (
-    <mesh ref={ref} castShadow>
-      <cylinderGeometry args={[PAYLOAD_R, PAYLOAD_R, PAYLOAD_H, 24]} />
-      <meshStandardMaterial color="#D6D8D2" roughness={0.4} metalness={0.2} />
-    </mesh>
+    <group ref={ref}>
+      <Prop url={url} widthMm={widthMm} targetM={PAYLOAD_R * 2}
+            position={[0, -PAYLOAD_H / 2, 0]} />
+    </group>
   );
 }
 
@@ -293,6 +339,10 @@ function Rig({
   running,
   goal,
   start,
+  payloadUrl,
+  payloadWidthMm,
+  targetUrl,
+  targetWidthMm,
   onTelemetry,
   onSample,
 }: Omit<ViewportProps, "runId">) {
@@ -475,7 +525,10 @@ function Rig({
       <ReachEnvelope visible={outOfReach} />
       <GhostTrail points={trail} />
       <GoalZone at={goal} />
-      <Payload pos={object} />
+      {/* The landmark the instruction names, sitting at the datum it defines. */}
+      <Prop url={targetUrl} widthMm={targetWidthMm} targetM={GOAL_R * 1.7}
+            position={[goal[0], TABLE_Z, -goal[1]]} opacity={0.92} />
+      <Payload pos={object} url={payloadUrl} widthMm={payloadWidthMm} />
       <Arm
         target={target}
         grip={grip}

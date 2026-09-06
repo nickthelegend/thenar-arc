@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Telemetry } from "@/components/station/viewport";
 import { GOAL_R } from "@/components/station/viewport";
 import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
@@ -12,6 +12,7 @@ import { useRunsOnTask, useTask } from "@/lib/hooks";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
 import { txUrl, CURRENCY } from "@/lib/chain";
+import { propsForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import type { Sample, Verdict } from "@/lib/types";
@@ -52,6 +53,13 @@ export default function StationPage() {
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [elapsed, setElapsed] = useState(0);
   /** Bumped on every run so the viewport resets its payload and arm. */
+  // The objects the instruction names, so the viewport renders the task rather
+  // than an anonymous puck.
+  const scene = useMemo(
+    () => propsForTask(task?.name ?? "", task?.scenario ?? "general"),
+    [task?.name, task?.scenario],
+  );
+
   const [runId, setRunId] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -222,6 +230,10 @@ export default function StationPage() {
             running={phase === "running"}
             goal={GOAL}
             start={START}
+            payloadUrl={scene.payload.url}
+            payloadWidthMm={scene.payload.widthMm}
+            targetUrl={scene.target.url}
+            targetWidthMm={scene.target.widthMm}
             runId={runId}
             onTelemetry={onTelemetry}
             onSample={onSample}
