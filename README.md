@@ -10,13 +10,14 @@ Built at Monad Blitz Hyderabad V3.
 
 ## Demo
 
-Two minutes fifty-four, no narration: drive the arm, place the payload, get paid,
-then buy a licence and watch the fee split across every contributor. Both
-transactions in it are real and are linked below.
+Drive the arm, place the payload, get paid, then buy a licence and watch the fee
+split across every contributor. Both transactions are real and linked below.
+
+![Axon demo — pick and place, payout, and the transaction on Monad](docs/demo.gif)
+
+**[▶ Watch the full 2:54 demo](https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4)** — no narration, download or stream from the release.
 
 <video src="https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4" controls muted playsinline width="100%"></video>
-
-[![Watch the demo](docs/demo-poster.png)](https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4)
 
 The two transactions the video shows, on Monad Testnet:
 
@@ -24,6 +25,48 @@ The two transactions the video shows, on Monad Testnet:
 | --- | --- | --- |
 | Payout — `submitTrajectory` records the run and pays the operator | [`0x4496b36a…434c5433`](https://testnet.monadscan.com/tx/0x4496b36a16be3f5b622305d058314212c0ab820eebda8fd1dd5cc2c4434c5433) | 55950354 |
 | Licence — `licensePolicy` pays the whole cap table in one call | [`0x139bc19e…73f14b9a`](https://testnet.monadscan.com/tx/0x139bc19e419194a12034059fb92cc864016a4ee5012b679f9acc1ecc73f14b9a) | 55950691 |
+
+---
+
+## Contracts
+
+Solidity, Foundry, deployed and source-verified on Monad Testnet (chain 10143).
+
+| Contract | Address | Source |
+| --- | --- | --- |
+| `AxonProtocol` — tasks, escrow, trajectories, policies, cap tables | [`0x89384f46…C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) | [`contracts/src/AxonProtocol.sol`](contracts/src/AxonProtocol.sol) |
+| `PasskeyRegistry` — secp256r1 verification via Monad's P256 precompile at `0x0100` | [`0xD6dE823E…DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) | [`contracts/src/PasskeyRegistry.sol`](contracts/src/PasskeyRegistry.sol) |
+
+Both report `exact_match` on the explorer, so the verified source is the source
+in this repo.
+
+What the protocol does, in the order the video shows it:
+
+- **`createTask`** escrows `slots × rewardPerTrajectory` up front. A task that
+  cannot pay is not a task.
+- **`submitTrajectory`** takes the trajectory hash, the task, and a score the
+  verifier signed with EIP-712. It records the run and transfers the reward in
+  the same call — there is no separate claim. Replays revert `AlreadySubmitted`;
+  an unsigned score reverts `BadSignature`.
+- **`mintPolicy`** snapshots the contributor cap table when a task fills, weights
+  in basis points summing to 10000.
+- **`licensePolicy`** pays every contributor pro-rata in one transaction. A payee
+  that refuses transfers is credited instead of reverting the sale, and can pull
+  later with `claim`.
+
+Slot counters are **sharded** (`MAX_SHARDS`, `SLOTS_PER_SHARD`) so concurrent
+submissions to the same task write to different storage slots — the point is to
+not serialise against Monad's parallel execution.
+
+Tests: [`contracts/test/AxonProtocol.t.sol`](contracts/test/AxonProtocol.t.sol)
+(23, including a 256-run fuzz and the sharding invariants) and
+[`contracts/test/PasskeyRegistry.t.sol`](contracts/test/PasskeyRegistry.t.sol)
+(10, run against a fork because the P256 precompile cannot be `vm.etch`ed).
+
+```bash
+cd contracts && forge test
+cd contracts && forge test --match-contract PasskeyRegistry --fork-url https://testnet-rpc.monad.xyz
+```
 
 ---
 
