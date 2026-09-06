@@ -21,7 +21,7 @@
     "server-only": "^0.0.1",
     "three": "^0.185.1",
     "viem": "^2.55.19",
-    "wagmi": "^3.7.6"
+    "wagmi": "^2.16.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
