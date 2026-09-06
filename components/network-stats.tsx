@@ -27,7 +27,7 @@ export function NetworkStats() {
 
   return (
     <div className="flex flex-col gap-3 border-y border-rule py-4">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+      <div data-anim="readings" className="flex flex-wrap items-center gap-x-8 gap-y-3">
         <Reading label="Tasks" value={fmtInt(n(0))} />
         <Reading label="Trajectories recorded" value={fmtInt(n(1))} />
         <Reading label="Policies minted" value={fmtInt(n(2))} />

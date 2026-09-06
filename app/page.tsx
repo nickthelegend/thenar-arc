@@ -2,6 +2,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { DimRule } from "@/components/primitives";
 import { NetworkStats } from "@/components/network-stats";
+import { LandingMotion } from "@/components/landing-motion";
+import { IconArm, IconDatum, IconTally, IconWallet } from "@/components/icons";
 import { TOLERANCE_MM } from "@/lib/score";
 
 const HeroArm = dynamic(() => import("@/components/hero-arm").then((m) => m.HeroArm));
@@ -9,11 +11,12 @@ const HeroArm = dynamic(() => import("@/components/hero-arm").then((m) => m.Hero
 export default function Home() {
   return (
     <div className="mx-auto max-w-[1400px] px-5">
+      <LandingMotion />
       {/* The thesis is the arm doing the work, next to the sentence that
           explains why anyone would. */}
       <section className="grid items-center gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-20">
         <div className="flex flex-col gap-6">
-          <h1 className="font-display text-[clamp(2.6rem,6.4vw,4.6rem)] font-700 leading-[0.94] tracking-[-0.02em]">
+          <h1 data-anim="hero-head" className="font-display text-[clamp(2.6rem,6.4vw,4.6rem)] font-700 leading-[0.94] tracking-[-0.02em]">
             Physical AI is short of data,
             <br />
             not compute.
@@ -27,7 +30,7 @@ export default function Home() {
             in the same transaction.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div data-anim="hero-cta" className="flex flex-wrap items-center gap-3">
             <Link
               href="/hub"
               className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
@@ -108,27 +111,34 @@ export default function Home() {
           {[
             {
               n: "01",
+              Icon: IconArm,
               h: "Drive the arm",
               p: "Drag the workspace, or use WASD to reach and swing and E and Q to raise and lower. Space works the jaws. The pose is logged twenty times a second.",
             },
             {
               n: "02",
+              Icon: IconDatum,
               h: "Come to rest",
               p: `The measurement is taken when the payload settles — how far its centre finished from the goal datum, against a ±${TOLERANCE_MM} mm band.`,
             },
             {
               n: "03",
+              Icon: IconTally,
               h: "Get a score",
               p: "Placement, path smoothness and time against par resolve to one number. The same trajectory always scores the same, because the payout is derived from it.",
             },
             {
               n: "04",
+              Icon: IconWallet,
               h: "Get paid",
               p: "One transaction records the trajectory hash, its task, your address and the score — and transfers the MON. There is no separate signing step.",
             },
           ].map((s) => (
-            <li key={s.n} className="flex flex-col gap-2 bg-ink-1 p-5">
-              <span className="font-mono text-[12px] tabular-nums text-signal">{s.n}</span>
+            <li key={s.n} data-anim="step" className="flex flex-col gap-2 bg-ink-1 p-5">
+              <span className="flex items-center gap-2.5">
+                <s.Icon className="size-[18px] shrink-0 text-signal" />
+                <span className="font-mono text-[12px] tabular-nums text-signal">{s.n}</span>
+              </span>
               <h3 className="font-display text-lg font-600">{s.h}</h3>
               <p className="text-[14px] leading-relaxed text-scribe-2">{s.p}</p>
             </li>

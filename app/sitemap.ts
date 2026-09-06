@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-const BASE = "https://web-production-2d1d0.up.railway.app";
+// The canonical origin is the custom domain. The Railway deployment is the
+// backend; pointing crawlers at it would index the same pages twice.
+const BASE = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://thenar.io";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

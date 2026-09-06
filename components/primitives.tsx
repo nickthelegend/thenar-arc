@@ -276,7 +276,7 @@ export function DimRule({ note, className }: { note?: string; className?: string
   if (!note) return <div className={cn("dim-rule", className)} />;
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <div className="dim-rule flex-1" />
+      <div data-anim="rule" className="dim-rule flex-1" />
       <span className="label shrink-0">{note}</span>
       <div className="dim-rule flex-1" />
     </div>

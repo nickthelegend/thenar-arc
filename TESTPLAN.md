@@ -1,137 +1,103 @@
 # Thenar — test plan
 
-**Result of the first full run: 56 PASS, 1 untestable.** The plan has since
-grown to cover the passkey work and the station additions; those items carry
-their own verification in the session that added them.
+Target: the deployed product at **https://thenar.io** (frontend, Vercel), whose
+`/api/*` is proxied to **https://web-production-2d1d0.up.railway.app** (backend
+and SQLite volume, Railway), against **AxonProtocol** at
+`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4` on Monad Testnet (chain 10143).
 
-Seven defects were found and fixed during the run:
-
-1. The payload never reset between runs, so a second run began already inside
-   the goal. The scene reset lived in an effect keyed on a module constant, and
-   props do not reliably re-run effects inside the react-three-fiber root — the
-   rig is now keyed on a per-run id.
-2. The leaderboard under-reported by 40%: one `eth_call` per trajectory against
-   a 15/sec RPC cap, with failures silently filtered away. Now batched through
-   Multicall3, and a partial read raises instead of rendering short.
-3. `GET /api/dataset` with no `taskId` exported task 0, because `Number(null)`
-   is 0.
-4. An unreadable task id flickered between its error state and a spinner
-   forever, because the query kept polling a read that always reverts.
-5. The post form showed its validation message but left the button enabled.
-6. `scripts/claim.mjs` never linked its transaction, so a run that had settled
-   on chain reported as never submitted.
-7. DESIGN.md still documented the pre-rebrand palette, so every shipped colour
-   read as drift.
-
-A fabricated transaction hash was also written to the production database
-during the run while backfilling from a truncated log line; it was found,
-replaced with the real hash read from the chain, and `scripts/audit-links.mjs`
-now holds the store and the chain to each other so it cannot recur.
-
-Target: the live deployment at `https://web-production-2d1d0.up.railway.app`
-against `AxonProtocol` at `0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`
-(Monad Testnet, chain 10143).
-
-A pass means the observed result matches the **Correct** column exactly, with a
-clean console and no failed network requests. Anything less is a fail.
-
----
+A pass means the observed result matches the **Correct means** column exactly,
+with a clean console and no failed network requests. Close, mostly-working, or
+"the button did something" is a fail.
 
 ## Pages
 
 | # | Item | Correct means |
 | --- | --- | --- |
-| P1 | `/` landing | 200. Headline renders in Hanken Grotesk. THENAR-6 renders in the hero canvas at full panel size (not 300×150) and runs its pick-and-place cycle. Live figures read from chain: tasks, trajectories recorded, policies minted, open slots, escrowed MON. Contract line links to the explorer. Console clean. |
-| P2 | `/hub` | 200. Task table lists every task the contract reports, with id, instruction, difficulty squares, stage track, slot tally, par, escrow, per-run reward. Header strip totals match the sum of the listed rows. Block number in nav ticks. Console clean. |
-| P3 | `/hub` filters | Scenario chips filter the list; sort chips reorder it; search narrows by instruction text and by task id. "Accepting runs" hides filled tasks; "Every task" shows them. Counts in the header strip update to match the filtered set. |
-| P4 | `/station/[id]` | 200. Reads that task from chain (name, scenario, difficulty, per-run reward, slots left, escrow). 3D viewport fills its cell. Controls legend present. "Begin run" visible. Console clean. |
-| P5 | `/portfolio` disconnected | 200. Shows the connect prompt, not an empty table or an error. |
-| P6 | `/leaderboard` | 200. Ranks every address that has been paid, read from the trajectory ledger. Totals (operators, runs, paid out) equal the sum of the rows. |
-| P7 | `/foundry` | 200. Lists every minted policy with its trajectory count, contributor count, licences sold and fee. Cap table bars are proportional to weight and the percentages sum to ~100%. Filled-but-unminted tasks appear in a "ready to mint" section. |
-| P8 | `/task/[id]` | 200. Chain state for that task plus every recorded submission with score, deviation and duration, and a score distribution histogram. Links to each run's verification page. |
-| P9 | `/run/[hash]` | 200. Shows the trajectory's score, deviation, duration and sample count; re-hashes the stored samples and reports INTEGRITY VERIFIED; draws the tool path; the scrub control moves the trace head. |
-| P10 | `/spec` | 200. Every figure is generated from `cad/arm.py` — reach, height, link table, joint chain, 21 parts, 8080 triangles, 21/21 closed surfaces. |
-| P11 | `/post` | 200. Form renders with instruction, slots, reward, scenario, difficulty. Escrow total = slots × reward, live. |
-| P12 | 404 | An unknown path renders the in-world 404, not a stack trace. |
-| P13 | `/passkey` | 200. Pressing the button generates a real secp256r1 key in the browser, signs a message, and the chain accepts the signature and refuses the same one with a bit flipped. Four steps all report done, the gas cost is shown, and the 160-byte precompile payload is listed and copyable. |
+| P1 | `/` landing | 200. Wordmark reads THENAR. Live chain figures: tasks, trajectories, policies, open slots, escrowed MON — all non-zero and equal to the contract. Contract line links to the explorer. Control copy describes drag/WASD/EQ, not the old arrows/E-D. Footer reads THENAR. |
+| P2 | `/hub` | 200. Header totals equal the sum of the listed rows. Every task the contract reports is listed with id, instruction, difficulty, stage, slots, par, escrow, per-run reward. Block number ticks. |
+| P3 | `/hub` filters | Scenario chips filter; sort chips reorder; search narrows by instruction and by task id; "Accepting runs" hides filled tasks and "Every task" shows them; header counts follow the filtered set. |
+| P4 | `/station/[id]` | 200. Task read from chain. 3D viewport fills its cell and renders the arm. Controls legend lists Drag / W S / A D / E Q / Space. "Begin run" present. |
+| P5 | `/portfolio` disconnected | 200. Connect prompt, not an empty table or an error. |
+| P6 | `/leaderboard` | 200. Every paid address ranked from the trajectory ledger; operators/runs/paid-out totals equal the sum of the rows. |
+| P7 | `/foundry` | 200. Every minted policy with trajectories, contributors, licences sold and fee. Cap-table bars proportional, percentages sum to ~100%. |
+| P8 | `/task/[id]` | 200. Chain state plus every **settled** submission with score, deviation, duration, and a score histogram. Submission count equals the chain's filled slots. |
+| P9 | `/run/[hash]` | 200. Score, deviation, duration, sample count; re-hashes stored samples and reports INTEGRITY VERIFIED; draws the tool path; scrub moves the trace head. |
+| P10 | `/spec` | 200. Every figure generated from `cad/arm.py` — reach, height, link table, joint chain, 21 parts, 8080 triangles. |
+| P11 | `/post` | 200. Form renders with instruction, slots, reward, scenario, difficulty. Escrow total = slots x reward, live. |
+| P12 | 404 | Unknown path renders the in-world 404, not a stack trace. |
+| P13 | `/passkey` | 404. The passkey surface was removed on request; the route must be gone, not broken. |
 
 ## API
 
 | # | Item | Correct means |
 | --- | --- | --- |
-| A1 | `GET /api/contract` | 200 JSON. `deployed: true`, the real address, chain 10143, verifier address, full ABI array. |
-| A2 | `GET /api/health` | 200 JSON, `ok: true`, all five checks true: verifierKey, contract, database, rpc, verifierMatches. |
-| A3 | `GET /api/feed` | 200 JSON. `total` equals the row count in the production database; each run carries its hash, task, score and tx. |
+| A1 | `GET /api/contract` | 200 JSON. `deployed: true`, real address, chain id 10143, verifier address, full ABI array. |
+| A2 | `GET /api/health` | 200 JSON, `ok: true`, all six checks true, including `signingDomain` matching the contract's own `domainSeparator()`. |
+| A3 | `GET /api/feed` | 200 JSON. `total` equals the chain's `trajectoryCount()` — settled rows only. |
 | A4 | `GET /api/trajectory/[hash]` | 200 JSON with samples, parts, and `integrity.matches: true`. |
 | A5 | `GET /api/trajectory/[bad]` | 404 JSON with a readable error, not a crash. |
-| A6 | `GET /api/task/[id]/runs` | 200 JSON listing that task's stored submissions. |
-| A7 | `GET /api/dataset?taskId=N` | 200 JSON, LIBERO-shaped, `content-disposition: attachment`, episode count and frame count matching the stored runs. |
+| A6 | `GET /api/task/[id]/runs` | 200 JSON; row count equals the chain's filled slots for that task. |
+| A7 | `GET /api/dataset?taskId=N` | 200 JSON, LIBERO-shaped, `content-disposition: attachment`. |
 | A8 | `GET /api/dataset` (no id) | 400 JSON with a readable error. |
-| A9 | `POST /api/verify` valid | 200 JSON with a 32-byte trajHash, a 65-byte signature, a score, and `accepted: true`. |
+| A9 | `POST /api/verify` valid | 200 JSON: 32-byte trajHash, 65-byte signature, score, `accepted: true`. |
 | A10 | `POST /api/verify` malformed samples | 400 JSON naming the problem. Never 500. |
 | A11 | `POST /api/verify` bad address | 400 JSON naming the problem. |
 | A12 | `POST /api/verify` filled task | 409 JSON saying the task has no slots left. |
-| A13 | `POST /api/submitted` bad hash | 400 JSON, no database write. |
+| A13 | `POST /api/submitted` bad hash | 400 JSON, no write. |
+| A14 | `POST /api/submitted` unknown tx | 409 JSON. A hash that is not on chain must never be recorded. |
+| A15 | `POST /api/submitted` reverted tx | 409 JSON. A reverted transaction must never be recorded as settled. |
+| A16 | `POST /api/reconcile` | 200 JSON. Holds the ledger to the chain; running it twice changes nothing. |
 
 ## Contract, on chain
 
 | # | Item | Correct means |
 | --- | --- | --- |
-| C1 | `createTask` | A real transaction escrows slots × reward; `taskCount` increments; the task reads back with the values sent. |
-| C2 | `submitTrajectory` | One transaction records the run and pays the operator. Escrow falls by exactly the payout; operator balance rises by exactly the payout net of gas; slot count advances. |
-| C3 | `mintPolicy` | Snapshots a cap table whose weights sum to 10000 bps. |
-| C4 | `licensePolicy` | One transaction pays every contributor pro-rata; every wei of the fee leaves the contract. |
-| C5 | `claim` | A payee that refuses transfers is credited rather than reverting the submission, and can pull the balance later. |
-| C6 | Replay refused | Submitting the same trajectory hash twice reverts `AlreadySubmitted`. |
-| C7 | Forged score refused | Submitting a score the verifier did not sign reverts `BadSignature`. |
-| C8 | `PasskeyRegistry.register` | A real secp256r1 public key binds to an address; `hasPasskey` becomes true. |
-| C9 | `PasskeyRegistry.verify` | The precompile accepts a genuine signature against the registered key and rejects a tampered one. |
-| C10 | `PasskeyRegistry.authorise` | Spends the digest on chain, records it as used, and refuses both a replay and a forgery. |
+| C1 | `createTask` | Escrows slots x reward; `taskCount` increments; contract balance rises by exactly the escrow. |
+| C2 | `submitTrajectory` | Records and pays in one transaction. Escrow falls by `reward x score / 10000`; operator rises by that net of gas. |
+| C3 | `mintPolicy` | Snapshots a cap table whose weights sum to 100% within integer-division dust. |
+| C4 | `licensePolicy` | One transaction pays every contributor their exact cap-table share; fee net of the 2.5% protocol take. |
+| C5 | `claim` | A payee that refuses transfers is credited rather than reverting the sale, and can pull later. |
+| C6 | Replay refused | The same trajectory hash twice reverts `AlreadySubmitted`. |
+| C7 | Forged score refused | A score the verifier did not sign reverts `BadSignature`. |
+| C8 | Sharded counters | A task still fills exactly, with no lost or double-counted slot, under sharded writes. |
+| C9 | Verification | AxonProtocol reports `exact_match` on the explorer. |
 
 ## Flows
 
 | # | Item | Correct means |
 | --- | --- | --- |
-| F1 | Full run, no wallet | Begin run → drive → grasp → traverse → release → measurement fires only after a real grasp, verdict and score appear, CTA reads "Connect a wallet to get paid". |
-| F2 | Idle run | Beginning a run and touching nothing for 3 s produces **no** verdict. |
+| F1 | Full run, no wallet | Begin run, drive, grasp, traverse, release; measurement fires only after a real grasp; verdict and score appear; CTA asks for a wallet. |
+| F2 | Idle run | Beginning a run and touching nothing produces no verdict. |
 | F3 | End run escape | "End run" during a run produces a measurement immediately. |
-| F4 | Failed run | Releasing the payload far from the datum gives OUT OF TOLERANCE and a payout of nothing, with copy saying nothing was deducted. |
-| F5 | Run again | "Run again" resets the timer, the arm and the payload to their start state. |
-| F6 | Hub → station → hub | Navigation works in both directions with no full reload error. |
-| F7 | Verify a run | From portfolio or task page, the run link opens `/run/[hash]` and integrity verifies. |
-| F8 | Dataset download | `/api/dataset` returns a file whose episode count equals the task's stored runs. |
+| F4 | Failed run | Releasing far from the datum gives OUT OF TOLERANCE, pays nothing, and says nothing was deducted. |
+| F5 | Run again | Resets timer, arm and payload to their start state. |
+| F6 | Navigation | Hub to station and back, no reload error. |
+| F7 | Verify a run | Task page run link opens `/run/[hash]` and integrity verifies. |
+| F8 | Wallet connect | The nav Connect opens the RainbowKit modal, which lists real connectors and closes again. |
+| F9 | Frontend/backend split | A write through thenar.io reaches the Railway database and is visible from both origins. |
 
 ## Edge cases
 
 | # | Item | Correct means |
 | --- | --- | --- |
-| E1 | Station, unknown task id | Renders "Could not read that task", not a crash. |
-| E2 | Station, non-numeric id | Renders "No such task". |
-| E3 | Task page, unknown id | Renders "No such task". |
-| E4 | Run page, unknown hash | Renders "No trajectory with that hash". |
-| E5 | Hub, filters matching nothing | Renders the empty state with a working "Clear filters". |
-| E6 | Post, empty instruction | Submit disabled; inline message explains the minimum. |
-| E7 | Post, zero slots | Submit disabled; inline message. |
-| E8 | Post, reward above balance | Submit disabled; message says the escrow exceeds the wallet. |
-| E9 | Foundry, no policies | Would render an empty state (not applicable while policies exist — assert the populated state instead). |
-| E10 | Leaderboard highlights self | A connected address is marked "you" in the standings. |
-| E11 | Reduced motion | The hero arm holds a legible pose rather than animating. |
-| E12 | Mobile 375×812 | Nav does not overlap; hub filters scroll horizontally; station stacks into one scrolling page. |
-| E13 | Ghost trail | The trail geometry grows during a run — a line strip of tens of vertices where there were none. |
-| E14 | Reach envelope | Driving the tool past the reach limit shows `OUT OF REACH` and draws the limit circle. |
-| E15 | Keyboard help | `?` opens the controls overlay, `Escape` closes it. |
-| E16 | Copyable | Clicking a hash writes it to the clipboard and the control confirms. |
-| E17 | WebGL context loss | Forcing a context loss shows the recovery panel rather than a black rectangle. |
-| E18 | Double submit | A second click on submit cannot send a second transaction. |
+| E1 | Station, unknown task id | "Could not read that task", not a crash. |
+| E2 | Station, non-numeric id | "No such task". |
+| E3 | Task page, unknown id | "No such task". |
+| E4 | Run page, unknown hash | "No trajectory with that hash" empty state. |
+| E5 | Hub, filters matching nothing | Empty state with a working "Clear filters". |
+| E6 | Post, empty instruction | Submit disabled with an inline message. |
+| E7 | Reduced motion | The hero arm holds a legible pose rather than animating. |
+| E8 | Mobile 375x812 | Nav does not overlap; hub filters scroll; station stacks. |
+| E9 | Ledger vs chain | Stored settled runs equal the chain's trajectory count, per task and overall. |
 
 ## Global
 
 | # | Item | Correct means |
 | --- | --- | --- |
 | G1 | Console | Zero errors on every page above. |
-| G2 | Network | Zero failed requests (4xx/5xx) on every page above, other than the deliberate negative tests. |
+| G2 | Network | Zero failed requests other than the deliberate negative tests. |
 | G3 | No mocks | Zero mock/stub/fake/placeholder/TODO in shipped code. |
-| G4 | Design detector | `impeccable detect` clean on every route and the source tree. |
-| G5 | Types and lint | `tsc --noEmit` and `eslint` clean. |
-| G6 | SEO artifacts | `robots.txt`, `sitemap.xml` and `manifest.webmanifest` all serve 200. |
-| G7 | Contract verification | Both AxonProtocol and PasskeyRegistry report `exact_match` on the explorer. |
+| G4 | Types and lint | `tsc --noEmit` and `eslint` clean. |
+| G5 | Contract tests | The Foundry suite passes in full. |
+| G6 | SEO artifacts | `robots.txt`, `sitemap.xml`, `manifest.webmanifest` serve 200; sitemap has no dead route. |
+| G7 | Secrets | No private key in the repo or in the Vercel upload. |
