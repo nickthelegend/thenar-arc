@@ -45,6 +45,27 @@ async function receiptOn(rpc: string, hash: string): Promise<boolean> {
  * it twice changes nothing.
  */
 export async function POST() {
+  return reconcile();
+}
+
+/**
+ * The same work on a schedule.
+ *
+ * Nothing was calling this route, which meant a row could sit unverified
+ * indefinitely and the ledger could drift from the chain without anyone
+ * noticing until it showed up on the feed. Vercel's scheduler only issues GET,
+ * hence this. It is safe to expose: every write it makes is a fact a chain
+ * returned, so the worst an unsolicited call can do is re-confirm the truth.
+ */
+export async function GET(req: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Not authorised." }, { status: 401 });
+  }
+  return reconcile();
+}
+
+async function reconcile() {
   const rows = unsettledWithTx();
   let settled = 0, cleared = 0;
 

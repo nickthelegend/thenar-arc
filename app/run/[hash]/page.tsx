@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
 import { TOLERANCE_MM } from "@/lib/score";
-import { txUrl, addressUrl } from "@/lib/chain";
+import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 
@@ -14,7 +14,7 @@ type RunDoc = {
   trajHash: string; taskId: number; contributor: string; score: number;
   deviationMm: number; durationSeconds: number;
   parts: { placement: number; efficiency: number; smoothness: number };
-  sampleCount: number; createdAt: number; txHash: string | null;
+  sampleCount: number; createdAt: number; txHash: string | null; chainId: number | null;
   integrity: { recomputedHash: string; matches: boolean };
   samples: { t: number; grip: number; object: [number, number, number] }[];
 };
@@ -152,11 +152,24 @@ export default function RunPage() {
         <Field label="Recorded">{new Date(data.createdAt).toLocaleString()}</Field>
         <Field label="Transaction">
           {data.txHash ? (
-            <a href={txUrl(data.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">{data.txHash}</a>
+            <a href={txUrlOn(data.chainId ?? appChain.id, data.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">{data.txHash}</a>
           ) : (
             <span className="text-scribe-3">not submitted on chain</span>
           )}
         </Field>
+        {data.chainId && data.chainId !== appChain.id ? (
+          // Runs from before the move. Saying so is the difference between an
+          // archived payout and one the current chain cannot account for.
+          <Field label="Settled on">
+            <span className="text-scribe-2">
+              {chainMeta(data.chainId)?.name ?? `chain ${data.chainId}`}
+            </span>
+            <span className="ml-2 text-scribe-3">
+              &mdash; a previous deployment, kept in the{" "}
+              <a href="/archive" className="text-probe hover:underline">archive</a>
+            </span>
+          </Field>
+        ) : null}
       </dl>
     </div>
   );

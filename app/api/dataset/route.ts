@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/server/db";
+import { appChain } from "@/lib/chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,9 +31,13 @@ export async function GET(req: Request) {
   const rows = getDb()
     .prepare(
       `SELECT traj_hash, contributor, score, deviation_mm, duration_s, samples, tx_hash, created_at
-       FROM trajectory WHERE task_id = ? ORDER BY created_at ASC`,
+       -- Scoped to the chain this deployment settles on. A corpus that mixed
+       -- in runs paid on a previous chain would carry transaction hashes a
+       -- buyer could not resolve, against an embodiment they could not audit.
+       FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ?
+       ORDER BY created_at ASC`,
     )
-    .all(taskId) as {
+    .all(taskId, appChain.id) as {
     traj_hash: string; contributor: string; score: number; deviation_mm: number;
     duration_s: number; samples: string; tx_hash: string | null; created_at: number;
   }[];

@@ -12,5 +12,11 @@
   "env": {
     "NEXT_PUBLIC_AXON_ADDRESS": "0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3",
     "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/reconcile",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }
