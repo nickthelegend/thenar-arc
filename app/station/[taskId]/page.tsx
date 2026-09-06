@@ -157,7 +157,7 @@ export default function StationPage() {
     tx.phase === "verifying" ? "Verifying the run."
     : tx.phase === "signing" ? "Waiting for you to confirm in your wallet."
     : tx.phase === "pending" ? "Transaction sent. Waiting for the block."
-    : tx.phase === "confirmed" ? `Run recorded and paid. ${fmtMon(tx.paidMon ?? 0)} MON.`
+    : tx.phase === "confirmed" ? `Run recorded and paid. ${fmtMon(tx.paidMon ?? 0)} ${CURRENCY}.`
     : tx.phase === "error" ? `Submission failed. ${tx.error ?? ""}`
     : verdict ? `Measurement taken. ${verdict.success ? "In tolerance" : "Out of tolerance"}, score ${fmtScore(verdict.score)}.`
     : null;
@@ -344,9 +344,9 @@ export default function StationPage() {
                 <span className="label">Difficulty</span>
                 <Difficulty level={task.difficulty} />
               </div>
-              <Row label="Per run" value={`${fmtMon(task.rewardMon)} MON`} tone="signal" />
+              <Row label="Per run" value={`${fmtMon(task.rewardMon)} ${CURRENCY}`} tone="signal" />
               <Row label="Slots left" value={String(task.slotsTotal - task.slotsFilled)} />
-              <Row label="Escrow" value={`${fmtMon(Number(task.escrowWei) / 1e18, 3)} MON`} />
+              <Row label="Escrow" value={`${fmtMon(Number(task.escrowWei) / 1e18, 3)} ${CURRENCY}`} />
             </div>
           </Section>
 

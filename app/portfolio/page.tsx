@@ -5,7 +5,7 @@ import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useMyRuns, useStats, useTasks } from "@/lib/hooks";
 import { TOLERANCE_MM } from "@/lib/score";
-import { addressUrl } from "@/lib/chain";
+import { addressUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore } from "@/lib/format";
 
@@ -51,8 +51,8 @@ export default function PortfolioPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-rule py-3">
-        <Reading label="Balance" value={fmtMon(s.balance, 4)} unit="MON" tone="signal" />
-        <Reading label="Earned on chain" value={fmtMon(stats?.earnedMon ?? totalPaid, 4)} unit="MON" tone="signal" />
+        <Reading label="Balance" value={fmtMon(s.balance, 4)} unit={CURRENCY} tone="signal" />
+        <Reading label="Earned on chain" value={fmtMon(stats?.earnedMon ?? totalPaid, 4)} unit={CURRENCY} tone="signal" />
         <Reading label="Accepted runs" value={String(stats?.runs ?? runs?.length ?? 0)} />
         <Reading label="Mean score" value={stats?.runs ? fmtScore(stats.meanScore) : "—"} />
         <Reading label="Best score" value={best ? fmtScore(best) : "—"} />

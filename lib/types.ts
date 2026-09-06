@@ -17,7 +17,7 @@ export type Task = {
   stage: Stage;
   slotsFilled: number;
   slotsTotal: number;
-  /** MON paid per accepted trajectory, at full score */
+  /** Native token paid per accepted trajectory, at full score */
   rewardPerTrajectory: number;
   /** Share of submitted runs that passed evaluation, 0..1 */
   passRate: number;

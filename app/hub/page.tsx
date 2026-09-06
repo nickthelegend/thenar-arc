@@ -57,7 +57,7 @@ export default function HubPage() {
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
           <Reading label="Tasks" value={isLoading ? "—" : fmtInt(rows.length)} />
           <Reading label="Unfilled slots" value={isLoading ? "—" : fmtInt(openSlots)} />
-          <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit="MON" tone="signal" />
+          <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit={CURRENCY} tone="signal" />
           <Reading label="Cap per operator" value="5" unit="runs / task" />
           <span className="font-mono text-[12px] text-scribe-3 sm:ml-auto">
             Live from the contract on Avalanche Fuji

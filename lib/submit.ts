@@ -6,6 +6,7 @@ import { BaseError, ContractFunctionRevertedError, UserRejectedRequestError } fr
 import { AXON_ABI } from "./abi";
 import { AXON_ADDRESS } from "./chain";
 import type { Sample } from "./types";
+import { CURRENCY } from "@/lib/chain";
 
 export type SubmitPhase =
   | "idle" | "verifying" | "signing" | "pending" | "confirmed" | "error";
@@ -59,7 +60,7 @@ export function explainTxError(e: unknown): string {
       );
     }
     if (/insufficient funds/i.test(text)) {
-      return "Not enough MON to cover gas. Top up from the faucet and try again.";
+      return `Not enough ${CURRENCY} to cover gas. Top up from the faucet and try again.`;
     }
     if (/user rejected/i.test(e.shortMessage ?? e.message)) {
       return "You rejected the transaction in your wallet.";

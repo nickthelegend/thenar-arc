@@ -2,7 +2,7 @@
 
 export const fmtInt = (n: number) => n.toLocaleString("en-US");
 
-/** MON is money and money gets a fixed scale, never a floating one. */
+/** Money gets a fixed scale, never a floating one. */
 export const fmtMon = (n: number, dp = 3) =>
   n.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 

@@ -3,7 +3,7 @@
 import { DimRule } from "@/components/primitives";
 import { useLeaderboard } from "@/lib/hooks";
 import { useSession } from "@/components/session";
-import { addressUrl } from "@/lib/chain";
+import { addressUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
 
@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
         <span className="flex items-baseline gap-2">
           <span className="label">Paid out</span>
           <span className="font-mono text-[15px] tabular-nums text-signal">
-            {fmtMon(totalPaid, 4)} <span className="text-[12px] text-scribe-3">MON</span>
+            {fmtMon(totalPaid, 4)} <span className="text-[12px] text-scribe-3">{CURRENCY}</span>
           </span>
         </span>
       </div>

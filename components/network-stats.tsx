@@ -3,7 +3,7 @@
 import { useReadContracts } from "wagmi";
 import { formatEther } from "viem";
 import { AXON_ABI } from "@/lib/abi";
-import { AXON_ADDRESS, IS_DEPLOYED, addressUrl } from "@/lib/chain";
+import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY } from "@/lib/chain";
 import { useTasks } from "@/lib/hooks";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
 
@@ -32,7 +32,7 @@ export function NetworkStats() {
         <Reading label="Trajectories recorded" value={fmtInt(n(1))} />
         <Reading label="Policies minted" value={fmtInt(n(2))} />
         <Reading label="Open slots" value={fmtInt(openSlots)} />
-        <Reading label="Escrowed" value={fmtMon(escrow, 3)} unit="MON" tone="signal" />
+        <Reading label="Escrowed" value={fmtMon(escrow, 3)} unit={CURRENCY} tone="signal" />
       </div>
       <a
         href={addressUrl(AXON_ADDRESS)}

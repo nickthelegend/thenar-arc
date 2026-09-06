@@ -127,7 +127,7 @@ export function SiteNav() {
 
       {lowOnGas ? (
         <Banner tone="signal">
-          Balance is {fmtMon(s.balance, 4)} MON — not much runway for gas.
+          Balance is {fmtMon(s.balance, 4)} {CURRENCY} — not much runway for gas.
           <a
             href="https://faucet.monad.xyz"
             target="_blank"

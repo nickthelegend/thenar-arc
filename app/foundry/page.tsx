@@ -135,7 +135,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
         <Cell label="Trajectories" value={fmtInt(p.trajectories)} />
         <Cell label="Contributors" value={fmtInt(cap?.length ?? 0)} />
         <Cell label="Licences sold" value={fmtInt(p.licencesSold)} />
-        <Cell label="Licence" value={`${fmtMon(p.licenceMon, 3)} MON`} tone="signal" />
+        <Cell label="Licence" value={`${fmtMon(p.licenceMon, 3)} ${CURRENCY}`} tone="signal" />
       </div>
 
       <div className="px-5 py-4">
@@ -182,7 +182,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
           ) : tx.error ? (
             <span role="alert" className="text-reject">{tx.error}</span>
           ) : (
-            <>{fmtMon(p.distributedMon, 4)} MON distributed so far · every sale splits the same way</>
+            <>{fmtMon(p.distributedMon, 4)} {CURRENCY} distributed so far · every sale splits the same way</>
           )}
         </span>
         <Button
@@ -199,7 +199,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
             : tx.phase === "pending" ? "Paying out…"
             : !s.connected ? "Connect to licence"
             : s.wrongNetwork ? "Switch network"
-            : `Licence for ${fmtMon(p.licenceMon, 3)} MON`}
+            : `Licence for ${fmtMon(p.licenceMon, 3)} ${CURRENCY}`}
         </Button>
       </footer>
     </article>

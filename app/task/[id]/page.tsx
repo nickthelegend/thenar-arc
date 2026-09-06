@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { useTask } from "@/lib/hooks";
-import { txUrl, addressUrl } from "@/lib/chain";
+import { txUrl, addressUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 
@@ -64,8 +64,8 @@ export default function TaskPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
-        <Cell label="Per run" value={`${fmtMon(task.rewardMon)} MON`} tone="signal" />
-        <Cell label="Escrow left" value={`${fmtMon(Number(formatEther(task.escrowWei)), 3)} MON`} />
+        <Cell label="Per run" value={`${fmtMon(task.rewardMon)} ${CURRENCY}`} tone="signal" />
+        <Cell label="Escrow left" value={`${fmtMon(Number(formatEther(task.escrowWei)), 3)} ${CURRENCY}`} />
         <Cell label="Par" value={fmtSeconds(task.parSeconds)} />
         <Cell label="Slots" value={`${task.slotsFilled} / ${task.slotsTotal}`} />
       </div>

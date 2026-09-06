@@ -1,7 +1,7 @@
 "use client";
 
 import { useActivity } from "@/lib/hooks";
-import { txUrl } from "@/lib/chain";
+import { txUrl, CURRENCY } from "@/lib/chain";
 import { fmtMon, fmtScore, shortHash } from "@/lib/format";
 import { DimRule } from "./primitives";
 
@@ -36,7 +36,7 @@ export function ActivityFeed({ limit = 12 }: { limit?: number }) {
               <span className="text-scribe-2">{shortHash(e.contributor)}</span>
               <span className="text-scribe-3">task {e.taskId}</span>
               <span className="text-scribe">{fmtScore(e.score)}</span>
-              <span className="text-signal tabular-nums">{fmtMon(e.paidMon)} MON</span>
+              <span className="text-signal tabular-nums">{fmtMon(e.paidMon)} {CURRENCY}</span>
               {e.txHash ? (
                 <a
                   href={txUrl(e.txHash)}

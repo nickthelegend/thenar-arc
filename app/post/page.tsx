@@ -129,16 +129,16 @@ export default function PostTaskPage() {
         <div className="flex flex-col gap-1">
           <span className="label">To escrow now</span>
           <span className="font-mono text-3xl leading-none text-signal">
-            {fmtMon(total, 4)}<span className="ml-1.5 text-[12px] text-scribe-3">MON</span>
+            {fmtMon(total, 4)}<span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
           </span>
           <span className="mt-1 font-mono text-[12px] text-scribe-3">
-            {validSlots ? slotsN : 0} runs × {validReward ? fmtMon(rewardN, 4) : "0"} MON
+            {validSlots ? slotsN : 0} runs × {validReward ? fmtMon(rewardN, 4) : "0"} {CURRENCY}
           </span>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="label">Your balance</span>
           <span className={cn("font-mono text-[15px] tabular-nums", affordable || total === 0 ? "text-scribe" : "text-reject")}>
-            {fmtMon(s.balance, 4)} MON
+            {fmtMon(s.balance, 4)} {CURRENCY}
           </span>
         </div>
       </div>
