@@ -21,9 +21,27 @@ function easeInOut(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+/**
+ * Which way this cycle runs.
+ *
+ * The arm carries the payload from A to B, then the next cycle carries it back
+ * from B to A. Running it one way every time means the payload has to be back
+ * at the start when the loop wraps, and the only way to do that is to teleport
+ * it across the table — which is exactly what it looked like.
+ */
+function endsFor(time: number): { from: [number, number]; to: [number, number] } {
+  const flipped = Math.floor(time / CYCLE) % 2 === 1;
+  return flipped ? { from: PLACE, to: PICK } : { from: PICK, to: PLACE };
+}
+
+/** Grip closes by here, and opens again at RELEASE — the payload rides between. */
+const GRASP = 0.22;
+const RELEASE = 0.74;
+
 /** The cycle as a keyframed tool path: approach, close, lift, traverse, set, release. */
 function poseAt(time: number): { target: [number, number, number]; grip: number } {
   const t = (time % CYCLE) / CYCLE;
+  const { from: PICK, to: PLACE } = endsFor(time);
   const HIGH = 0.26;
   const LOW = 0.048;
 
@@ -108,15 +126,22 @@ function Rig({ paused }: { paused: boolean }) {
     if (n.jawR) n.jawR.position.x = grip / 2000;
 
     if (payload.current) {
+      const now = paused ? HOLD_AT : clock.current;
       const tool = toolPosition(j);
-      const held = grip < 14;
-      const t = (paused ? HOLD_AT : clock.current) % CYCLE;
-      const onPlace = t > 0.76 * CYCLE;
-      const rest: [number, number] = onPlace ? PLACE : PICK;
+      const { from, to } = endsFor(now);
+      const t = (now % CYCLE) / CYCLE;
+
+      // Carried strictly between the grasp and the release, and sitting on the
+      // table either side of that. Keying this off the phase rather than the
+      // jaw opening is what stops it snapping to the gripper from across the
+      // table the moment the jaws happen to close.
+      const held = t >= GRASP && t < RELEASE;
+      const seat = held ? null : t < GRASP ? from : to;
+
       payload.current.position.set(
-        held ? tool[0] : rest[0],
-        held ? Math.max(0.037, tool[2] + 0.0) : 0.037,
-        held ? tool[1] : rest[1],
+        seat ? seat[0] : tool[0],
+        seat ? 0.037 : Math.max(0.037, tool[2]),
+        seat ? seat[1] : tool[1],
       );
     }
   });

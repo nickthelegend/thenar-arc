@@ -56,6 +56,8 @@ export type Telemetry = {
   held: boolean;
   /** The tool is inside the payload's capture volume — closing will grasp. */
   inRange: boolean;
+  /** Over the payload in the plane, but above the height the jaws can close at. */
+  overPayload: boolean;
   /** Distance from the tool to the payload in the table plane, metres. */
   payloadDist: number;
   settled: boolean;
@@ -379,8 +381,13 @@ function Rig({
     // cylinder — within CAPTURE_R in the table plane, and somewhere along its
     // height rather than at one exact point on it.
     const planar = Math.hypot(tool[0] - o[0], tool[1] - o[1]);
-    const withinHeight = tool[2] > o[2] - 0.02 && tool[2] < o[2] + PAYLOAD_H + 0.04;
-    const near = planar < CAPTURE_R && withinHeight;
+    // The tool starts at z 0.16 and the payload's top is at 0.075, so the band
+    // reaches up far enough that one press of Q from the rest pose puts the
+    // jaws on it. Tighter than this and the operator is over the payload,
+    // pressing space, and nothing happens for no visible reason.
+    const withinHeight = tool[2] > o[2] - 0.02 && tool[2] < o[2] + PAYLOAD_H + 0.055;
+    const overIt = planar < CAPTURE_R;
+    const near = overIt && withinHeight;
 
     if (!held.current && grip.current <= GRIP_CLOSED && near) held.current = true;
     if (held.current && grip.current > GRIP_CLOSED) held.current = false;
@@ -427,6 +434,9 @@ function Rig({
         grip: grip.current,
         held: held.current,
         inRange: near,
+        // Over the payload but too high to close on it — the operator needs to
+        // be told to descend, not left guessing why space does nothing.
+        overPayload: overIt && !withinHeight,
         payloadDist: planar,
         settled,
         deviationMm,

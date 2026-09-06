@@ -1,0 +1,16 @@
+[
+  {"id":"intro","text":"Robots learn from demonstrations, and demonstrations are expensive. Axon turns that into an open market: you teleoperate a task in the browser, and if the run is good enough, the contract pays you for it."},
+  {"id":"landing-figures","text":"Every figure on this page is read from a contract on Monad testnet. Tasks posted, trajectories recorded, policies minted, and the MON still held in escrow."},
+  {"id":"hub","text":"Anyone can fund a task. Each one escrows real MON up front, and advertises what a single accepted run pays."},
+  {"id":"station-open","text":"Opening a task gives you the robot. This is a six axis arm, and the goal is to bring the payload to rest inside the datum circle."},
+  {"id":"station-begin","text":"The run starts on the first frame. From here the arm is under live control, and every joint angle is being sampled twenty times a second."},
+  {"id":"station-grasp","text":"Bringing the tool down onto the payload. When the readout says in range, closing the jaws takes hold of it."},
+  {"id":"station-place","text":"Now carry it across to the datum and let go. The measurement is taken automatically once the payload comes to rest."},
+  {"id":"station-score","text":"The run is scored on where it landed, how smooth the path was, and how long it took against par. The server re-scores the trajectory and signs the result."},
+  {"id":"connect","text":"To get paid, connect a wallet on Monad testnet."},
+  {"id":"sign","text":"This is one transaction being signed and broadcast to Monad testnet right now. It records the trajectory hash, the task, the operator, and the signed score, and it transfers the payout in the same call."},
+  {"id":"confirmed","text":"Confirmed. There is the payout, the transaction hash, and the time it took to settle."},
+  {"id":"explorer","text":"Here is that exact hash on the Monad testnet explorer, with the MON transfer to the operator on it. Nothing about this run is a fixture."},
+  {"id":"foundry","text":"When a task fills every slot, its policy is minted with the contributor list attached, weighted by the quality each run measured. Buying a licence pays that whole list in a single transaction."},
+  {"id":"outro","text":"That is Axon: real teleoperation, verified scoring, and settlement on Monad. Thanks for watching."}
+]

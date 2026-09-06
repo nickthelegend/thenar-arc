@@ -239,9 +239,12 @@ export default function StationPage() {
               {!tel.held ? (
                 tel.inRange ? (
                   <span className="text-go">IN RANGE — PRESS SPACE</span>
+                ) : tel.overPayload ? (
+                  <span className="text-signal">OVER THE PAYLOAD — PRESS Q TO LOWER</span>
                 ) : (
                   <span className="text-scribe-3">
                     PAYLOAD <span className="text-scribe">{tel.payloadDist.toFixed(2)}</span> m
+                    <span className="ml-2 text-scribe-3">— HOLD A</span>
                   </span>
                 )
               ) : null}
