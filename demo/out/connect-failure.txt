@@ -1,0 +1,77 @@
+Skip to content
+Measurement taken. In tolerance, score 76.14.
+← HUB
+#7
+Reach the far shelf and place the mug
+ELAPSED
+0:15.4
+PAR
+3:05.0
+YOUR RUNS
+0 / 5
+GOAL
+
+Reach the far shelf and place the mug. Bring the payload to rest inside the datum circle.
+
+CONTROLS
+Drag
+Move the tool in the workspace
+W
+S
+Reach out / pull in
+A
+D
+Swing left / right
+E
+Q
+Raise / lower
+Space
+Open / close the jaws
+?
+All controls
+SETTLEMENT
+
+One transaction records the trajectory hash, its task, your address and the verified score — and transfers the MON. There is no separate signing step.
+
+X 0.174
+Y -0.247
+Z 0.037
+JAW 42 mm
+JAWS EMPTY
+IN RANGE — PRESS SPACE
+IN TOLERANCE
+76.14/ 100.00
+FINAL PLACEMENT
++8.1 mm±25
+PLACEMENT
+68%
+8.1 mm
+SMOOTHNESS
+76%
+28.3 m/s³
+EFFICIENCY
+100%
+0:15.4
+PAYABLE ON SUBMIT
+0.007MON
+SUBMIT AND GET PAID
+RUN AGAIN
+BACK TO HUB
+THIS TASK
+SCENARIO
+Home
+DIFFICULTY
+PER RUN
+0.009 MON
+SLOTS LEFT
+6
+ESCROW
+0.054 MON
+LIVE PLACEMENT
+DEVIATION FROM DATUM
++8.1 mm±25
+HOW THIS IS SCORED
+Placement, 55% — distance from the datum at rest, inside ±25 mm.
+Smoothness, 25% — mean jerk of the tool path.
+Efficiency, 20% — your time against par, 3:05.0.
+The server re-scores every run and signs the result; the contract will not pay a score it did not sign. Below 40.00 a run pays nothing.

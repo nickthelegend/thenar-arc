@@ -186,7 +186,7 @@ function GoalZone({ at }: { at: [number, number] }) {
   }, []);
 
   return (
-    <group position={[at[0], TABLE_Z + 0.0012, at[1]]}>
+    <group position={[at[0], TABLE_Z + 0.0012, -at[1]]}>
       <line>
         <primitive object={ring} attach="geometry" />
         <lineBasicMaterial color="#FF6A00" />
@@ -202,7 +202,9 @@ function Payload({ pos }: { pos: React.RefObject<[number, number, number]> }) {
   const ref = useRef<THREE.Mesh>(null);
   useFrame(() => {
     if (ref.current) {
-      ref.current.position.set(pos.current[0], pos.current[2] + PAYLOAD_H / 2, pos.current[1]);
+      // Same sign convention as the goal ring: the arm model is rotated -90
+      // about X, so a plane-Y becomes three's -Z.
+      ref.current.position.set(pos.current[0], pos.current[2] + PAYLOAD_H / 2, -pos.current[1]);
     }
   });
   return (
@@ -421,7 +423,7 @@ function Rig({
         const k = trailCount.current * 3;
         trail.current[k] = o[0];
         trail.current[k + 1] = o[2] + PAYLOAD_H / 2;
-        trail.current[k + 2] = o[1];
+        trail.current[k + 2] = -o[1];
         trailCount.current += 1;
       }
       const j = joints.current;

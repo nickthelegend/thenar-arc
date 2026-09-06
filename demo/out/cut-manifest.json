@@ -1,0 +1,160 @@
+{
+  "parts": [
+    {
+      "id": "intro",
+      "file": "demo/out/work/intro.mp4",
+      "raw": 11.001,
+      "out": 8.833333,
+      "speed": 1.25
+    },
+    {
+      "id": "landing-figures",
+      "file": "demo/out/work/landing-figures.mp4",
+      "raw": 12.001,
+      "out": 9.266667,
+      "speed": 1.3
+    },
+    {
+      "id": "hub",
+      "file": "demo/out/work/hub.mp4",
+      "raw": 11.001999999999999,
+      "out": 8.5,
+      "speed": 1.3
+    },
+    {
+      "id": "station-open",
+      "file": "demo/out/work/station-open.mp4",
+      "raw": 9.001000000000005,
+      "out": 6.933333,
+      "speed": 1.3
+    },
+    {
+      "id": "station-begin",
+      "file": "demo/out/work/station-begin.mp4",
+      "raw": 9.343999999999994,
+      "out": 6.666667,
+      "speed": 1.4
+    },
+    {
+      "id": "station-grasp",
+      "file": "demo/out/work/station-grasp.mp4",
+      "raw": 7.064,
+      "out": 2.733333,
+      "speed": 2.6
+    },
+    {
+      "id": "station-place",
+      "file": "demo/out/work/station-place.mp4",
+      "raw": 41.11,
+      "out": 12.866016,
+      "speed": 3.2
+    },
+    {
+      "id": "station-score",
+      "file": "demo/out/work/station-score.mp4",
+      "raw": 12.046000000000006,
+      "out": 10.5,
+      "speed": 1.15
+    },
+    {
+      "id": "sign",
+      "file": "demo/out/work/sign.mp4",
+      "raw": 10.653999999999996,
+      "out": 7.9,
+      "speed": 1.35
+    },
+    {
+      "id": "confirmed",
+      "file": "demo/out/work/confirmed.mp4",
+      "raw": 9.00099999999999,
+      "out": 8.233333,
+      "speed": 1.1
+    },
+    {
+      "id": "explorer-tx",
+      "file": "demo/out/work/explorer-tx.mp4",
+      "raw": 13.00200000000001,
+      "out": 11.366667,
+      "speed": 1.15
+    },
+    {
+      "id": "explorer-transfer",
+      "file": "demo/out/work/explorer-transfer.mp4",
+      "raw": 12,
+      "out": 10.433333,
+      "speed": 1.15
+    },
+    {
+      "id": "explorer-address",
+      "file": "demo/out/work/explorer-address.mp4",
+      "raw": 13.001000000000005,
+      "out": 10.866667,
+      "speed": 1.2
+    },
+    {
+      "id": "explorer-contract",
+      "file": "demo/out/work/explorer-contract.mp4",
+      "raw": 11.001000000000005,
+      "out": 8.833333,
+      "speed": 1.25
+    },
+    {
+      "id": "leaderboard",
+      "file": "demo/out/work/leaderboard.mp4",
+      "raw": 10,
+      "out": 8,
+      "speed": 1.25
+    },
+    {
+      "id": "task-page",
+      "file": "demo/out/work/task-page.mp4",
+      "raw": 10.001000000000005,
+      "out": 8.033333,
+      "speed": 1.25
+    },
+    {
+      "id": "run-verify",
+      "file": "demo/out/work/run-verify.mp4",
+      "raw": 10.000999999999976,
+      "out": 8.033333,
+      "speed": 1.25
+    },
+    {
+      "id": "foundry",
+      "file": "demo/out/work/foundry.mp4",
+      "raw": 12.001000000000005,
+      "out": 10.466667,
+      "speed": 1.15
+    },
+    {
+      "id": "licence-sign",
+      "file": "demo/out/work/licence-sign.mp4",
+      "raw": 4.0020000000000095,
+      "out": 3.1,
+      "speed": 1.3
+    },
+    {
+      "id": "licence-paid",
+      "file": "demo/out/work/licence-paid.mp4",
+      "raw": 9.001000000000005,
+      "out": 8.233333,
+      "speed": 1.1
+    },
+    {
+      "id": "licence-explorer",
+      "file": "demo/out/work/licence-explorer.mp4",
+      "raw": 13,
+      "out": 11.3,
+      "speed": 1.15
+    },
+    {
+      "id": "outro",
+      "file": "demo/out/work/outro.mp4",
+      "raw": 14.006,
+      "out": 10.766667,
+      "speed": 1.3
+    }
+  ],
+  "finalDur": 174,
+  "source": "demo/out/raw.mp4"
+}

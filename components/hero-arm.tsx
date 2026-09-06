@@ -138,10 +138,13 @@ function Rig({ paused }: { paused: boolean }) {
       const held = t >= GRASP && t < RELEASE;
       const seat = held ? null : t < GRASP ? from : to;
 
+      // The arm model is rotated -90 degrees about X, which maps its own
+      // plane-Y onto three's -Z. Anything positioned from a plane-Y has to
+      // carry that sign or it lands mirrored across the table from the arm.
       payload.current.position.set(
         seat ? seat[0] : tool[0],
         seat ? 0.037 : Math.max(0.037, tool[2]),
-        seat ? seat[1] : tool[1],
+        -(seat ? seat[1] : tool[1]),
       );
     }
   });

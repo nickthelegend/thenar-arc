@@ -1,0 +1,14 @@
+{
+  "txHash": "0x9092f67adf33c07d2767378e439818e8e2d0ccd407098f27e95257eda38d192e",
+  "task": 7,
+  "operator": "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815",
+  "block": 55947536,
+  "explorer": "https://testnet.monadscan.com/tx/0x9092f67adf33c07d2767378e439818e8e2d0ccd407098f27e95257eda38d192e",
+  "licenceTx": "0x273be24b82fcae8f3d4b75b469174b83eec8c4e588b76f314f7a23b5482a5e24",
+  "licenceBlock": 55947870,
+  "licenceExplorer": "https://testnet.monadscan.com/tx/0x273be24b82fcae8f3d4b75b469174b83eec8c4e588b76f314f7a23b5482a5e24",
+  "sent": [
+    "0x9092f67adf33c07d2767378e439818e8e2d0ccd407098f27e95257eda38d192e",
+    "0x273be24b82fcae8f3d4b75b469174b83eec8c4e588b76f314f7a23b5482a5e24"
+  ]
+}

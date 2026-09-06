@@ -7,60 +7,133 @@
     },
     {
       "id": "landing-figures",
-      "atMs": 12346,
+      "atMs": 11001,
       "signing": false
     },
     {
       "id": "hub",
-      "atMs": 22407,
+      "atMs": 23002,
       "signing": false
     },
     {
       "id": "station-open",
-      "atMs": 29575,
+      "atMs": 34004,
       "signing": false
     },
     {
       "id": "station-begin",
-      "atMs": 37240,
+      "atMs": 43005,
       "signing": false
     },
     {
       "id": "station-grasp",
-      "atMs": 45261,
+      "atMs": 52349,
       "signing": false
     },
     {
       "id": "station-place",
-      "atMs": 51383,
+      "atMs": 59413,
       "signing": false
     },
     {
       "id": "station-score",
-      "atMs": 71439,
+      "atMs": 100523,
       "signing": false
     },
     {
-      "id": "connect",
-      "atMs": 80285,
+      "id": "sign",
+      "atMs": 112569,
+      "signing": true
+    },
+    {
+      "id": "confirmed",
+      "atMs": 123223,
+      "signing": false
+    },
+    {
+      "id": "explorer-tx",
+      "atMs": 132224,
+      "signing": false
+    },
+    {
+      "id": "explorer-transfer",
+      "atMs": 145226,
+      "signing": false
+    },
+    {
+      "id": "explorer-address",
+      "atMs": 157226,
+      "signing": false
+    },
+    {
+      "id": "explorer-contract",
+      "atMs": 170227,
+      "signing": false
+    },
+    {
+      "id": "leaderboard",
+      "atMs": 181228,
+      "signing": false
+    },
+    {
+      "id": "task-page",
+      "atMs": 191228,
+      "signing": false
+    },
+    {
+      "id": "run-verify",
+      "atMs": 201229,
+      "signing": false
+    },
+    {
+      "id": "foundry",
+      "atMs": 211230,
+      "signing": false
+    },
+    {
+      "id": "licence-sign",
+      "atMs": 223231,
+      "signing": false
+    },
+    {
+      "id": "licence-paid",
+      "atMs": 227233,
+      "signing": false
+    },
+    {
+      "id": "licence-explorer",
+      "atMs": 236234,
+      "signing": false
+    },
+    {
+      "id": "outro",
+      "atMs": 249234,
       "signing": false
     }
   ],
   "durations": {
-    "intro": 11.895646,
-    "landing-figures": 9.609705,
-    "hub": 6.718821,
-    "station-open": 7.214694,
-    "station-begin": 7.570159,
-    "station-grasp": 5.67034,
-    "station-place": 6.264399,
-    "station-score": 8.394467,
-    "connect": 2.914014,
-    "sign": 11.99102,
-    "confirmed": 4.864308,
-    "explorer": 7.646893,
-    "foundry": 10.741088,
-    "outro": 6.650703
+    "intro": 11,
+    "landing-figures": 12,
+    "hub": 11,
+    "station-open": 9,
+    "station-begin": 7,
+    "station-grasp": 3,
+    "station-place": 3,
+    "station-score": 12,
+    "sign": 4,
+    "confirmed": 9,
+    "explorer-tx": 13,
+    "explorer-transfer": 12,
+    "explorer-address": 13,
+    "explorer-contract": 11,
+    "leaderboard": 10,
+    "task-page": 10,
+    "run-verify": 10,
+    "foundry": 12,
+    "licence-sign": 4,
+    "licence-paid": 9,
+    "licence-explorer": 13,
+    "outro": 8
   },
   "base": "https://web-production-2d1d0.up.railway.app"
 }

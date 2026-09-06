@@ -28,8 +28,18 @@ const pub = createPublicClient({ chain, transport: http() });
 const wallet = createWalletClient({ account, chain, transport: http() });
 if (chain.id !== 10143) throw new Error("REFUSING_NON_TESTNET");
 
-const durations = JSON.parse(readFileSync("demo/durations.json", "utf8"));
-const script = JSON.parse(readFileSync("demo/script.json", "utf8"));
+// Silent cut: each beat is held for a fixed, readable span instead of a
+// narration length. Arm beats are driven by the app's state, not the clock.
+const HOLDS = {
+  intro: 11, "landing-figures": 12, hub: 11, "station-open": 9,
+  "station-begin": 7, "station-grasp": 3, "station-place": 3, "station-score": 12,
+  sign: 4, confirmed: 9,
+  "explorer-tx": 13, "explorer-transfer": 12, "explorer-address": 13, "explorer-contract": 11,
+  leaderboard: 10, "task-page": 10, "run-verify": 10,
+  foundry: 12, "licence-sign": 4, "licence-paid": 9, "licence-explorer": 13, outro: 8,
+};
+const durations = Object.fromEntries(Object.entries(HOLDS).map(([k, v]) => [k, v]));
+const script = Object.keys(HOLDS).map((id) => ({ id, text: "" }));
 const marks = [];
 let t0 = 0;
 const now = () => Date.now() - t0;
@@ -178,15 +188,14 @@ async function until(label, fn, timeoutMs = 30000) {
 // --------------------------------------------------------------- beat timing
 const byId = Object.fromEntries(script.map((s) => [s.id, s.text]));
 function line(id) {
-  if (!byId[id]) throw new Error(`NO_LINE ${id}`);
-  if (!durations[id]) throw new Error(`NO_AUDIO ${id}`);
+  if (durations[id] === undefined) throw new Error(`NO_HOLD ${id}`);
   const at = now();
   marks.push({ id, atMs: at, signing: id === "sign" });
   console.log(`DEMO_LINE ${at} ${id}`);
   return at;
 }
 async function hold(id, since) {
-  const want = durations[id] * 1000 + 450;
+  const want = durations[id] * 1000;
   await sleep(want - (now() - since));
 }
 
@@ -197,11 +206,11 @@ async function tel() {
     const n = (re) => { const m = t.match(re); return m ? Number(m[1]) : null; };
     return {
       x: n(/X\s+(-?[\d.]+)/), y: n(/Y\s+(-?[\d.]+)/), z: n(/Z\s+(-?[\d.]+)/),
-      held: /PAYLOAD HELD/.test(t),
-      inRange: /IN RANGE/.test(t),
+      held: /PAYLOAD HELD/i.test(t),
+      inRange: /IN RANGE/i.test(t),
       dist: n(/PAYLOAD\s+([\d.]+)\s*m/),
       dev: n(/([-+]?[\d.]+)\s*\n?\s*mm\s*±/) ?? n(/DATUM\s*\n?\s*([-+]?[\d.]+)/),
-      verdict: /IN TOLERANCE|OUT OF TOLERANCE/.test(t),
+      verdict: /IN TOLERANCE|OUT OF TOLERANCE/i.test(t),
     };
   });
 }
@@ -257,17 +266,18 @@ try {
   await page.waitForTimeout(1500);
   t0 = Date.now();
 
-  let s = line("intro"); await hold("intro", s);
+  let s = line("intro"); await glide(700, 430, 900); await hold("intro", s);
 
   s = line("landing-figures");
-  await page.mouse.wheel(0, 420); await sleep(700);
+  await page.mouse.wheel(0, 420); await sleep(1600);
+  await page.mouse.wheel(0, 420); await sleep(1600);
   await page.mouse.wheel(0, 380);
   await hold("landing-figures", s);
 
   s = line("hub");
   await page.goto(`${BASE}/hub`, { waitUntil: "networkidle" });
   await until("hub-rows", async () => (await page.locator("a[href^='/station/']").count()) > 0);
-  await glide(640, 430, 700);
+  await glide(640, 400, 800); await sleep(1200); await page.mouse.wheel(0, 300);
   await hold("hub", s);
 
   s = line("station-open");
@@ -280,7 +290,6 @@ try {
   await until("run-live", async () => (await tel()).x !== null, 15000);
   await hold("station-begin", s);
 
-  // Drop into the payload's height band, then close on it.
   s = line("station-grasp");
   await tap("q", 900);
   await seek(async () => (await tel()).dist, 0.070, 26000, 1);
@@ -294,14 +303,13 @@ try {
   let accepted = false;
   for (let attempt = 1; attempt <= 3 && !accepted; attempt++) {
     await tap("e", 420);
-    await seek(async () => { const t = await tel(); return t.dev === null ? null : Math.abs(t.dev); }, 12, 34000, 0.001);
+    await seek(async () => { const t = await tel(); return t.dev === null ? null : Math.abs(t.dev); }, 15, 30000, 0.001);
     await tap("q", 360);
-    // Settle the last few millimetres before letting go.
-    await seek(async () => { const t = await tel(); return t.dev === null ? null : Math.abs(t.dev); }, 9, 9000, 0.001);
+    await seek(async () => { const t = await tel(); return t.dev === null ? null : Math.abs(t.dev); }, 11, 8000, 0.001);
     await page.keyboard.press("Space");
     await until("verdict", async () => (await tel()).verdict, 20000);
     const txt = await page.locator("body").innerText();
-    accepted = /IN TOLERANCE/.test(txt) && !/OUT OF TOLERANCE/.test(txt);
+    accepted = /IN TOLERANCE/i.test(txt) && !/OUT OF TOLERANCE/i.test(txt);
     console.log(`  attempt ${attempt}: ${accepted ? "IN TOLERANCE" : "out of tolerance"}`);
     if (!accepted) {
       const again = page.locator("button:has-text('Run again')").first();
@@ -315,53 +323,22 @@ try {
       await until("grasped-again", async () => (await tel()).held, 8000);
     }
   }
-  if (!accepted) throw new Error("RUN_REJECTED — the driver could not place the payload in tolerance; nothing to submit");
+  if (!accepted) throw new Error("RUN_REJECTED — could not place the payload in tolerance");
   await hold("station-place", s);
 
   s = line("station-score");
-  await page.mouse.wheel(0, 260);
+  await page.mouse.wheel(0, 200);
   await hold("station-score", s);
 
-  s = line("connect");
-  const btnDump = async () => (await page.locator("button:visible").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()).filter(Boolean);
-  console.log("  buttons before connect:", JSON.stringify(await btnDump()));
-
-  const alreadyOn = async () => /Submit and get paid/.test(await page.locator("body").innerText());
-  if (!(await alreadyOn())) {
-    // The CTA and the nav both offer a connect; take whichever is on screen.
-    const cta = page.locator("button", { hasText: /Connect/i }).first();
-    if (await cta.isVisible().catch(() => false)) {
-      const b = await cta.boundingBox();
-      if (b) { await glide(Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2), 600);
-               await page.evaluate(([x, y]) => window.__ring?.(x, y), [cx, cy]); }
-      await cta.click();
-    }
-    // RainbowKit renders its wallet list in a dialog; take the first real entry.
-    const dialog = page.locator("[role='dialog']").first();
-    if (await dialog.isVisible({ timeout: 8000 }).catch(() => false)) {
-      console.log("  wallet dialog:", JSON.stringify((await dialog.locator("button").allInnerTexts()).map((t) => t.trim())));
-      const opt = dialog.locator("button").filter({ hasNotText: /close|back|what is a wallet|get a wallet|learn more/i }).first();
-      await opt.waitFor({ state: "visible", timeout: 8000 });
-      await opt.click();
-    }
-  }
-  try {
-    await until("connected", alreadyOn, 30000);
-  } catch (e) {
-    console.log("  buttons at failure:", JSON.stringify(await btnDump()));
-    await page.screenshot({ path: `${OUT}/connect-failure.png`, fullPage: false });
-    writeFileSync(`${OUT}/connect-failure.txt`, await page.locator("body").innerText());
-    throw e;
-  }
-  await hold("connect", s);
+  await until("connected", async () => /submit and get paid/i.test(await page.locator("body").innerText()), 30000);
 
   // ------------------------------------------------ signing beat (real tx)
   s = line("sign");
   const before = sent.length;
-  const submit = page.locator("button:has-text('Submit'), button:has-text('Claim'), button:has-text('Get paid')").first();
+  const submit = page.locator("button", { hasText: /submit and get paid/i }).first();
   await submit.waitFor({ state: "visible", timeout: 20000 });
   const sb = await submit.boundingBox();
-  if (sb) { await glide(Math.round(sb.x + sb.width / 2), Math.round(sb.y + sb.height / 2), 600);
+  if (sb) { await glide(Math.round(sb.x + sb.width / 2), Math.round(sb.y + sb.height / 2), 700);
             await page.evaluate(([a, b]) => window.__ring?.(a, b), [cx, cy]); }
   await submit.click();
   await page.evaluate(() => {
@@ -381,22 +358,89 @@ try {
   await page.evaluate(() => document.getElementById("__sign")?.remove());
 
   s = line("confirmed");
-  await until("ui-confirmed", async () =>
-    (await page.locator("body").innerText()).toLowerCase().includes(txHash.slice(2, 10).toLowerCase()) ||
-    /confirmed|paid|settled/i.test(await page.locator("body").innerText()), 30000).catch(() => {});
   await hold("confirmed", s);
 
-  s = line("explorer");
-  await page.goto(`https://testnet.monadscan.com/tx/${txHash}`, { waitUntil: "domcontentloaded", timeout: 45000 });
-  await sleep(3500);
-  await page.mouse.wheel(0, 300);
-  await hold("explorer", s);
+  // ------------------------------------------------------- monadscan proof
+  s = line("explorer-tx");
+  await page.goto(`https://testnet.monadscan.com/tx/${txHash}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await sleep(5000);
+  await hold("explorer-tx", s);
 
+  s = line("explorer-transfer");
+  await page.mouse.wheel(0, 330); await sleep(2500); await page.mouse.wheel(0, 300);
+  await hold("explorer-transfer", s);
+
+  s = line("explorer-address");
+  await page.goto(`https://testnet.monadscan.com/address/${account.address}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await sleep(5000); await page.mouse.wheel(0, 260);
+  await hold("explorer-address", s);
+
+  s = line("explorer-contract");
+  await page.goto(`https://testnet.monadscan.com/address/${AXON}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await sleep(5000); await page.mouse.wheel(0, 240);
+  await hold("explorer-contract", s);
+
+  // ------------------------------------------------- the run, now on record
+  s = line("leaderboard");
+  await page.goto(`${BASE}/leaderboard`, { waitUntil: "networkidle" });
+  await sleep(2500); await page.mouse.wheel(0, 240);
+  await hold("leaderboard", s);
+
+  s = line("task-page");
+  await page.goto(`${BASE}/task/${TASK}`, { waitUntil: "networkidle" });
+  await sleep(2500); await page.mouse.wheel(0, 320);
+  await hold("task-page", s);
+
+  s = line("run-verify");
+  const runHref = await page.locator("a[href^='/run/0x']").first().getAttribute("href").catch(() => null);
+  await page.goto(`${BASE}${runHref ?? "/leaderboard"}`, { waitUntil: "networkidle" });
+  await sleep(2500); await page.mouse.wheel(0, 300);
+  await hold("run-verify", s);
+
+  // ------------------------------- the policy, and a licence that pays it out
   s = line("foundry");
   await page.goto(`${BASE}/foundry`, { waitUntil: "networkidle" });
   await until("policies", async () => (await page.locator("body").innerText()).includes("CAP TABLE"), 25000);
-  await page.mouse.wheel(0, 380);
+  await sleep(2000);
+  // Prefer the policy with the widest cap table — the fan-out is the point.
+  const wide = page.locator("article").filter({ hasText: /CAP TABLE — [2-9]\d* CONTRIBUTOR/ }).first();
+  const target = (await wide.count()) ? wide : page.locator("article").first();
+  await target.scrollIntoViewIfNeeded();
+  await sleep(2500);
   await hold("foundry", s);
+
+  s = line("licence-sign");
+  const before2 = sent.length;
+  const buy = target.locator("button", { hasText: /Licence for/i }).first();
+  await buy.waitFor({ state: "visible", timeout: 20000 });
+  const bb = await buy.boundingBox();
+  if (bb) { await glide(Math.round(bb.x + bb.width / 2), Math.round(bb.y + bb.height / 2), 700);
+            await page.evaluate(([a, b]) => window.__ring?.(a, b), [cx, cy]); }
+  await buy.click();
+  await page.evaluate(() => {
+    const d = document.createElement("div"); d.id = "__sign";
+    d.innerHTML = `<div style="color:#FF6A00;font-size:13px;letter-spacing:.18em">MONAD TESTNET</div>
+      <div style="color:#fff;font-size:30px;font-weight:700">Paying the cap table</div>
+      <div id="__sh" style="color:#8F8F8F;font-size:13px">broadcasting…</div>`;
+    document.body.appendChild(d);
+  });
+  await until("licence-broadcast", () => sent.length > before2, 60000);
+  const licTx = sent[sent.length - 1];
+  await page.evaluate((h) => { const e = document.getElementById("__sh"); if (e) e.textContent = h; }, licTx);
+  const licReceipt = await pub.waitForTransactionReceipt({ hash: licTx });
+  if (licReceipt.status !== "success") throw new Error(`LICENCE_REVERTED ${licTx}`);
+  console.log(`  licence confirmed ${licTx} in block ${licReceipt.blockNumber}`);
+  await hold("licence-sign", s);
+  await page.evaluate(() => document.getElementById("__sign")?.remove());
+
+  s = line("licence-paid");
+  await sleep(2500);
+  await hold("licence-paid", s);
+
+  s = line("licence-explorer");
+  await page.goto(`https://testnet.monadscan.com/tx/${licTx}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await sleep(5000); await page.mouse.wheel(0, 340); await sleep(2500); await page.mouse.wheel(0, 280);
+  await hold("licence-explorer", s);
 
   s = line("outro");
   await page.goto(BASE, { waitUntil: "networkidle" });
@@ -404,7 +448,9 @@ try {
 
   writeFileSync("demo/out/take-txs.json", JSON.stringify({ txHash, task: TASK,
     operator: account.address, block: Number(receipt.blockNumber),
-    explorer: `https://testnet.monadscan.com/tx/${txHash}`, sent }, null, 2));
+    explorer: `https://testnet.monadscan.com/tx/${txHash}`,
+    licenceTx: licTx, licenceBlock: Number(licReceipt.blockNumber),
+    licenceExplorer: `https://testnet.monadscan.com/tx/${licTx}`, sent }, null, 2));
   console.log("\nTAKE OK");
 } catch (e) {
   console.error(`\nTAKE FAILED: ${e.message}`);
