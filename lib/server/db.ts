@@ -51,7 +51,6 @@ export function getDb(): Database.Database {
     );
 
     CREATE INDEX IF NOT EXISTS idx_traj_task ON trajectory(task_id);
-    CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
     CREATE INDEX IF NOT EXISTS idx_traj_contributor ON trajectory(contributor);
     CREATE INDEX IF NOT EXISTS idx_traj_created ON trajectory(created_at DESC);
   `);
@@ -60,8 +59,9 @@ export function getDb(): Database.Database {
   const cols = db.prepare(`PRAGMA table_info(trajectory)`).all() as { name: string }[];
   if (!cols.some((c) => c.name === "settled")) {
     db.exec(`ALTER TABLE trajectory ADD COLUMN settled INTEGER NOT NULL DEFAULT 0`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled)`);
   }
+  // Safe either way: the column exists by now, freshly created or just added.
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled)`);
 
   return db;
 }
