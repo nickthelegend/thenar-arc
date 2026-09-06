@@ -8,6 +8,7 @@ import type { Telemetry } from "@/components/station/viewport";
 import { GOAL_R } from "@/components/station/viewport";
 import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
 import { useSession } from "@/components/session";
+import { useSpace } from "@/lib/space";
 import { useRunsOnTask, useTask } from "@/lib/hooks";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
@@ -46,6 +47,9 @@ export default function StationPage() {
   const { data: task, isError } = useTask(valid ? taskId : undefined);
   const { data: myRuns } = useRunsOnTask(valid ? taskId : undefined);
   const s = useSession();
+  // Presence in this task's room. It never touches the measurement: the
+  // trajectory is recorded and signed exactly as it is with the room empty.
+  const { ghosts, report } = useSpace(taskId, s.address, valid);
   const tx = useSubmitRun();
 
   const [phase, setPhase] = useState<Phase>("brief");
@@ -98,6 +102,7 @@ export default function StationPage() {
   const onTelemetry = useCallback(
     (t: Telemetry) => {
       setTel(t);
+      report(t.tool, t.grip, t.held);
       if (phase !== "running") return;
 
       if (t.held) everHeld.current = true;
@@ -237,6 +242,7 @@ export default function StationPage() {
             runId={runId}
             onTelemetry={onTelemetry}
             onSample={onSample}
+            ghosts={ghosts}
           />
 
           {tel && phase !== "brief" ? (
@@ -360,6 +366,33 @@ export default function StationPage() {
               <Row label="Slots left" value={String(task.slotsTotal - task.slotsFilled)} />
               <Row label="Escrow" value={`${fmtMon(Number(task.escrowWei) / 1e18, 3)} ${CURRENCY}`} />
             </div>
+          </Section>
+
+          <Section title="In the room">
+            {ghosts.length === 0 ? (
+              <p className="text-[13px] text-scribe-3">
+                Nobody else is working this task right now. Their tool shows in the
+                scene when they are.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {ghosts.map((g) => (
+                  <li key={g.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate font-mono text-[13px] text-scribe-2">
+                      {shortHash(g.id)}
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-mono text-[11px] uppercase tracking-[0.12em]",
+                        g.held ? "text-signal" : "text-scribe-3",
+                      )}
+                    >
+                      {g.held ? "carrying" : "empty"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Section>
 
           <Section title="Live placement">

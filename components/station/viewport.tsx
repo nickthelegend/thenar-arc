@@ -80,6 +80,9 @@ type ViewportProps = {
   runId: number;
   onTelemetry: (t: Telemetry) => void;
   onSample: (s: Sample) => void;
+  /** Other operators working this same task, right now. Presence only: none of
+   *  this is scored, and a run measures identically with the room empty. */
+  ghosts?: { id: string; tool: [number, number, number]; held: boolean }[];
 };
 
 useGLTF.preload("/models/thenar-6.glb");
@@ -571,6 +574,41 @@ function Rig({
   );
 }
 
+/**
+ * Everyone else's tool, in the same scene.
+ *
+ * Drawn as an open marker rather than a second arm: a room of six full
+ * manipulators is unreadable, and the thing an operator actually wants to know
+ * is where the other hands are and whether they are carrying anything. Scene
+ * coordinates are (x, z, -y) from the robot frame, the same mapping the payload
+ * uses — getting this wrong puts the room in a mirror of the room.
+ */
+function Ghosts({ ghosts }: { ghosts: { id: string; tool: [number, number, number]; held: boolean }[] }) {
+  return (
+    <group>
+      {ghosts.map((g) => (
+        <group key={g.id} position={[g.tool[0], g.tool[2], -g.tool[1]]}>
+          <mesh>
+            <sphereGeometry args={[0.018, 16, 12]} />
+            <meshBasicMaterial
+              color={g.held ? "#e8b23a" : "#5a7d8c"}
+              transparent
+              opacity={0.55}
+              depthWrite={false}
+            />
+          </mesh>
+          {/* A dropped line to the table, so a ghost reads as a position in the
+              workspace rather than a dot floating in front of the camera. */}
+          <mesh position={[0, -g.tool[2] / 2, 0]}>
+            <cylinderGeometry args={[0.0012, 0.0012, Math.max(g.tool[2], 0.001), 6]} />
+            <meshBasicMaterial color="#5a7d8c" transparent opacity={0.22} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 export function StationViewport(props: ViewportProps) {
   // Fetch the task's props as soon as the task is known, rather than on the
   // first rendered frame. The arm has always done this through a module-scope
@@ -583,6 +621,10 @@ export function StationViewport(props: ViewportProps) {
   }, [props.payloadUrl, props.targetUrl]);
 
   const [lost, setLost] = useState(false);
+  // Everything except presence goes to Rig: it must not re-render six times a
+  // second just because somebody else moved.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { ghosts: _presence, ...rigProps } = props;
 
   // A lost context leaves a black rectangle and no error anyone can see. Catch
   // it, tell the operator, and let the browser hand the context back.
@@ -650,7 +692,10 @@ export function StationViewport(props: ViewportProps) {
       gl={{ antialias: true }}
       style={{ background: "#000000" }}
     >
-      <Rig key={props.runId} {...props} />
+      {/* Ghosts tick six times a second; Rig must not re-render with them,
+          or the whole scene reconciles on every presence update. */}
+      <Rig key={props.runId} {...rigProps} />
+      <Ghosts ghosts={props.ghosts ?? []} />
     </Canvas>
     </>
   );

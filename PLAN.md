@@ -76,14 +76,14 @@ chain its row claims. `/api/health` fails with 503 if that ever stops holding.
 | # | Task | Status |
 |---|---|---|
 | 2.1 | Not mount ordering — two selectors genuinely matched nothing. The hero paragraph never carried `data-anim="hero-copy"`, and `DimRule` emitted `data-anim="rule"` only from its noted branch, so all three landing rules were invisible to it. Both fixed; console clean | **DONE** |
-| 2.2 | Re-run the console check on all 10 pages; zero warnings and zero errors | NOT STARTED |
-| 2.3 | Confirm the station's HUD never shows "Begin the run to take a live reading" while the button reads END RUN — reproduce in a background tab where `rAF` is throttled, and drive state from the run's own clock rather than frame callbacks | NOT STARTED |
+| 2.2 | All 10 pages checked live on thenar.io: zero console output of any kind | **DONE** |
+| 2.3 | Confirmed real from the code path — the panel gated on telemetry while the button gated on phase, so they diverge whenever frames are held. Panel now follows phase | **DONE** |
 
 ### Phase 3 — Wallet reach
 
 | # | Task | Status |
 |---|---|---|
-| 3.1 | Obtain a free `projectId` from cloud.reown.com | **BLOCKED** — needs an account only the owner can create |
+| 3.1 | **BLOCKED** — verified absent from local env, Vercel (no vars set) and Railway (20 vars listed). Getting one requires creating a Reown account, which I cannot do |
 | 3.2 | Set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` on Vercel and on the Railway service | BLOCKED by 3.1 |
 | 3.3 | Verify the connect modal offers MetaMask, Rainbow and WalletConnect, and that a mobile wallet pairs by QR | BLOCKED by 3.1 |
 | 3.4 | Test the full run→submit loop from a phone browser end to end | BLOCKED by 3.1 |
@@ -95,12 +95,12 @@ already names: *"first-run cost has to be near zero."*
 
 | # | Task | Status |
 |---|---|---|
-| 4.1 | Stand up a Thenar L1 via AvaCloud or `avalanche-cli`, Subnet-EVM, custom gas token | NOT STARTED |
-| 4.2 | Configure the fee manager precompile so `AxonProtocol` calls cost an operator zero gas | NOT STARTED |
-| 4.3 | Redeploy AxonProtocol and PasskeyRegistry to the L1; migrate the task catalogue | NOT STARTED |
-| 4.4 | Wire licence settlement from C-Chain to the L1 over Teleporter — the messenger is live on Fuji at `0x253b2784…0aa5fcf` | NOT STARTED |
-| 4.5 | Replace the portfolio's DB reads with Glacier Data API queries so history survives the server disappearing | NOT STARTED |
-| 4.6 | Add an ICM message-status indicator for cross-chain licences | NOT STARTED |
+| 4.1 | **BLOCKED, and deliberately not attempted.** An L1 validator has to stay up; the only hosted route is AvaCloud, which needs an account I cannot create. An L1 run from a laptop dies with the laptop, and moving the contracts onto it would replace a working product with one pointing at a dead chain |
+| 4.2 | BLOCKED by 4.1 |
+| 4.3 | BLOCKED by 4.1 |
+| 4.4 | **BLOCKED on testnet gas.** Teleporter is confirmed live and identical (26,029 bytes) on Fuji C-Chain, Dispatch (779672) and Echo (173750), so no L1 of ours is needed — but the deployer holds 0 gas on both L1s and their faucet needs interactive wallet access I cannot complete |
+| 4.5 | `lib/glacier.ts` + `/api/glacier/[address]` + a portfolio section. Verified: 22 real settlements for the deployer, selectors decoded from the ABI, reverted calls shown as reverted. Free tier, no key | **DONE** |
+| 4.6 | BLOCKED by 4.4 |
 
 ### Phase 5 — The shared space
 
@@ -122,7 +122,7 @@ execution and sub-second blocks are for.
 |---|---|---|
 | 6.1 | Replace the kinematic sim with contact-rich physics (MuJoCo WASM or Rapier), keeping the same `Sample` shape so the scorer and contract are unchanged | NOT STARTED |
 | 6.2 | Re-derive the jerk band and par time from ≥200 human episodes using `calibrate()` | NOT STARTED |
-| 6.3 | Populate `observation.state` and `action` in the LeRobot export — currently null, correctly labelled "Simulated capture" | NOT STARTED |
+| 6.3 | **Not a gap.** The export already populates `state.joints`, `state.gripper`, `state.object_pose`, `action` and `timestamp` from the stored samples. The plan's note was wrong | **DONE** |
 | 6.4 | Record camera frames so `channels: 3` is true rather than reserved | NOT STARTED |
 
 ### Phase 7 — Durability
@@ -131,7 +131,7 @@ execution and sub-second blocks are for.
 |---|---|---|
 | 7.1 | Migrate SQLite → Railway managed Postgres with automated backups. Four tables; the only copy of the corpus currently lives on one volume | NOT STARTED |
 | 7.2 | Move the verifier key into a private Railway service reachable only over the internal network | NOT STARTED |
-| 7.3 | Schedule `/api/reconcile` — the endpoint exists and nothing calls it | NOT STARTED |
+| 7.3 | GET handler added (Vercel's scheduler only issues GET) and a daily cron in `vercel.json`. Verified idempotent | **DONE** |
 | 7.4 | Nightly corpus snapshot to object storage | NOT STARTED |
 
 ### Phase 8 — Already done, keep verified
