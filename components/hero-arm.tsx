@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -145,6 +145,41 @@ function Rig({ paused }: { paused: boolean }) {
   );
 }
 
+/**
+ * Put the camera where the whole arm actually fits.
+ *
+ * A fixed position cannot: the hero panel is wide and short on a desktop and
+ * narrow and tall on a phone, so whichever axis is tighter decides the
+ * distance. This solves both from the arm's real extent — roughly a metre
+ * across the table and three quarters of a metre from the table to the top of
+ * the wrist — and backs off to whichever is further, so the cycle is never
+ * cropped.
+ */
+function FrameArm() {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
+
+  useEffect(() => {
+    const EXTENT_X = 1.06;   // table diameter plus a margin
+    const EXTENT_Y = 0.96;   // table to the top of the wrist, plus a margin
+    const aspect = Math.max(0.35, size.width / Math.max(1, size.height));
+
+    const halfV = (camera.fov * Math.PI) / 360;
+    const forVertical = EXTENT_Y / 2 / Math.tan(halfV);
+    const forHorizontal = EXTENT_X / 2 / (Math.tan(halfV) * aspect);
+    const dist = Math.max(forVertical, forHorizontal);
+
+    // The three-quarter view is the one the product is drawn from; only the
+    // distance changes.
+    const dir = new THREE.Vector3(0.669, 0.39, 0.632).normalize();
+    camera.position.copy(dir.multiplyScalar(dist));
+    camera.lookAt(0, 0.04, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
+
+  return null;
+}
+
 export function HeroArm() {
   const paused =
     typeof window !== "undefined" &&
@@ -154,10 +189,11 @@ export function HeroArm() {
     <Canvas
       shadows="percentage"
       dpr={[1, 2]}
-      camera={{ fov: 32, position: [0.72, 0.42, 0.68], near: 0.02, far: 12 }}
+      camera={{ fov: 32, position: [1.1, 0.64, 1.04], near: 0.02, far: 24 }}
       style={{ background: "transparent" }}
-      aria-label="An THENAR-6 arm running a pick-and-place cycle"
+      aria-label="A THENAR-6 arm running a pick-and-place cycle"
     >
+      <FrameArm />
       <Rig paused={paused} />
     </Canvas>
   );
