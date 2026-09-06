@@ -325,9 +325,16 @@ function Rig({
       if (
         ["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d", "q", "e"].includes(k)
       ) {
+        // Also stops space activating whatever button still has focus — after
+        // "Begin run" that is the End run button, so a press to close the jaws
+        // was ending the run instead.
         e.preventDefault();
       }
       if (k === " ") {
+        // Held keys auto-repeat. A toggle on every repeat flips the jaws open
+        // and shut many times a second and leaves them wherever the last event
+        // landed, which is why closing them appeared to do nothing at all.
+        if (e.repeat) return;
         grip.current = grip.current > GRIP_CLOSED ? 6 : GRIP_OPEN_MM;
         return;
       }

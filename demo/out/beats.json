@@ -1,0 +1,66 @@
+{
+  "marks": [
+    {
+      "id": "intro",
+      "atMs": 0,
+      "signing": false
+    },
+    {
+      "id": "landing-figures",
+      "atMs": 12346,
+      "signing": false
+    },
+    {
+      "id": "hub",
+      "atMs": 22407,
+      "signing": false
+    },
+    {
+      "id": "station-open",
+      "atMs": 29575,
+      "signing": false
+    },
+    {
+      "id": "station-begin",
+      "atMs": 37240,
+      "signing": false
+    },
+    {
+      "id": "station-grasp",
+      "atMs": 45261,
+      "signing": false
+    },
+    {
+      "id": "station-place",
+      "atMs": 51383,
+      "signing": false
+    },
+    {
+      "id": "station-score",
+      "atMs": 71439,
+      "signing": false
+    },
+    {
+      "id": "connect",
+      "atMs": 80285,
+      "signing": false
+    }
+  ],
+  "durations": {
+    "intro": 11.895646,
+    "landing-figures": 9.609705,
+    "hub": 6.718821,
+    "station-open": 7.214694,
+    "station-begin": 7.570159,
+    "station-grasp": 5.67034,
+    "station-place": 6.264399,
+    "station-score": 8.394467,
+    "connect": 2.914014,
+    "sign": 11.99102,
+    "confirmed": 4.864308,
+    "explorer": 7.646893,
+    "foundry": 10.741088,
+    "outro": 6.650703
+  },
+  "base": "https://web-production-2d1d0.up.railway.app"
+}

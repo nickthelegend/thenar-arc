@@ -121,6 +121,9 @@ export default function StationPage() {
   }, []);
 
   const start = () => {
+    // The button that started the run keeps focus, and space activates a
+    // focused button. Drop focus so the jaws get the key, not the control.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     samples.current = [];
     settledSince.current = null;
     everHeld.current = false;
