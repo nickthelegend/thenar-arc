@@ -572,6 +572,16 @@ function Rig({
 }
 
 export function StationViewport(props: ViewportProps) {
+  // Fetch the task's props as soon as the task is known, rather than on the
+  // first rendered frame. The arm has always done this through a module-scope
+  // preload; without the same for the payload and the landmark, the scene pops
+  // in a beat late — and in a tab that is not compositing, not at all.
+  useEffect(() => {
+    for (const url of [props.payloadUrl, props.targetUrl]) {
+      if (url) useGLTF.preload(url);
+    }
+  }, [props.payloadUrl, props.targetUrl]);
+
   const [lost, setLost] = useState(false);
 
   // A lost context leaves a black rectangle and no error anyone can see. Catch
