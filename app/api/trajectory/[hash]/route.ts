@@ -37,6 +37,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ hash: string }
     sampleCount: row.sample_count,
     createdAt: row.created_at,
     txHash: row.tx_hash,
+    // Which chain that transaction is on. Without it the run page links every
+    // hash to the current chain's explorer, archived ones included — the same
+    // bug the feed had, one page over.
+    chainId: row.chain_id,
     integrity: {
       recomputedHash: recomputed,
       matches: recomputed.toLowerCase() === row.traj_hash.toLowerCase(),

@@ -1,96 +1,105 @@
-# Test plan — Thenar on Avalanche Fuji
+# Thenar — test plan
 
-Every item states what *correct* means as a specific observable result. An item
-passes only when the running product at https://thenar.io produces exactly
-that, with a clean console and no failed request. Tested against the deployment,
-not the source.
+Every page, every API route, every on-chain interaction, every external
+integration, and the realistic edge cases through them. Each item states what
+*correct* means as a specific expected result, not "should work".
 
-| | |
-|---|---|
-| Chain | Avalanche Fuji, 43113 |
-| AxonProtocol | `0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3` |
-| PasskeyRegistry | `0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F` |
-| Frontend | Vercel · API + SQLite volume | Railway |
+Target: **https://thenar.io** (Vercel frontend, Railway API + SQLite volume),
+Avalanche Fuji chain 43113, AxonProtocol `0x025dB4A5…F3b3`.
+
+Console and network are checked on **every** UI item. Any error anywhere fails
+the item.
 
 ---
 
-## A — Pages
+## A. Pages (14)
 
 | # | Item | Correct means |
 |---|---|---|
-| A1 | `/` renders | Hero, the 16-prop strip with live 3D previews, network stats read from chain |
-| A2 | `/hub` | 8 tasks listed with slots, reward and escrow read from the contract |
-| A3 | `/post` | Two prop pickers with 3D previews, instruction composed from the picks |
-| A4 | `/spec` | Protocol spec renders |
-| A5 | `/foundry` | Policy market; the minted policy is listed with its cap table |
-| A6 | `/leaderboard` | Operators ranked by paid total, read from chain |
-| A7 | `/portfolio` | Connected-wallet run history; sensible empty state when disconnected |
-| A8 | `/task/0` | Task detail: instruction, reward, slots, escrow, difficulty |
-| A9 | `/station/0` | Brief, controls, 3D viewport, Begin control |
-| A10 | `/run/<hash>` | A settled run's detail with its transaction |
-| A11 | Unknown route | `/nonsense` returns 404, not a soft 200 |
-| A12 | Every page | Exactly one `<h1>`, nav present, zero console errors |
+| A1 | `/` landing | Hero renders the real headline (not the error boundary). Rail shows 4 ticks. Scrolling advances the active sheet; the rail tick and the visible sheet agree at every position; exactly 3 of 4 sheets are `inert`. Console silent. |
+| A2 | `/hub` | Lists the 8 on-chain tasks. Shows the seeded-funding disclosure naming the real count. Scenario and Skill filter rows present; selecting a skill narrows the list to exactly the tasks with that skill. Console silent. |
+| A3 | `/space` | Lists rooms; header counts match `/api/space`. A task with operators in it is listed even when full. Console silent. |
+| A4 | `/inventory` | 43 tiles (34 props + 7 rooms + 2 uploaded). Exactly **1** WebGL canvas. Filters narrow correctly. Console silent. |
+| A5 | `/post` | 48 pickable tiles, 1 canvas. Room selection changes the scenario index. Payload/landmark selection recomposes the instruction with the right preposition. Console silent. |
+| A6 | `/leaderboard` | Standings from chain; totals equal the sum of rows. Links to the archive. Console silent. |
+| A7 | `/portfolio` (disconnected) | Shows the connect prompt, not an empty table. Console silent. |
+| A8 | `/foundry` | Policy market reads chain; policy 0 shows licenceFee 0.02 and 1 licence sold. Console silent. |
+| A9 | `/spec` | Arm spec table. "What this is not" lists all 4 non-capabilities. Links to `/passkey`. Console silent. |
+| A10 | `/archive` | 13 Monad-era runs, each linking MonadScan. Explains why they are separate. Console silent. |
+| A11 | `/passkey` (disconnected) | Explains the curve and the precompile, links the registry on Snowtrace, prompts to connect. Console silent. |
+| A12 | `/task/4` | Skill chip ROTATE, room "Play table", stage track, seed-funding note, runs list. Console silent. |
+| A13 | `/station/4` | Loads exactly 4 GLBs: arm, dice, crate, `play.glb`. Skill and Room rows present. Legend names arrow keys. Console silent. |
+| A14 | `/run/<hash>` | Resolves a real trajectory, re-hashes the samples and reports integrity match, links the tx on the chain the row records. Console silent. |
 
-## B — API
-
-| # | Item | Correct means |
-|---|---|---|
-| B1 | `GET /api/health` | `ok: true`; all six checks pass |
-| B2 | `GET /api/contract` | chain 43113, AVAX, the live address, an ABI |
-| B3 | `GET /api/feed` | Settled runs, newest first, with real hashes |
-| B4 | `GET /api/props` | The uploaded prop list |
-| B5 | `GET /api/props/<id>` | The GLB, `model/gltf-binary`, byte-identical |
-| B6 | `POST /api/props` valid | 201 with an id; the file round-trips |
-| B7 | `POST /api/props` not a GLB | 415, "not a GLB — missing the glTF magic" |
-| B8 | `POST /api/props` bad wallet | 400, "a wallet address is required" |
-| B9 | `POST /api/props` duplicate | Returns the first prop, `deduplicated: true` |
-| B10 | `POST /api/verify` valid | A signed score, a cid, a trajHash |
-| B11 | `POST /api/verify` no duration | 400, "durationSeconds is required" |
-| B12 | `POST /api/verify` short run | Refused: "run too short to score" |
-| B13 | `POST /api/verify` backwards time | Refused: sample goes backwards |
-| B14 | `GET /api/trajectory/<hash>` | The stored samples for a real hash |
-| B15 | `GET /api/task/0/runs` | Runs recorded against task 0 |
-| B16 | `GET /api/dataset` | A corpus export |
-| B17 | `POST /api/submitted` | Marks a run settled; feed count increases |
-| B18 | `GET` on a POST-only route | 405 |
-
-## C — On-chain
+## B. API routes (16)
 
 | # | Item | Correct means |
 |---|---|---|
-| C1 | Contracts deployed | Non-empty bytecode at both addresses |
-| C2 | Source verified | Sourcify `exact_match` for all 6 contracts on 43113 |
-| C3 | `createTask` escrows | Escrow equals slots × reward |
-| C4 | `submitTrajectory` pays | Contract balance falls by the reward in the same tx |
-| C5 | Replay refused | Submitting the same trajHash twice reverts `AlreadySubmitted` |
-| C6 | Unsigned score refused | A score without the verifier signature reverts `BadSignature` |
-| C7 | Five-run cap | A sixth run by one account on one task reverts `CapReached` |
-| C8 | `mintPolicy` needs a full task | Minting an unfilled task reverts `NotFilled` |
-| C9 | `licensePolicy` fans out | Every contributor's balance rises pro-rata in one tx |
-| C10 | Wrong fee refused | A licence with the wrong value reverts `WrongFee` |
-| C11 | Sharded counters | `slotsFilledOf` equals the sum of shards |
-| C12 | PasskeyRegistry verifies | Real secp256r1 signature returns 1, tampered returns 0 |
+| B1 | `GET /api/health` | 200, `ok:true`, all 7 checks true, `ledgerMatchesChain` reconciles stored vs `trajectoryCount()`. |
+| B2 | `GET /api/feed` | 200, `total` equals `trajectoryCount()` (12). Every `tx_hash` resolves on Fuji. |
+| B3 | `GET /api/archive` | 200, 13 runs, all on chain 10143, none resolving on Fuji. |
+| B4 | `GET /api/contract` | 200, returns the ABI and address. |
+| B5 | `GET /api/dataset?taskId=7` | 200, episodes equal that task's settled Fuji runs; observation channels and action arrays populated, not null. |
+| B6 | `GET /api/dataset` (no id) | 400 with a specific message, not 500 and not task 0. |
+| B7 | `GET /api/dataset?taskId=-1` | 400 with a specific message. |
+| B8 | `GET /api/glacier/<addr>` | 200, settlements decoded from the ABI; reverted calls shown as reverted. |
+| B9 | `GET /api/glacier/notanaddress` | 400, not 500. |
+| B10 | `GET /api/trajectory/<hash>` | 200 with integrity block; unknown hash → 404. |
+| B11 | `GET /api/task/4/runs` | 200, only settled runs on the active chain. |
+| B12 | `GET /api/props` | 200, lists uploaded props. |
+| B13 | `POST /api/props` (bad file) | Rejects non-glTF with a specific error, not 500. |
+| B14 | `GET|POST|DELETE /api/space/<id>` | Pose upsert returns the other operators; DELETE removes immediately; stale poses pruned after 4 s; malformed pose → 400 with its own message. |
+| B15 | `GET /api/space` | 200, occupancy matches what was posted. |
+| B16 | `GET /api/reconcile` | 200, idempotent — a second run resolves 0 and changes nothing. |
+| B17 | `GET /api/snapshot` | 200, uploads a consistent copy, reports sha256 and row counts. |
+| B18 | `POST /api/verify` (malformed) | 400 with a specific error, not 500. |
+| B19 | `POST /api/submitted` (malformed) | 400 with a specific error, not 500. |
 
-## D — Flows
-
-| # | Item | Correct means |
-|---|---|---|
-| D1 | Task → station | A task on `/hub` opens its station with the right instruction |
-| D2 | Scene matches instruction | The station loads the GLBs the instruction names |
-| D3 | Begin a run | Timer starts, controls enable |
-| D4 | Record and score | A driven run produces placement, smoothness and efficiency |
-| D5 | Submit → pay | The score is signed, the tx settles, the operator is paid |
-| D6 | Run appears in the feed | The settled run shows on `/` and `/leaderboard` |
-| D7 | Upload → pick | An uploaded model can be selected when posting a task |
-| D8 | Wallet disconnected | Every write path prompts to connect rather than failing |
-
-## E — Cross-cutting
+## C. On-chain interactions (10)
 
 | # | Item | Correct means |
 |---|---|---|
-| E1 | Zero console errors | No page logs an error or unhandled rejection |
-| E2 | Zero failed requests | No 4xx/5xx subresource anywhere |
-| E3 | Mobile 375px | No horizontal overflow; nav reachable |
-| E4 | No mocks | Zero mock/stub/TODO/fake hits in source |
-| E5 | Persisted DB | Row counts survive a redeploy |
-| E6 | Right chain everywhere | No Monad references; faucet points at Avalanche |
+| C1 | 6 contracts deployed | All six addresses return non-empty bytecode on Fuji. |
+| C2 | `taskCount` / `trajectoryCount` / `policyCount` | 8 / 12 / 1. |
+| C3 | `submitTrajectory` | 12 real transactions at the contract, selector `0x15e9c468`. |
+| C4 | `createTask` | 8 real transactions, selector `0xdb2399d0`. |
+| C5 | `mintPolicy` | 2 transactions; policy 0 exists with a cap table. |
+| C6 | `licensePolicy` | 1 transaction; policy 0 shows `licencesSold=1`, `distributed=0.0195 AVAX`. |
+| C7 | Reverts by selector | `AlreadySubmitted`, `BadSignature`, `CapReached`, `NotFilled`, `WrongFee` all present in the ABI and reachable. |
+| C8 | `RUNS_PER_ACCOUNT` | Returns 5. |
+| C9 | P-256 precompile `0x0100` | Real WebCrypto signature → 1; tampered digest → empty. |
+| C10 | `PasskeyRegistry.verifyWithKey` | Real signature → true; tampered r → false. |
+
+## D. External integrations (3)
+
+| # | Item | Correct means |
+|---|---|---|
+| D1 | Glacier (Avalanche Data API) | Returns real transactions for the contract with no API key. |
+| D2 | Object storage snapshot | Object retrievable, sha256 matches, restores with `integrity_check ok`. |
+| D3 | WalletConnect | Modal offers WalletConnect-backed wallets. **Blocked: no projectId exists.** |
+
+## E. Edge cases (10)
+
+| # | Item | Correct means |
+|---|---|---|
+| E1 | `/post` negative slots | Specific error, escrow reads 0.0000, submit disabled. |
+| E2 | `/post` zero slots | Specific error. |
+| E3 | `/post` negative reward | Specific error. |
+| E4 | `/post` letters in a number field | Specific error. |
+| E5 | `/task/9999` | "not in the registry", not a crash. |
+| E6 | `/station/9999` | Handled, not a crash. |
+| E7 | `/run/0xdeadbeef` | Not-found state, not a crash. |
+| E8 | `/api/space/abc` | 400. |
+| E9 | Disconnected wallet across all pages | Every page usable; no page requires a wallet to read. |
+| E10 | Archive tx isolation | No archive tx resolves on Fuji; no feed tx resolves only on Monad. |
+
+## F. Quality gates (4)
+
+| # | Item | Correct means |
+|---|---|---|
+| F1 | No mocks/stubs | 0 hits for mock/stub/fake/dummy/TODO/FIXME across `app`, `components`, `lib`, `contracts/src`. |
+| F2 | ESLint | 0 problems. |
+| F3 | Design detector | 0 findings, exit 0. |
+| F4 | Console | 0 errors on every page in section A. |
+
+**Total: 60 items.**
