@@ -192,3 +192,38 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Print.
+
+   The task page is a work order: an instruction, a rate, a tolerance, a par
+   time. Printed, it should read as one — which means dropping the things that
+   only make sense on a screen (navigation, connect button, 3D canvases, the
+   banner) and putting the ink back on white. Explorer links print their URL,
+   because a printed hash with no destination is not verifiable by anyone.
+   ------------------------------------------------------------------------- */
+@media print {
+  :root {
+    --ink-0: #ffffff; --ink-1: #ffffff; --ink-2: #ffffff; --ink-3: #ffffff;
+    --scribe: #000000; --scribe-2: #1c1c1c; --scribe-3: #4a4a4a;
+    --rule: #c8c8c8; --rule-strong: #8f8f8f;
+  }
+
+  html, body { background: #ffffff !important; color: #000000 !important; }
+
+  header, nav, footer, canvas,
+  [role="status"], [data-print="hide"] { display: none !important; }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 10px;
+    color: #4a4a4a;
+    word-break: break-all;
+  }
+
+  /* Keep a reading measure on paper rather than the screen's full width. */
+  main { max-width: none !important; padding: 0 !important; }
+
+  /* Nothing should be split across a page break mid-figure. */
+  li, dl, table, section { break-inside: avoid; }
+}
