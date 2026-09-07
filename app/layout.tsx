@@ -39,6 +39,10 @@ const pixel = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
+  // Without this, Next cannot resolve the file-convention opengraph image to an
+  // absolute URL and silently emits no og:image at all — the card looked
+  // configured and unfurled to nothing.
+  metadataBase: new URL("https://thenar.io"),
   title: "Thenar — the data foundry for physical AI",
   description:
     "Teleoperate a robot arm in the browser. Every accepted trajectory is measured, recorded, and paid in the same Avalanche transaction.",
