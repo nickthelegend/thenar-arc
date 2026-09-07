@@ -7,7 +7,7 @@ import { useLeaderboard } from "@/lib/hooks";
 import { useSession } from "@/components/session";
 import { CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
-import { fmtInt, fmtScore, shortHash } from "@/lib/format";
+import { fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
 
 export default function LeaderboardPage() {
   const { standings, isLoading, isError } = useLeaderboard();

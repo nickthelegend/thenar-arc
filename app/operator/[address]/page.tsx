@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { isAddress } from "viem";
 import { DimRule } from "@/components/primitives";
 import { addressUrl, txUrlOn, appChain, CURRENCY } from "@/lib/chain";
-import { fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
+import { fmtInt, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 type Run = {
