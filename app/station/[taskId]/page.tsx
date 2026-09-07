@@ -15,6 +15,7 @@ import { useRunsOnTask } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
+import { shortfalls, belowFloorBy } from "@/lib/shortfall";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { propsForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
@@ -377,6 +378,7 @@ export default function StationPage() {
             <MeasurementSnap
               verdict={verdict}
               accepted={accepted}
+              rewardMon={task.rewardMon}
               session={s}
               thinOnGas={thinOnGas}
               tx={tx}
@@ -472,10 +474,12 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
+  verdict, accepted, rewardMon, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
   verdict: Verdict;
   accepted: boolean;
+  /** This task's rate, so a lost point can be priced in AVAX. */
+  rewardMon: number;
   session: ReturnType<typeof useSession>;
   tx: ReturnType<typeof useSubmitRun>;
   thinOnGas: boolean;
@@ -530,6 +534,36 @@ function MeasurementSnap({
               </div>
             ))}
           </div>
+
+          {/* A score is one number and an operator cannot act on it. This is the
+              same arithmetic read backwards: what each term gave up, and what those
+              points were worth on this task. */}
+          <details className="border-t border-rule pt-3">
+            <summary className="cursor-pointer list-none font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-3 hover:text-scribe-2">
+              Where the points went
+            </summary>
+            <ul className="mt-3 flex flex-col gap-3">
+              {shortfalls(verdict, rewardMon).map((s) => (
+                <li key={s.key} className="flex flex-col gap-1">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="font-mono text-[13px] text-scribe">{s.label}</span>
+                    <span className="font-mono text-[12px] tabular-nums text-scribe-3">
+                      {s.lost > 0 ? `-${(s.lost / 100).toFixed(2)} pts` : "no loss"}
+                      {s.costMon > 0 ? ` \u00b7 ${fmtMon(s.costMon, 4)} ${CURRENCY}` : ""}
+                    </span>
+                  </span>
+                  <span className="font-mono text-[12px] text-scribe-3">{s.reading}</span>
+                  <span className="text-[13px] leading-relaxed text-scribe-2">{s.advice}</span>
+                </li>
+              ))}
+            </ul>
+            {belowFloorBy(verdict) !== null ? (
+              <p className="mt-3 border-t border-rule pt-3 font-mono text-[12px] text-reject">
+                {((belowFloorBy(verdict) ?? 0) / 100).toFixed(2)} points short of the 40.00 a run must reach to be paid.
+              </p>
+            ) : null}
+          </details>
+
 
           {accepted ? (
             <div className="flex items-end justify-between border-t border-rule pt-4">
