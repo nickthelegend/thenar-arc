@@ -1,3 +1,4 @@
+import { canonicalise } from "@/lib/canonical";
 import "server-only";
 import { keccak256, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -14,19 +15,6 @@ export class VerifyError extends Error {
 }
 
 /** Canonical serialisation. The hash has to be reproducible from the stored rows. */
-export function canonicalise(taskId: number, contributor: string, samples: Sample[]): string {
-  return JSON.stringify({
-    v: 1,
-    taskId,
-    contributor: contributor.toLowerCase(),
-    samples: samples.map((s) => [
-      Number(s.t.toFixed(3)),
-      s.q.map((q) => Number(q.toFixed(5))),
-      Number(s.grip.toFixed(2)),
-      s.object.map((o) => Number(o.toFixed(5))),
-    ]),
-  });
-}
 
 export function validateSamples(raw: unknown): Sample[] {
   if (!Array.isArray(raw)) throw new VerifyError("samples must be an array");
@@ -141,3 +129,5 @@ export async function verifyAndSign(args: {
     accepted: verdict.success,
   };
 }
+
+export { canonicalise };

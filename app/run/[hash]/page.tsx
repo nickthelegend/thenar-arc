@@ -10,6 +10,8 @@ import { TOLERANCE_MM } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { keccak256, toHex } from "viem";
+import { canonicalise } from "@/lib/canonical";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import type { ReplaySample } from "@/components/station/replay";
 
@@ -88,6 +90,24 @@ export default function RunPage() {
     frame.current = data?.samples?.[shownIndex] ?? null;
   }, [data, shownIndex]);
 
+  /**
+   * The hash, re-derived here rather than taken from us.
+   *
+   * The API already reports whether the stored samples re-hash to the recorded
+   * value, but that is our server marking its own homework. This runs the same
+   * canonicalisation and keccak in the browser, over the samples it was handed,
+   * so the check does not depend on trusting the thing being checked.
+   */
+  const selfChecked = useMemo(() => {
+    if (!data?.samples?.length) return null;
+    try {
+      const local = keccak256(toHex(canonicalise(data.taskId, data.contributor, data.samples as never)));
+      return { local, matches: local.toLowerCase() === data.trajHash.toLowerCase() };
+    } catch {
+      return null;
+    }
+  }, [data]);
+
   const trail = useMemo(() => {
     const pts = data?.samples ?? [];
     const n = Math.max(2, shownIndex + 1);
@@ -148,6 +168,19 @@ export default function RunPage() {
             ? "The stored samples re-hash to the value recorded on chain."
             : "The stored samples do not match the recorded hash."}
         </span>
+        {selfChecked ? (
+          <span className="mt-2 block font-mono text-[12px] leading-relaxed">
+            <span className={selfChecked.matches ? "text-go" : "text-reject"}>
+              {selfChecked.matches
+                ? "Re-derived in this browser and it matches."
+                : "Re-derived in this browser and it does NOT match."}
+            </span>{" "}
+            <span className="text-scribe-3">
+              Computed here from the samples above, not taken from the server &mdash;
+              so the check does not depend on trusting it.
+            </span>
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
