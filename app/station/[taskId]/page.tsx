@@ -16,6 +16,7 @@ import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider"
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy } from "@/lib/shortfall";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { propsForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
@@ -122,6 +123,32 @@ export default function StationPage() {
     },
     [task],
   );
+
+  // A measured run is real work that has not been paid yet, and the wallet
+  // prompt between here and the chain is where runs were being lost.
+  useEffect(() => {
+    if (phase !== "measured" || !verdict || !task) return;
+    saveDraft({
+      taskId: task.id,
+      samples: samples.current,
+      verdict,
+      durationSeconds: verdict.raw.seconds,
+      at: Date.now(),
+    });
+  }, [phase, verdict, task]);
+
+  // Once the chain has it, the draft is not an unsent run any more.
+  useEffect(() => {
+    if (tx.phase === "confirmed") clearDraft();
+  }, [tx.phase]);
+
+  // Offer it back once, on arrival, if this tab was interrupted mid-flow.
+  const [recovered, setRecovered] = useState<ReturnType<typeof loadDraft>>(null);
+  useEffect(() => {
+    if (!task || phase !== "brief") return;
+    const t = setTimeout(() => setRecovered(loadDraft(task.id)), 0);
+    return () => clearTimeout(t);
+  }, [task, phase]);
 
   const onTelemetry = useCallback(
     (t: Telemetry) => {
@@ -351,6 +378,38 @@ export default function StationPage() {
 
           {phase === "brief" ? (
             <div className="absolute inset-0 flex items-center justify-center bg-ink-0/78 px-6">
+              {recovered ? (
+                <div className="mb-4 border border-signal bg-signal-dim px-4 py-3 text-left">
+                  <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-signal">
+                    An unsent run is waiting
+                  </p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-scribe-2">
+                    You measured {fmtScore(recovered.verdict.score)} on this task and left
+                    before submitting. The samples are still here.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        samples.current = recovered.samples;
+                        setVerdict(recovered.verdict);
+                        setPhase("measured");
+                        setRecovered(null);
+                      }}
+                      className="border border-scribe bg-scribe px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
+                    >
+                      Pick it back up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { clearDraft(); setRecovered(null); }}
+                      className="border border-rule-strong px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-3 transition-colors hover:text-scribe"
+                    >
+                      Discard it
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <div className="max-w-sm text-center">
                 <h2 className="font-display text-2xl font-600">Ready to record</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-scribe-2">
