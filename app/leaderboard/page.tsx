@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
+
 import { DimRule } from "@/components/primitives";
 import { useLeaderboard } from "@/lib/hooks";
 import { useSession } from "@/components/session";
-import { addressUrl, CURRENCY } from "@/lib/chain";
+import { CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
-import { fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
+import { fmtInt, fmtScore, shortHash } from "@/lib/format";
 
 export default function LeaderboardPage() {
   const { standings, isLoading, isError } = useLeaderboard();
@@ -73,14 +75,12 @@ export default function LeaderboardPage() {
                 <span className="font-mono text-[15px] tabular-nums text-scribe-3">
                   {String(o.rank).padStart(2, "0")}
                 </span>
-                <a
-                  href={addressUrl(o.address)}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  href={`/operator/${o.address}`}
                   className={cn("truncate font-mono text-[13px] hover:text-probe", you ? "text-signal" : "text-scribe")}
                 >
                   {shortHash(o.address)}{you ? " · you" : ""}
-                </a>
+                </Link>
                 <Cell label="Runs" value={fmtInt(o.runs)} />
                 <Cell label="Mean" value={fmtScore(o.meanScore)} className="hidden sm:flex" />
                 <Cell label="Tasks" value={String(o.tasks)} className="hidden sm:flex" />
