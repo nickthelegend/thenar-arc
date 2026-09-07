@@ -179,13 +179,19 @@ function Arm({
     };
   }, [model]);
 
-  useFrame(() => {
+  useFrame((state) => {
+    // A still arm reads as a broken one. When nothing is being driven the wrist
+    // carries a very small, slow drift — the amount a real servo holding
+    // position actually moves, not an animation.
+    const idleT = state.clock.elapsedTime;
+    const idle = held?.current ? 0 : Math.sin(idleT * 0.7) * 0.004;
+
     const j = solve(target.current);
     const n = nodes.current;
     if (n.j1) n.j1.rotation.z = j.j1;
     if (n.j2) n.j2.rotation.y = j.j2;
     if (n.j3) n.j3.rotation.y = j.j3;
-    if (n.j5) n.j5.rotation.y = j.j5;
+    if (n.j5) n.j5.rotation.y = j.j5 + idle;
 
     const half = grip.current / 2000; // mm -> m, per jaw
     if (n.jawL) n.jawL.position.x = -half;
@@ -376,6 +382,10 @@ function GhostTrail({ points }: { points: React.RefObject<Float32Array> }) {
   const geom = useMemo(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 3), 3));
+    // Per-vertex colour, so the line can fade along its own length. A uniform
+    // trail says where the payload has been; a fading one says where it just
+    // was, which is the part worth reading while driving.
+    g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 3), 3));
     g.setDrawRange(0, 0);
     return g;
   }, []);
@@ -384,14 +394,29 @@ function GhostTrail({ points }: { points: React.RefObject<Float32Array> }) {
     const attr = geom.getAttribute("position") as THREE.BufferAttribute;
     attr.array.set(points.current);
     attr.needsUpdate = true;
-    geom.setDrawRange(0, trailCount.current);
+
+    // Age the line: the newest quarter is full signal, everything behind it
+    // falls away toward the table. Written only over the range actually drawn.
+    const col = geom.getAttribute("color") as THREE.BufferAttribute;
+    const n = trailCount.current;
+    const c = col.array as Float32Array;
+    for (let i = 0; i < n; i += 1) {
+      const age = n > 1 ? i / (n - 1) : 1;       // 0 oldest, 1 newest
+      const k = Math.max(0.06, Math.pow(age, 2.2));
+      c[i * 3] = 1.0 * k;                         // #FF6A00 scaled by age
+      c[i * 3 + 1] = 0.416 * k;
+      c[i * 3 + 2] = 0.0;
+    }
+    col.needsUpdate = true;
+
+    geom.setDrawRange(0, n);
     geom.computeBoundingSphere();
   });
 
   return (
     <line>
       <primitive object={geom} attach="geometry" />
-      <lineBasicMaterial color="#FF6A00" transparent opacity={0.55} />
+      <lineBasicMaterial vertexColors transparent opacity={0.9} />
     </line>
   );
 }
@@ -795,7 +820,7 @@ export function StationViewport(props: ViewportProps) {
       dpr={[1, 2]}
       camera={{ fov: 34, near: 0.02, far: 12 }}
       gl={{ antialias: true }}
-      style={{ background: "#000000" }}
+      style={{ background: "#000000", cursor: "crosshair" }}
     >
       {/* Ghosts tick six times a second; Rig must not re-render with them,
           or the whole scene reconciles on every presence update. */}
