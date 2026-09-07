@@ -130,7 +130,7 @@ export function HeroSequence() {
     return (
       <section className="grid items-start gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-20">
         <div className="flex flex-col gap-12">
-          {SHEETS.map((s) => <Sheet key={s.kicker} sheet={s} />)}
+          {SHEETS.map((s, i) => <Sheet key={s.kicker} sheet={s} level={i === 0 ? 1 : 2} />)}
         </div>
         <ArmFrame />
       </section>
@@ -174,24 +174,33 @@ function ScrollSheet({ sheet, on }: { sheet: (typeof SHEETS)[number]; on: boolea
       aria-hidden={!on}
       inert={!on}
     >
-      <Sheet sheet={sheet} />
+      <Sheet sheet={sheet} level={on ? 1 : 2} />
     </motion.div>
   );
 }
 
-function Sheet({ sheet }: { sheet: (typeof SHEETS)[number] }) {
+/**
+ * `level` keeps the document to one h1.
+ *
+ * Four sheets each carrying an h1 gave the page four top-level headings. Three
+ * are inert and aria-hidden so only one was ever exposed, but the document
+ * outline is read by more than a screen reader. The sheet that is showing is
+ * the page's heading; the others are demoted while they wait.
+ */
+function Sheet({ sheet, level = 1 }: { sheet: (typeof SHEETS)[number]; level?: 1 | 2 }) {
+  const Head = level === 1 ? "h1" : "h2";
   return (
     <div className="flex flex-col gap-5">
       <span className="label">{sheet.kicker}</span>
 
-      <h1 className="font-display text-[clamp(2.2rem,5.4vw,4rem)] font-700 leading-[0.94] tracking-[-0.02em]">
+      <Head className="font-display text-[clamp(2.2rem,5.4vw,4rem)] font-700 leading-[0.94] tracking-[-0.02em]">
         {sheet.head.map((line, i) => (
           <span key={line} className="block">
             {line}
             {i < sheet.head.length - 1 ? null : null}
           </span>
         ))}
-      </h1>
+      </Head>
 
       <p className="max-w-[58ch] text-[16px] leading-relaxed text-scribe-2">{sheet.body}</p>
 
