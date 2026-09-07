@@ -151,6 +151,11 @@ export function SlotTally({
   const ratio = total > 0 ? filled / total : 0;
   const lit = Math.round(ratio * segments);
 
+  // The blocks light in sequence rather than all at once, so a tally that has
+  // just moved reads as having moved. The delay is per block and capped, so a
+  // full bar still finishes inside half a second rather than crawling.
+  const step = Math.min(18, 360 / Math.max(1, lit));
+
   return (
     <div
       className="flex h-4 items-stretch gap-px"
@@ -160,8 +165,9 @@ export function SlotTally({
       {Array.from({ length: segments }, (_, i) => (
         <div
           key={i}
+          style={i < lit ? { transitionDelay: `${Math.round(i * step)}ms` } : undefined}
           className={cn(
-            "flex-1",
+            "flex-1 transition-colors duration-300",
             i < lit ? "bg-signal" : "bg-ink-4",
             // Every fourth block is taller: a ruler needs major divisions
             i % 4 === 3 && "border-r border-ink-1",
