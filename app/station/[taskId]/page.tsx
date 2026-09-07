@@ -59,7 +59,7 @@ export default function StationPage() {
   // isLoading flips true again on every retry, so an unreadable task would
   // flicker between the error and the spinner. The error is the settled state,
   // and the absence of a task is the only thing the spinner needs to know.
-  const { isError } = useTaskCatalogue();
+  const { isError, isLoading } = useTaskCatalogue();
   const task = useCatalogueTask(valid ? taskId : undefined);
   const { data: myRuns } = useRunsOnTask(valid ? taskId : undefined);
   const s = useSession();
@@ -172,13 +172,18 @@ export default function StationPage() {
     );
   }
 
+  // Only a catalogue still in flight is worth waiting on. Once it has answered
+  // and the task is still not in it, the id does not exist — and saying
+  // "reading from the chain…" for ever is a lie about what is happening.
   if (!task) {
-    return (
+    return isLoading ? (
       <div className="flex h-dvh items-center justify-center bg-ink-1">
         <span className="font-mono text-[13px] text-scribe-3">
           Reading task #{taskId} from the chain…
         </span>
       </div>
+    ) : (
+      <Missing id={params.taskId} reason="absent" />
     );
   }
 
@@ -588,7 +593,7 @@ function MeasurementSnap({
   );
 }
 
-function Missing({ id, reason }: { id: string; reason: "id" | "chain" }) {
+function Missing({ id, reason }: { id: string; reason: "id" | "chain" | "absent" }) {
   return (
     <div className="mx-auto max-w-md px-5 py-24 text-center">
       <h1 className="font-display text-3xl">
@@ -596,8 +601,10 @@ function Missing({ id, reason }: { id: string; reason: "id" | "chain" }) {
       </h1>
       <p className="mt-2 text-scribe-2">
         {reason === "chain"
-          ? `Task ${id} could not be read from the contract. It may not exist yet.`
-          : `"${id}" is not a task id. Tasks are numbered from zero.`}
+          ? `Task ${id} could not be read from the contract.`
+          : reason === "absent"
+            ? `Task ${id} is not in the registry. The contract has never been asked to create it.`
+            : `"${id}" is not a task id. Tasks are numbered from zero.`}
       </p>
       <Link href="/hub" className="mt-6 inline-block border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em]">
         Back to the hub
