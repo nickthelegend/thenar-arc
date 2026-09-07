@@ -205,8 +205,8 @@
 @media print {
   :root {
     --ink-0: #ffffff; --ink-1: #ffffff; --ink-2: #ffffff; --ink-3: #ffffff;
-    --scribe: #000000; --scribe-2: #1c1c1c; --scribe-3: #4a4a4a;
-    --rule: #c8c8c8; --rule-strong: #8f8f8f;
+    --scribe: #000000; --scribe-2: #1C1C1C; --scribe-3: #4A4A4A;
+    --rule: #C8C8C8; --rule-strong: #8F8F8F;
   }
 
   html, body { background: #ffffff !important; color: #000000 !important; }
@@ -216,8 +216,8 @@
 
   a[href^="http"]::after {
     content: " (" attr(href) ")";
-    font-size: 10px;
-    color: #4a4a4a;
+    font-size: 12px;
+    color: var(--scribe-3);
     word-break: break-all;
   }
 

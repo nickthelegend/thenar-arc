@@ -377,6 +377,30 @@ Canvas, because everything inside it renders on a frame that may never come.
 Sheets stacked in one grid cell must be `inert` as well as transparent, or their
 links stay clickable and stay in the tab order under the sheet on screen.
 
+## Print
+
+The task page is a work order and should print as one. Print is the single place
+this system inverts: ink on white, not white on ink. It reuses the same token
+names so components need no print-specific rules, and adds one ramp:
+
+| Token | Screen | Print |
+|---|---|---|
+| `--ink-0` … `--ink-3` | `#000000` … `#1C1C1C` | `#FFFFFF` |
+| `--scribe` | `#FFFFFF` | `#000000` |
+| `--scribe-2` | `#E0E0E0` | `#1C1C1C` |
+| `--scribe-3` | `#8F8F8F` | `#4A4A4A` |
+| `--rule` | `#262626` | `#C8C8C8` |
+| `--rule-strong` | `#3D3D3D` | `#8F8F8F` |
+
+These six are an intentional addition, not drift: they are the same tonal
+relationships read against the opposite ground, and they apply only inside
+`@media print`.
+
+Screen-only chrome is dropped — navigation, the conditions banner, every canvas.
+External links print their destination after the text, because a printed hash
+with nowhere to go is not verifiable by anyone, which is the one thing this
+product cannot give up on paper.
+
 ## Do's and Don'ts
 
 **Do**
