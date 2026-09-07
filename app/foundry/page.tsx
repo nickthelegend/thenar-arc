@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { useState } from "react";
 import Link from "next/link";
 import { parseEther } from "viem";
@@ -139,6 +141,8 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
         <Cell label="Licence" value={`${fmtMon(p.licenceMon, 3)} ${CURRENCY}`} tone="signal" />
       </div>
 
+      <DatasetPreview taskId={p.taskId} />
+
       <div className="px-5 py-4">
         <DimRule note={`Cap table — ${cap?.length ?? 0} contributor${cap?.length === 1 ? "" : "s"}`} />
         {!cap?.length ? (
@@ -213,5 +217,93 @@ function Cell({ label, value, tone }: { label: string; value: string; tone?: "si
       <span className="label">{label}</span>
       <span className={cn("font-mono text-[16px] tabular-nums", tone === "signal" ? "text-signal" : "text-scribe")}>{value}</span>
     </div>
+  );
+}
+
+
+type Summary = {
+  episodes: number; frames: number; contributors: number;
+  score: { min: number; median: number; p90: number; max: number; mean: number };
+  deviationMm: { mean: number };
+  seconds: { total: number; mean: number };
+  distribution: { from: number; to: number; n: number }[];
+};
+
+/**
+ * What the licence buys, before it is bought.
+ *
+ * A buyer paying for a corpus should be able to see its shape first. This is
+ * the same set of rows the export ships — settled runs on the active chain —
+ * summarised rather than downloaded, so deciding does not mean fetching
+ * thousands of frames.
+ */
+function DatasetPreview({ taskId }: { taskId: number }) {
+  const [d, setD] = useState<Summary | null>(null);
+  const [missing, setMissing] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/dataset/summary?taskId=${taskId}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((j: Summary) => { if (live) setD(j); })
+      .catch(() => { if (live) setMissing(true); });
+    return () => { live = false; };
+  }, [taskId]);
+
+  if (missing) return null;
+
+  return (
+    <div className="border-t border-rule px-5 py-4">
+      <DimRule note="What the licence buys" />
+      {!d ? (
+        <p className="mt-4 text-[13px] text-scribe-3">Reading the corpus&hellip;</p>
+      ) : (
+        <>
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-8 gap-y-2">
+            <Reading label="Episodes" value={fmtInt(d.episodes)} />
+            <Reading label="Frames" value={fmtInt(d.frames)} note="at 20 Hz" />
+            <Reading label="Contributors" value={fmtInt(d.contributors)} />
+            <Reading label="Median score" value={(d.score.median / 100).toFixed(2)} />
+            <Reading label="Mean deviation" value={`${d.deviationMm.mean.toFixed(1)} mm`} />
+            <Reading label="Recorded" value={`${(d.seconds.total / 60).toFixed(1)} min`} />
+          </div>
+
+          <div className="mt-4 flex items-end gap-1" role="img"
+               aria-label={`Score distribution across ${d.episodes} episodes`}>
+            {d.distribution.map((b) => {
+              const top = Math.max(...d.distribution.map((x) => x.n)) || 1;
+              return (
+                <span key={b.from} className="flex flex-1 flex-col items-center gap-1">
+                  <span className="w-full bg-signal" style={{ height: `${Math.max(2, (b.n / top) * 44)}px` }} />
+                  <span className="font-mono text-[12px] tabular-nums text-scribe-3">{b.n || ""}</span>
+                </span>
+              );
+            })}
+          </div>
+          <p className="mt-1 flex justify-between font-mono text-[12px] text-scribe-3">
+            <span>40.00</span><span>score</span><span>100.00</span>
+          </p>
+
+          <a
+            href={`/api/dataset?taskId=${taskId}`}
+            className="mt-4 inline-block font-mono text-[12px] uppercase tracking-[0.14em] text-signal hover:text-signal-hi"
+          >
+            Download the corpus &rarr;
+          </a>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Reading({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <span className="flex items-baseline gap-2">
+      <span className="label">{label}</span>
+      <span className="font-mono text-[15px] tabular-nums text-scribe">
+        {value}
+        {note ? <span className="ml-1 text-[12px] text-scribe-3">{note}</span> : null}
+      </span>
+    </span>
   );
 }
