@@ -3,12 +3,21 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
 import { TOLERANCE_MM } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { useTaskCatalogue } from "@/components/tasks-provider";
+import type { ReplaySample } from "@/components/station/replay";
+
+/** WebGL has no business in the server render. */
+const ReplayViewport = dynamic(
+  () => import("@/components/station/replay").then((m) => m.ReplayViewport),
+  { ssr: false },
+);
 
 type RunDoc = {
   trajHash: string; taskId: number; contributor: string; score: number;
@@ -16,13 +25,22 @@ type RunDoc = {
   parts: { placement: number; efficiency: number; smoothness: number };
   sampleCount: number; createdAt: number; txHash: string | null; chainId: number | null;
   integrity: { recomputedHash: string; matches: boolean };
-  samples: { t: number; grip: number; object: [number, number, number] }[];
+  // q is the six joint angles the recorder stored, which is what makes a replay
+  // a replay rather than a re-simulation.
+  samples: ReplaySample[];
 };
+
+/** The datum every run on every task is measured against. Kept beside the
+ *  station's own constant rather than imported, so a replay cannot silently
+ *  drift from where the run was actually scored. */
+const GOAL: [number, number] = [0.16, -0.18];
 
 /** Anyone can open this and check what a payout was actually for. */
 export default function RunPage() {
   const { hash } = useParams<{ hash: string }>();
   const [cursor, setCursor] = useState(1);
+  const { byId } = useTaskCatalogue();
+  const frame = useRef<ReplaySample | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["run", hash],
@@ -55,6 +73,34 @@ export default function RunPage() {
       t: data.samples[shown - 1]?.t ?? 0,
     };
   }, [data, cursor]);
+
+  // The scene the run was recorded in, from the same catalogue every other
+  // surface reads, so a replay cannot show a different object from the station.
+  const task = data ? byId(data.taskId) : undefined;
+
+  const shownIndex = data?.samples?.length
+    ? Math.max(1, Math.round(data.samples.length * cursor)) - 1
+    : 0;
+
+  // Keeping the frame in a ref means dragging the scrubber re-poses the arm
+  // without re-rendering the page around it.
+  useEffect(() => {
+    frame.current = data?.samples?.[shownIndex] ?? null;
+  }, [data, shownIndex]);
+
+  const trail = useMemo(() => {
+    const pts = data?.samples ?? [];
+    const n = Math.max(2, shownIndex + 1);
+    const a = new Float32Array(n * 3);
+    for (let i = 0; i < n; i += 1) {
+      const o = pts[i]?.object;
+      if (!o) break;
+      a[i * 3] = o[0];
+      a[i * 3 + 1] = o[2] + 0.002;
+      a[i * 3 + 2] = -o[1];
+    }
+    return a;
+  }, [data, shownIndex]);
 
   if (isLoading) {
     return <div className="mx-auto max-w-[900px] px-5 py-16"><span className="label">Resolving {shortHash(hash)}…</span></div>;
@@ -114,6 +160,31 @@ export default function RunPage() {
       <div className="mt-6 max-w-[440px]">
         <ToleranceBand deviationMm={data.deviationMm} toleranceMm={TOLERANCE_MM} label="Placement" />
       </div>
+
+      {task && data.samples?.[0]?.q ? (
+        <>
+          <DimRule className="mt-10" note="The run itself" />
+          <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
+            Posed from the joint angles the recorder stored, in the room the task
+            names. This is the trajectory the contract paid for, not a
+            reconstruction of it &mdash; the samples driving the arm are the same
+            ones the hash above is derived from.
+          </p>
+          <div className="mt-4 h-[340px] w-full border border-rule sm:h-[420px]">
+            <ReplayViewport
+              frame={frame}
+              trail={trail}
+              payloadUrl={task.scene.payload.url}
+              payloadWidthMm={task.scene.payload.widthMm}
+              targetUrl={task.scene.target.url}
+              targetWidthMm={task.scene.target.widthMm}
+              environmentUrl={task.scene.room.url}
+              goal={GOAL}
+            />
+          </div>
+        </>
+      ) : null}
+
 
       <DimRule className="mt-10" note="Recorded tool path" />
 
