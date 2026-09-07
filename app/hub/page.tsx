@@ -209,7 +209,13 @@ export default function HubPage() {
                       <Link href={`/task/${t.id}`} className="text-[14px] text-scribe hover:text-signal">
                         {t.name}
                       </Link>
-                      <span className="font-mono text-[12px] capitalize text-scribe-3">{t.scenario}</span>
+                      <span className="font-mono text-[12px] text-scribe-3">
+                      <span className="capitalize">{t.scenario}</span>
+                      <span className="mx-1.5 text-rule-strong">/</span>
+                      {t.scene.payload.label}
+                      <span className="mx-1.5 text-rule-strong">&rarr;</span>
+                      {t.scene.target.label}
+                    </span>
                     </div>
                   </Td>
                   <Td><Difficulty level={t.difficulty} /></Td>
@@ -265,6 +271,13 @@ export default function HubPage() {
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-[12px] text-scribe-3">#{t.id}</span>
                     <Link href={`/task/${t.id}`} className="text-[15px] text-scribe">{t.name}</Link>
+                      <span className="mt-0.5 block font-mono text-[12px] text-scribe-3">
+                        {t.scene.payload.label}
+                        <span className="mx-1.5 text-rule-strong">&rarr;</span>
+                        {t.scene.target.label}
+                        <span className="mx-1.5 text-rule-strong">/</span>
+                        {t.scene.room.label}
+                      </span>
                     <span className="font-mono text-[12px] capitalize text-scribe-3">{t.scenario}</span>
                   </div>
                   <span className="shrink-0 font-mono text-[16px] font-medium tabular-nums text-signal">
