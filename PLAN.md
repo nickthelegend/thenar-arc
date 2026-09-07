@@ -102,19 +102,19 @@ already names: *"first-run cost has to be near zero."*
 | 4.5 | `lib/glacier.ts` + `/api/glacier/[address]` + a portfolio section. Verified: 22 real settlements for the deployer, selectors decoded from the ABI, reverted calls shown as reverted. Free tier, no key | **DONE** |
 | 4.6 | BLOCKED by 4.4 |
 
-### Phase 5 — The shared space
+### Phase 5 — The shared space · **BUILT 30 Aug**
 
-The one substantial product feature still missing. Needs Phase 4's L1 to work
-well: many operators writing independently in the same scene is what parallel
-execution and sub-second blocks are for.
+Was the one substantial product feature missing. Built without Phase 4's L1:
+presence never touches a chain, so it needed neither parallel execution nor
+sub-second blocks.
 
 | # | Task | Status |
 |---|---|---|
-| 5.1 | Design the multi-operator session model: one sampled world, N operators, each run settled independently | NOT STARTED |
-| 5.2 | Add a presence/state channel — WebSocket service on Railway, since serverless cannot hold connections | NOT STARTED |
-| 5.3 | Render other operators' tool positions as ghosts in the viewport | NOT STARTED |
-| 5.4 | Per-operator scoring inside a shared scene, with the payload owned by whoever grasped it first | NOT STARTED |
-| 5.5 | Spectator mode: watch a live session without a wallet | NOT STARTED |
+| 5.1 | `lib/server/space.ts`: one room per task, N operators, presence only. Each run is still recorded, signed and settled independently — presence is never scored | **DONE** |
+| 5.2 | Done without a WebSocket. Pose up and roster down in one round trip at 6 Hz, which survives the Vercel→Railway proxy that a long-lived socket would not, and needs no custom server | **DONE** |
+| 5.3 | `Ghosts` in the viewport: marker plus a dropped line, scene coords `(x, z, -y)` matching the payload. **Data path verified live** (roster renders from the same array); the 3D markers themselves could not be seen in the automated browser because it holds `requestAnimationFrame` — the arm does not render there either |
+| 5.4 | Each operator drives their own payload and is measured alone, by design — a shared payload would let one operator destroy another's paid run. Presence is visual only | **DONE, by a different design** |
+| 5.5 | Same code path with nothing to report. Verified: an unconnected browser sees both operators and their carry state | **DONE** |
 
 ### Phase 6 — Data quality
 
