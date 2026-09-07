@@ -5,11 +5,11 @@ import { useMemo, useState } from "react";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { ActivityFeed } from "@/components/activity-feed";
-import { type ChainTask } from "@/lib/hooks";
 import { cn } from "@/lib/cn";
-import { SCENARIOS, CURRENCY } from "@/lib/chain";
+import { SCENARIOS, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { fmtInt, fmtMon, fmtSeconds } from "@/lib/format";
-import { useTaskCatalogue } from "@/components/tasks-provider";
+import { useTaskCatalogue, type TaskWithScene } from "@/components/tasks-provider";
+import { SKILLS, SKILL_LABEL } from "@/lib/skills";
 
 type SortKey = "reward" | "slots" | "difficulty" | "escrow";
 
@@ -23,6 +23,7 @@ const SORTS: [SortKey, string][] = [
 export default function HubPage() {
   const { tasks, isLoading, isError, error, refetch } = useTaskCatalogue();
   const [scenario, setScenario] = useState<string>("all");
+  const [skill, setSkill] = useState<string>("all");
   const [openOnly, setOpenOnly] = useState(true);
   const [sort, setSort] = useState<SortKey>("reward");
   const [q, setQ] = useState("");
@@ -32,22 +33,36 @@ export default function HubPage() {
     const list = (tasks ?? []).filter(
       (t) =>
         (scenario === "all" || t.scenario === scenario) &&
+          (skill === "all" || t.skill === skill) &&
         (!openOnly || t.open) &&
         (!needle || t.name.toLowerCase().includes(needle) || String(t.id) === needle),
     );
-    const by: Record<SortKey, (a: ChainTask, b: ChainTask) => number> = {
+    const by: Record<SortKey, (a: TaskWithScene, b: TaskWithScene) => number> = {
       reward: (a, b) => b.rewardMon - a.rewardMon,
       slots: (a, b) => b.slotsTotal - b.slotsFilled - (a.slotsTotal - a.slotsFilled),
       difficulty: (a, b) => b.difficulty - a.difficulty,
       escrow: (a, b) => Number(b.escrowWei - a.escrowWei),
     };
     return [...list].sort(by[sort]);
-  }, [tasks, scenario, openOnly, sort, q]);
+  }, [tasks, scenario, skill, openOnly, sort, q]);
+
+  // Thenar has no third-party funders yet. Counted rather than asserted: the
+  // product's own rule is that anything shown before real traffic exists is
+  // labelled, not left to look like organic demand.
+  const seeded = (tasks ?? []).filter((t) => isSeedFunded(t.funder)).length;
+  const totalTasks = (tasks ?? []).length;
 
   const openSlots = rows.reduce((n, t) => n + (t.slotsTotal - t.slotsFilled), 0);
   const escrow = rows.reduce((n, t) => n + Number(formatEther(t.escrowWei)), 0);
   const scenariosPresent = useMemo(
     () => SCENARIOS.filter((s) => (tasks ?? []).some((t) => t.scenario === s)),
+    [tasks],
+  );
+
+  // Only the skills tasks actually ask for: a chip for a skill nobody has
+  // posted filters to an empty hub and reads as a dead control.
+  const skillsPresent = useMemo(
+    () => SKILLS.filter((k) => (tasks ?? []).some((t) => t.skill === k)),
     [tasks],
   );
 
@@ -64,6 +79,21 @@ export default function HubPage() {
             Live from the contract on Avalanche Fuji
           </span>
         </div>
+
+        {totalTasks > 0 && seeded === totalTasks ? (
+          <p className="max-w-[76ch] text-[13px] leading-relaxed text-scribe-3">
+            <span className="text-scribe-2">Every task here was funded by us.</span>{" "}
+            All {totalTasks} were posted from the address that deployed the protocol,
+            to demonstrate the loop end to end. The escrow, the payouts and the
+            trajectories are real and on chain; the demand is not. No third party has
+            funded a task yet.
+          </p>
+        ) : seeded > 0 ? (
+          <p className="max-w-[76ch] text-[13px] leading-relaxed text-scribe-3">
+            {seeded} of {totalTasks} tasks were funded by the address that deployed
+            the protocol, to demonstrate the loop.
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
@@ -71,6 +101,13 @@ export default function HubPage() {
           <Chip active={scenario === "all"} onClick={() => setScenario("all")}>All</Chip>
           {scenariosPresent.map((s) => (
             <Chip key={s} active={scenario === s} onClick={() => setScenario(s)}>{s}</Chip>
+          ))}
+        </FilterRow>
+
+        <FilterRow label="Skill">
+          <Chip active={skill === "all"} onClick={() => setSkill("all")}>All</Chip>
+          {skillsPresent.map((k) => (
+            <Chip key={k} active={skill === k} onClick={() => setSkill(k)}>{SKILL_LABEL[k]}</Chip>
           ))}
         </FilterRow>
 

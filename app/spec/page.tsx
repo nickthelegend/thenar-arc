@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import spec from "@/lib/arm-spec.json";
+import { NON_CAPABILITIES } from "@/lib/chain";
 import { DimRule } from "@/components/primitives";
 
 export const metadata: Metadata = {
@@ -135,6 +136,31 @@ export default function SpecPage() {
       >
         Put it to work
       </Link>
+
+      <DimRule className="mt-14" note="Signing without a seed phrase" />
+      <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
+        Avalanche carries the P-256 precompile at 0x0100, so a signature from the
+        curve a passkey uses can be checked on chain directly. The registry binds
+        one to an address, and a run can be authorised with it.{" "}
+        <Link href="/passkey" className="text-signal hover:text-signal-hi">Register a passkey &rarr;</Link>
+      </p>
+
+      <DimRule className="mt-14" note="What this is not" />
+      <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
+        An arm moving in a browser invites a few assumptions. These are the ones
+        that are wrong, stated here rather than left to be discovered. They are
+        roadmap, and nothing in the interface presents them as working.
+      </p>
+      <ul className="mt-5 flex flex-col">
+        {NON_CAPABILITIES.map((n) => (
+          <li key={n.title} className="flex flex-col gap-1 border-b border-rule py-3.5">
+            <span className="font-mono text-[13px] uppercase tracking-[0.12em] text-reject">
+              {n.title}
+            </span>
+            <span className="max-w-[70ch] text-[14px] leading-relaxed text-scribe-3">{n.body}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

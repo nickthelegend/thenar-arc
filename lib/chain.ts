@@ -38,6 +38,13 @@ export const AXON_ADDRESS = (process.env.NEXT_PUBLIC_AXON_ADDRESS ?? "") as `0x$
 
 export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);
 
+/** The registry that binds a secp256r1 key to an address. Public, so the client
+ *  can read it without the server. */
+export const PASSKEY_ADDRESS =
+  (process.env.NEXT_PUBLIC_PASSKEY_REGISTRY ?? "0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F") as `0x${string}`;
+
+export const PASSKEY_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(PASSKEY_ADDRESS);
+
 export const txUrl = (hash: string) => `${appChain.blockExplorers.default.url}/tx/${hash}`;
 export const addressUrl = (a: string) => `${appChain.blockExplorers.default.url}/address/${a}`;
 
@@ -73,6 +80,45 @@ export const chainMeta = (id: number) => KNOWN_CHAINS.find((c) => c.id === id);
 /** An explorer link that points at the chain the transaction is actually on. */
 export const txUrlOn = (chainId: number, hash: string) =>
   `${chainMeta(chainId)?.explorer ?? appChain.blockExplorers.default.url}/tx/${hash}`;
+
+/**
+ * The address that deployed the protocol and funded every task on it so far.
+ *
+ * Thenar has no third-party funders yet. Every task in the hub was posted by
+ * this address to demonstrate the loop, and the product's own rule is that
+ * anything shown before real traffic exists is labelled rather than left to
+ * look like organic demand. Read off the chain, not asserted: compare a task's
+ * funder to this and say so.
+ */
+export const SEED_FUNDER = "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815".toLowerCase();
+
+export const isSeedFunded = (funder: string) => funder.toLowerCase() === SEED_FUNDER;
+
+/**
+ * What this is not, named where a visitor could assume otherwise.
+ *
+ * Principle 5 of PRODUCT.md: never dress roadmap as capability. These are the
+ * things a person watching an arm move in a browser would reasonably assume
+ * are there.
+ */
+export const NON_CAPABILITIES = [
+  {
+    title: "Kinematic, not rigid-body physics",
+    body: "The station solves inverse kinematics and grasps analytically. There is no contact simulation, no friction, and no way for the payload to topple something else.",
+  },
+  {
+    title: "No trained policy exists",
+    body: "Nothing here autonomously attempts a task. A minted policy is a cap table over the trajectories that would train one, not a model that has been trained.",
+  },
+  {
+    title: "No domain randomisation",
+    body: "One lighting setup, one camera, one set of dimensions per object. No IsaacSim augmentation pipeline.",
+  },
+  {
+    title: "No post-training takeover",
+    body: "No DAgger loop, and no mobile ego-centric capture.",
+  },
+] as const;
 
 /** Scenario vocabulary. The contract stores the index; this is the only place it is named. */
 export const SCENARIOS = [

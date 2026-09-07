@@ -10,6 +10,7 @@ import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/componen
 import { useSession } from "@/components/session";
 import { useSpace } from "@/lib/space";
 import { environmentForScenario } from "@/lib/environments";
+import { SKILL_LABEL } from "@/lib/skills";
 import { useRunsOnTask } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
@@ -230,8 +231,8 @@ export default function StationPage() {
           <Section title="Controls">
             <dl className="flex flex-col gap-1.5">
               <Key keys={["Drag"]} action="Move the tool in the workspace" />
-              <Key keys={["W", "S"]} action="Reach out / pull in" />
-              <Key keys={["A", "D"]} action="Swing left / right" />
+              <Key keys={["W", "S", "\u2191", "\u2193"]} action="Reach out / pull in" />
+              <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
               <Key keys={["E", "Q"]} action="Raise / lower" />
               <Key keys={["Space"]} action="Open / close the jaws" />
               <Key keys={["?"]} action="All controls" />
@@ -299,8 +300,8 @@ export default function StationPage() {
                 <h2 className="font-display text-lg font-600">Controls</h2>
                 <dl className="mt-4 flex flex-col gap-2">
                   <Key keys={["Drag"]} action="Move the tool in the workspace" />
-                  <Key keys={["W", "S"]} action="Reach out / pull in" />
-                  <Key keys={["A", "D"]} action="Swing left / right" />
+                  <Key keys={["W", "S", "\u2191", "\u2193"]} action="Reach out / pull in" />
+                  <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
                   <Key keys={["↑", "↓", "←", "→"]} action="The same, on the arrows" />
                   <Key keys={["E", "Q"]} action="Raise / lower" />
                   <Key keys={["Space"]} action="Open / close the jaws" />
@@ -375,6 +376,8 @@ export default function StationPage() {
           <Section title="This task">
             <div className="flex flex-col gap-3">
               <Row label="Scenario" value={task.scenario} />
+              <Row label="Room" value={room.label} />
+              <Row label="Skill" value={SKILL_LABEL[task.skill]} />
               <div className="flex items-center justify-between">
                 <span className="label">Difficulty</span>
                 <Difficulty level={task.difficulty} />

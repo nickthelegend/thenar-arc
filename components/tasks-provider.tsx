@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo } from "react";
 import { useTasks, type ChainTask } from "@/lib/hooks";
 import { propsForTask, type Prop } from "@/lib/props";
 import { environmentForScenario, type Environment } from "@/lib/environments";
+import { skillForTask, type Skill } from "@/lib/skills";
 
 /**
  * A task and everything it takes to draw it.
@@ -20,7 +21,7 @@ import { environmentForScenario, type Environment } from "@/lib/environments";
  * deleted and can be recomputed by anyone reading the contract.
  */
 export type Scene = { payload: Prop; target: Prop; room: Environment };
-export type TaskWithScene = ChainTask & { scene: Scene };
+export type TaskWithScene = ChainTask & { scene: Scene; skill: Skill };
 
 type Ctx = {
   tasks: TaskWithScene[];
@@ -40,7 +41,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Ctx>(() => {
     const tasks: TaskWithScene[] = (data ?? []).map((t) => {
       const { payload, target } = propsForTask(t.name, t.scenario);
-      return { ...t, scene: { payload, target, room: environmentForScenario(t.scenario) } };
+      return {
+        ...t,
+        scene: { payload, target, room: environmentForScenario(t.scenario) },
+        // The manipulation the instruction asks for. Derived, like the scene, so
+        // it stays recoverable from chain state rather than kept in a side table.
+        skill: skillForTask(t.name),
+      };
     });
     const index = new Map(tasks.map((t) => [t.id, t]));
     return {

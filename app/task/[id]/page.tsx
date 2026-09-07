@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
-import { txUrl, addressUrl, CURRENCY } from "@/lib/chain";
+import { SKILL_LABEL } from "@/lib/skills";
+import { txUrl, addressUrl, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
@@ -65,8 +66,13 @@ export default function TaskPage() {
         <Difficulty level={task.difficulty} />
         <StageTrack stage={task.policyMinted ? "post" : task.open ? "pre" : "training"} />
         <span className="font-mono text-[12px] capitalize text-scribe-3">{task.scenario}</span>
+        <span className="border border-rule px-2 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-2">
+          {SKILL_LABEL[task.skill]}
+        </span>
+        <span className="font-mono text-[12px] text-scribe-3">{task.scene.room.label}</span>
         <a href={addressUrl(task.funder)} target="_blank" rel="noreferrer" className="font-mono text-[12px] text-scribe-3 hover:text-probe">
           funded by {shortHash(task.funder)}
+          {isSeedFunded(task.funder) ? " \u00b7 posted by us to demonstrate the loop" : ""}
         </a>
       </div>
 

@@ -42,7 +42,7 @@ Submitting requires a wallet and a transaction. Many operators will not have one
 
 Confirmed and shipping:
 
-- Browser teleoperation of a 7-DoF arm with inverse kinematics, keyboard and pointer control, gripper toggle
+- Browser teleoperation of a 6-DoF arm (THENAR-6: six revolute axes, parallel jaw at 42 mm) with inverse kinematics, keyboard and pointer control, gripper toggle
 - Trajectory recording at 20 Hz, client-side success checking against a goal region, deterministic quality score from success, time efficiency, and path smoothness
 - On-chain task bounties with escrowed AVAX, slot accounting, and a five-runs-per-account cap
 - `submitTrajectory` — records CID + hash + score and pays the operator in the same call
@@ -54,11 +54,13 @@ Confirmed and shipping:
   a run can be authorised with the curve a passkey uses rather than a seed
   phrase. Verified working against the deployed contract on Fuji: a real
   WebCrypto signature returns 1, a tampered one returns 0
-- Sixteen scene props generated from named dimensions by the same CAD kernel
-  that produces the arm, so the object a task names is the object the station
-  renders. Task funders pick the payload and the landmark from previews, or
-  upload their own glTF 2.0 binary, which is parsed and bounded before it is
-  stored
+- Thirty-four scene props and seven rooms, generated from named dimensions by
+  the same CAD kernel that produces the arm, so the object a task names is the
+  object the station renders and the scenario it carries is the room it is
+  recorded in. The room is the `scenario` uint8 on the contract, so it is
+  recoverable from chain state alone. Task funders pick the room, the payload
+  and the landmark from previews, or upload their own glTF 2.0 binary, which is
+  parsed and bounded before it is stored
 
 Constraints and explicit non-capabilities. These are roadmap and must never be presented as working:
 
@@ -111,4 +113,4 @@ Absent, and never to be fabricated: Thenar has no users, no revenue, no partners
 
 ## Accessibility & Inclusion
 
-Keyboard is a first-class control path, not a fallback — the station is driven primarily by arrow keys, E/D, Q/W, A/S, Z/X, and space, so every control must carry a visible focus state and a discoverable key legend. The teleoperation loop cannot be the only way to understand the product: the hub, portfolio, leaderboard, and policy market must be fully usable without entering a 3D scene. Motion respects `prefers-reduced-motion`, including the payout moment. Color is never the sole carrier of state — lifecycle, difficulty, and pass/fail each need a shape or a label alongside their hue.
+Keyboard is a first-class control path, not a fallback — the station is driven by W/S or the up/down arrows to reach, A/D or the left/right arrows to swing, E/Q to raise and lower, and space for the jaws, so every control must carry a visible focus state and a discoverable key legend. The teleoperation loop cannot be the only way to understand the product: the hub, portfolio, leaderboard, and policy market must be fully usable without entering a 3D scene. Motion respects `prefers-reduced-motion`, including the payout moment. Color is never the sole carrier of state — lifecycle, difficulty, and pass/fail each need a shape or a label alongside their hue.
