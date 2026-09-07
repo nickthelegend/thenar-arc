@@ -3,7 +3,6 @@ import { createPublicClient, http } from "viem";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 
-export const runtime = "nodejs";
 export const alt = "Thenar — the data foundry for physical AI";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
