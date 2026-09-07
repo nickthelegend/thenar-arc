@@ -7,6 +7,7 @@ import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { SKILL_LABEL } from "@/lib/skills";
 import { taskStats } from "@/lib/task-stats";
+import { PathOverlay } from "@/components/path-overlay";
 import { txUrl, addressUrl, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -163,6 +164,18 @@ export default function TaskPage() {
                 the denominator is not knowable.
               </span>
             </div>
+          ) : null}
+
+          {stats.runs > 0 ? (
+            <>
+              <DimRule className="mt-10" note="How everyone did it" />
+              <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
+                The distribution says how well people scored. This says how they got
+                there &mdash; whether the good runs share a route, and whether the poor
+                ones wander. Best run brightest; hover a row to lift its path out.
+              </p>
+              <PathOverlay taskId={task.id} goal={[0.16, -0.18]} />
+            </>
           ) : null}
 
 
