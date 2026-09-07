@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { motion, useScroll, useTransform, useMotionValueEvent, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 
 /** The arm is a WebGL canvas: it has no business in the server render, and it
@@ -73,13 +73,46 @@ export function HeroSequence() {
   const reduced = useReducedMotion();
   const [active, setActive] = useState(0);
 
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  /**
+   * Which sheet is showing, from the scroll position itself.
+   *
+   * Driven by the scroll event rather than an animation-frame loop: a browser
+   * that has backgrounded the tab stops handing out frames, and a hero whose
+   * state only advances on a frame is a hero that is stuck on sheet one in
+   * every screenshot, thumbnail and preview anything ever takes of it.
+   */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-  useMotionValueEvent(scrollYProgress, "change", (p) => {
-    // The last sheet has to be reachable at p = 1, hence the clamp rather than
-    // a plain floor, which would only ever select it exactly at the end.
-    setActive(Math.min(SHEETS.length - 1, Math.max(0, Math.floor(p * SHEETS.length - 1e-6))));
-  });
+    // Geometry is measured on resize only; the scroll handler then reads
+    // nothing but scrollY. That keeps it off the layout path and, more to the
+    // point, off the animation-frame path — throttling this with
+    // requestAnimationFrame is what left the hero stuck on sheet one in every
+    // backgrounded tab.
+    let top = 0;
+    let span = 1;
+
+    const remeasure = () => {
+      top = el.offsetTop;
+      span = Math.max(1, el.offsetHeight - window.innerHeight);
+      update();
+    };
+
+    const update = () => {
+      const p = (window.scrollY - top) / span;
+      const i = Math.floor(p * SHEETS.length);
+      setActive(Math.min(SHEETS.length - 1, Math.max(0, i)));
+    };
+
+    remeasure();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", remeasure, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", remeasure);
+    };
+  }, []);
 
   const goTo = (i: number) => {
     const el = ref.current;
@@ -92,7 +125,7 @@ export function HeroSequence() {
   };
 
   // Reduced motion gets the same words as an ordinary stacked page: no sticky
-  // frame, no opacity driven by scroll, nothing that moves on its own.
+  // frame, nothing that moves on its own.
   if (reduced) {
     return (
       <section className="grid items-start gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-20">
@@ -115,7 +148,7 @@ export function HeroSequence() {
                 sheets of different length. */}
             <div className="grid min-h-[320px] flex-1 sm:min-h-[360px]">
               {SHEETS.map((s, i) => (
-                <ScrollSheet key={s.kicker} sheet={s} index={i} progress={scrollYProgress} />
+                <ScrollSheet key={s.kicker} sheet={s} on={i === active} />
               ))}
             </div>
           </div>
@@ -127,34 +160,19 @@ export function HeroSequence() {
   );
 }
 
-function ScrollSheet({
-  sheet, index, progress,
-}: {
-  sheet: (typeof SHEETS)[number];
-  index: number;
-  progress: ReturnType<typeof useScroll>["scrollYProgress"];
-}) {
-  const n = SHEETS.length;
-  const start = index / n;
-  const end = (index + 1) / n;
-  const fade = 0.42 / n; // how much of a sheet's span is spent arriving or leaving
-
-  // The first sheet is fully present at rest, and the last stays present to the
-  // end — otherwise the section opens and closes on a blank column.
-  const opacity = useTransform(
-    progress,
-    [start - fade, start + (index === 0 ? -fade : fade * 0.6), end - fade * 0.6, end + (index === n - 1 ? fade : 0)],
-    [0, 1, 1, index === n - 1 ? 1 : 0],
-  );
-  const y = useTransform(progress, [start - fade, start + fade * 0.6], [18, 0]);
-
+function ScrollSheet({ sheet, on }: { sheet: (typeof SHEETS)[number]; on: boolean }) {
   return (
     <motion.div
-      style={{ opacity, y }}
-      // Every sheet occupies the same cell; the inactive ones are transparent
-      // rather than absent, so nothing reflows as they change.
+      animate={{ opacity: on ? 1 : 0, y: on ? 0 : 14 }}
+      initial={false}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      // Every sheet occupies the same cell. The ones that are not showing have
+      // to be inert as well as invisible, or their links stay clickable and
+      // stay in the tab order under the sheet that is actually on screen.
       className="col-start-1 row-start-1"
-      aria-hidden={undefined}
+      style={{ pointerEvents: on ? "auto" : "none" }}
+      aria-hidden={!on}
+      inert={!on}
     >
       <Sheet sheet={sheet} />
     </motion.div>
