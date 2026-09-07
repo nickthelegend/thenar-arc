@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { SKILL_LABEL } from "@/lib/skills";
+import { taskStats } from "@/lib/task-stats";
 import { txUrl, addressUrl, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -56,6 +57,8 @@ export default function TaskPage() {
   }
 
   const dist = bucket(runs ?? []);
+  // What the runs say about the task, as against what the funder guessed.
+  const stats = taskStats(runs ?? [], task.slotsTotal, task.slotsFilled);
 
   return (
     <div className="mx-auto max-w-[900px] px-5 py-8">
@@ -118,6 +121,50 @@ export default function TaskPage() {
               </div>
             ))}
           </div>
+
+          {stats.runs > 0 ? (
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-8 gap-y-2 border-t border-rule pt-3">
+              <span className="flex items-baseline gap-2">
+                <span className="label">Mean score</span>
+                <span className="font-mono text-[15px] tabular-nums text-scribe">{(stats.meanScore / 100).toFixed(2)}</span>
+              </span>
+              {stats.observed !== null ? (
+                <span className="flex items-baseline gap-2">
+                  <span className="label">Observed difficulty</span>
+                  <span className="font-mono text-[15px] tabular-nums text-scribe-2">
+                    {stats.observed} / 5
+                    {stats.observed !== task.difficulty ? (
+                      <span className="ml-2 text-[12px] text-scribe-3">funder said {task.difficulty}</span>
+                    ) : null}
+                  </span>
+                </span>
+              ) : null}
+              {stats.perHour !== null ? (
+                <span className="flex items-baseline gap-2">
+                  <span className="label">Filling at</span>
+                  <span className="font-mono text-[15px] tabular-nums text-scribe-2">
+                    {stats.perHour.toFixed(1)} <span className="text-[12px] text-scribe-3">runs / hour</span>
+                  </span>
+                </span>
+              ) : null}
+              {stats.fillsIn !== null ? (
+                <span className="flex items-baseline gap-2">
+                  <span className="label">Full in</span>
+                  <span className="font-mono text-[15px] tabular-nums text-signal">
+                    {stats.fillsIn < 3_600_000
+                      ? `${Math.round(stats.fillsIn / 60_000)} min`
+                      : `${(stats.fillsIn / 3_600_000).toFixed(1)} h`}
+                  </span>
+                </span>
+              ) : null}
+              <span className="max-w-[52ch] text-[13px] leading-relaxed text-scribe-3">
+                From this task&rsquo;s own runs. Not a pass rate &mdash; a run that misses
+                the datum is never written to the chain, so failures leave no record and
+                the denominator is not knowable.
+              </span>
+            </div>
+          ) : null}
+
 
           <ul className="mt-6 flex flex-col">
             {runs!.map((r) => (
