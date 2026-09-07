@@ -120,19 +120,19 @@ sub-second blocks.
 
 | # | Task | Status |
 |---|---|---|
-| 6.1 | Replace the kinematic sim with contact-rich physics (MuJoCo WASM or Rapier), keeping the same `Sample` shape so the scorer and contract are unchanged | NOT STARTED |
-| 6.2 | Re-derive the jerk band and par time from ≥200 human episodes using `calibrate()` | NOT STARTED |
+| 6.1 | **NOT DONE.** Days of work, not hours: a physics rewrite, a re-derived scorer, and re-tuned grasping. It would also make the 12 existing runs incomparable with everything after. Remains the single biggest thing between this and real robotics data |
+| 6.2 | **BLOCKED on data, not effort.** The corpus holds 61 recordings, 25 of them settled. Calibrating a band from that would be fitting noise; it needs the 200 the task names |
 | 6.3 | **Not a gap.** The export already populates `state.joints`, `state.gripper`, `state.object_pose`, `action` and `timestamp` from the stored samples. The plan's note was wrong | **DONE** |
-| 6.4 | Record camera frames so `channels: 3` is true rather than reserved | NOT STARTED |
+| 6.4 | **NOT DONE.** Belongs with 6.1 — recording frames off a kinematic scene produces video of something that is not physics |
 
 ### Phase 7 — Durability
 
 | # | Task | Status |
 |---|---|---|
-| 7.1 | Migrate SQLite → Railway managed Postgres with automated backups. Four tables; the only copy of the corpus currently lives on one volume | NOT STARTED |
-| 7.2 | Move the verifier key into a private Railway service reachable only over the internal network | NOT STARTED |
+| 7.1 | **NOT DONE — deliberately deferred.** The actual risk was "one copy on one volume", and 7.4 now closes that with a verified off-region restore. Rewriting the whole store against a live database, for a benefit no user sees, is the wrong trade today. Still worth doing before real money |
+| 7.2 | **NOT DONE.** Real work, and it would put a network hop in the middle of the submit path that currently works. The exposure is bounded — a testnet signing key, rotatable, with the contract's `verifier` address updatable — so it did not justify destabilising settlement in this pass |
 | 7.3 | GET handler added (Vercel's scheduler only issues GET) and a daily cron in `vercel.json`. Verified idempotent | **DONE** |
-| 7.4 | Nightly corpus snapshot to object storage | NOT STARTED |
+| 7.4 | Railway bucket `thenar-corpus-snapshots-ruhuu7` (sin), `VACUUM INTO` + hand-rolled SigV4, cron 04:00 UTC. **Restore-tested**: 13,516,800 bytes pulled back, sha256 matched, `integrity_check ok`, GLB blobs byte-exact, a run's 221 samples intact | **DONE** |
 
 ### Phase 8 — Already done, keep verified
 
@@ -188,9 +188,33 @@ Ordered by severity. Each tied to the task that closes it.
 
 ---
 
-## 4. If only one thing gets done
+## 4. Where this ended up — 30 Aug 2026
 
-**Phase 1.** Everything else raises the ceiling; Phase 1 is the floor. The
-project's entire claim is that its numbers are checkable, and right now half
-the runs on screen link to transactions that do not exist on the chain the app
-says it runs on. It is also the cheapest fix in this document.
+**Phase 1 is closed, and it was the floor.** The feed and the contract now agree
+at 12, every transaction on the feed resolves on Fuji, every transaction in the
+archive resolves on Monad, and none leak across. `/api/health` returns 503 the
+moment that stops being true — verified by deliberately mislabelling three rows.
+
+Closed since: Phase 1 (all six), Phase 2 (all three), Phase 5 (all five),
+4.5, 6.3, 7.3, 7.4.
+
+Two surfaces were found during execution that the plan had not listed, both
+the same bug in a different place: `/api/dataset` and `/run/[hash]` built their
+own queries and ignored the chain entirely. The dataset one was the more
+serious — a buyer's corpus would have carried unverifiable transaction hashes.
+
+Still open, with reasons rather than excuses:
+
+- **Phase 3** is blocked on a credential that exists nowhere and needs an
+  account I cannot create.
+- **Phase 4's L1 and ICM** are blocked on infrastructure and testnet gas.
+  Glacier (4.5) is the part that was reachable, and it is real.
+- **6.1 / 6.4** are days of simulation work. **6.2** is blocked on having 61
+  recordings where it needs 200.
+- **7.1 / 7.2** were judged not worth destabilising a working system for in
+  this pass. 7.4 closed the risk 7.1 was really about.
+
+The honest one-line summary: the project no longer shows a number it cannot
+back, and it now has a shared floor, an Avalanche-native history that outlives
+our server, and a restore-tested backup. It is still a kinematic simulator, and
+Avalanche is still doing less than it could.
