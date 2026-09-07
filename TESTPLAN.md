@@ -103,3 +103,43 @@ the item.
 | F4 | Console | 0 errors on every page in section A. |
 
 **Total: 60 items.**
+
+---
+
+# Results — 30 Aug 2026, against https://thenar.io
+
+Executed in real Chrome against the deployed product. Console checked on every
+UI item. Two rounds: first pass, fixes, then the whole plan again top to bottom.
+
+**59 PASS · 0 FAIL · 1 UNTESTABLE (60 items).**
+
+## Failures found and fixed
+
+| Item | What was wrong | Fix |
+|---|---|---|
+| **B10 / A14** | `/api/trajectory/[hash]` never sent `chainId`, though `/run/[hash]` types it, links with `txUrlOn(chainId)` and renders a "settled on" note. An archived Monad run therefore rendered a **Snowtrace link for a transaction Fuji has never heard of** — the feed's original bug, on the page whose entire job is letting someone check a payout. An earlier edit had reported success and not applied. | Field added. Verified: Fuji run → `43113`, 2 Snowtrace links, no note; Monad run → `10143`, 1 MonadScan link, 0 Snowtrace, "Settled on Monad Testnet" and an archive link. |
+| **E6** | `/station/9999` sat on "Reading task #9999 from the chain…" indefinitely. The catalogue had answered — eight tasks, none of them 9999 — so nothing was being read, and the page said otherwise for as long as it was open. | Waits only while the catalogue is genuinely in flight; otherwise renders "Task 9999 is not in the registry." Valid stations unaffected — `/station/4` still loads its four assets. |
+
+## Corrections to the plan itself, not the app
+
+- **B13** expected 400 for a non-glTF upload. The app returns **415 Unsupported
+  Media Type** with `{"error":"too short to be a GLB"}`, which is the more
+  correct status. The plan was wrong, not the code.
+- **A4** read 41 tiles on the first attempt, during a Railway restart:
+  `/api/props` failed transiently and the page **degraded to the built-in
+  library instead of erroring**. On retry, 43 tiles / 24 payloads. Intended
+  behaviour.
+- **A9** and several others initially looked like failures because the design
+  system uppercases those strings via CSS and my regexes were case-sensitive.
+  All four non-capabilities do render.
+
+## Untestable
+
+- **D3 WalletConnect** — no `projectId` exists in local env, Vercel or Railway,
+  and obtaining one requires creating a Reown account. Not marked PASS.
+
+## Standing confirmation
+
+Zero mocks, zero stubs, zero TODO/FIXME across `app`, `components`, `lib`,
+`contracts/src`. ESLint 0 problems. Design detector 0 findings. **Zero console
+errors on all 14 pages**, re-checked after every fix.
