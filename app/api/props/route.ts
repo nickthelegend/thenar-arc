@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit, callerKey } from "@/lib/server/rate-limit";
 import { createHash } from "node:crypto";
 import { insertProp, listProps, propBySha } from "@/lib/server/db";
 
@@ -48,6 +49,16 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  // Storing a multi-megabyte binary on the same volume as the trajectory ledger
+  // is the most expensive thing an anonymous caller can ask for here.
+  const gate = rateLimit(`props:${callerKey(req)}`, 5, 60_000);
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: "Too many uploads. Five a minute." },
+      { status: 429, headers: { "retry-after": String(Math.ceil(gate.retryAfterMs / 1000)) } },
+    );
+  }
+
   let form: FormData;
   try {
     form = await req.formData();

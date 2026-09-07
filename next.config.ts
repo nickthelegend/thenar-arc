@@ -14,6 +14,44 @@ const nextConfig: NextConfig = {
    * would never fire. With BACKEND_ORIGIN unset the app serves its own API,
    * which is exactly what the Railway deployment should do.
    */
+  /**
+   * Headers a browser should get whatever else happens.
+   *
+   * The app loads WebGL, fonts and models from itself and talks to exactly two
+   * origins it does not own: the Avalanche RPC and Glacier. Naming them means a
+   * script injected into a page cannot quietly ship data somewhere else.
+   * `unsafe-eval` is required by the WASM/three toolchain and `unsafe-inline`
+   * by Next's own inline bootstrap, so the policy is honest about what it does
+   * and does not buy rather than pretending to be stricter than it is.
+   */
+  async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "worker-src 'self' blob:",
+      "connect-src 'self' https://api.avax-test.network https://glacier-api.avax.network https://testnet-rpc.monad.xyz wss://relay.walletconnect.com https://explorer-api.walletconnect.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; ");
+
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: csp },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+        ],
+      },
+    ];
+  },
+
   async rewrites() {
     const backend = process.env.BACKEND_ORIGIN?.replace(/\/$/, "");
     return {
