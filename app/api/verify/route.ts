@@ -1,3 +1,4 @@
+import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
 import { AXON_ABI } from "@/lib/abi";
@@ -24,7 +25,7 @@ function throttled(who: string) {
   return hits.length > MAX_PER_WINDOW;
 }
 
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
   try {
     if (!IS_DEPLOYED) {
       return NextResponse.json(
@@ -117,3 +118,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export const POST = logged("/api/verify", handlePOST);

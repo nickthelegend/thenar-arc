@@ -1,3 +1,4 @@
+import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
 import { AXON_ADDRESS, appChain } from "@/lib/chain";
@@ -17,7 +18,7 @@ const client = createPublicClient({ chain: appChain, transport: http() });
  * read back and has to say success, against this contract, before anything is
  * written.
  */
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
   let trajHash: string, txHash: string;
   try {
     ({ trajHash, txHash } = await req.json());
@@ -55,3 +56,5 @@ export async function POST(req: Request) {
   markSettled(trajHash, txHash);
   return NextResponse.json({ ok: true, block: Number(receipt.blockNumber) });
 }
+
+export const POST = logged("/api/submitted", handlePOST);

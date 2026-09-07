@@ -1,3 +1,4 @@
+import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { createHash } from "node:crypto";
@@ -48,7 +49,7 @@ export async function GET() {
   return NextResponse.json({ props: listProps() });
 }
 
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
   let form: FormData;
   try {
     form = await req.formData();
@@ -113,3 +114,5 @@ export async function POST(req: Request) {
   insertProp({ ...row, glb: buf });
   return NextResponse.json({ prop: row, ...stats }, { status: 201 });
 }
+
+export const POST = logged("/api/props", handlePOST);

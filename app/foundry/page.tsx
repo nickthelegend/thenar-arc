@@ -144,13 +144,16 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
       <DatasetPreview taskId={p.taskId} />
 
       <div className="px-5 py-4">
+        <YourShare cap={cap} address={s.address} licenceMon={p.licenceMon} />
         <DimRule note={`Cap table — ${cap?.length ?? 0} contributor${cap?.length === 1 ? "" : "s"}`} />
         {!cap?.length ? (
           <p className="mt-4 text-[13px] text-scribe-3">Reading the cap table…</p>
         ) : (
           <ul className="mt-4 flex flex-col gap-2">
-            {cap.map((c) => (
-              <li key={c.address} className="flex items-center gap-3">
+            {cap.map((c) => {
+              const yours = s.address?.toLowerCase() === c.address.toLowerCase();
+              return (
+              <li key={c.address} className={cn("flex items-center gap-3", yours && "bg-signal-dim")}>
                 <a
                   href={addressUrl(c.address)}
                   target="_blank"
@@ -169,7 +172,8 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
                   {fmtMon(c.payoutMon, 4)}
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>
@@ -305,5 +309,32 @@ function Reading({ label, value, note }: { label: string; value: string; note?: 
         {note ? <span className="ml-1 text-[12px] text-scribe-3">{note}</span> : null}
       </span>
     </span>
+  );
+}
+
+
+/**
+ * What a licence on this policy would pay the person reading the page.
+ *
+ * The cap table already lists every contributor's share; a contributor should
+ * not have to find their own address in it. Shown only when the connected
+ * wallet is actually in the table, because a line saying "you would receive
+ * nothing" to someone who never contributed is noise, not information.
+ */
+function YourShare({ cap, address, licenceMon }: {
+  cap: { address: string; weightBps: number; payoutMon: number }[] | undefined;
+  address: string | null | undefined;
+  licenceMon: number;
+}) {
+  if (!cap?.length || !address) return null;
+  const mine = cap.find((c) => c.address.toLowerCase() === address.toLowerCase());
+  if (!mine) return null;
+
+  return (
+    <p className="mb-3 border border-signal bg-signal-dim px-3 py-2 font-mono text-[12px] text-signal">
+      Your share of this policy is {(mine.weightBps / 100).toFixed(2)}% &mdash;{" "}
+      {fmtMon(mine.payoutMon, 4)} {CURRENCY} for every {fmtMon(licenceMon, 3)}{" "}
+      {CURRENCY} licence sold, paid in the same transaction as everyone else&rsquo;s.
+    </p>
   );
 }

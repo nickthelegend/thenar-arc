@@ -1,3 +1,4 @@
+import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
 import { AXON_ADDRESS, appChain, KNOWN_CHAINS } from "@/lib/chain";
@@ -44,7 +45,7 @@ async function receiptOn(rpc: string, hash: string): Promise<boolean> {
  * It only ever reads, so it can confirm and retract but never invent. Running
  * it twice changes nothing.
  */
-export async function POST() {
+async function handlePOST() {
   return reconcile();
 }
 
@@ -113,3 +114,5 @@ async function reconcile() {
     byChain: countByChain(),
   });
 }
+
+export const POST = logged("/api/reconcile", handlePOST);
