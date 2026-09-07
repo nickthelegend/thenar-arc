@@ -225,6 +225,30 @@ freeze animation frames in background tabs and the request to foreground Chrome
 was declined, so every automated screenshot of a WebGL surface comes back black.
 That limit applies to the arm too, which has been in the product since the start.
 
+## 3c. Completion audit — 30 Aug
+
+Checklist built from PRODUCT.md's own claims, then each item verified rather
+than read. **41/47 before, 46/47 after.**
+
+| Gap found | Closed |
+|---|---|
+| PRODUCT.md claimed a **7-DoF arm**; it has six revolute axes | Corrected to 6-DoF |
+| PRODUCT.md claimed **sixteen props**; there are 34 plus 7 rooms | Corrected |
+| PRODUCT.md listed a **key mapping the station does not bind** (E/D, Q/W, Z/X) | Corrected to what is bound |
+| Arrow keys worked but **were not in the on-screen legend** | Named in both legends |
+| **Skill vocabulary absent entirely**, though PRODUCT.md requires it in the interface | `lib/skills.ts`, derived from the on-chain instruction; hub filter, task page, station |
+| **Seeded tasks unlabelled** — all 8 funded by the deploying address | Hub counts it from chain data and says so; task page repeats it |
+| **Non-capabilities named only in PRODUCT.md**, never in the interface (Principle 5) | "What this is not" on `/spec` |
+| **PasskeyRegistry listed as shipping** but absent from the app | `/passkey`: generate a non-extractable P-256 key, bind it on chain, prove a signature through the precompile |
+
+Left open: **WalletConnect** — no `projectId` in local env, Vercel or Railway, and
+obtaining one needs a Reown account I cannot create.
+
+Not pixel-verified: the 3D scenes fetch the right assets, hold one WebGL context
+and log no errors, but no automated screenshot of a WebGL surface can be taken —
+browsers freeze animation frames in background tabs and the request to foreground
+Chrome was declined.
+
 ## 4. Where this ended up — 30 Aug 2026
 
 **Phase 1 is closed, and it was the floor.** The feed and the contract now agree
