@@ -71,7 +71,10 @@ export type SnapshotResult = {
   key: string;
   bytes: number;
   sha256: string;
+  /** Every stored recording, settled or not. */
   trajectories: number;
+  settled: number;
+  unsettled: number;
   props: number;
   uploaded: boolean;
   detail: string;
@@ -89,9 +92,15 @@ export async function snapshot(stamp: string): Promise<SnapshotResult> {
   const body = fs.readFileSync(tmp);
   fs.rmSync(tmp, { force: true });
 
+  // Every row, not just the settled ones — a backup that dropped the runs
+  // nobody submitted would quietly lose the recordings people made. Broken out
+  // so this total is never mistaken for the number the feed reports.
+  const one = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
   const counts = {
-    trajectories: (db.prepare("SELECT COUNT(*) n FROM trajectory").get() as { n: number }).n,
-    props: (db.prepare("SELECT COUNT(*) n FROM prop").get() as { n: number }).n,
+    trajectories: one("SELECT COUNT(*) n FROM trajectory"),
+    settled: one("SELECT COUNT(*) n FROM trajectory WHERE settled = 1"),
+    unsettled: one("SELECT COUNT(*) n FROM trajectory WHERE settled = 0"),
+    props: one("SELECT COUNT(*) n FROM prop"),
   };
 
   const objectKey = `axon-${stamp}.db`;
