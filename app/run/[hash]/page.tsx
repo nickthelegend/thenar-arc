@@ -243,6 +243,20 @@ export default function RunPage() {
         </div>
       ) : null}
 
+      <div className="mt-8">
+        <a
+          href={`/api/dataset?traj=${data.trajHash}`}
+          className="inline-block border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe"
+        >
+          Download this run as a LeRobot episode &rarr;
+        </a>
+        <p className="mt-2 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
+          The same samples the hash above is derived from, shaped the way an
+          imitation-learning loader expects &mdash; so you can check the file
+          against the chain yourself.
+        </p>
+      </div>
+
       <DimRule className="mt-10" note="Provenance" />
       <dl className="mt-4 flex flex-col gap-2 font-mono text-[12px]">
         <Field label="Task">
