@@ -4,17 +4,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
-import { useMyRuns, useStats, useTasks } from "@/lib/hooks";
+import { useMyRuns, useStats } from "@/lib/hooks";
 import { TOLERANCE_MM } from "@/lib/score";
 import { addressUrl, CURRENCY, txUrl } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore } from "@/lib/format";
+import { useTaskCatalogue } from "@/components/tasks-provider";
 
 export default function PortfolioPage() {
   const s = useSession();
   const { data: runs, isLoading, isError, refetch } = useMyRuns();
   const { data: stats } = useStats();
-  const { data: tasks } = useTasks();
+  const { tasks } = useTaskCatalogue();
 
   const nameOf = (id: number) => tasks?.find((t) => t.id === id)?.name ?? `Task #${id}`;
 

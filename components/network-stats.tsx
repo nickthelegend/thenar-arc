@@ -4,12 +4,12 @@ import { useReadContracts } from "wagmi";
 import { formatEther } from "viem";
 import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY } from "@/lib/chain";
-import { useTasks } from "@/lib/hooks";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
+import { useTaskCatalogue } from "@/components/tasks-provider";
 
 /** What the contract actually holds right now. Nothing here is a fixture. */
 export function NetworkStats() {
-  const { data: tasks } = useTasks();
+  const { tasks } = useTaskCatalogue();
   const { data } = useReadContracts({
     contracts: [
       { address: AXON_ADDRESS, abi: AXON_ABI, functionName: "taskCount" },

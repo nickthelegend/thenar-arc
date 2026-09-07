@@ -28,6 +28,7 @@ from kernel import Mesh, Node, extrude, revolve, rounded_rect, tube, write_glb
 OUT = os.path.join(os.path.dirname(__file__), "..", "public", "props")
 
 MATERIALS = {
+    "porcelain":{"color": [0.941, 0.933, 0.914, 1.0], "metallic": 0.02, "roughness": 0.22},
     "ceramic": {"color": [0.898, 0.894, 0.878, 1.0], "metallic": 0.02, "roughness": 0.38},
     "plastic": {"color": [0.831, 0.310, 0.243, 1.0], "metallic": 0.00, "roughness": 0.52},
     "mint":    {"color": [0.412, 0.780, 0.706, 1.0], "metallic": 0.00, "roughness": 0.46},
@@ -187,6 +188,135 @@ def crate() -> Node:
     return n
 
 
+# ---------------------------------------------------------------- more payloads
+
+def can() -> Node:
+    n = Node("can", revolve([(0, 0), (31, 3), (33, 10), (33, 105), (29, 115), (0, 115)], 40), "steel")
+    n.add(Node("tab", box(18, 7, 1.5, 0.5).translate(0, 0, 115), "steel"))
+    return n
+
+
+def bowl() -> Node:
+    return Node("bowl", revolve([(0, 0), (44, 2), (66, 46), (70, 54), (66, 50), (42, 8), (0, 6)], 48), "ceramic")
+
+
+def cup() -> Node:
+    return Node("cup", revolve([(0, 0), (28, 0), (32, 8), (36, 88), (33, 88), (29, 8), (0, 4)], 40), "glass")
+
+
+def spoon() -> Node:
+    n = Node("spoon", box(96, 9, 4, 2).translate(18, 0, 2), "steel")
+    n.add(Node("bowl", revolve([(0, 0), (17, 1.5), (19, 5), (15, 7), (0, 6)], 28)
+               .scale(1.0, 1.5, 1.0).translate(-42, 0, 2), "steel"))
+    return n
+
+
+def block() -> Node:
+    n = Node("block", box(44, 44, 44, 3), "plastic")
+    n.add(Node("stud", cyl(11, 6, 24).translate(0, 0, 44), "plastic"))
+    return n
+
+
+def ball() -> Node:
+    return Node("ball", revolve([(0, 0)] + [(32 * math.sin(math.pi * i / 18), 32 - 32 * math.cos(math.pi * i / 18))
+                for i in range(19)], 32), "mint")
+
+
+def screwdriver() -> Node:
+    n = Node("screwdriver", revolve([(0, 0), (15, 4), (16, 74), (11, 84), (0, 86)], 24), "plastic")
+    n.add(Node("shaft", cyl(4, 96, 20).translate(0, 0, 86), "steel"))
+    n.add(Node("tip", box(9, 2.2, 12, 0.6).translate(0, 0, 182), "steel"))
+    return n
+
+
+def battery() -> Node:
+    n = Node("battery", cyl(13.5, 61, 30), "dark")
+    n.add(Node("cap", cyl(5.5, 3, 20).translate(0, 0, 61), "steel"))
+    return n
+
+
+def soap() -> Node:
+    return Node("soap", revolve([(0, 0), (34, 2), (40, 14), (34, 26), (0, 28)], 36)
+                .scale(1.35, 1.0, 1.0), "mint")
+
+
+def book() -> Node:
+    n = Node("book", box(148, 210, 22, 3), "card")
+    n.add(Node("pages", box(140, 202, 17, 2).translate(4, 0, 2.5), "bone")) 
+    return n
+
+
+def phone() -> Node:
+    n = Node("phone", box(72, 148, 8.4, 8), "dark")
+    n.add(Node("screen", box(66, 140, 0.6, 6).translate(0, 0, 8.4), "glass"))
+    return n
+
+
+def banana() -> Node:
+    n = Node("banana", None, "amber")
+    for i in range(9):
+        t = i / 8
+        a = math.radians(128 * t - 64)
+        r = 17.0 * (1 - 0.55 * abs(2 * t - 1))
+        n.add(Node(f"seg_{i}", cyl(max(r, 3.0), 16, 18).rotate_x(90)
+                   .translate(86 * math.sin(a), 0, 20 - 22 * math.cos(a)), "amber"))
+    return n
+
+
+# ---------------------------------------------------------------- more targets
+
+def tray() -> Node:
+    W, D, H, T = 320.0, 220.0, 26.0, 6.0
+    n = Node("tray", box(W, D, T, 6), "steel")
+    for name, (w, d, x, y) in {
+        "back": (W, T, 0, (D - T) / 2), "front": (W, T, 0, -(D - T) / 2),
+        "left": (T, D, -(W - T) / 2, 0), "right": (T, D, (W - T) / 2, 0),
+    }.items():
+        n.add(Node(name, box(w, d, H, 1).translate(x, y, 0), "steel"))
+    return n
+
+
+def basket() -> Node:
+    """A woven bin: a floor and a ring of uprights, which reads as weave."""
+    n = Node("basket", revolve([(0, 0), (96, 0), (96, 8), (0, 8)], 36), "card")
+    for i in range(22):
+        a = 2 * math.pi * i / 22
+        n.add(Node(f"stave_{i}", box(9, 9, 128, 2)
+                   .translate(93 * math.cos(a), 93 * math.sin(a), 8), "card"))
+    for k, z in enumerate((28.0, 78.0, 124.0)):
+        n.add(Node(f"band_{k}", tube(101, 96, 7, 40).translate(0, 0, z), "wood"))
+    return n
+
+
+def bin_() -> Node:
+    n = Node("bin", revolve([(0, 0), (108, 0), (124, 240), (0, 244)], 40), "dark")
+    n.add(Node("rim", tube(128, 120, 12, 40).translate(0, 0, 240), "steel"))
+    return n
+
+
+def plate() -> Node:
+    return Node("plate", revolve([(0, 0), (86, 2), (110, 16), (114, 22), (110, 19),
+                                  (84, 8), (0, 7)], 48), "porcelain")
+
+
+def rack() -> Node:
+    """A dish rack: a base tray and a comb of wire uprights."""
+    n = Node("rack", box(280, 190, 10, 4), "steel")
+    for i in range(9):
+        x = -120 + i * 30
+        n.add(Node(f"wire_{i}", tube(3, 1.6, 130, 12).rotate_x(0).translate(x, 0, 10), "steel"))
+    n.add(Node("spine", tube(4, 2, 260, 14).rotate_y(90).translate(0, 0, 132), "steel"))
+    return n
+
+
+def sink() -> Node:
+    n = Node("sink", revolve([(0, -104), (150, -104), (154, -96), (154, 6), (168, 6),
+                              (168, 14), (0, 14)], 44), "porcelain")
+    n.add(Node("tap", tube(11, 8, 190, 20).translate(0, 132, 14), "steel"))
+    n.add(Node("spout", tube(9, 6.5, 96, 20).rotate_x(90).translate(0, 86, 196), "steel"))
+    return n
+
+
 PROPS = {
     "mug":        (mug,        "Mug",         "kitchen",  "payload", 82),
     "bottle":     (bottle,     "Bottle",      "kitchen",  "payload", 66),
@@ -204,6 +334,26 @@ PROPS = {
     "crate":      (crate,      "Crate",       "workshop", "target",  150),
     "laptop":     (laptop,     "Laptop",      "office",   "target",  230),
     "air_fryer":  (air_fryer,  "Air fryer",   "kitchen",  "target",  164),
+
+    "can":         (can,         "Can",          "kitchen",  "payload", 66),
+    "bowl":        (bowl,        "Bowl",         "kitchen",  "payload", 140),
+    "cup":         (cup,         "Glass",        "kitchen",  "payload", 72),
+    "spoon":       (spoon,       "Spoon",        "kitchen",  "payload", 132),
+    "banana":      (banana,      "Banana",       "kitchen",  "payload", 172),
+    "block":       (block,       "Block",        "play",     "payload", 44),
+    "ball":        (ball,        "Ball",         "play",     "payload", 64),
+    "screwdriver": (screwdriver, "Screwdriver",  "workshop", "payload", 32),
+    "battery":     (battery,     "Battery",      "workshop", "payload", 27),
+    "soap":        (soap,        "Soap",         "bathroom", "payload", 92),
+    "book":        (book,        "Book",         "office",   "payload", 148),
+    "phone":       (phone,       "Phone",        "office",   "payload", 72),
+
+    "tray":        (tray,        "Tray",         "kitchen",  "target",  320),
+    "basket":      (basket,      "Basket",       "home",     "target",  202),
+    "bin":         (bin_,        "Bin",          "home",     "target",  256),
+    "plate":       (plate,       "Plate",        "kitchen",  "target",  228),
+    "rack":        (rack,        "Dish rack",    "kitchen",  "target",  280),
+    "sink":        (sink,        "Sink",         "bathroom", "target",  336),
 }
 
 

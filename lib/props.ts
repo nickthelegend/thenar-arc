@@ -59,15 +59,15 @@ export function propsForTask(instruction: string, scenario: string): { payload: 
   // honey jar" names the thing being moved first and the landmark second, so
   // picking by label length instead would have moved the jar.
   const hits: { at: number; prop: Prop }[] = [];
-  const claimed: number[] = [];
+  const claimed: [number, number][] = [];
   for (const { needle, id } of needles()) {
     const at = text.indexOf(needle);
     if (at < 0) continue;
     // A longer label already covering this span wins: "honey jar" beats "jar".
-    if (claimed.some(([s, e]: any) => at >= s && at < e)) continue;
+    if (claimed.some(([s, e]) => at >= s && at < e)) continue;
     const prop = propById(id);
     if (!prop) continue;
-    claimed.push([at, at + needle.length] as any);
+    claimed.push([at, at + needle.length]);
     hits.push({ at, prop });
   }
   hits.sort((a, b) => a.at - b.at);

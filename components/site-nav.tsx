@@ -12,6 +12,7 @@ import { fmtMon, shortHash } from "@/lib/format";
 const ROUTES = [
   { href: "/hub", label: "Hub" },
   { href: "/space", label: "Floor" },
+  { href: "/inventory", label: "Inventory" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/foundry", label: "Foundry" },

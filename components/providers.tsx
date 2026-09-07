@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { TasksProvider } from "@/components/tasks-provider";
+import { ModelStageProvider } from "@/components/model-stage";
 import { wagmiConfig } from "@/lib/wagmi";
 import { appChain } from "@/lib/chain";
 
@@ -37,7 +39,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={theme} initialChain={appChain} modalSize="compact">
-          {children}
+          <TasksProvider>
+          <ModelStageProvider>{children}</ModelStageProvider>
+          </TasksProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

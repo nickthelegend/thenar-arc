@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
-import { useTask } from "@/lib/hooks";
 import { txUrl, addressUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 
 type Row = {
   traj_hash: string; contributor: string; score: number;
@@ -18,7 +18,8 @@ type Row = {
 export default function TaskPage() {
   const { id } = useParams<{ id: string }>();
   const n = Number(id);
-  const { data: task, isLoading, isError } = useTask(Number.isInteger(n) ? n : undefined);
+  const { isLoading, isError } = useTaskCatalogue();
+  const task = useCatalogueTask(Number.isInteger(n) ? n : undefined);
 
   const { data: runs } = useQuery({
     queryKey: ["taskRuns", n],
@@ -43,8 +44,14 @@ export default function TaskPage() {
     );
   }
 
-  if ((isLoading && !isError) || (!task && !isError)) {
-    return <div className="mx-auto max-w-[900px] px-5 py-16"><span className="label">Reading task #{n}…</span></div>;
+  // One guard, so the narrowing below is obvious rather than inferred through
+  // three booleans: past here the task exists.
+  if (!task) {
+    return (
+      <div className="mx-auto max-w-[900px] px-5 py-16">
+        <span className="label">{isLoading ? `Reading task #${n}…` : `Task #${n} is not in the registry.`}</span>
+      </div>
+    );
   }
 
   const dist = bucket(runs ?? []);

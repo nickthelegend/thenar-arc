@@ -26,12 +26,11 @@ export function LandingMotion() {
     const ctx = gsap.context(() => {
       const boot = gsap.timeline({ defaults: { ease: "expo.out" } });
 
+      // The hero is its own scroll-driven sequence now and animates itself.
+      // What is left here is the page under it: the rules draw out from their
+      // centre, the way a dimension line is set, and the readings arrive last.
       boot
-        .from('[data-anim="hero-head"]', { y: 18, opacity: 0, duration: 1.1 })
-        .from('[data-anim="hero-copy"]', { y: 12, opacity: 0, duration: 0.9 }, "-=0.75")
-        .from('[data-anim="hero-cta"] > *', { y: 10, opacity: 0, duration: 0.7, stagger: 0.08 }, "-=0.6")
-        // The rules draw out from their centre, the way a dimension line is set.
-        .from('[data-anim="rule"]', { scaleX: 0, transformOrigin: "50% 50%", duration: 1.2, stagger: 0.06 }, "-=0.7")
+        .from('[data-anim="rule"]', { scaleX: 0, transformOrigin: "50% 50%", duration: 1.2, stagger: 0.06 })
         .from('[data-anim="readings"] > *', { y: 8, opacity: 0, duration: 0.8, stagger: 0.06 }, "-=0.9");
 
       // The run sequence reveals as a set, once, when it comes into view.

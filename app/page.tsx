@@ -1,13 +1,12 @@
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { DimRule } from "@/components/primitives";
 import { NetworkStats } from "@/components/network-stats";
 import { PropStrip } from "@/components/prop-strip";
+import { HeroSequence } from "@/components/hero-sequence";
 import { LandingMotion } from "@/components/landing-motion";
 import { IconArm, IconDatum, IconTally, IconWallet } from "@/components/icons";
 import { TOLERANCE_MM } from "@/lib/score";
 
-const HeroArm = dynamic(() => import("@/components/hero-arm").then((m) => m.HeroArm));
 
 export default function Home() {
   return (
@@ -15,54 +14,7 @@ export default function Home() {
       <LandingMotion />
       {/* The thesis is the arm doing the work, next to the sentence that
           explains why anyone would. */}
-      <section className="grid items-center gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-20">
-        <div className="flex flex-col gap-6">
-          <h1 data-anim="hero-head" className="font-display text-[clamp(2.6rem,6.4vw,4.6rem)] font-700 leading-[0.94] tracking-[-0.02em]">
-            Physical AI is short of data,
-            <br />
-            not compute.
-          </h1>
-
-          <p data-anim="hero-copy" className="max-w-[58ch] text-[16px] leading-relaxed text-scribe-2">
-            Robot manipulation data is collected in closed labs, slowly and
-            narrowly. Thenar collects it in the browser instead: you drive a
-            simulated arm through a task, the run is measured against the goal
-            datum, and if it passes, Avalanche records the trajectory and pays you
-            in the same transaction.
-          </p>
-
-          <div data-anim="hero-cta" className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/hub"
-              className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
-            >
-              Find a task
-            </Link>
-            <Link
-              href="/foundry"
-              className="border border-rule-strong px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-scribe transition-colors hover:border-scribe"
-            >
-              See a cap table
-            </Link>
-          </div>
-
-          <p className="font-mono text-[13px] leading-relaxed text-scribe-3">
-            No hardware. No GPU. A browser and a wallet.
-          </p>
-        </div>
-
-        <div className="relative h-[340px] border border-rule bg-ink-0 sm:h-[440px] lg:h-[520px]">
-          <HeroArm />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-rule bg-ink-1/90 px-4 py-2 font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3">
-            <span>THENAR-6</span>
-            <span>6 revolute axes</span>
-            <span>parallel jaw, 42 mm</span>
-            <Link href="/spec" className="text-signal transition-colors hover:text-signal-hi">
-              generated from cad/arm.py →
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HeroSequence />
 
       <NetworkStats />
 

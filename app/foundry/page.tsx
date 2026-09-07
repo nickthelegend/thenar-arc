@@ -5,15 +5,16 @@ import Link from "next/link";
 import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
-import { useCapTable, usePolicies, useTasks, type ChainPolicy } from "@/lib/hooks";
+import { useCapTable, usePolicies, type ChainPolicy } from "@/lib/hooks";
 import { useThenarWrite } from "@/lib/write";
 import { txUrl, addressUrl, CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
+import { useTaskCatalogue } from "@/components/tasks-provider";
 
 export default function FoundryPage() {
   const s = useSession();
-  const { data: tasks } = useTasks();
+  const { tasks } = useTaskCatalogue();
   const { data: policies, isLoading, refetch } = usePolicies();
 
   const mintable = (tasks ?? []).filter((t) => t.slotsFilled >= t.slotsTotal && !t.policyMinted);

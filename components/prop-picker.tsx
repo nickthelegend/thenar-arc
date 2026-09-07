@@ -1,9 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage, useGLTF } from "@react-three/drei";
-import * as THREE from "three";
+import { ModelView } from "@/components/model-stage";
 import { cn } from "@/lib/cn";
 import type { Prop } from "@/lib/props";
 
@@ -13,37 +10,13 @@ import type { Prop } from "@/lib/props";
  * The preview is the same asset the run uses, not a picture of it — a thumbnail
  * that drifts from the model is how a funder ends up escrowing against a scene
  * they never saw.
+ *
+ * Drawing is delegated to the shared stage: a page of these used to be a page
+ * of WebGL contexts, and browsers stop handing them out well before the
+ * inventory runs out of models.
  */
-function PropMesh({ url }: { url: string }) {
-  const { scene } = useGLTF(url);
-  const model = useMemo(() => {
-    const c = scene.clone(true);
-    const box = new THREE.Box3().setFromObject(c);
-    const size = box.getSize(new THREE.Vector3());
-    const centre = box.getCenter(new THREE.Vector3());
-    const k = 1 / Math.max(size.x, size.y, size.z || 1);
-    c.position.sub(centre);
-    c.scale.setScalar(k);
-    return c;
-  }, [scene]);
-  return <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />;
-}
-
 export function PropPreview({ url, className }: { url: string; className?: string }) {
-  return (
-    <div className={cn("relative", className)}>
-      <Canvas camera={{ position: [1.5, 1.1, 1.6], fov: 34 }} dpr={[1, 2]} frameloop="demand">
-        <Suspense fallback={null}>
-          <Stage intensity={0.45} environment={null} adjustCamera={1.1} shadows={false}>
-            <PropMesh url={url} />
-          </Stage>
-        </Suspense>
-        <hemisphereLight args={["#9a9a9a", "#101010", 1.1]} />
-        <directionalLight position={[2, 3, 2]} intensity={1.6} />
-        <OrbitControls enablePan={false} enableZoom={false} autoRotate autoRotateSpeed={1.6} />
-      </Canvas>
-    </div>
-  );
+  return <ModelView url={url} className={className} />;
 }
 
 /** A row of props to choose between, each previewed as the model it is. */

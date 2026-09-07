@@ -7,7 +7,7 @@
       "role": "payload",
       "widthMm": 82,
       "url": "/props/mug.glb",
-      "bytes": 43604
+      "bytes": 43756
     },
     {
       "id": "bottle",
@@ -16,7 +16,7 @@
       "role": "payload",
       "widthMm": 66,
       "url": "/props/bottle.glb",
-      "bytes": 19020
+      "bytes": 19172
     },
     {
       "id": "toothpaste",
@@ -25,7 +25,7 @@
       "role": "payload",
       "widthMm": 34,
       "url": "/props/toothpaste.glb",
-      "bytes": 15768
+      "bytes": 15920
     },
     {
       "id": "dice",
@@ -34,7 +34,7 @@
       "role": "payload",
       "widthMm": 42,
       "url": "/props/dice.glb",
-      "bytes": 14692
+      "bytes": 14844
     },
     {
       "id": "pen",
@@ -43,7 +43,7 @@
       "role": "payload",
       "widthMm": 12,
       "url": "/props/pen.glb",
-      "bytes": 14628
+      "bytes": 14780
     },
     {
       "id": "eraser",
@@ -52,7 +52,7 @@
       "role": "payload",
       "widthMm": 46,
       "url": "/props/eraser.glb",
-      "bytes": 5320
+      "bytes": 5476
     },
     {
       "id": "jar",
@@ -61,7 +61,7 @@
       "role": "payload",
       "widthMm": 76,
       "url": "/props/jar.glb",
-      "bytes": 16124
+      "bytes": 16276
     },
     {
       "id": "toast",
@@ -70,7 +70,7 @@
       "role": "payload",
       "widthMm": 96,
       "url": "/props/toast.glb",
-      "bytes": 11884
+      "bytes": 12040
     },
     {
       "id": "apricot",
@@ -79,7 +79,7 @@
       "role": "payload",
       "widthMm": 50,
       "url": "/props/apricot.glb",
-      "bytes": 12104
+      "bytes": 12260
     },
     {
       "id": "shrimp",
@@ -88,7 +88,7 @@
       "role": "payload",
       "widthMm": 48,
       "url": "/props/shrimp.glb",
-      "bytes": 20992
+      "bytes": 21144
     },
     {
       "id": "drawer",
@@ -97,7 +97,7 @@
       "role": "target",
       "widthMm": 190,
       "url": "/props/drawer.glb",
-      "bytes": 21880
+      "bytes": 22040
     },
     {
       "id": "shelf",
@@ -106,7 +106,7 @@
       "role": "target",
       "widthMm": 200,
       "url": "/props/shelf.glb",
-      "bytes": 12256
+      "bytes": 12412
     },
     {
       "id": "pen_cup",
@@ -115,7 +115,7 @@
       "role": "target",
       "widthMm": 76,
       "url": "/props/pen_cup.glb",
-      "bytes": 18224
+      "bytes": 18376
     },
     {
       "id": "crate",
@@ -124,7 +124,7 @@
       "role": "target",
       "widthMm": 150,
       "url": "/props/crate.glb",
-      "bytes": 19156
+      "bytes": 19312
     },
     {
       "id": "laptop",
@@ -133,7 +133,7 @@
       "role": "target",
       "widthMm": 230,
       "url": "/props/laptop.glb",
-      "bytes": 8808
+      "bytes": 8960
     },
     {
       "id": "air_fryer",
@@ -142,7 +142,169 @@
       "role": "target",
       "widthMm": 164,
       "url": "/props/air_fryer.glb",
-      "bytes": 19436
+      "bytes": 19588
+    },
+    {
+      "id": "can",
+      "label": "Can",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 66,
+      "url": "/props/can.glb",
+      "bytes": 13972
+    },
+    {
+      "id": "bowl",
+      "label": "Bowl",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 140,
+      "url": "/props/bowl.glb",
+      "bytes": 14324
+    },
+    {
+      "id": "cup",
+      "label": "Glass",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 72,
+      "url": "/props/cup.glb",
+      "bytes": 12408
+    },
+    {
+      "id": "spoon",
+      "label": "Spoon",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 132,
+      "url": "/props/spoon.glb",
+      "bytes": 10344
+    },
+    {
+      "id": "banana",
+      "label": "Banana",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 172,
+      "url": "/props/banana.glb",
+      "bytes": 24876
+    },
+    {
+      "id": "block",
+      "label": "Block",
+      "scenario": "play",
+      "role": "payload",
+      "widthMm": 44,
+      "url": "/props/block.glb",
+      "bytes": 8588
+    },
+    {
+      "id": "ball",
+      "label": "Ball",
+      "scenario": "play",
+      "role": "payload",
+      "widthMm": 64,
+      "url": "/props/ball.glb",
+      "bytes": 28880
+    },
+    {
+      "id": "screwdriver",
+      "label": "Screwdriver",
+      "scenario": "workshop",
+      "role": "payload",
+      "widthMm": 32,
+      "url": "/props/screwdriver.glb",
+      "bytes": 12464
+    },
+    {
+      "id": "battery",
+      "label": "Battery",
+      "scenario": "workshop",
+      "role": "payload",
+      "widthMm": 27,
+      "url": "/props/battery.glb",
+      "bytes": 8416
+    },
+    {
+      "id": "soap",
+      "label": "Soap",
+      "scenario": "bathroom",
+      "role": "payload",
+      "widthMm": 92,
+      "url": "/props/soap.glb",
+      "bytes": 7928
+    },
+    {
+      "id": "book",
+      "label": "Book",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 148,
+      "url": "/props/book.glb",
+      "bytes": 8960
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 72,
+      "url": "/props/phone.glb",
+      "bytes": 8968
+    },
+    {
+      "id": "tray",
+      "label": "Tray",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 320,
+      "url": "/props/tray.glb",
+      "bytes": 19316
+    },
+    {
+      "id": "basket",
+      "label": "Basket",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 202,
+      "url": "/props/basket.glb",
+      "bytes": 114092
+    },
+    {
+      "id": "bin",
+      "label": "Bin",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 256,
+      "url": "/props/bin.glb",
+      "bytes": 17036
+    },
+    {
+      "id": "plate",
+      "label": "Plate",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 228,
+      "url": "/props/plate.glb",
+      "bytes": 14320
+    },
+    {
+      "id": "rack",
+      "label": "Dish rack",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 280,
+      "url": "/props/rack.glb",
+      "bytes": 42704
+    },
+    {
+      "id": "sink",
+      "label": "Sink",
+      "scenario": "bathroom",
+      "role": "target",
+      "widthMm": 336,
+      "url": "/props/sink.glb",
+      "bytes": 24572
     }
   ]
 }

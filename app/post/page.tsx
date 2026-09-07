@@ -6,11 +6,12 @@ import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useThenarWrite } from "@/lib/write";
-import { SCENARIOS, txUrl, CURRENCY } from "@/lib/chain";
+import { txUrl, CURRENCY } from "@/lib/chain";
 import { parSecondsFor } from "@/lib/par";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtSeconds, shortHash } from "@/lib/format";
 import { PropPicker } from "@/components/prop-picker";
+import { RoomPicker } from "@/components/room-picker";
 import { payloads, targets, propById, type Prop } from "@/lib/props";
 
 /** Anyone can open work here: the escrow is what makes the bounty real. */
@@ -134,22 +135,11 @@ export default function PostTaskPage() {
           </Field>
         </div>
 
-        <Field label="Scenario" hint="Where the task happens. Coverage across scenarios is what makes the dataset generalise.">
-          <div className="flex flex-wrap gap-2">
-            {SCENARIOS.map((sc, i) => (
-              <button
-                key={sc}
-                onClick={() => setScenario(i)}
-                aria-pressed={scenario === i}
-                className={cn(
-                  "border px-2.5 py-1 font-mono text-[12px] capitalize transition-colors",
-                  scenario === i ? "border-scribe bg-scribe text-ink-0" : "border-rule text-scribe-3 hover:border-rule-strong",
-                )}
-              >
-                {sc}
-              </button>
-            ))}
-          </div>
+        <Field
+          label="Room"
+          hint="Where the task happens, and what the station will actually draw. This is the scenario index the contract stores, so the room is recoverable from chain state alone — coverage across rooms is what makes the dataset generalise."
+        >
+          <RoomPicker value={scenario} onChange={setScenario} />
         </Field>
 
         <Field label="Difficulty" hint={`Sets the par time the efficiency score is measured against — ${fmtSeconds(parSecondsFor(difficulty))}.`}>

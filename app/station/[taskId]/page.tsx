@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Telemetry } from "@/components/station/viewport";
 import { GOAL_R } from "@/components/station/viewport";
 import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useSpace } from "@/lib/space";
-import { useRunsOnTask, useTask } from "@/lib/hooks";
+import { environmentForScenario } from "@/lib/environments";
+import { useRunsOnTask } from "@/lib/hooks";
+import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
@@ -35,6 +37,18 @@ type Phase = "brief" | "running" | "measured";
 const GOAL: [number, number] = [0.17, -0.24];
 const START: [number, number] = [0.3, 0.2];
 
+/**
+ * What the viewport draws for the one frame before the catalogue answers.
+ *
+ * Not a stand-in for a task: the page renders its loading state until `task`
+ * exists, and this only keeps the Canvas from being handed empty URLs while
+ * that is true.
+ */
+const FALLBACK_SCENE = {
+  ...propsForTask("", "general"),
+  room: environmentForScenario("general"),
+};
+
 export default function StationPage() {
   const params = useParams<{ taskId: string }>();
   const router = useRouter();
@@ -44,7 +58,8 @@ export default function StationPage() {
   // isLoading flips true again on every retry, so an unreadable task would
   // flicker between the error and the spinner. The error is the settled state,
   // and the absence of a task is the only thing the spinner needs to know.
-  const { data: task, isError } = useTask(valid ? taskId : undefined);
+  const { isError } = useTaskCatalogue();
+  const task = useCatalogueTask(valid ? taskId : undefined);
   const { data: myRuns } = useRunsOnTask(valid ? taskId : undefined);
   const s = useSession();
   // Presence in this task's room. It never touches the measurement: the
@@ -59,10 +74,11 @@ export default function StationPage() {
   /** Bumped on every run so the viewport resets its payload and arm. */
   // The objects the instruction names, so the viewport renders the task rather
   // than an anonymous puck.
-  const scene = useMemo(
-    () => propsForTask(task?.name ?? "", task?.scenario ?? "general"),
-    [task?.name, task?.scenario],
-  );
+  // The scene comes from the catalogue, which derives it once for the whole
+  // app. The hub, the floor, the task page and this station therefore cannot
+  // disagree about what a task looks like — they used to each resolve it.
+  const scene = task?.scene ?? FALLBACK_SCENE;
+  const room = scene.room;
 
   const [runId, setRunId] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -114,7 +130,7 @@ export default function StationPage() {
         settledSince.current = null;
       }
     },
-    [phase, finish],
+    [phase, finish, report],
   );
 
   useEffect(() => {
@@ -242,6 +258,7 @@ export default function StationPage() {
             runId={runId}
             onTelemetry={onTelemetry}
             onSample={onSample}
+            environmentUrl={room.url}
             ghosts={ghosts}
           />
 
@@ -383,7 +400,7 @@ export default function StationPage() {
                     </span>
                     <span
                       className={cn(
-                        "shrink-0 font-mono text-[11px] uppercase tracking-[0.12em]",
+                        "shrink-0 font-mono text-[12px] uppercase tracking-[0.12em]",
                         g.held ? "text-signal" : "text-scribe-3",
                       )}
                     >

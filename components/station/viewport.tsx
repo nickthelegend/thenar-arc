@@ -75,6 +75,9 @@ type ViewportProps = {
   payloadWidthMm: number;
   targetUrl: string;
   targetWidthMm: number;
+  /** The room this task happens in, resolved from the scenario the contract
+   *  stores. Absent renders the bare measuring surface, as it always did. */
+  environmentUrl?: string;
   /** Incremented by the station on every new run. The rig is keyed on it, so a
    *  new run remounts the scene rather than trying to reset it in place. */
   runId: number;
@@ -182,6 +185,43 @@ function Arm({
 
   // The CAD frame is Z-up, as URDF is; three.js is Y-up.
   return <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />;
+}
+
+/**
+ * The room, under the measuring surface.
+ *
+ * The scenario has been a uint8 on the contract since the first deployment and
+ * it changed a word in the sidebar and nothing else — a workshop task and a
+ * kitchen task were recorded against the same bare grey table. The room is
+ * built from named dimensions with its work surface top at z = 0, so it drops
+ * straight in under the plate.
+ *
+ * It sits a hair below the plate rather than at it: two coplanar surfaces
+ * z-fight, and the artefact reads as a flickering table.
+ */
+function Room({ url }: { url: string }) {
+  const { scene } = useGLTF(url);
+  const model = useMemo(() => scene.clone(true), [scene]);
+
+  useEffect(() => {
+    model.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) {
+        const m = o as THREE.Mesh;
+        m.receiveShadow = true;
+        m.castShadow = false;   // the room is the ground, not a caster
+      }
+    });
+  }, [model]);
+
+  return (
+    <primitive
+      object={model}
+      // Millimetres to metres, and the CAD frame is Z-up like the arm's.
+      scale={0.001}
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.0025, 0]}
+    />
+  );
 }
 
 function SurfacePlate() {
@@ -346,6 +386,7 @@ function Rig({
   payloadWidthMm,
   targetUrl,
   targetWidthMm,
+  environmentUrl,
   onTelemetry,
   onSample,
 }: Omit<ViewportProps, "runId">) {
@@ -524,6 +565,7 @@ function Rig({
       />
       <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.45} color="#FF9A3D" />
 
+      {environmentUrl ? <Room url={environmentUrl} /> : null}
       <SurfacePlate />
       <ReachEnvelope visible={outOfReach} />
       <GhostTrail points={trail} />

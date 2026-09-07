@@ -5,10 +5,11 @@ import { useMemo, useState } from "react";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { ActivityFeed } from "@/components/activity-feed";
-import { useTasks, type ChainTask } from "@/lib/hooks";
+import { type ChainTask } from "@/lib/hooks";
 import { cn } from "@/lib/cn";
 import { SCENARIOS, CURRENCY } from "@/lib/chain";
 import { fmtInt, fmtMon, fmtSeconds } from "@/lib/format";
+import { useTaskCatalogue } from "@/components/tasks-provider";
 
 type SortKey = "reward" | "slots" | "difficulty" | "escrow";
 
@@ -20,7 +21,7 @@ const SORTS: [SortKey, string][] = [
 ];
 
 export default function HubPage() {
-  const { data: tasks, isLoading, isError, error, refetch } = useTasks();
+  const { tasks, isLoading, isError, error, refetch } = useTaskCatalogue();
   const [scenario, setScenario] = useState<string>("all");
   const [openOnly, setOpenOnly] = useState(true);
   const [sort, setSort] = useState<SortKey>("reward");

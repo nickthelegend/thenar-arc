@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DimRule } from "@/components/primitives";
-import { useTasks } from "@/lib/hooks";
 import { CURRENCY } from "@/lib/chain";
 import { fmtMon } from "@/lib/format";
+import { useTaskCatalogue } from "@/components/tasks-provider";
 
 type Room = { taskId: number; operators: number };
 
 export default function SpacePage() {
   const [rooms, setRooms] = useState<Room[] | null>(null);
-  const { data: tasks } = useTasks();
+  const { tasks } = useTaskCatalogue();
 
   useEffect(() => {
     let live = true;
