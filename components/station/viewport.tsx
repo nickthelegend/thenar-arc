@@ -657,10 +657,10 @@ export function StationViewport(props: ViewportProps) {
   // preload; without the same for the payload and the landmark, the scene pops
   // in a beat late — and in a tab that is not compositing, not at all.
   useEffect(() => {
-    for (const url of [props.payloadUrl, props.targetUrl]) {
+    for (const url of [props.payloadUrl, props.targetUrl, props.environmentUrl]) {
       if (url) useGLTF.preload(url);
     }
-  }, [props.payloadUrl, props.targetUrl]);
+  }, [props.payloadUrl, props.targetUrl, props.environmentUrl]);
 
   const [lost, setLost] = useState(false);
   // Everything except presence goes to Rig: it must not re-render six times a
