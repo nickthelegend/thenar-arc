@@ -323,6 +323,60 @@ Empty and rejected states explain the recovery in the product's own language and
 never apologise: a missed run says the payload came to rest outside the datum
 circle, that nothing was deducted, and to run it again.
 
+## Scenes and the model library
+
+Every object in the product is generated from named dimensions by `cad/kernel.py`
+and written out as a glTF binary. There is no modelling package in the loop, no
+asset to lose, and no thumbnail that can drift from the thing it depicts — a
+preview is always the same file the station loads.
+
+- **Rooms** (`cad/environments.py` → `public/environments/`). Seven, one per
+  entry in `SCENARIOS`. A room is chosen by picking it in `/post`, which sets
+  the `scenario` uint8 on the contract, so the room is recoverable from chain
+  state alone. Work surface top at z = 0, origin at its centre.
+- **Props** (`cad/props.py` → `public/props/`). 34: 22 payloads and 12
+  landmarks, resolved from the words in a task's instruction.
+- Convention for both: millimetres, Z-up, origin at the footprint centre, so the
+  station can place one by its base. Scene coordinates are `(x, z, -y)`.
+
+Sizes are real: a pen is 12 mm across and a kitchen counter is 980 mm. Previews
+normalise to a common box so one camera can frame them all; the station does not,
+because there the size is the point.
+
+## Drawing many models at once
+
+Model previews go through `ModelView`, and every `ModelView` on a page is drawn
+by one shared renderer (`components/model-stage.tsx`). Never give a preview tile
+its own `<Canvas>`: that is one WebGL context each, browsers stop handing them
+out somewhere near sixteen, and past that line they drop the oldest — so tiles go
+black in creation order. The inventory alone would have asked for 43.
+
+The stage is a fixed, viewport-covering layer at `z-index: 5` with
+`pointer-events: none` set **inline** — react-three-fiber writes its own inline
+`pointer-events`, so a class does not win, and a layer that takes clicks makes
+every tile beneath it unclickable.
+
+## Motion
+
+Two systems, deliberately scoped:
+
+- **GSAP** owns the landing page's page-level reveals — rules drawing out from
+  their centres, readings arriving last. Everything animates *from* an offset, so
+  the resting state is the visible one and nothing is hidden if it never runs.
+- **Motion** owns the hero sequence's sheet transitions only.
+
+The hero is a real scroll, not a hijacked one: four viewports tall with a sticky
+frame, so the scrollbar tells the truth and find-in-page still works. Which sheet
+is showing comes from the **scroll event**, never from an animation frame — a
+browser that has backgrounded the tab stops handing out frames, and a hero whose
+state only advances on a frame is stuck on sheet one in every screenshot and
+preview anything ever takes of it. The same rule applies to anything that must be
+correct while unobserved: assets the scene needs are preloaded outside the
+Canvas, because everything inside it renders on a frame that may never come.
+
+Sheets stacked in one grid cell must be `inert` as well as transparent, or their
+links stay clickable and stay in the tab order under the sheet on screen.
+
 ## Do's and Don'ts
 
 **Do**
