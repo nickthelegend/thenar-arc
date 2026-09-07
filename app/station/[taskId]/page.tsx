@@ -240,7 +240,17 @@ export default function StationPage() {
               <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
               <Key keys={["E", "Q"]} action="Raise / lower" />
               <Key keys={["Space"]} action="Open / close the jaws" />
-              <Key keys={["?"]} action="All controls" />
+              {/* A key hint is not a control. Opening the controls used to need a
+                  keyboard, on the one page most likely to be driven by a mouse
+                  or a trackpad. */}
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="flex items-center gap-2 text-left"
+              >
+                <kbd className="min-w-[22px] border border-rule-strong bg-ink-3 px-1.5 py-0.5 text-center font-mono text-[12px] text-scribe-2">?</kbd>
+                <span className="text-[12px] text-scribe-3 underline underline-offset-2 hover:text-scribe-2">All controls</span>
+              </button>
             </dl>
           </Section>
           <Section title="Settlement">
@@ -298,6 +308,9 @@ export default function StationPage() {
 
           {helpOpen ? (
             <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Controls"
               className="absolute inset-0 z-20 flex items-center justify-center bg-ink-0/90 px-6"
               onClick={() => setHelpOpen(false)}
             >
@@ -307,7 +320,6 @@ export default function StationPage() {
                   <Key keys={["Drag"]} action="Move the tool in the workspace" />
                   <Key keys={["W", "S", "\u2191", "\u2193"]} action="Reach out / pull in" />
                   <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
-                  <Key keys={["↑", "↓", "←", "→"]} action="The same, on the arrows" />
                   <Key keys={["E", "Q"]} action="Raise / lower" />
                   <Key keys={["Space"]} action="Open / close the jaws" />
                   <Key keys={["?"]} action="Show or hide this" />
