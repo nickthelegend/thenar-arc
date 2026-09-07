@@ -35,8 +35,14 @@ const StationViewport = dynamic(
 
 type Phase = "brief" | "running" | "measured";
 
-const GOAL: [number, number] = [0.17, -0.24];
-const START: [number, number] = [0.3, 0.2];
+// Both sit in the comfortable middle of the arm's envelope. START used to be at
+// 0.361 m against a 0.408 m maximum — 88% of full reach, where the elbow is
+// nearly straight, the IK looks stretched and small pointer movements swing the
+// tool a long way. The pair are still 0.33 m apart, so the task is a real
+// transfer rather than a nudge, and both objects sit inside the camera frame
+// with the arm rather than out at the edges of the table.
+const GOAL: [number, number] = [0.16, -0.18];
+const START: [number, number] = [0.22, 0.14];
 
 /**
  * What the viewport draws for the one frame before the catalogue answers.

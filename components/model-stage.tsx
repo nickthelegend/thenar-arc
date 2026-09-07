@@ -1,56 +1,33 @@
 "use client";
 
-import {
-  Suspense, createContext, useContext, useMemo, useRef, useEffect, useState, useCallback,
-} from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { View, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { cn } from "@/lib/cn";
 
 /**
- * Every model preview on the page, drawn by one renderer.
+ * One model, drawn only while it is near the viewport.
  *
- * Each preview used to be its own <Canvas>, which is its own WebGL context.
- * The inventory shows the whole library and the post form shows every payload,
- * landmark and room to choose between — 43 contexts on a page, against a
- * browser limit that is nearer 16. Over that line the browser starts dropping
- * the oldest context, so tiles go black in the order they were created, and on
- * weaker hardware the page loses the lot.
+ * Every tile used to be its own <Canvas>, which is its own WebGL context: the
+ * inventory asked for 43 of them against a browser limit nearer 16, and past
+ * that line the browser drops the oldest, so tiles go black in creation order.
  *
- * drei's View draws many scenes through a single renderer, each into the
- * rectangle of a tracked element. One context, any number of tiles.
+ * The fix was a single shared renderer with drei's View. It did not draw — the
+ * tiles came back blank in a real browser — and a preview that renders nothing
+ * is worse than one that costs a context. So: a canvas per tile again, but
+ * mounted only while the tile is on screen, which bounds the live contexts to
+ * what is actually visible rather than to the size of the library.
  *
- * The stage itself is a fixed, pointer-transparent layer: it must cover the
- * viewport because Views are positioned in screen space, and it must not eat
- * clicks because the tiles under it are buttons.
+ * `rootMargin` starts the load a screen early, so scrolling reveals a model
+ * rather than an empty box that fills in late.
  */
-
-/** How many previews are on screen. The renderer exists only while that is
- *  more than none, so a page with no tiles pays for no WebGL context. */
-const StageCount = createContext<{ acquire: () => () => void } | null>(null);
-
-export function ModelStageProvider({ children }: { children: React.ReactNode }) {
-  const [count, setCount] = useState(0);
-  const acquire = useCallback(() => {
-    setCount((n) => n + 1);
-    return () => setCount((n) => n - 1);
-  }, []);
-  const value = useMemo(() => ({ acquire }), [acquire]);
-  return (
-    <StageCount.Provider value={value}>
-      {children}
-      {count > 0 ? <StageCanvas /> : null}
-    </StageCount.Provider>
-  );
-}
-
 function ModelMesh({ url }: { url: string }) {
   const { scene } = useGLTF(url);
   const model = useMemo(() => {
     const c = scene.clone(true);
-    // Normalise: the library runs from a 12 mm pen to a 980 mm counter, so a
-    // shared camera can only work if every model is fitted to the same box.
+    // The library runs from a 12 mm pen to a 980 mm counter. A shared camera
+    // can only frame all of that if every model is normalised to one box.
     const box = new THREE.Box3().setFromObject(c);
     const size = box.getSize(new THREE.Vector3());
     const centre = box.getCenter(new THREE.Vector3());
@@ -59,65 +36,70 @@ function ModelMesh({ url }: { url: string }) {
     c.scale.setScalar(k);
     return c;
   }, [scene]);
-  return <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />;
-}
 
-function Spin({ children }: { children: React.ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   useEffect(() => {
     let raf = 0;
     const start = performance.now();
     const tick = (t: number) => {
-      if (ref.current) ref.current.rotation.y = ((t - start) / 1000) * 0.55;
+      if (ref.current) ref.current.rotation.y = ((t - start) / 1000) * 0.5;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, []);
-  return <group ref={ref}>{children}</group>;
-}
-
-/** One model, drawn into the box this component occupies. */
-export function ModelView({ url, className }: { url: string; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null!);
-  const stage = useContext(StageCount);
-
-  // Registering is what brings the shared renderer into existence; the last
-  // preview to unmount takes it away again.
-  useEffect(() => stage?.acquire(), [stage]);
 
   return (
-    <div ref={ref} className={cn("relative", className)}>
-      <View track={ref}>
-        <hemisphereLight args={["#9a9a9a", "#101010", 1.1]} />
-        <directionalLight position={[2, 3, 2]} intensity={1.7} />
-        <directionalLight position={[-2, 1, -1.5]} intensity={0.5} color="#FF9A3D" />
-        <Suspense fallback={null}>
-          <Spin>
+    <group ref={ref}>
+      <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />
+    </group>
+  );
+}
+
+export function ModelView({ url, className }: { url: string; className?: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    // No IntersectionObserver (old browser, odd embedding) means draw it rather
+    // than leave a blank tile — correctness first, context budget second. The
+    // timeout keeps that out of the effect's synchronous pass.
+    if (typeof IntersectionObserver === "undefined") {
+      const t = setTimeout(() => setNear(true), 0);
+      return () => clearTimeout(t);
+    }
+    const io = new IntersectionObserver(
+      ([e]) => setNear(e.isIntersecting),
+      { rootMargin: "300px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div ref={box} className={cn("relative", className)}>
+      {near ? (
+        <Canvas
+          camera={{ position: [1.5, 1.1, 1.6], fov: 34 }}
+          dpr={[1, 1.75]}
+          gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
+          style={{ position: "absolute", inset: 0 }}
+        >
+          <hemisphereLight args={["#9a9a9a", "#101010", 1.15]} />
+          <directionalLight position={[2, 3, 2]} intensity={1.8} />
+          <directionalLight position={[-2, 1, -1.5]} intensity={0.5} color="#FF9A3D" />
+          <Suspense fallback={null}>
             <ModelMesh url={url} />
-          </Spin>
-        </Suspense>
-      </View>
+          </Suspense>
+        </Canvas>
+      ) : null}
     </div>
   );
 }
 
-/** The one renderer. Fixed and pointer-transparent: Views are placed in screen
- *  space, so it has to cover the viewport, and the tiles beneath it are
- *  buttons, so it must not take their clicks. */
-function StageCanvas() {
-  return (
-    <Canvas
-      // pointerEvents has to be inline: react-three-fiber writes its own
-      // inline pointer-events on this container, which beats a class, and a
-      // full-viewport layer that takes clicks would make every tile beneath it
-      // — all of which are buttons — unclickable.
-      style={{ position: "fixed", inset: 0, zIndex: 5, pointerEvents: "none" }}
-      camera={{ position: [1.6, 1.15, 1.7], fov: 34 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true }}
-    >
-      <View.Port />
-    </Canvas>
-  );
+/** Kept so providers.tsx does not need to know how previews are drawn. */
+export function ModelStageProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

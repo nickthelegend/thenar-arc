@@ -118,7 +118,12 @@ function Prop({ url, widthMm, targetM, position, opacity = 1 }: {
     });
     return c;
   }, [scene, opacity]);
-  const k = (targetM * 1000) / widthMm / 1000;
+  // cad/kernel.py applies MM = 0.001 once at export, so every GLB in this
+  // project is already in metres — a 42 mm dice is 0.042 units across. Dividing
+  // by 1000 again scaled it to 56 micrometres, which is why the scene showed the
+  // arm and nothing else: the props were being drawn, a thousand times too small
+  // to see. widthMm / 1000 is the model's real width; k takes it to targetM.
+  const k = targetM / (widthMm / 1000);
   return (
     <primitive
       object={model}
@@ -216,8 +221,8 @@ function Room({ url }: { url: string }) {
   return (
     <primitive
       object={model}
-      // Millimetres to metres, and the CAD frame is Z-up like the arm's.
-      scale={0.001}
+      // Already in metres, like every other model here — the export does the
+      // conversion. The CAD frame is Z-up, as the arm's is.
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, -0.0025, 0]}
     />
