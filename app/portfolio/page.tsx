@@ -129,7 +129,7 @@ export default function PortfolioPage() {
 
 type Settlement = {
   txHash: string; method: string; succeeded: boolean;
-  at: number; blockNumber: number; gasUsed: number;
+  at: number; blockNumber: number; gasUsed: number; feeAvax: number;
 };
 
 /**
@@ -175,6 +175,29 @@ function Settlements({ address }: { address?: string | null }) {
         not pass through our database, so it still resolves if this deployment does not.
       </p>
 
+      {rows && rows.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
+          <span className="flex items-baseline gap-2">
+            <span className="label">Gas paid, all calls</span>
+            <span className="font-mono text-[15px] tabular-nums text-scribe-2">
+              {rows.reduce((n, r) => n + r.feeAvax, 0).toFixed(9)}
+              <span className="ml-1 text-[12px] text-scribe-3">{CURRENCY}</span>
+            </span>
+          </span>
+          <span className="flex items-baseline gap-2">
+            <span className="label">Mean per call</span>
+            <span className="font-mono text-[15px] tabular-nums text-scribe-3">
+              {(rows.reduce((n, r) => n + r.feeAvax, 0) / rows.length).toFixed(9)}
+            </span>
+          </span>
+          <span className="max-w-[46ch] text-[13px] leading-relaxed text-scribe-3">
+            Fuji settles at 160 wei a gas unit, so recording a run costs about
+            0.000000065 {CURRENCY} against the {CURRENCY} it pays. The cost of
+            submitting is not what stands between an operator and their first run.
+          </span>
+        </div>
+      ) : null}
+
       {rows === null ? (
         <ul className="mt-4 flex flex-col gap-2" aria-busy="true">
           {Array.from({ length: 4 }, (_, i) => <li key={i} className="hatch h-8" />)}
@@ -192,7 +215,7 @@ function Settlements({ address }: { address?: string | null }) {
             >
               <span className="truncate font-mono text-[13px] text-scribe">{r.method}</span>
               <span className="hidden font-mono text-[12px] tabular-nums text-scribe-3 sm:block">
-                {new Date(r.at).toLocaleDateString()}
+                {r.feeAvax.toFixed(9)}
               </span>
               <span
                 className={cn(

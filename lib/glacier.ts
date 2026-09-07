@@ -32,6 +32,7 @@ export type GlacierTx = {
   blockTimestamp: number;
   txStatus: string;
   gasUsed: string;
+  gasPrice: string;
   from: { address: string };
   to?: { address: string };
   method?: { methodHash?: string; callType?: string };
@@ -46,6 +47,10 @@ export type Settlement = {
   at: number;
   blockNumber: number;
   gasUsed: number;
+  /** What the call actually cost the caller, in AVAX. Fuji settles at 160 wei
+   *  a unit, so this is a very small number — which is the point: an operator
+   *  should be able to see that submitting is effectively free. */
+  feeAvax: number;
 };
 
 /**
@@ -68,6 +73,8 @@ export async function settlementsFor(address: string, pages = 2): Promise<Settle
 
     for (const t of json.transactions ?? []) {
       if (t.to?.address?.toLowerCase() !== AXON_ADDRESS.toLowerCase()) continue;
+      const gasUsed = Number(t.gasUsed);
+      const gasPrice = Number(t.gasPrice);
       const selector = t.method?.methodHash ?? "";
       out.push({
         txHash: t.txHash,
@@ -79,7 +86,10 @@ export async function settlementsFor(address: string, pages = 2): Promise<Settle
         succeeded: t.txStatus === "1",
         at: t.blockTimestamp * 1000,
         blockNumber: Number(t.blockNumber),
-        gasUsed: Number(t.gasUsed),
+        gasUsed,
+        // gasPrice is wei, confirmed against a receipt's effectiveGasPrice
+        // rather than assumed — reading it as gwei overstated the fee by 10^9.
+        feeAvax: (gasUsed * gasPrice) / 1e18,
       });
     }
 
