@@ -12,6 +12,8 @@ import type { Sample } from "@/lib/types";
 export const TABLE_Z = 0.0;
 export const TABLE_HALF = 0.42;
 export const GOAL_R = 0.075;
+/** The placement band, in scene units. 25 mm is the scorer's own tolerance. */
+export const TOLERANCE_M = 0.025;
 export const PAYLOAD_R = 0.028;
 export const PAYLOAD_H = 0.075;
 /**
@@ -137,12 +139,16 @@ function Prop({ url, widthMm, targetM, position, opacity = 1 }: {
 function Arm({
   target,
   grip,
+  held,
   onJoints,
 }: {
   target: React.RefObject<[number, number, number]>;
   grip: React.RefObject<number>;
+  /** Whether the jaws currently have the payload. */
+  held?: React.RefObject<boolean>;
   onJoints: (j: ReturnType<typeof solve>) => void;
 }) {
+  const wasHolding = useRef(false);
   const { scene } = useGLTF("/models/thenar-6.glb");
 
   // One instance per mount; the GLB cache hands back a shared graph otherwise.
@@ -184,6 +190,22 @@ function Arm({
     const half = grip.current / 2000; // mm -> m, per jaw
     if (n.jawL) n.jawL.position.x = -half;
     if (n.jawR) n.jawR.position.x = half;
+
+    // The moment of capture is the one event in a run with no feedback at all:
+    // the payload starts moving with the tool and nothing says why. The jaws
+    // take the signal colour while they are actually holding something.
+    const holding = held?.current === true;
+    if (holding !== wasHolding.current) {
+      wasHolding.current = holding;
+      for (const jaw of [n.jawL, n.jawR]) {
+        jaw?.traverse((o) => {
+          const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+          if (!m || !("emissive" in m)) return;
+          m.emissive?.set(holding ? "#FF6A00" : "#000000");
+          m.emissiveIntensity = holding ? 0.55 : 0;
+        });
+      }
+    }
 
     onJoints(j);
   });
@@ -256,8 +278,35 @@ function SurfacePlate() {
   );
 }
 
-/** The goal drawn as a tolerance zone: a circle with datum ticks, not a disc. */
-function GoalZone({ at }: { at: [number, number] }) {
+/**
+ * The goal drawn as a tolerance zone: a circle with datum ticks, not a disc.
+ *
+ * A second ring reads the payload's distance from the centre. It is not
+ * decoration — it is the placement term, which is 55% of the score, shown while
+ * there is still time to act on it. Inside tolerance it closes on the payload
+ * and turns green; outside it sits on the tolerance band in red. The operator
+ * used to learn this only after letting go.
+ */
+function GoalZone({ at, payload }: {
+  at: [number, number];
+  payload?: React.RefObject<[number, number, number]>;
+}) {
+  const live = useRef<THREE.Group>(null);
+  const mat = useRef<THREE.LineBasicMaterial>(null);
+
+  useFrame(() => {
+    const g = live.current, m = mat.current, p = payload?.current;
+    if (!g || !m || !p) return;
+    const d = Math.hypot(p[0] - at[0], p[1] - at[1]);
+    const tol = TOLERANCE_M;
+    // Clamped so the ring stays visible when the payload is far away.
+    const r = Math.min(Math.max(d, 0.004), GOAL_R * 1.6);
+    g.scale.setScalar(r / GOAL_R);
+    g.visible = d < GOAL_R * 2.2;
+    m.color.set(d <= tol ? "#3DD68C" : "#FF2D55");
+    m.opacity = d <= tol ? 0.95 : 0.5;
+  });
+
   const ring = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     for (let i = 0; i <= 96; i += 1) {
@@ -288,6 +337,14 @@ function GoalZone({ at }: { at: [number, number] }) {
       <lineSegments geometry={ticks}>
         <lineBasicMaterial color="#FF6A00" />
       </lineSegments>
+      {payload ? (
+        <group ref={live}>
+          <line>
+            <primitive object={ring} attach="geometry" />
+            <lineBasicMaterial ref={mat} color="#3DD68C" transparent opacity={0.9} />
+          </line>
+        </group>
+      ) : null}
     </group>
   );
 }
@@ -574,7 +631,7 @@ function Rig({
       <SurfacePlate />
       <ReachEnvelope visible={outOfReach} />
       <GhostTrail points={trail} />
-      <GoalZone at={goal} />
+      <GoalZone at={goal} payload={object} />
       {/* The landmark the instruction names, sitting at the datum it defines. */}
       <Prop url={targetUrl} widthMm={targetWidthMm} targetM={GOAL_R * 1.7}
             position={[goal[0], TABLE_Z, -goal[1]]} opacity={0.92} />
@@ -582,6 +639,7 @@ function Rig({
       <Arm
         target={target}
         grip={grip}
+        held={held}
         onJoints={(next) => {
           joints.current = next;
         }}
