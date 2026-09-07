@@ -2,6 +2,7 @@ import Link from "next/link";
 import { DimRule } from "@/components/primitives";
 import { NetworkStats } from "@/components/network-stats";
 import { PropStrip } from "@/components/prop-strip";
+import { ActivityFeed } from "@/components/activity-feed";
 import { HeroSequence } from "@/components/hero-sequence";
 import { LandingMotion } from "@/components/landing-motion";
 import { IconArm, IconDatum, IconTally, IconWallet } from "@/components/icons";
@@ -120,6 +121,14 @@ export default function Home() {
           Open the hub
         </Link>
       </section>
+
+      {/* The claim on this page is that runs are paid on chain. This is that
+          happening, read from the contract's own log rather than described. */}
+      <DimRule className="mt-4" note="Paid, most recent first" />
+      <div className="mt-5">
+        <ActivityFeed limit={8} />
+      </div>
+
 
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-rule py-6 font-mono text-[12px] text-scribe-3">
         <span className="text-scribe-2">THENAR</span>
