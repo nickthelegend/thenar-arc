@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, callerKey } from "@/lib/server/rate-limit";
+import { rateLimit } from "@/lib/server/rate-limit";
 import { createHash } from "node:crypto";
 import { insertProp, listProps, propBySha } from "@/lib/server/db";
 
@@ -49,16 +49,6 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  // Storing a multi-megabyte binary on the same volume as the trajectory ledger
-  // is the most expensive thing an anonymous caller can ask for here.
-  const gate = rateLimit(`props:${callerKey(req)}`, 5, 60_000);
-  if (!gate.ok) {
-    return NextResponse.json(
-      { error: "Too many uploads. Five a minute." },
-      { status: 429, headers: { "retry-after": String(Math.ceil(gate.retryAfterMs / 1000)) } },
-    );
-  }
-
   let form: FormData;
   try {
     form = await req.formData();
@@ -87,6 +77,19 @@ export async function POST(req: Request) {
   if (!/^0x[0-9a-f]{40}$/.test(uploader)) {
     return NextResponse.json({ error: "a wallet address is required" }, { status: 400 });
   }
+
+  // Keyed on the uploading wallet, not the caller's IP. Requests reach this
+  // service through a proxy whose egress address changes per request, so an
+  // IP bucket gets a fresh key every time and limits nothing. The wallet is
+  // the actor that actually claims the upload, and it is stable.
+  const gate = rateLimit(`props:${uploader}`, 5, 60_000);
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: "Too many uploads from this address. Five a minute." },
+      { status: 429, headers: { "retry-after": String(Math.ceil(gate.retryAfterMs / 1000)) } },
+    );
+  }
+
 
   const buf = Buffer.from(await file.arrayBuffer());
   let stats: { meshes: number; triangles: number };
