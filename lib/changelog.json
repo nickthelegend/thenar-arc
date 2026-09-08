@@ -1,0 +1,362 @@
+[
+  {
+    "hash": "feaa9f8",
+    "date": "2026-08-30T22:58:25+05:30",
+    "subject": "Let a funder start from a task that already exists",
+    "body": "Posting a second task usually means the same shape as the first with one thing\nchanged, and rebuilding it from defaults invites a typo in the economics rather\nthan in the scene. Six existing tasks are offered as starting points, each\ncarrying its payload, landmark, room, rate, slot count and difficulty across.\n\nNothing is posted until the funder signs — a template fills the form, it does\nnot create anything."
+  },
+  {
+    "hash": "52d7e12",
+    "date": "2026-08-30T22:55:18+05:30",
+    "subject": "Light each room the way that room is lit",
+    "body": "A kitchen counter under the same cold key as a workshop bench reads as the same\nroom with different furniture. Each room now carries its own key, fill and\nhemisphere: the light it would actually have, what bounces back off its\nmaterials, and the ambient above it. Keyed by the scenario the contract stores,\nso the lighting is derivable from chain state like everything else about a scene.\n\nHeld narrow on purpose — the scene is a measuring instrument and the datum has\nto stay legible under all seven, so none of them is far enough from neutral to\nchange how a placement reads.\n\nThe detector was right to flag thirteen new colours. They are light sources\nrather than surfaces, which is a real new category and not an excuse, so they\nare declared as their own scene-* group in DESIGN.md with the reason, instead of\nbeing quietly added to the interface palette."
+  },
+  {
+    "hash": "ad25ff9",
+    "date": "2026-08-30T22:48:26+05:30",
+    "subject": "Give log lines a message, or Railway renders them blank",
+    "body": "The wrapper was firing correctly — the line count and timestamps matched the\nrequests exactly, three then four — and every row in the log viewer was empty.\nRailway renders a JSON stdout line by its `message` field, and these had\n`event` instead, so a working logger looked like a broken one.\n\nThe rendered summary now sits beside the structured fields rather than replacing\nthem, so the line is readable by a person scrolling and still parseable by a\ntool."
+  },
+  {
+    "hash": "243aa9f",
+    "date": "2026-08-30T22:42:56+05:30",
+    "subject": "Log every write, and tell a contributor their own share",
+    "body": "When a submission failed in production the only record was whatever the platform\nhappened to capture: no request id, nothing to tie a client's report to a server\nevent, nothing a log tool could group by. The four write routes now emit one\nJSON line each with an id, the route, the status and the duration — measured\nfrom the handler actually running, and a thrown error is logged and rethrown\nrather than swallowed. No bodies are logged: trajectory samples are the product\nand an address is personal.\n\nThe cap table lists every contributor's share and a contributor had to find\ntheir own address in it. The connected wallet's row is highlighted and a line\nabove says what a licence would pay them, shown only when they are actually in\nthe table — telling someone who never contributed that they would receive\nnothing is noise."
+  },
+  {
+    "hash": "7bb06e7",
+    "date": "2026-08-30T22:36:30+05:30",
+    "subject": "Show how everyone did a task, not just how well",
+    "body": "The histogram says how the scores fell. It cannot say whether the good runs\nshare a route, whether there are two equally good approaches, or whether the\npoor ones wander — and that is the thing someone deciding whether a corpus is\nworth licensing actually needs to see about its diversity.\n\nEvery accepted approach is drawn on one plate, best brightest, the rest\nreceding. Hovering a row lifts its path out of the bundle. Paths are\ndownsampled by even stride rather than truncated, so a long run keeps its whole\nshape rather than its first two seconds, and the final point is always kept\nbecause that point is the placement."
+  },
+  {
+    "hash": "a4ea150",
+    "date": "2026-08-30T22:32:13+05:30",
+    "subject": "Let the slot tally read as having moved",
+    "body": "The blocks light in sequence rather than all at once, so a tally that just took\na slot shows it taking one. The per-block delay is capped and scaled so a full\nbar finishes in 360ms rather than crawling — 24 blocks at 15ms apart, one block\nat 18ms."
+  },
+  {
+    "hash": "75c63ea",
+    "date": "2026-08-30T22:29:39+05:30",
+    "subject": "Stop losing a measured run to a reload",
+    "body": "Between the measurement and the transaction there is a wallet prompt, and that\nis where runs were being lost: a reload, an extension taking focus, a tab the\nbrowser restored, and the samples were gone with no way back. By then the work\nis real — the arm has been driven and the score is decided — so losing it loses\nthe operator's actual labour.\n\nA measured run is kept in sessionStorage, offered back once on return to the\nsame task, and cleared the moment the chain confirms it or the operator\ndiscards it. Deliberately session-scoped and deliberately never a substitute\nfor the chain: a draft is only ever an unsent run, and one older than an hour is\nnot offered at all."
+  },
+  {
+    "hash": "b067272",
+    "date": "2026-08-30T22:25:41+05:30",
+    "subject": "Say what a task is actually about, on the hub",
+    "body": "A row said 'Put the toothpaste into the upper drawer' and nothing about what\nwould be on the table. The catalogue already resolves the payload, the landmark\nand the room for every task, so each row and card now names them — Toothpaste,\nDrawer, Bathroom Vanity — before you commit to opening the station.\n\nInline rather than on hover, so it works on a phone and for anyone who never\nhovers."
+  },
+  {
+    "hash": "7784fd6",
+    "date": "2026-08-30T22:22:48+05:30",
+    "subject": "Put the payouts on the page that claims them",
+    "body": "The landing page asserts that a run is recorded and paid in one transaction, and\nthen showed none of it. The activity feed already existed on the hub, reading\nthe contract's own log; the eight most recent payouts now sit above the footer,\nwhere the claim is made."
+  },
+  {
+    "hash": "eb1c102",
+    "date": "2026-08-30T22:22:01+05:30",
+    "subject": "Age the trail, hold the wrist, mark the workspace",
+    "body": "The tool path was one flat colour, which says where the payload has been. It now\nfades along its own length so the newest quarter reads brightest — where it just\nwas is the part worth reading while driving. Per-vertex colour, written only\nover the range actually drawn.\n\nA completely still arm reads as a broken one, so the wrist carries a very small\nslow drift while nothing is held: about the amount a real servo holding position\nmoves, not an animation. It stops the moment the jaws take the payload.\n\nThe canvas takes a crosshair, because the thing under the pointer is a\nworkspace being measured, not a page being browsed."
+  },
+  {
+    "hash": "d915521",
+    "date": "2026-08-30T22:19:12+05:30",
+    "subject": "Document the print ramp instead of drifting into it",
+    "body": "The detector was right: a 10px caption and a literal #4a4a4a are drift, however\nreasonable they look. The caption moved to the documented 12px step and the\ncolour to a token.\n\nPrint is the one place this system inverts — ink on white — so the six inverted\nvalues are now written into DESIGN.md as an intentional addition, with the note\nthat they are the same tonal relationships read against the opposite ground and\napply only inside @media print."
+  },
+  {
+    "hash": "2e1dc7d",
+    "date": "2026-08-30T22:17:24+05:30",
+    "subject": "Isolate failures per surface, and make a task sheet printable",
+    "body": "A single root error boundary means one broken surface blanks the whole page and\ntakes the navigation with it. The station, the foundry and the run page now\ncatch their own, keep the operator where they are, name what failed, and offer\nretry or leave. Each logs to the console rather than being swallowed by the\nboundary that rendered it.\n\nThe task page is a work order — an instruction, a rate, a tolerance, a par time\n— and now prints as one: ink back on white, screen-only chrome dropped, and\nexplorer links printing their destination, because a printed hash with nowhere\nto go is not verifiable by anyone.\n\nIdempotency on submit was already covered twice and is left alone: the row's\nprimary key is the trajectory hash, and the contract reverts AlreadySubmitted on\na hash it has seen. Verified on chain — trajectoryUsed returns true for a\nrecorded run, so a double-click cannot double-pay."
+  },
+  {
+    "hash": "73b38b6",
+    "date": "2026-08-30T22:16:15+05:30",
+    "subject": "Show placement while there is still time to act on it",
+    "body": "Two moments in a run had no feedback at all.\n\nThe placement term is 55% of the score and the operator learned it only after\nletting go. A second ring now reads the payload's live distance from the datum:\ninside the 25 mm band it closes on the payload and turns green, outside it sits\non the tolerance in red. Not decoration — it is the largest term in the score,\ndrawn while it can still be changed.\n\nThe moment of capture was the other: the payload simply started moving with the\ntool and nothing said why. The jaws now take the signal colour while they are\nactually holding something, driven by the same held flag the scorer uses."
+  },
+  {
+    "hash": "61453ae",
+    "date": "2026-08-30T22:09:40+05:30",
+    "subject": "Restore fmtMon on the leaderboard",
+    "body": "Dropping an unused import from the new operator page, I stripped the same name\nfrom the leaderboard, where it is used twice. next build reports 'Compiled\nsuccessfully' and then 'Failed to type check' as separate lines, and I read the\nfirst and deployed on it."
+  },
+  {
+    "hash": "9711a6d",
+    "date": "2026-08-30T22:08:09+05:30",
+    "subject": "Give every contributor a page",
+    "body": "The leaderboard says who is ahead; the portfolio needs the operator's own wallet\nconnected. Neither lets you look a contributor up — which is what a buyer does\nwhen deciding whether a corpus is worth paying for, and what a contributor does\nwhen they want a link to their own work.\n\nBoth halves are public and neither is ours to assert: the accepted runs from the\nledger, and every call the address has made from Avalanche's own index,\nincluding the reverted ones a ledger of accepted runs cannot show. Leaderboard\nrows now point at it."
+  },
+  {
+    "hash": "d9e6b1c",
+    "date": "2026-08-30T22:06:27+05:30",
+    "subject": "Let one run be downloaded as one episode",
+    "body": "The corpus export takes a whole task. A page that shows a single run should be\nable to hand you that run as data — the same samples the hash is derived from,\nin the shape a loader expects, so the file can be checked against the chain\nwithout downloading everything else recorded against the task."
+  },
+  {
+    "hash": "807bd85",
+    "date": "2026-08-30T22:03:28+05:30",
+    "subject": "Remove the opengraph image: it 404s in production",
+    "body": "The route built locally, appeared in the routes manifest and produced output in\n.next/server/app, and returned 404 on the deployed host — with and without a\npinned runtime. metadataBase, which the tag genuinely does require, is kept\nbecause it is correct regardless.\n\nReverted rather than left in place: a share card that 404s is worse than none,\nand reporting it as built would be false. Worth another attempt with a static\nimage or a different generation path, not with more guesses at the convention."
+  },
+  {
+    "hash": "6a05403",
+    "date": "2026-08-30T22:01:29+05:30",
+    "subject": "Drop the runtime pin on the opengraph route",
+    "body": ""
+  },
+  {
+    "hash": "2d37894",
+    "date": "2026-08-30T21:56:21+05:30",
+    "subject": "Set metadataBase, without which no og:image is emitted at all",
+    "body": "The opengraph route built and served, and the page carried no og:image tag:\nNext cannot resolve a file-convention image to an absolute URL without\nmetadataBase, and drops the tag rather than failing. The card looked configured\nand unfurled to nothing.\n\nCaught by fetching the tag rather than trusting that the route existed."
+  },
+  {
+    "hash": "3741ca2",
+    "date": "2026-08-30T21:51:02+05:30",
+    "subject": "Give the share card the live numbers",
+    "body": "A link to this project unfurled into nothing. It now carries the task, run and\npolicy counts read from the contract at render time — because the whole claim is\nthat the figures are real and checkable, and a share card quoting numbers nobody\ncould verify would be the one place the product lied. If the chain cannot be\nreached it renders without them rather than with invented ones."
+  },
+  {
+    "hash": "9f59aee",
+    "date": "2026-08-30T21:47:42+05:30",
+    "subject": "Rate-limit uploads by wallet, not by caller IP",
+    "body": "The first attempt keyed on x-forwarded-for and limited nothing: requests reach\nthis service through a proxy whose egress address changes per request, so every\nupload landed in a fresh bucket. Seven in a row all went through, which is how\nit was caught — by firing seven, not by reading the code.\n\nThe uploading wallet is the actor that actually claims the upload and it is\nstable, so the bucket is keyed on that. The check sits after the address is\nparsed and before anything is validated or written, which is where the real\ncost is."
+  },
+  {
+    "hash": "b19e0c8",
+    "date": "2026-08-30T21:44:38+05:30",
+    "subject": "Make the health checks readable by a person",
+    "body": "/api/health already checked the seven things that have to be true for a run to\nbe recorded and paid, and returned JSON to whoever thought to curl it. The same\nchecks now have a page, refreshed every fifteen seconds, with what each one\nmeans when it fails — an unsigned score the contract will not pay, an EIP-712\ndomain mismatch that reverts every submission, a stored ledger that has drifted\nfrom the contract's own count.\n\nIf the endpoint itself does not answer, the page says so rather than showing\nnothing, because that is its own answer."
+  },
+  {
+    "hash": "498b625",
+    "date": "2026-08-30T21:43:21+05:30",
+    "subject": "Name the three ways this app can be unusable",
+    "body": "A degraded RPC looked like an empty protocol, an offline tab looked like a\nbroken page, and a wallet on the wrong chain looked like a wallet that would not\nconnect. Each now says which it is and offers the one action that fixes it — a\nnetwork switch, the faucet — instead of leaving the operator to guess.\n\nThe chain check asks the RPC directly rather than inferring from a page that\nhappens to be empty, and waits for two consecutive failures, because one dropped\nrequest on a public endpoint is normal.\n\nAlso adds security headers with a CSP that names the only two origins this app\ntalks to besides itself, and a rate limit on the props upload — storing\nmulti-megabyte binaries on the same volume as the trajectory ledger is the most\nexpensive thing an anonymous caller can ask for."
+  },
+  {
+    "hash": "8d1725f",
+    "date": "2026-08-30T21:33:56+05:30",
+    "subject": "Show a buyer the corpus before they pay for it",
+    "body": "A licence buys a set of trajectories and the page asked for the money without\nshowing them. The export is thousands of frames, too much to fetch just to\ndecide, so this summarises the same rows the export ships — settled runs on the\nactive chain, so the summary describes the file that would actually arrive and\nnot a larger set.\n\nEpisodes, frames, distinct contributors, the score distribution across the\npayable range, mean deviation and total recorded time, all from the rows\nthemselves."
+  },
+  {
+    "hash": "1d425dd",
+    "date": "2026-08-30T21:30:36+05:30",
+    "subject": "Let a task's own runs describe it",
+    "body": "The funder sets difficulty when they post, which is a guess. The runs are\nevidence: the mean score operators actually achieve, mapped onto the same 1-5\nscale, shown beside what the funder said.\n\nDeliberately not a pass rate. A run that misses the datum is never written to\nthe chain, so failures leave no record and the denominator is not knowable —\npublishing one would mean inventing it. The page says so where the number sits.\n\nFill pace comes from the run timestamps, and is withheld below three runs or a\nfive-minute span, because a burst inside a minute says nothing about how long\nthe rest will take."
+  },
+  {
+    "hash": "6d3c7f3",
+    "date": "2026-08-30T21:27:58+05:30",
+    "subject": "Show an operator what a run costs them",
+    "body": "Nobody shows the operator their margin. Fuji settles at 160 wei a gas unit —\nconfirmed against a receipt's effectiveGasPrice rather than assumed, because\nreading Glacier's gasPrice as gwei overstates the fee by a factor of a billion —\nso recording a run costs about 0.000000065 AVAX against the 0.005 it pays.\n\nThat is the concrete answer to the constraint PRODUCT.md names: first-run cost\nhas to be near zero, and it is. The portfolio now totals gas paid across every\ncall from the indexer's own figures, beside what those calls earned."
+  },
+  {
+    "hash": "9e0cebc",
+    "date": "2026-08-30T21:24:21+05:30",
+    "subject": "Let the browser check the hash itself",
+    "body": "The run page already said whether the stored samples re-hash to the value on\nchain — computed on our server, which is the thing being checked marking its own\nhomework. The canonical form moved out of lib/server so the browser can run the\nsame keccak over the samples it was handed and say so independently.\n\nVerified outside the app entirely: a standalone script against the public API\nreproduces 0x05e918d5... exactly."
+  },
+  {
+    "hash": "a05c10f",
+    "date": "2026-08-30T21:21:49+05:30",
+    "subject": "Say where a run's points went, and what they cost",
+    "body": "A score is one number and an operator cannot act on it. Every term is already\ncomputed with the weight it carries, so the loss attributes exactly: the points\neach part gave up, what those points were worth in AVAX at this task's rate, the\nmeasurement behind it, and the one thing that would change it. A rejected run\nalso says how far short of the 40.00 pay threshold it fell.\n\nNothing is estimated — it is the arithmetic the contract was asked to pay\nagainst, read backwards."
+  },
+  {
+    "hash": "8cb44bb",
+    "date": "2026-08-30T20:57:50+05:30",
+    "subject": "Play the run back, in the room it was recorded in",
+    "body": "The ledger could tell you a run scored 0.83 and paid 0.004 AVAX. It could not\nshow you the run — the page had a two-dimensional trace of where the payload\nwent and nothing else.\n\nEvery sample already carried the six joint angles and the jaw opening, so the\narm can be posed straight from the recording rather than re-simulated. What the\nscrubber drives is the trajectory the contract paid for, using the same samples\nthe hash is derived from: what is on screen is what would re-hash. Verified\nagainst a real run — 181 samples, all six joints present in every one, and the\npose genuinely travels across the recording.\n\nThe scene comes from the same catalogue every other surface reads, so a replay\ncannot show a different object from the station that recorded it.\n\nAlso adds IDEAS.md: 100 ranked ideas scored impact x feasibility x fit,\nincluding the ones deliberately rejected and why — a token system and a trained\npolicy demo both contradict the pitch rather than extend it."
+  },
+  {
+    "hash": "862d4dc",
+    "date": "2026-08-30T20:52:51+05:30",
+    "subject": "Draw the props and the room at the size they are",
+    "body": "The station showed the arm and nothing else. Not a loading failure and not a\nmissing model — every prop was being rendered at 0.1 x 0.1 pixels and the room\nat 1 x 1.\n\ncad/kernel.py applies MM = 0.001 once at export, so every GLB in this project is\nalready in metres: a 42 mm dice is 0.042 units across. Prop scaled by\ntargetM / widthMm and Room by 0.001, both treating the files as millimetre-unit\nand shrinking them a thousandfold. The arm was the only model nothing rescaled,\nwhich is why it was the only thing on screen.\n\nEvery test this project has passed still passed while that was true — the assets\nreturned 200, the console was silent, the scene graph was right. So this adds\nscripts/projected-size.mjs, which projects each model's real vertex bounds\nthrough the station's own camera and reports the pixel footprint. It needs no\nbrowser, which is the whole point: the frame loop stops in a background tab, so\nnothing that depends on rendering could ever have caught this. It reports\n0.1 x 0.1 px before and 54 x 58 px after.\n\nThe preview tiles are drawn per tile again. The single shared drei View renderer\nwas meant to keep 43 tiles inside the browser's WebGL context budget, and it\ndrew nothing at all — the inventory came back blank. A canvas per tile, mounted\nonly while the tile is within 300 px of the viewport, bounds the live contexts\nto what is on screen instead of to the size of the library.\n\nSTART also sat at 88% of the arm's maximum reach, where the elbow is nearly\nstraight and the tool swings a long way for a small pointer movement, with a\n0.46 m haul to the goal. Both ends now sit in the middle of the envelope, 0.33 m\napart, inside the camera frame."
+  },
+  {
+    "hash": "8289e74",
+    "date": "2026-08-30T19:55:33+05:30",
+    "subject": "Record test plan v2 results: 34 pass, 0 fail, 4 untestable",
+    "body": ""
+  },
+  {
+    "hash": "820e5e0",
+    "date": "2026-08-30T19:45:22+05:30",
+    "subject": "Make the station's controls reachable without a keyboard",
+    "body": "The controls overlay opened only on \"?\" — and the sidebar's \"? All controls\" was\na key hint, not a control. On the one page most likely to be driven by a mouse\nor a trackpad, the list of what the keys do was itself behind a key. It is now a\nbutton, and the shortcut still works.\n\nThe overlay is a modal and now says so: role=\"dialog\", aria-modal, and a label.\n\nDrops the \"the same, on the arrows\" row, which became redundant once the reach\nand swing rows started naming the arrows themselves."
+  },
+  {
+    "hash": "4eec63a",
+    "date": "2026-08-30T19:39:53+05:30",
+    "subject": "Keep the landing page to one h1",
+    "body": "The hero is four sheets and each carried an h1, so the document had four\ntop-level headings. Three are inert and aria-hidden, so only one was ever\nexposed to assistive technology — but the document outline is read by more than\na screen reader, and \"one h1\" is not a rule that bends because the extras are\nhidden.\n\nThe sheet that is showing is the page's heading; the others are demoted to h2\nwhile they wait. Under reduced motion, where all four are stacked and visible at\nonce, the first is the heading and the rest follow it.\n\nAlso adds TESTPLAN-V2.md — the surface the first plan did not reach: interaction,\nthe network tab per item, responsive, accessibility, mid-flow interruption,\nempty states, and whether one task renders the same on every surface that draws it."
+  },
+  {
+    "hash": "47805d0",
+    "date": "2026-08-30T19:34:48+05:30",
+    "subject": "Record the test-plan results: 59 pass, 0 fail, 1 untestable",
+    "body": ""
+  },
+  {
+    "hash": "cc22e31",
+    "date": "2026-08-30T19:29:54+05:30",
+    "subject": "Stop the station waiting for a task that will never arrive",
+    "body": "/station/9999 sat on \"Reading task #9999 from the chain…\" indefinitely. The\ncatalogue had already answered — eight tasks, none of them 9999 — so nothing was\nstill being read, and the page said otherwise for as long as you left it open.\nThe task page distinguishes loading from not-found; the station only ever\nchecked whether it had a task yet.\n\nIt now waits only while the catalogue is genuinely in flight, and otherwise says\nthe id is not in the registry, through the Missing component that was already\nthere for the other two cases."
+  },
+  {
+    "hash": "9af4871",
+    "date": "2026-08-30T19:19:55+05:30",
+    "subject": "Send the trajectory's chain, which the run page already expected",
+    "body": "/run/[hash] types chainId, links the transaction with txUrlOn(chainId) and\nrenders a \"settled on\" note when the row belongs to a previous deployment — but\nthe API never sent the field. An archived Monad run therefore fell back to the\ncurrent chain and rendered a Snowtrace link for a transaction Fuji has never\nheard of: the same defect the feed had, one page over, on the page whose whole\njob is letting someone check a payout.\n\nThe edit that was meant to add this reported success earlier and did not apply.\nCaught by testing the endpoint rather than re-reading the diff.\n\nAlso adds TESTPLAN.md — every page, route, on-chain call, integration and edge\ncase, each with what correct means as a specific result."
+  },
+  {
+    "hash": "2feb5c4",
+    "date": "2026-08-30T19:14:58+05:30",
+    "subject": "Record the completion audit: 41/47 to 46/47",
+    "body": ""
+  },
+  {
+    "hash": "4eae253",
+    "date": "2026-08-30T19:11:00+05:30",
+    "subject": "Close the honesty and vocabulary gaps the product's own spec names",
+    "body": "PRODUCT.md is a set of claims, and four of them were not true.\n\nThe arm was described as 7-DoF; it has six revolute axes, which is what the\ndataset export, the spec sheet and the name THENAR-6 all say. The prop library\nwas described as sixteen; it is thirty-four, plus seven rooms. The keyboard\nmapping listed keys the station does not bind. All three now say what the code\ndoes.\n\nThe skill vocabulary — pick, place, stack, rotate, transfer, arrange, insert,\nseparate, reach — is named in PRODUCT.md as something that must survive into the\ninterface, and it was absent entirely. It is now derived from the instruction\nthe contract stores, the same way the payload, the landmark and the room are, so\nit stays recoverable from chain state instead of living in a side table. Specific\ncues beat the generic verb: almost every instruction begins \"put\", so matching on\nposition alone made every task a `place` and the vocabulary carried nothing.\nVerified across the eight real on-chain instructions plus three others — eight of\nthe nine skills resolve, correctly.\n\nThe hub said nothing about who funded its tasks. All eight came from the address\nthat deployed the protocol, and the product's own rule is that anything shown\nbefore real traffic exists is labelled rather than left to look like demand. The\nhub now counts that from chain data and says so, and a task page says it on the\ntask.\n\nThe non-capabilities were named only in PRODUCT.md, never in the interface —\nPrinciple 5 says the opposite. The spec sheet now carries them.\n\nPasskeyRegistry was listed under \"confirmed and shipping\" while appearing nowhere\nin the app outside the ABI. There is now a flow: generate a non-extractable\nP-256 key in the browser, bind its public coordinates to an address in one\ntransaction, and prove a fresh signature against it through the precompile — a\nread, so it costs nothing. Verified against the deployed registry: a real\nWebCrypto signature returns true, a tampered r returns false."
+  },
+  {
+    "hash": "7366854",
+    "date": "2026-08-30T18:57:34+05:30",
+    "subject": "Record the scene pass in DESIGN.md and PLAN.md",
+    "body": ""
+  },
+  {
+    "hash": "119cd07",
+    "date": "2026-08-30T18:54:42+05:30",
+    "subject": "Preload the room, or it never loads at all",
+    "body": "The room resolved correctly and reached the viewport — the scene just never\nasked for it. Everything inside the Canvas renders on an animation frame, so in\nany tab the browser has deprioritised the arm, the payload and the room are all\nstill unrendered; the only reason the payload and landmark appeared at all is\nthat they are preloaded outside the Canvas. The room was left off that list, so\nit was the one asset whose fetch depended on a frame that may never come.\n\nVerified per task, and each station now pulls exactly its own four assets:\ntask 4 \"rotate the dice\" (play) loads dice, crate and play.glb; task 0\n\"toothpaste into the drawer\" (bathroom) loads toothpaste, drawer and\nbathroom.glb. The room comes from the scenario the contract stores, so it is\nderivable from chain state alone."
+  },
+  {
+    "hash": "717d95f",
+    "date": "2026-08-30T18:44:46+05:30",
+    "subject": "Fix the hero taking the landing page down, and stop it depending on frames",
+    "body": "Deriving the scroll-linked opacity stops arithmetically put the first sheet's\narrival at a negative offset. The Web Animations API rejects that outright\nrather than clamping, so motion threw on mount and the whole landing page fell\nthrough to its error boundary — shipped, and caught in the browser rather than\nby the build, which compiled it happily.\n\nThe sheet index now comes from the scroll event itself instead of a\nscroll-linked motion value, which is both what \"pagination\" actually means and\nwhat survives a browser that has stopped handing out animation frames. The\nthrottle went the same way: requestAnimationFrame around the handler\nreintroduced exactly the dependency being removed, so geometry is cached on\nresize and the scroll path reads nothing but scrollY.\n\nInactive sheets are now inert as well as transparent. They share one grid cell\nwith the visible one, so their links stayed clickable and stayed in the tab\norder underneath the sheet actually on screen.\n\nVerified in the browser at five scroll positions: the rail tick and the visible\nsheet agree every time, and exactly three of the four are inert throughout."
+  },
+  {
+    "hash": "6e83499",
+    "date": "2026-08-30T18:35:04+05:30",
+    "subject": "Give every task a room, and draw the library through one renderer",
+    "body": "The scenario has been a uint8 on the contract since the first deployment and it\nchanged a word in the sidebar and nothing else — a workshop task and a kitchen\ntask were recorded against the same bare grey table. There are now seven rooms,\none per scenario, generated from named dimensions by the same kernel that makes\nthe arm. Choosing a room when posting a task is choosing that index, so the room\nis recoverable from chain state alone and no off-chain table can disagree with\nwhat the station later draws.\n\nThe prop library goes from 16 to 34: twelve more payloads and six more\nlandmarks, so an instruction can name something other than the same ten\nobjects. All 42 models validate as glTF 2.0, and the eleven instructions in the\ncatalogue still resolve to the right pair.\n\nPreviews used to be one <Canvas> each, which is one WebGL context each. The\ninventory shows the whole library and the post form shows everything you can\nchoose between: 43 contexts on a page, against a browser limit nearer 16. Past\nthat line the browser drops the oldest context and tiles go black in creation\norder. They now draw through a single shared renderer — 43 tiles, one context,\nmeasured in the browser. Its container needs pointer-events set inline, because\nreact-three-fiber writes its own and a full-viewport layer that takes clicks\nwould make every tile beneath it unclickable.\n\nTasks are resolved once, in a provider, rather than separately by the hub, the\nfloor, the task page and the station — which could each have drawn the same task\ndifferently. Nothing is stored: the scene stays a pure function of chain state.\n\nThe hero is now a scroll-driven sequence. The instrument stays put and the scale\nmoves past it, which is the relationship a dial indicator has with the part it\nreads. It is a real scroll rather than a hijacked one — four viewports and a\nsticky frame — so the scrollbar tells the truth, find-in-page works, and reduced\nmotion gets the same words as an ordinary stacked page.\n\nAlso fixes a lie the type system was covering: `claimed` in the prop resolver\nwas declared number[] while holding [start, end] spans, with two `any` casts\nhiding it."
+  },
+  {
+    "hash": "2d7d062",
+    "date": "2026-08-30T18:07:36+05:30",
+    "subject": "PLAN.md: record what was actually executed, and what was not",
+    "body": ""
+  },
+  {
+    "hash": "84dc67f",
+    "date": "2026-08-30T18:05:36+05:30",
+    "subject": "Break out the snapshot's row counts so 61 is never read as the feed's 12",
+    "body": ""
+  },
+  {
+    "hash": "0883744",
+    "date": "2026-08-30T18:01:56+05:30",
+    "subject": "Take the corpus somewhere the volume is not",
+    "body": "The trajectories are the only thing here that cannot be rebuilt. The chain\nholds every hash, score and payment, but the samples that earned them exist in\none SQLite file on one Railway volume — so the moment that volume goes, every\npayout on the site stops being auditable and the dataset the whole project is\nabout is gone.\n\nNightly now, into object storage in another region, on its own schedule after\nthe reconciler. The copy is made with VACUUM INTO rather than by reading the\nfile: under WAL the file on disk is not a consistent database on its own, and a\nbackup that restores to a corrupt page is worse than no backup because it is\nbelieved. Each snapshot reports its own sha256 and the row counts it captured,\nso a restore can be checked against what was meant to be in it.\n\nSigV4 is signed by hand. The AWS SDK is several megabytes to issue one PUT."
+  },
+  {
+    "hash": "6503ced",
+    "date": "2026-08-30T17:55:53+05:30",
+    "subject": "Put other operators in the room",
+    "body": "A station has always been one person alone with a scene. This makes each open\ntask a room: your tool position goes up six times a second and everyone else's\ncomes back in the same round trip, so you can see where the other hands are and\nwhether they are carrying anything while you drive your own run.\n\nPresence is deliberately memory-only and deliberately not authoritative.\nNothing here is scored, paid or written to a chain — the trajectory is still\nrecorded locally and verified by signature, so a run measures identically with\nthe room empty and no operator can affect another's measurement by lying to\nthis. Losing it on a restart costs nothing.\n\nWatching needs no wallet, which makes spectating the same code path as\noperating with nothing to report yet. The floor at /space lists the rooms\nbusiest first, and keeps listing a room that has people in it even when the\ntask is full — hiding those meant the floor could say two operators were here\nand show nowhere they were.\n\nGhosts render as an open marker with a dropped line to the table rather than a\nsecond arm; six full manipulators is unreadable. Scene coordinates are\n(x, z, -y) from the robot frame, the same mapping the payload uses. Rig is\ngiven every prop except presence so the scene does not reconcile at 6 Hz.\n\nVerified: two operators see each other with correct carry state and position, a\nspectator with no wallet sees both, explicit leave is immediate, a silent\noperator is pruned after four seconds, and four malformed poses are each\nrejected with their own error."
+  },
+  {
+    "hash": "33b5d06",
+    "date": "2026-08-30T17:33:11+05:30",
+    "subject": "Close two more paths that ignored which chain a run settled on",
+    "body": "The feed, the standings and the task pages were scoped in the previous commit,\nbut two surfaces build their own queries and were missed.\n\nThe dataset export was the worse of the two: it selected every row for a task\nregardless of chain or settlement, so a buyer downloading a corpus would get\nepisodes whose transaction field points at a chain the protocol no longer\nwrites to, mixed in with ones that verify. A corpus you cannot audit is the\none thing this project cannot ship.\n\nThe run page linked every transaction to the current chain's explorer, so an\narchived run rendered a Snowtrace URL for a Monad transaction. It now links the\nchain the row records and says plainly which deployment paid it.\n\nAlso puts the reconciler on a schedule. Nothing was calling it, so a row could\nsit unverified indefinitely and the ledger could drift without anyone noticing\nuntil it reached the feed. Vercel's scheduler only issues GET, hence the second\nhandler; every write it makes is a fact a chain returned, so an unsolicited\ncall can only re-confirm the truth."
+  },
+  {
+    "hash": "b8b54f3",
+    "date": "2026-08-30T17:30:12+05:30",
+    "subject": "Read settlement history from Avalanche's own index",
+    "body": "Everything the portfolio showed arrived through this deployment: our RPC calls,\nour database's transaction hashes. A page that says \"verify this payout\"\ndepended on a server we happen to be running, and on a ledger that by\nconstruction only holds runs the contract accepted.\n\nGlacier is Avalanche's indexer. Given an address it returns that address's\ntransactions against the protocol directly, so the history survives our\ninfrastructure disappearing, and it includes the calls that reverted. Selectors\nare resolved through the ABI rather than a hand-written table — 22 settlements\nfor the deployer decode as 11 submitTrajectory, 8 createTask, 2 mintPolicy (one\nreverted, shown as reverted) and the contract deployment itself.\n\nThe free tier needs no key, so there is no new credential.\n\nAlso stops the station claiming a run has not begun while the button beside it\nreads END RUN: the live-placement panel now follows the run's own phase rather\nthan waiting on a frame that a throttled tab never delivers."
+  },
+  {
+    "hash": "24f3f9b",
+    "date": "2026-08-30T17:15:26+05:30",
+    "subject": "Scope every stored run to the chain it settled on",
+    "body": "The feed reported 25 runs while the contract reported 12. The other 13 were\nrecorded under the previous deployment on Monad and came across with the\ndatabase, and they were rendered beside current runs with \"verify\" links to\nSnowtrace — where those transactions do not exist. The oldest of them,\n0x0777ad35, resolves on Monad at block 55922119 and nowhere on Fuji.\n\nRows now carry the chain they settled on. It is left NULL rather than\ndefaulted to the current chain, because guessing is what put unverifiable\ntransactions on the feed in the first place; /api/reconcile establishes it by\noffering each hash to every chain this deployment has used and recording the\none that returns a receipt. The feed, the standings and the task pages read\nonly the active chain, and /api/health now fails outright when the stored\ncount and the contract's own trajectoryCount disagree.\n\nThe Monad runs are kept, not deleted — they happened and their operators were\nreally paid — and shown at /archive against the explorer that can verify them.\n\nAlso fixes two GSAP selectors that matched nothing: the hero paragraph never\ncarried data-anim=\"hero-copy\", and DimRule only emitted data-anim=\"rule\" from\nits noted branch, so every plain rule on the landing page was invisible to the\ntimeline that claims to draw it. Eight console warnings on every load."
+  },
+  {
+    "hash": "0952804",
+    "date": "2026-08-30T16:46:46+05:30",
+    "subject": "Drop the header's backdrop blur, and name the right chain in DESIGN.md",
+    "body": "Scanning computed styles on the live pages rather than the source turned up\none thing the source scan could not: a backdrop-blur on the sticky header.\nDESIGN.md's binding anti-references ban backdrop blur outright, and the bar\nwas already 95% opaque, so a 2px blur behind it bought nothing visible while\nbeing the exact pattern the system forbids. The header is solid now.\n\nDESIGN.md's own description still said 'get paid on Monad', and the signal\ntoken was documented as carrying MON figures. Both say Avalanche.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "f37dfd4",
+    "date": "2026-08-30T16:43:17+05:30",
+    "subject": "Put the prop tiles back on the documented type ramp",
+    "body": "The detector caught four literal font sizes in the two components added\ntoday — 9px, 10px and 11px, none of them steps in DESIGN.md. The rest of the\ncodebase was clean, so this was my drift, not the system's.\n\nThey are on the label step now. That made the captions too wide for the tile\ncounts I had chosen, which is a layout problem rather than a type one: the\npicker drops from eight columns to six and the strip from six to a stacked\nname-over-role, so a 12px caption has room at every breakpoint instead of\nshrinking type until it fits.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "ab250f7",
+    "date": "2026-08-30T16:34:48+05:30",
+    "subject": "Preload a task's props instead of waiting for the first frame",
+    "body": "The arm is preloaded at module scope; the payload and the landmark were not,\nso they were only fetched once the canvas rendered. On a station opened in a\ntab that is not compositing they were never fetched at all, and even in a\nnormal tab the scene popped in a beat after the arm.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "4e8cf2b",
+    "date": "2026-08-30T16:30:25+05:30",
+    "subject": "Show that the section nav scrolls on a narrow screen",
+    "body": "The scrollbar is hidden by design, which left Leaderboard and Foundry sitting\npast the fold on a phone with nothing indicating they existed. They were always\nreachable — the nav is overflow-x auto and scrolling reveals them — but a cue\nyou cannot see is not a cue. A mask fades the last 28px below the md\nbreakpoint, and does nothing above it.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "9ff646c",
+    "date": "2026-08-30T16:26:51+05:30",
+    "subject": "Let a task be posted against an uploaded model",
+    "body": "The upload endpoint stored models nothing could ever select: /post read only\nthe sixteen built-in props, so a funder's own GLB went into the volume and\nstayed there. The pickers now merge whatever /api/props holds, and compose()\nknows their labels too — an instruction that dropped the name would give the\noperator a different scene from the one funded.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "435c7d6",
+    "date": "2026-08-30T15:52:28+05:30",
+    "subject": "Refresh the Avalanche audit against a deployment that now settles",
+    "body": "The first version was written the day the app moved chains and said Avalanche\nwas 'not used'. That was too blunt. Six contracts are now Sourcify-verified on\nFuji, a trajectory settles and pays in one transaction, and a licence fans out\nto its cap table — the chain is used properly.\n\nWhat has not changed is the finding a judge on this track cares about: every\ncall goes over generic C-Chain JSON-RPC. Glacier, Teleporter, Warp, subnets,\neERC and ICTT are all untouched. The question is not whether the app works on\nAvalanche, it is whether it needed to be.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "a003e38",
+    "date": "2026-08-30T15:00:52+05:30",
+    "subject": "A sponsor audit you can run against any name",
+    "body": "Five audits in docs/ answer 'is X used here' for the technologies this project\nactually contains. This is the instrument that produced them, so the sixth\nanswer costs one command instead of an afternoon.\n\nThe naive version — grep for the sponsor's name — reports every deeply used\nlibrary as absent, because nothing that uses viem writes 'viem' on the call\nline. It now reads the symbols imported from a matching package and looks for\ncalls to those, which is what usage actually looks like. Config files are\nscanned too: leaving them out made a service the entire API proxies to look\nlike it was never mentioned.\n\nValidated against seven answers established by hand: viem, three and rainbowkit\ncome back GENUINELY USED; walletconnect, Avalanche and railway come back PROSE\nONLY; glacier, never integrated, comes back ABSENT. Every one matches.\n\nIt stops short of the part that needs a person, and says so: a call site is not\nproof the flow reaches it, so the browser check is still on you.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "f0ab84e",
+    "date": "2026-08-30T14:57:34+05:30",
+    "subject": "Audit Railway and Vercel — the two that are actually used",
+    "body": "Every other sponsor audit in this folder found imported, absent or generic.\nThese two are different. Railway is load-bearing: AXON_DB_PATH points at a\nvolume holding every trajectory, every signature and every uploaded model, and\n20 trajectories plus 1 prop survived today's 09:09 redeploy. next.config.ts\nnames the reason a serverless host cannot do this job.\n\nVercel is genuinely used and genuinely replaceable, and it gets no fifty-item\nlist. Nothing it offers beyond what is already in use would strengthen this\nproduct, and inventing fifty ways to use it would be the checkbox integration\nthese audits exist to call out.\n\nThe honest finding is durability: SQLite on a single volume currently holds the\nonly copy of the asset this project sells.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "b9fbb53",
+    "date": "2026-08-30T14:55:39+05:30",
+    "subject": "Audit WalletConnect/Reown: imported, disabled, and mobile cannot connect",
+    "body": "RainbowKit is a dependency and lib/wagmi.ts imports walletConnectWallet,\nmetaMaskWallet and rainbowWallet — none are offered. The projectId the group\nis gated on is set nowhere: not in vercel.json, not on the Railway service,\nnot in any .env. Verified live on thenar.io/hub, the connect modal offers\nBrowser Wallet and Coinbase only, with zero requests to any relay host.\n\nThe code is honest about it rather than faking it, which is the right call for\na missing credential. But the cost has not been accounted for: injectedWallet\nneeds an extension and mobile browsers do not have one, so an operator on a\nphone cannot connect at all — on a product whose audience is 'anyone with a\nbrowser and no robotics hardware'.\n\nThe strongest organic fit is not the modal, it is smart sessions. The contract\ncaps an operator at five runs and PRODUCT.md says the work should feel closer\nto a rhythm game than data entry; five wallet signatures per sitting is the\nfriction everyone accepts and nobody fixes.\n\nEverything here needs a free projectId from cloud.reown.com, which I cannot\ncreate. Reported rather than worked around.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "159b9e0",
+    "date": "2026-08-30T14:52:22+05:30",
+    "subject": "Audit Monad against what the app runs today, and rank 50 uses",
+    "body": "MONAD.md and MONAD-2.md audited the Monad deployment and are accurate about\nit. This audits thenar.io as it runs now, on Avalanche, and asks what going\nback would buy — measured over 20 blocks on each chain rather than asserted.\n\nMonad is 0.30s per block against Fuji's 4.95s, and carries a 150M block gas\nlimit against 32M. That matters here for one specific reason: PRODUCT.md\ndefines success as an operator seeing payment arrive before they let go of the\nmouse, and a 4.95s mean block time makes that unreachable. The strongest\nargument for Monad in this project is arithmetic, not preference.\n\nIt also corrects MONAD.md on its own headline: the P-256 precompile is not a\nMonad differentiator. Fuji answers the identical call identically — verified\nby signing with WebCrypto on both chains. eth_getCode cannot test a precompile,\nwhich is how I got this wrong in the first place.\n\nMonad usage in the running app is zero. The sharded slot counters in\nAxonProtocol are the one Monad-shaped decision that survives, and on a chain\nthat executes serially they buy nothing.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "fdc0f82",
+    "date": "2026-08-30T14:48:27+05:30",
+    "subject": "The passkey path works on Avalanche — I tested it wrong",
+    "body": "I reported PasskeyRegistry as inert on Fuji and wrote that into PRODUCT.md as\na non-capability and into the Avalanche audit as a missing precompile. Both\nwere wrong, and the method was the problem: eth_getCode is meaningless for a\nprecompile, which has no bytecode and always answers empty.\n\nCalled properly — a real WebCrypto secp256r1 signature against the deployed\nregistry at 0x82aE3011…6BCE9F — Fuji returns 1 for a valid signature and 0\nwhen one byte of r is changed. Same on Monad. The capability is real on both.\n\nSeparately, the app was still sending operators to faucet.monad.xyz from three\nplaces while settling in AVAX. The faucet is now FAUCET_URL in lib/chain.ts,\nbeside the explorer, for the same reason the ticker moved there.\n\nAnd the README still advertised the Monad contracts as the live deployment. It\nnow names the Fuji addresses and their Sourcify status, keeps the Blitz result\nbecause it happened, and marks MONAD.md and MONAD-2.md as historical rather\nthan deleting a record of real work.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  }
+]
