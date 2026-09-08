@@ -83,6 +83,21 @@ if (health) {
   // the public edge must not be able to sign, whatever it says about itself.
   check("web service reports no signing key", health.checks.keyIsolation?.ok === true,
     health.checks.keyIsolation?.detail);
+  // The share card 404'd in production once while passing every local check —
+  // it built, it was in the routes manifest, and the deployed host served
+  // nothing. Only a request to the deployed host can tell.
+  const og = await fetch(`${BASE}/og.png`);
+  const ogBytes = og.ok ? Buffer.from(await og.arrayBuffer()) : Buffer.alloc(0);
+  check("share card serves a real PNG",
+    og.status === 200 &&
+      og.headers.get("content-type")?.startsWith("image/png") === true &&
+      ogBytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+    `${og.status} ${og.headers.get("content-type")} ${ogBytes.length}b`);
+
+  const home = await (await fetch(BASE)).text();
+  check("og:image resolves to an absolute URL",
+    /<meta property="og:image" content="https:\/\/[^"]+\/og\.png"/.test(home));
+
   const signGet = await fetch(`${BASE}/api/sign`);
   const signBody = await signGet.json().catch(() => ({}));
   check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,

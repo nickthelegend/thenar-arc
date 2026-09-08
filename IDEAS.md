@@ -20,8 +20,7 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **66** | 1–25, 27–31, 39–74 |
-| Built in part | 1 | 75 — sitemap and robots ship; the per-page OG image 404s in production and was reverted rather than left broken |
+| **Built and verified** | **67** | 1–25, 27–31, 39–75 |
 | Cannot be built as this is deployed | 3 | 26 (task expiry needs a contract change, which would orphan the settled runs), 37 (the contract hands the raw hash to the P-256 precompile; WebCrypto hashes what it signs, so no browser passkey can ever produce a signature it accepts), 38 (gasless first run needs meta-transactions; `submitTrajectory` credits `msg.sender`) |
 | Blocked on access I do not have | 5 | 32–36 — ICM, a hosted L1 validator, eERC, Warp, a subnet gas token. No Dispatch/Echo testnet gas and no AvaCloud account |
 | Rejected, with the reason stated | 25 | 76–100 |
