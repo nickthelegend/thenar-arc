@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { THEME_SCRIPT } from "@/components/theme-toggle";
 import { DM_Mono, Hanken_Grotesk, Press_Start_2P } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteNav } from "@/components/site-nav";
@@ -83,6 +84,11 @@ export default function RootLayout({
       lang="en"
       className={`${grotesk.variable} ${dmMono.variable} ${pixel.variable}`}
     >
+      <head>
+        {/* Before the first paint, or the default theme renders for a frame and
+            the chosen one arrives after it. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh bg-ink-0 antialiased">
         <a
           href="#main"

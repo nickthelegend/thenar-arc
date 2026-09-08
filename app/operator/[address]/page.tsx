@@ -8,6 +8,7 @@ import { DimRule } from "@/components/primitives";
 import { addressUrl, txUrlOn, appChain, CURRENCY } from "@/lib/chain";
 import { fmtInt, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { badgesFor, ACCEPTED_MEANS } from "@/lib/badges";
 
 type Run = {
   traj_hash: string; task_id: number; score: number;
@@ -68,6 +69,7 @@ export default function OperatorPage() {
   const best = accepted.length ? Math.max(...accepted.map((r) => r.score)) : 0;
   const mean = accepted.length ? accepted.reduce((n, r) => n + r.score, 0) / accepted.length : 0;
   const gas = (calls ?? []).reduce((n, c) => n + c.feeAvax, 0);
+  const badges = badgesFor(accepted);
   const reverted = (calls ?? []).filter((c) => !c.succeeded).length;
 
   return (
@@ -87,6 +89,46 @@ export default function OperatorPage() {
         <Reading label="Reverted" value={calls === null ? "—" : fmtInt(reverted)} tone={reverted ? "reject" : undefined} />
         <Reading label="Gas paid" value={calls === null ? "—" : gas.toFixed(9)} unit={CURRENCY} />
       </div>
+
+      <DimRule className="mt-8" note="What the record says" />
+      <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
+        Not awards, and not a score of their own. Each is a statement about the
+        runs below it, recomputed from them on every load and carrying the
+        reading it was derived from &mdash; so there is nothing here you cannot
+        check against the ledger yourself. Accepted means {ACCEPTED_MEANS}.
+      </p>
+      <ul className="mt-4 grid grid-cols-2 gap-px border border-rule bg-rule sm:grid-cols-4">
+        {badges.map((b) => (
+          <li
+            key={b.id}
+            className={cn(
+              "relative flex flex-col gap-1 bg-ink-1 px-3 py-3",
+              !b.earned && "opacity-55",
+            )}
+          >
+            {/* The bar is the progress, drawn behind the text rather than as a
+                second element, so an unearned badge reads as one thing. */}
+            {b.progress !== undefined && !b.earned ? (
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 bg-ink-2"
+                style={{ width: `${Math.round(b.progress * 100)}%` }}
+              />
+            ) : null}
+            <span className="relative flex items-baseline justify-between gap-2">
+              <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-scribe">
+                {b.label}
+              </span>
+              {b.earned ? (
+                <span className="text-[13px] leading-none text-go" aria-label="held">&#10003;</span>
+              ) : null}
+            </span>
+            <span className="relative font-mono text-[11px] leading-snug text-scribe-3">
+              {b.evidence}
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <DimRule className="mt-8" note="Accepted runs" />
       {runs === null ? (

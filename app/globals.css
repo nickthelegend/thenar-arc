@@ -57,6 +57,58 @@
   --radius-cut: 2px;
 }
 
+/* ==========================================================================
+   The same instrument under a lamp instead of in the dark.
+   ==========================================================================
+
+   A toggle was on the rejected list because the design world is deliberately
+   single-theme, and that reasoning confused a preference with a constraint.
+   What actually matters is that the second theme is designed rather than
+   inverted: every relationship the dark world encodes has to survive.
+
+   So this is not a flip. The ground is warm paper rather than white, because
+   pure white under the same hairline rules reads as a form to fill in. The
+   accent darkens — #FF6A00 sits at 2.9:1 on paper, which fails as text — while
+   keeping its hue, so a figure of value is still the same orange it was. The
+   verdict pair stays on its own side of the wheel: the mint goes deep enough
+   to be read as green rather than as a highlight, the reject stays pink-red
+   rather than sliding to brick, and neither approaches the accent's hue.
+
+   The viewport keeps its black in both. It is a lit stage, not a page, and a
+   workspace that changed value with the chrome around it would make two runs
+   recorded in different themes look like two different scenes.
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  --color-ink-0: #F5F4F1;
+  --color-ink-1: #EFEDE9;
+  --color-ink-2: #E7E4DF;
+  --color-ink-3: #DCD8D2;
+  --color-ink-4: #CEC9C1;
+
+  --color-rule: #D2CDC5;
+  --color-rule-strong: #ADA69C;
+
+  --color-scribe: #16130F;
+  --color-scribe-2: #35302A;
+  --color-scribe-3: #6B655D;
+
+  /* Measured, not chosen by eye: #C4510B came out at 4.22:1 on the paper
+     ground, and this colour carries every figure of value on the site. This
+     one clears 4.5 on the ground, on the panel and on the deepest panel. */
+  --color-signal: #AD4407;
+  --color-signal-hi: #8F3604;
+  --color-signal-dim: #F6E3D2;
+
+  --color-go: #0B6B41;
+  --color-go-dim: #DBEFE4;
+  --color-reject: #B60D33;
+  --color-reject-dim: #F8DEE4;
+
+  --color-probe: #3A5578;
+  --color-probe-dim: #E1E6ED;
+}
+
 @layer base {
   * {
     border-color: var(--color-rule);
@@ -66,6 +118,10 @@
   html {
     color-scheme: dark;
     -webkit-text-size-adjust: 100%;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
   }
 
   body {

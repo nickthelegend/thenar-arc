@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { usePathname } from "next/navigation";
 import { useBlockNumber } from "wagmi";
 import { cn } from "@/lib/cn";
@@ -75,6 +76,8 @@ export function SiteNav() {
                 </span>
               ) : null}
             </span>
+
+            <ThemeToggle />
 
             {s.connected ? (
               <div className="flex items-stretch border border-rule-strong">
