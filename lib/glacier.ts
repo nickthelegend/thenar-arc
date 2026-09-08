@@ -99,3 +99,24 @@ export async function settlementsFor(address: string, pages = 2): Promise<Settle
 
   return out.sort((a, b) => b.at - a.at);
 }
+
+
+/**
+ * A task's own history, from Avalanche's index.
+ *
+ * The task page reads its state from the contract, which tells you what a task
+ * *is* — not what happened to it. Who funded it and when, whether it was topped
+ * up, whether a policy was minted against it: that is a sequence of calls, and
+ * the indexer already has them.
+ *
+ * Filtered by the funder rather than by the task, because Glacier indexes by
+ * address and the funder is the only address that acts on a task's lifecycle.
+ * Calls that name no task are still shown — they are that funder's activity
+ * against this protocol, which is the honest framing rather than pretending a
+ * per-task feed exists.
+ */
+export async function funderHistory(funder: string, pages = 1): Promise<Settlement[]> {
+  const all = await settlementsFor(funder, pages);
+  const LIFECYCLE = new Set(["createTask", "fundTask", "mintPolicy", "licensePolicy"]);
+  return all.filter((s) => LIFECYCLE.has(s.method));
+}

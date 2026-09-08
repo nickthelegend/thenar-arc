@@ -8,6 +8,7 @@ import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primiti
 import { SKILL_LABEL } from "@/lib/skills";
 import { taskStats } from "@/lib/task-stats";
 import { PathOverlay } from "@/components/path-overlay";
+import { FunderHistory } from "@/components/funder-history";
 import { txUrl, addressUrl, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -177,6 +178,8 @@ export default function TaskPage() {
               <PathOverlay taskId={task.id} goal={[0.16, -0.18]} />
             </>
           ) : null}
+
+          <FunderHistory taskId={task.id} funder={task.funder} />
 
 
           <ul className="mt-6 flex flex-col">
