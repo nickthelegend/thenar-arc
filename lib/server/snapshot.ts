@@ -32,7 +32,7 @@ const sha256 = (b: Buffer | string) => crypto.createHash("sha256").update(b).dig
 const hmac = (k: Buffer | string, d: string) => crypto.createHmac("sha256", k).update(d).digest();
 
 /** SigV4 for a single PUT. The AWS SDK is several megabytes to do this once. */
-function sign(cfg: S3, objectKey: string, body: Buffer, now: Date) {
+function sign(cfg: S3, objectKey: string, body: Buffer, now: Date, method: "PUT" | "GET" = "PUT") {
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const date = amzDate.slice(0, 8);
   const host = new URL(cfg.endpoint).host;
@@ -42,7 +42,7 @@ function sign(cfg: S3, objectKey: string, body: Buffer, now: Date) {
     `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
   const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
   const canonicalRequest = [
-    "PUT",
+    method,
     `/${cfg.bucket}/${objectKey}`,
     "",
     canonicalHeaders,
@@ -145,4 +145,88 @@ export async function snapshot(stamp: string): Promise<SnapshotResult> {
     uploaded: true,
     detail: `Stored in ${cfg.bucket}.`,
   };
+}
+
+
+export type DrillResult = {
+  key: string;
+  bytes: number;
+  sha256: string;
+  integrity: string;
+  trajectories: number;
+  props: number;
+  withSamples: number;
+  matchesLive: boolean;
+  live: { trajectories: number; props: number };
+};
+
+/**
+ * Restore the most recent snapshot and prove it is a database.
+ *
+ * A snapshot nobody has restored is a file, not a backup. This pulls the object
+ * back out of the bucket, opens it as SQLite, runs the engine's own integrity
+ * check, and compares its contents with what the live database currently holds
+ * — so a truncated upload or a silent corruption surfaces here rather than on
+ * the day it is needed.
+ *
+ * Reads only, and the restored copy is deleted before returning.
+ */
+export async function drill(stamp: string): Promise<DrillResult> {
+  const cfg = config();
+  if (!cfg) throw new Error("No bucket configured; there is nothing to restore.");
+
+  const objectKey = `axon-${stamp}.db`;
+  const now = new Date();
+  const signed = sign(cfg, objectKey, Buffer.alloc(0), now, "GET");
+
+  const res = await fetch(`${cfg.endpoint}/${cfg.bucket}/${objectKey}`, {
+    method: "GET",
+    headers: {
+      authorization: signed.authorization,
+      "x-amz-content-sha256": signed.payloadHash,
+      "x-amz-date": signed.amzDate,
+    },
+    signal: AbortSignal.timeout(120_000),
+  });
+  if (!res.ok) throw new Error(`Bucket returned ${res.status} for ${objectKey}`);
+
+  const body = Buffer.from(await res.arrayBuffer());
+  const restored = path.join(os.tmpdir(), `axon-drill-${stamp}.db`);
+  fs.writeFileSync(restored, body);
+
+  try {
+    const Database = (await import("better-sqlite3")).default;
+    const copy = new Database(restored, { readonly: true });
+    const one = (sql: string) => (copy.prepare(sql).get() as { n: number }).n;
+
+    const integrity = (copy.prepare("PRAGMA integrity_check").get() as { integrity_check: string })
+      .integrity_check;
+    const trajectories = one("SELECT COUNT(*) n FROM trajectory");
+    const props = one("SELECT COUNT(*) n FROM prop");
+    // A corpus without its samples restores as a list of hashes.
+    const withSamples = one("SELECT COUNT(*) n FROM trajectory WHERE length(samples) > 2");
+    copy.close();
+
+    const db = getDb();
+    const liveOne = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
+    const live = {
+      trajectories: liveOne("SELECT COUNT(*) n FROM trajectory"),
+      props: liveOne("SELECT COUNT(*) n FROM prop"),
+    };
+
+    return {
+      key: objectKey,
+      bytes: body.length,
+      sha256: sha256(body),
+      integrity,
+      trajectories,
+      props,
+      withSamples,
+      // The live database only grows, so the restore is sound if it is not ahead.
+      matchesLive: trajectories <= live.trajectories && props <= live.props,
+      live,
+    };
+  } finally {
+    fs.rmSync(restored, { force: true });
+  }
 }
