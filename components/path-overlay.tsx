@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useMemo, useState } from "react";
 import { GOAL_R } from "@/components/station/viewport";
 import { cn } from "@/lib/cn";
@@ -92,10 +94,13 @@ export function PathOverlay({ taskId, goal }: { taskId: number; goal: [number, n
               hover === p.trajHash && "bg-signal-dim",
             )}
           >
-            <span className="truncate font-mono text-[12px] text-scribe-3">
+            <Link
+              href={`/run/${p.trajHash}`}
+              className="truncate font-mono text-[12px] text-scribe-3 hover:text-probe"
+            >
               {i === 0 ? <span className="text-signal">best </span> : null}
               {shortHash(p.contributor)}
-            </span>
+            </Link>
             <span className="shrink-0 font-mono text-[12px] tabular-nums text-scribe-2">
               {fmtScore(p.score)}
             </span>

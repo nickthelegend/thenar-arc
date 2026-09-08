@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useActivity } from "@/lib/hooks";
 import { txUrl, CURRENCY } from "@/lib/chain";
 import { fmtMon, fmtScore, shortHash } from "@/lib/format";
@@ -33,7 +35,9 @@ export function ActivityFeed({ limit = 12 }: { limit?: number }) {
               className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-rule py-2 font-mono text-[12px]"
             >
               <span className="text-scribe-3">#{e.trajectoryId}</span>
-              <span className="text-scribe-2">{shortHash(e.contributor)}</span>
+              <Link href={`/operator/${e.contributor}`} className="text-scribe-2 hover:text-probe">
+                {shortHash(e.contributor)}
+              </Link>
               <span className="text-scribe-3">task {e.taskId}</span>
               <span className="text-scribe">{fmtScore(e.score)}</span>
               <span className="text-signal tabular-nums">{fmtMon(e.paidMon)} {CURRENCY}</span>
