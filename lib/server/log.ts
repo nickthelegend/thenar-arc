@@ -18,7 +18,20 @@ export function requestId(): string {
 }
 
 export function logLine(level: "info" | "warn" | "error", event: string, fields: LogFields = {}) {
-  const line = { t: new Date().toISOString(), level, event, ...fields };
+  // `message` is what Railway's viewer renders. Without it a structured line
+  // shows as a blank row — the log fires, the count and timing are right, and
+  // an operator scrolling the console sees nothing at all. The structured
+  // fields stay beside it, so the line is still machine-readable.
+  const message = [
+    event,
+    fields.route ?? "",
+    fields.status !== undefined ? `-> ${fields.status}` : "",
+    fields.ms !== undefined ? `${fields.ms}ms` : "",
+    fields.id ? `#${fields.id}` : "",
+    fields.error ? `: ${fields.error}` : "",
+  ].filter(Boolean).join(" ");
+
+  const line = { t: new Date().toISOString(), level, event, message, ...fields };
   const out = JSON.stringify(line);
   if (level === "error") console.error(out);
   else if (level === "warn") console.warn(out);
