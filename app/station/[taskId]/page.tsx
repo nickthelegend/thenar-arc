@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { STATION_SEEN } from "@/lib/first-run";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -136,6 +137,26 @@ export default function StationPage() {
     [scene],
   );
   const [helpOpen, setHelpOpen] = useState(false);
+  const [chosePractice, setChosePractice] = useState(false);
+  /**
+   * Whether this browser has driven a station before.
+   *
+   * A carousel was the rejected idea and it deserved rejecting: it delays the
+   * product to explain the product. What a first-time operator actually needs
+   * is the three things they cannot guess — that the jaws need height as well
+   * as position, that letting go is what takes the measurement, and that they
+   * can learn all of it without spending one of five paid attempts. Those
+   * belong in the panel they are already reading, not in a screen in front of
+   * it. Null until read, so the server render does not guess.
+   */
+  const [firstVisit, setFirstVisit] = useState<boolean | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try { setFirstVisit(localStorage.getItem(STATION_SEEN) !== "1"); }
+      catch { setFirstVisit(false); }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
   // Read after mount: localStorage is not available during the server render.
   const [sound, setSoundState] = useState(false);
   useEffect(() => {
@@ -262,6 +283,8 @@ export default function StationPage() {
   }, []);
 
   const start = () => {
+    // Whatever happens next, they have now seen the station.
+    try { localStorage.setItem(STATION_SEEN, "1"); } catch { /* storage blocked */ }
     // The button that started the run keeps focus, and space activates a
     // focused button. Drop focus so the jaws get the key, not the control.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
@@ -348,7 +371,9 @@ export default function StationPage() {
    * deliberately want. Anyone can practise: no wallet, no slot consumed, the
    * same scene and the same measurement, just no transaction at the end.
    */
-  const practice = !task.open || capped;
+  // Practice is forced when there is nothing to pay for, and chosen when a
+  // first-time operator would rather not spend a slot learning the controls.
+  const practice = !task.open || capped || chosePractice;
   // Measured on this chain: a submit reserves roughly 0.03 AVAX against the gas
   // limit regardless of what it spends, and the chain rejects the transaction
   // outright below that. Warn before the wallet does.
@@ -577,9 +602,37 @@ export default function StationPage() {
                     </p>
                   </div>
                 ) : null}
+                {firstVisit && !practice ? (
+                  <ol className="mt-4 flex flex-col gap-2 border border-rule bg-ink-2 px-3 py-3 text-left">
+                    {[
+                      ["Move", "Drag in the workspace, or W A S D. The tool follows."],
+                      ["Grasp", "Get over the payload and low enough, then Space. The jaws only close on something they are actually on."],
+                      ["Place", "Let go inside the datum circle. The measurement is taken when it settles — there is nothing to press."],
+                    ].map(([k, v], i) => (
+                      <li key={k} className="flex gap-3">
+                        <span className="font-mono text-[12px] tabular-nums text-scribe-3">{i + 1}</span>
+                        <span className="flex flex-col gap-0.5">
+                          <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-scribe">{k}</span>
+                          <span className="text-[13px] leading-relaxed text-scribe-3">{v}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+
                 <Button variant="primary" className="mt-6" onClick={start}>
                   {practice ? "Begin practice run" : "Begin run"}
                 </Button>
+
+                {firstVisit && !practice ? (
+                  <button
+                    type="button"
+                    onClick={() => { setChosePractice(true); start(); }}
+                    className="mt-3 block w-full text-[13px] text-scribe-3 underline underline-offset-4 hover:text-scribe-2"
+                  >
+                    Practise first &mdash; no wallet, no slot used
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -603,7 +656,7 @@ export default function StationPage() {
                   payloadIds,
                 })
               }
-              onAgain={start}
+              onAgain={() => { setChosePractice(false); start(); }}
               onLeave={() => router.push("/hub")}
             />
           ) : null}
