@@ -106,3 +106,33 @@ export async function signChallenge(pair: CryptoKeyPair, message: string) {
     s: hex(sig.slice(32, 64).buffer as ArrayBuffer),
   };
 }
+
+
+/**
+ * Sign an existing digest — kept, but not usable for on-chain run authorisation.
+ *
+ * `AxonProtocol.submitTrajectoryWithPasskey` passes the trajectory hash to the
+ * precompile *as the digest*. WebCrypto always hashes what it signs, so what
+ * this produces is a signature over sha256(trajHash), which the contract
+ * rejects. Verified against the deployed registry: raw trajHash returns false,
+ * sha256(trajHash) returns true.
+ *
+ * Producing the signature the contract wants needs a raw ECDSA signer over a
+ * pre-computed hash, which needs the private scalar — and a key you can read
+ * out of the browser is not a passkey. The contract path and the browser's
+ * crypto are genuinely incompatible as deployed; closing it means redeploying
+ * the protocol so the registry is asked to verify sha256(trajHash), which
+ * would orphan the trajectories already recorded against this address.
+ */
+export async function signDigest(pair: CryptoKeyPair, digest: `0x${string}`) {
+  const bytes = new Uint8Array(
+    (digest.slice(2).match(/.{2}/g) ?? []).map((b) => parseInt(b, 16)),
+  );
+  const sig = new Uint8Array(
+    await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, pair.privateKey, bytes),
+  );
+  return {
+    r: hex(sig.slice(0, 32).buffer as ArrayBuffer),
+    s: hex(sig.slice(32, 64).buffer as ArrayBuffer),
+  };
+}

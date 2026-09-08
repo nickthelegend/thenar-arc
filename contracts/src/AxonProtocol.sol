@@ -322,7 +322,8 @@ contract AxonProtocol {
      *
      * The verifier still signs the score — that is what stops an operator
      * minting their own — but the operator's consent is a secp256r1 signature
-     * checked through Monad's P256 precompile, the same curve a passkey uses.
+     * checked through Avalanche's P-256 precompile at 0x0100, the same curve a
+     * passkey uses.
      * On Ethereum this check would cost hundreds of thousands of gas in
      * Solidity; here the registry does it in a staticcall.
      */

@@ -114,6 +114,7 @@ export function useSubmitRun() {
         // 2. One transaction records the trajectory and pays for it.
         setState({ phase: "signing", trajHash: v.trajHash, cid: v.cid, score: v.score });
         const started = performance.now();
+
         const txHash = await writeContractAsync({
           address: AXON_ADDRESS,
           abi: AXON_ABI,
@@ -163,3 +164,5 @@ export function useSubmitRun() {
 
   return { ...state, submit, reset };
 }
+
+
