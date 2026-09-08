@@ -35,6 +35,36 @@ export const W_SMOOTHNESS = 0.25;
 /** Score below this is rejected: it never reaches the training pool. */
 export const ACCEPT_FLOOR = 4000;
 
+/** Jaw opening below which the jaws are holding something, in mm. */
+export const GRIP_CLOSED_MM = 14;
+/** What each grasp after the first costs, as a fraction of the final score. */
+export const REGRASP_PENALTY = 0.03;
+/** The most re-grasping can cost, however many times it happens. */
+export const REGRASP_PENALTY_CAP = 0.15;
+
+/**
+ * How many times the payload was taken during a run.
+ *
+ * Derived from the samples rather than reported by the client, which is the
+ * only way it can be part of a signed score: the server re-derives it from the
+ * same recording and gets the same number, so there is nothing to lie about.
+ *
+ * A re-grasp is a legitimate correction — put it down, line it up, pick it up
+ * again — and the run should be allowed to continue rather than be thrown away.
+ * But a trajectory assembled from six attempts is worth less as training data
+ * than one clean approach, so it costs something and the cost is bounded.
+ */
+export function graspCount(samples: Sample[]): number {
+  let grasps = 0;
+  let holding = false;
+  for (const s of samples) {
+    const closed = s.grip <= GRIP_CLOSED_MM;
+    if (closed && !holding) grasps += 1;
+    holding = closed;
+  }
+  return grasps;
+}
+
 function clamp01(x: number) {
   return Math.min(1, Math.max(0, x));
 }
@@ -79,7 +109,12 @@ export function evaluate(
   const unit =
     placement * W_PLACEMENT + efficiency * W_EFFICIENCY + smoothness * W_SMOOTHNESS;
 
-  const score = Math.round(clamp01(unit) * 10000);
+  // Every grasp after the first, bounded. Applied last so it reads as a
+  // deduction from the run's own quality rather than as a fourth term.
+  const grasps = graspCount(traj.samples);
+  const penalty = Math.min(REGRASP_PENALTY_CAP, Math.max(0, grasps - 1) * REGRASP_PENALTY);
+
+  const score = Math.round(clamp01(unit) * (1 - penalty) * 10000);
   const accepted = traj.success && score >= ACCEPT_FLOOR;
 
   return {
@@ -87,7 +122,7 @@ export function evaluate(
     success: accepted,
     deviationMm: traj.deviationMm,
     parts: { placement, efficiency, smoothness },
-    raw: { meanJerk: jerk, seconds: traj.durationSeconds, parSeconds },
+    raw: { meanJerk: jerk, seconds: traj.durationSeconds, parSeconds, grasps, penalty },
     payoutMon: accepted ? (rewardPerTrajectory * score) / 10000 : 0,
   };
 }

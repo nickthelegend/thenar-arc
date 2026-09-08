@@ -16,7 +16,7 @@ import {
  */
 
 export type Shortfall = {
-  key: "placement" | "smoothness" | "efficiency";
+  key: "placement" | "smoothness" | "efficiency" | "regrasp";
   label: string;
   /** Score points lost, 0..10000, weighted as the total is. */
   lost: number;
@@ -62,6 +62,22 @@ export function shortfalls(v: Verdict, rewardPerTrajectory: number): Shortfall[]
 
     return { key, label, lost, costMon, reading, advice };
   });
+
+  // Re-grasping is not one of the three terms — it is a deduction from all of
+  // them — so it is reported as its own line rather than folded into placement,
+  // where it would look like the payload had landed worse than it did.
+  if (v.raw.penalty > 0) {
+    const lost = Math.round(v.raw.penalty * 10000);
+    out.push({
+      key: "regrasp",
+      label: "Re-grasping",
+      lost,
+      costMon: (rewardPerTrajectory * lost) / 10000,
+      reading: `${v.raw.grasps} grasps, ${(v.raw.penalty * 100).toFixed(0)}% deducted`,
+      advice:
+        "Putting the payload down and picking it up again is allowed and often the right call — it just makes the trajectory worth less as training data. The deduction stops at 15% however many times it happens.",
+    });
+  }
 
   return out.sort((a, b) => b.lost - a.lost);
 }

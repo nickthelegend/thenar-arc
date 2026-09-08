@@ -54,7 +54,13 @@ export type Verdict = {
   /** Component scores, each 0..1 */
   parts: { placement: number; efficiency: number; smoothness: number };
   /** The raw measurements the components were derived from. */
-  raw: { meanJerk: number; seconds: number; parSeconds: number };
+  raw: {
+    meanJerk: number; seconds: number; parSeconds: number;
+    /** Times the payload was taken. One is a clean run. */
+    grasps: number;
+    /** Fraction deducted for re-grasping, 0..0.15. */
+    penalty: number;
+  };
   payoutMon: number;
 };
 
