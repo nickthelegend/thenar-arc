@@ -39,9 +39,9 @@ const pixel = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  // Without this, Next cannot resolve the file-convention opengraph image to an
-  // absolute URL and silently emits no og:image at all — the card looked
-  // configured and unfurled to nothing.
+  // Without this, Next cannot resolve the image to an absolute URL and
+  // silently emits no og:image at all — the card looked configured and
+  // unfurled to nothing.
   metadataBase: new URL("https://thenar.io"),
   title: "Thenar — the data foundry for physical AI",
   description:
@@ -51,6 +51,23 @@ export const metadata: Metadata = {
     description:
       "Drive a robot arm, get measured against the datum, and get paid on Avalanche in the transaction that records the run.",
     type: "website",
+    // A static file rather than the opengraph-image route convention. That
+    // convention built locally, appeared in the routes manifest and produced
+    // output in .next/server/app, and still returned 404 on the deployed
+    // host with and without a pinned runtime. A file in public/ is served the
+    // same way by every host, which is the only property that matters here.
+    //
+    // Redrawn by `node scripts/og.mjs`, which reads the figures from the
+    // contract. The card carries the date they were read, because a share
+    // card is a snapshot and must not imply the numbers are live.
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Thenar — crowdsourced robot manipulation data, settled on chain per run" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Thenar — the data foundry for physical AI",
+    description:
+      "Drive a robot arm, get measured against the datum, and get paid on Avalanche in the transaction that records the run.",
+    images: ["/og.png"],
   },
 };
 
