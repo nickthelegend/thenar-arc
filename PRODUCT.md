@@ -50,10 +50,19 @@ Confirmed and shipping:
 - `licensePolicy` — fans a licence payment out to every contributor pro-rata in one transaction
 - Portfolio, leaderboard, and a policy market reading directly from chain state
 - `PasskeyRegistry` — binds a secp256r1 public key to an address and verifies
-  signatures through the P-256 precompile at `0x0100` (EIP-7951 / RIP-7212), so
-  a run can be authorised with the curve a passkey uses rather than a seed
-  phrase. Verified working against the deployed contract on Fuji: a real
-  WebCrypto signature returns 1, a tampered one returns 0
+  signatures through the P-256 precompile at `0x0100` (EIP-7951 / RIP-7212).
+  Register, prove and revoke work end to end at `/passkey`, verified against the
+  deployed contract on Fuji: a real WebCrypto signature returns true, a tampered
+  one returns false.
+
+  **Authorising a *run* with it does not work as deployed, and must not be
+  claimed.** `submitTrajectoryWithPasskey` passes the trajectory hash to the
+  precompile as the digest, and WebCrypto always hashes what it signs — so a
+  browser can only produce a signature over sha256(trajHash), which the contract
+  rejects. Confirmed by calling the deployed registry both ways. Signing the raw
+  hash needs the private scalar, and a key that can be read out of the browser is
+  not a passkey. Closing this means redeploying the protocol, which would orphan
+  the trajectories already recorded against this address.
 - Thirty-four scene props and seven rooms, generated from named dimensions by
   the same CAD kernel that produces the arm, so the object a task names is the
   object the station renders and the scenario it carries is the room it is
