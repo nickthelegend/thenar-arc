@@ -17,6 +17,7 @@ import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
+import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { propsForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
@@ -141,6 +142,32 @@ export default function StationPage() {
   useEffect(() => {
     if (tx.phase === "confirmed") clearDraft();
   }, [tx.phase]);
+
+  // This sitting's tally. Sessions here are long and repetitive, and the
+  // interface only ever showed one run at a time.
+  const [tally, setTally] = useState<Tally | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => setTally(readTally()), 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const countedMeasured = useRef<string | null>(null);
+  useEffect(() => {
+    if (phase !== "measured" || !verdict) return;
+    // Once per measurement, not once per render of it.
+    const key = `${runId}:${verdict.score}`;
+    if (countedMeasured.current === key) return;
+    countedMeasured.current = key;
+    setTally(noteMeasured(verdict.score));
+  }, [phase, verdict, runId]);
+
+  const countedPaid = useRef<string | null>(null);
+  useEffect(() => {
+    if (tx.phase !== "confirmed" || !tx.txHash) return;
+    if (countedPaid.current === tx.txHash) return;
+    countedPaid.current = tx.txHash;
+    setTally(notePaid(tx.paidMon ?? 0));
+  }, [tx.phase, tx.txHash, tx.paidMon]);
 
   // Offer it back once, on arrival, if this tab was interrupted mid-flow.
   const [recovered, setRecovered] = useState<ReturnType<typeof loadDraft>>(null);
@@ -472,6 +499,23 @@ export default function StationPage() {
               <Row label="Escrow" value={`${fmtMon(Number(task.escrowWei) / 1e18, 3)} ${CURRENCY}`} />
             </div>
           </Section>
+
+          {tally && tally.measured > 0 ? (
+            <Section title="This sitting">
+              <div className="flex flex-col gap-3">
+                <Row label="Runs measured" value={String(tally.measured)} />
+                <Row label="Paid" value={String(tally.paid)} />
+                <Row label="Mean score" value={fmtScore(Math.round(meanScore(tally)))} />
+                <Row label="Earned" value={`${fmtMon(tally.earned, 4)} ${CURRENCY}`} tone="signal" />
+                <Row label="At the bench" value={`${minutes(tally).toFixed(0)} min`} />
+              </div>
+              <p className="mt-3 text-[12px] leading-relaxed text-scribe-3">
+                This tab only. Every figure is also on chain independently &mdash; this
+                just saves doing the arithmetic between runs.
+              </p>
+            </Section>
+          ) : null}
+
 
           <Section title="In the room">
             {ghosts.length === 0 ? (
