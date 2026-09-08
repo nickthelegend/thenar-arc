@@ -754,7 +754,7 @@ function MeasurementSnap({
               <Button
                 variant="primary"
                 className="flex-1"
-                disabled={busy}
+                disabled={busy || practice}
                 onClick={(e) => {
                   // A fast double click can fire twice before React re-renders,
                   // and each one is a real transaction.
