@@ -1,16 +1,13 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
-import { AXON_ABI } from "@/lib/abi";
-import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
+import { IS_DEPLOYED } from "@/lib/chain";
 import { insertTrajectory, getTrajectory } from "@/lib/server/db";
-import { validateSamples, validatePayloadIds, verifyAndSign, VerifyError } from "@/lib/server/verifier";
-import { parSecondsFor } from "@/lib/par";
+import { validateSamples, validatePayloadIds, VerifyError } from "@/lib/server/verifier";
+import { POST as signLocally } from "@/app/api/sign/route";
+import type { Sample } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const client = createPublicClient({ chain: appChain, transport: http() });
 
 /** Crude per-address throttle: a run takes tens of seconds, so this is generous. */
 const lastSeen = new Map<string, number[]>();
@@ -23,6 +20,52 @@ function throttled(who: string) {
   hits.push(now);
   lastSeen.set(who, hits);
   return hits.length > MAX_PER_WINDOW;
+}
+
+/**
+ * Where the verifier key lives.
+ *
+ * Set in production to the signer service's private address, which has no
+ * public domain and cannot be reached from outside the project. Unset in local
+ * development, where there is only one process and it signs for itself — so
+ * this is not a switch that can leave production quietly signing in the wrong
+ * place: production's web service does not have the key at all, and a
+ * misconfigured SIGNER_ORIGIN fails loudly rather than falling back.
+ */
+const SIGNER_ORIGIN = process.env.SIGNER_ORIGIN;
+
+type Signed = {
+  trajHash: `0x${string}`; cid: string; score: number; accepted: boolean;
+  parts: { placement: number; efficiency: number; smoothness: number };
+  signature: `0x${string}`; parSeconds: number; rewardWei: string;
+};
+
+async function sign(args: {
+  taskId: number; contributor: string; samples: Sample[];
+  durationSeconds: number; deviationMm: number; success: boolean;
+  payloadIds?: string[];
+}): Promise<Signed | { error: string; status: number }> {
+  const target = SIGNER_ORIGIN ?? "";
+  const url = `${target}/api/sign`;
+
+  // Local development, one process: call the route's own handler rather than
+  // making an HTTP request to ourselves, which a single-worker dev server
+  // would deadlock on.
+  const res = target
+    ? await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(args),
+      })
+    : await signLocally(new Request("http://local/api/sign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(args),
+      }));
+
+  const body = await res.json();
+  if (!res.ok) return { error: body.error ?? "the verifier refused this run", status: res.status };
+  return body as Signed;
 }
 
 async function handlePOST(req: Request) {
@@ -61,32 +104,17 @@ async function handlePOST(req: Request) {
       throw new VerifyError("payloadIds do not match the recorded scene");
     }
 
-    // The task has to exist on chain, and its difficulty sets the par time the
-    // efficiency term is scored against.
-    const task = (await client.readContract({
-      address: AXON_ADDRESS,
-      abi: AXON_ABI,
-      functionName: "getTask",
-      args: [BigInt(taskId)],
-    })) as { difficulty: number; rewardPerTrajectory: bigint; slotsFilled: number; slotsTotal: number };
-
-    if (task.slotsFilled >= task.slotsTotal) {
-      return NextResponse.json({ error: "This task has no slots left." }, { status: 409 });
-    }
-
-    const result = await verifyAndSign({
-      taskId,
-      contributor: contributor as `0x${string}`,
-      samples,
-      durationSeconds,
-      deviationMm,
-      success: Boolean(success),
-      parSeconds: parSecondsFor(task.difficulty),
-      rewardWei: task.rewardPerTrajectory,
-      contractAddress: AXON_ADDRESS,
-      chainId: appChain.id,
-      payloadIds,
+    // Signing happens in the signer service, which holds the key this one
+    // does not. It reads the task from the chain itself and scores the samples
+    // itself, so what crosses the private network is a recording, not a score
+    // this process could have chosen.
+    const result = await sign({
+      taskId, contributor, samples, durationSeconds, deviationMm,
+      success: Boolean(success), payloadIds,
     });
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
     // A hash already on file was already scored; hand back the same signature
     // rather than issuing a second one for identical data.
@@ -117,8 +145,8 @@ async function handlePOST(req: Request) {
       accepted: result.accepted,
       parts: result.parts,
       signature: existing ? (existing.signature as `0x${string}`) : result.signature,
-      parSeconds: parSecondsFor(task.difficulty),
-      rewardWei: task.rewardPerTrajectory.toString(),
+      parSeconds: result.parSeconds,
+      rewardWei: result.rewardWei,
     });
   } catch (e) {
     if (e instanceof VerifyError) {

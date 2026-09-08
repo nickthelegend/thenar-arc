@@ -14,10 +14,45 @@ const client = createPublicClient({ chain: appChain, transport: http() });
 export async function GET() {
   const checks: Record<string, { ok: boolean; detail: string }> = {};
 
-  checks.verifierKey = {
-    ok: Boolean(process.env.VERIFIER_PRIVATE_KEY),
-    detail: process.env.VERIFIER_PRIVATE_KEY ? "configured" : "VERIFIER_PRIVATE_KEY is not set",
-  };
+  // The key lives in the signer service, not here. Two things are worth
+  // asserting and they are different: that signing is possible at all, and
+  // that it is not possible *here*. Reporting only the first would let the key
+  // drift back into the web container without anything noticing.
+  const signerOrigin = process.env.SIGNER_ORIGIN;
+  if (signerOrigin) {
+    checks.keyIsolation = {
+      ok: !process.env.VERIFIER_PRIVATE_KEY,
+      detail: process.env.VERIFIER_PRIVATE_KEY
+        ? "VERIFIER_PRIVATE_KEY is set on the web service; it belongs only to the signer"
+        : "the web service holds no signing key",
+    };
+    try {
+      const r = await fetch(`${signerOrigin}/api/sign`, { cache: "no-store" });
+      const b = (await r.json()) as { holdsKey?: boolean; verifier?: string };
+      const expected = process.env.VERIFIER_ADDRESS?.toLowerCase();
+      const same = !expected || b.verifier?.toLowerCase() === expected;
+      checks.signer = {
+        ok: Boolean(b.holdsKey) && same,
+        detail: !b.holdsKey
+          ? "the signer service holds no key"
+          : same
+            ? `signer holds ${b.verifier}`
+            : `signer holds ${b.verifier}, expected ${expected}`,
+      };
+    } catch (e) {
+      checks.signer = {
+        ok: false,
+        detail: `signer unreachable at ${signerOrigin}: ${e instanceof Error ? e.message : "unknown"}`,
+      };
+    }
+  } else {
+    checks.verifierKey = {
+      ok: Boolean(process.env.VERIFIER_PRIVATE_KEY),
+      detail: process.env.VERIFIER_PRIVATE_KEY
+        ? "configured in this process (no SIGNER_ORIGIN set)"
+        : "VERIFIER_PRIVATE_KEY is not set",
+    };
+  }
 
   checks.contract = {
     ok: IS_DEPLOYED,
