@@ -260,6 +260,16 @@ export default function StationPage() {
 
   const capped = (myRuns ?? 0) >= 5;
   const accepted = verdict?.success ?? false;
+
+  /**
+   * A run the chain will not pay for, decided before it starts.
+   *
+   * Driving a full task already worked — the button was never disabled — but it
+   * was framed as a warning to click past rather than as something you might
+   * deliberately want. Anyone can practise: no wallet, no slot consumed, the
+   * same scene and the same measurement, just no transaction at the end.
+   */
+  const practice = !task.open || capped;
   // Measured on this chain: a submit reserves roughly 0.03 AVAX against the gas
   // limit regardless of what it spends, and the chain rejects the transaction
   // outright below that. Warn before the wallet does.
@@ -445,18 +455,25 @@ export default function StationPage() {
                   it to rest inside the datum circle, and let go — the measurement
                   is taken automatically once it settles.
                 </p>
-                {capped ? (
-                  <p className="mt-4 border border-reject bg-reject-dim px-3 py-2 text-[13px] text-reject">
-                    You have used all 5 of your runs on this task. Another run will
-                    record, but the chain will refuse to pay it.
-                  </p>
+                {practice ? (
+                  <div className="mt-4 border border-rule-strong bg-ink-2 px-3 py-2 text-left">
+                    <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-2">
+                      Practice run
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-scribe-3">
+                      {!task.open
+                        ? "This task has no slots left, so nothing here will be paid."
+                        : "You have used all 5 of your runs on this task, so the chain will not pay another."}
+                      {" "}
+                      The scene, the controls and the measurement are exactly the
+                      same &mdash; you just will not be asked to sign at the end.
+                      No wallet needed.
+                    </p>
+                  </div>
                 ) : null}
-                {!task.open ? (
-                  <p className="mt-4 border border-reject bg-reject-dim px-3 py-2 text-[13px] text-reject">
-                    This task has no slots left.
-                  </p>
-                ) : null}
-                <Button variant="primary" className="mt-6" onClick={start}>Begin run</Button>
+                <Button variant="primary" className="mt-6" onClick={start}>
+                  {practice ? "Begin practice run" : "Begin run"}
+                </Button>
               </div>
             </div>
           ) : null}
@@ -465,6 +482,7 @@ export default function StationPage() {
             <MeasurementSnap
               verdict={verdict}
               accepted={accepted}
+              practice={practice}
               rewardMon={task.rewardMon}
               session={s}
               thinOnGas={thinOnGas}
@@ -578,10 +596,12 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, rewardMon, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
+  verdict, accepted, practice, rewardMon, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
   verdict: Verdict;
   accepted: boolean;
+  /** The chain will not pay this one, and said so before it started. */
+  practice: boolean;
   /** This task's rate, so a lost point can be priced in AVAX. */
   rewardMon: number;
   session: ReturnType<typeof useSession>;
@@ -599,6 +619,7 @@ function MeasurementSnap({
     tx.phase === "verifying" ? "Verifying the run…"
     : tx.phase === "signing" ? "Confirm in your wallet…"
     : tx.phase === "pending" ? "Waiting for the block…"
+    : practice ? "Practice run — nothing to submit"
     : s.wrongNetwork ? "Switch to Avalanche Fuji"
     : !s.connected ? "Connect a wallet to get paid"
     : "Submit and get paid";
