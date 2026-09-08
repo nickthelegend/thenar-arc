@@ -402,3 +402,113 @@ export function Announce({ message }: { message: string | null }) {
     </div>
   );
 }
+
+
+/* -------------------------------------------------------------------------
+   ScoreDial — a score that settles rather than appears.
+
+   The verdict is the moment the run is decided, and a number that simply
+   prints gives no sense of where it landed on the scale. This sweeps an arc to
+   the score and lets it damp in, the way a needle does against a fixed
+   graduation: the pay threshold is marked, so a run can be read as clearing it
+   or falling short before the figure is parsed.
+   ------------------------------------------------------------------------- */
+
+export function ScoreDial({
+  score,
+  floor = 4000,
+  size = 132,
+}: {
+  /** 0..10000, the on-chain score. */
+  score: number;
+  /** The score a run has to reach to be paid. */
+  floor?: number;
+  size?: number;
+}) {
+  const reduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const [shown, setShown] = useState(() => (reduced ? score : 0));
+
+  useEffect(() => {
+    // Reduced motion means the value is already the final one from the initial
+    // state, so there is nothing to set and nothing to animate.
+    if (reduced) return;
+    let raf = 0;
+    const start = performance.now();
+    const dur = 900;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / dur);
+      // Exponential ease-out: fast arrival, long settle.
+      setShown(score * (1 - Math.pow(2, -10 * p)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setShown(score);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [score, reduced]);
+
+  // A 240-degree sweep, opening downward, so the graduation reads as an
+  // instrument face rather than a progress ring.
+  const SWEEP = 240;
+  const START = 150;
+  const r = size / 2 - 10;
+  const c = size / 2;
+  const polar = (frac: number, radius: number) => {
+    const a = ((START + frac * SWEEP) * Math.PI) / 180;
+    return [c + Math.cos(a) * radius, c + Math.sin(a) * radius];
+  };
+  const arc = (from: number, to: number, radius: number) => {
+    const [x1, y1] = polar(from, radius);
+    const [x2, y2] = polar(to, radius);
+    const large = (to - from) * SWEEP > 180 ? 1 : 0;
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${radius} ${radius} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  };
+
+  const frac = Math.max(0, Math.min(1, shown / 10000));
+  const paid = score >= floor;
+  const [fx, fy] = polar(floor / 10000, r);
+  const [ix, iy] = polar(floor / 10000, r - 9);
+
+  return (
+    <svg
+      width={size}
+      height={size * 0.78}
+      viewBox={`0 0 ${size} ${size * 0.78}`}
+      role="img"
+      aria-label={`Score ${(score / 100).toFixed(2)} out of 100, ${paid ? "above" : "below"} the ${(floor / 100).toFixed(0)} pay threshold`}
+    >
+      <path d={arc(0, 1, r)} fill="none" stroke="#262626" strokeWidth="6" strokeLinecap="butt" />
+      {frac > 0 ? (
+        <path
+          d={arc(0, frac, r)}
+          fill="none"
+          stroke={paid ? "#FF6A00" : "#FF2D55"}
+          strokeWidth="6"
+          strokeLinecap="butt"
+        />
+      ) : null}
+      {/* The pay threshold, fixed on the face. */}
+      <line x1={fx} y1={fy} x2={ix} y2={iy} stroke="#8F8F8F" strokeWidth="1.5" />
+      <text
+        x={c}
+        y={c + 4}
+        textAnchor="middle"
+        className="fill-scribe font-mono"
+        style={{ fontSize: 22 }}
+      >
+        {(shown / 100).toFixed(2)}
+      </text>
+      <text
+        x={c}
+        y={c + 22}
+        textAnchor="middle"
+        className="fill-scribe-3 font-mono"
+        style={{ fontSize: 12 }}
+      >
+        / 100.00
+      </text>
+    </svg>
+  );
+}

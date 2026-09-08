@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Telemetry } from "@/components/station/viewport";
 import { GOAL_R } from "@/components/station/viewport";
-import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
+import { Announce, Button, CountUp, Difficulty, ScoreDial, ToleranceBand } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useSpace } from "@/lib/space";
 import { environmentForScenario, lightingFor } from "@/lib/environments";
@@ -575,6 +575,10 @@ function MeasurementSnap({
         </div>
 
         <div className="flex flex-col gap-4 px-5 py-4">
+          <div className="flex justify-center">
+            <ScoreDial score={verdict.score} floor={ACCEPT_FLOOR} />
+          </div>
+
           <ToleranceBand deviationMm={verdict.deviationMm} toleranceMm={TOLERANCE_MM} label="Final placement" />
 
           <div className="grid grid-cols-3 gap-px bg-rule">
