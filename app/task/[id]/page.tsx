@@ -182,9 +182,12 @@ export default function TaskPage() {
           <ul className="mt-6 flex flex-col">
             {runs!.map((r) => (
               <li key={r.traj_hash} className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-rule py-2.5 font-mono text-[12px]">
-                <a href={addressUrl(r.contributor)} target="_blank" rel="noreferrer" className="text-scribe-2 hover:text-probe">
+                {/* Internal, because the operator page shows this address's
+                    whole history — runs from the ledger and every call from
+                    Avalanche's index, including the reverted ones. */}
+                <Link href={`/operator/${r.contributor}`} className="text-scribe-2 hover:text-probe">
                   {shortHash(r.contributor)}
-                </a>
+                </Link>
                 <span className="text-scribe">{fmtScore(r.score)}</span>
                 <span className="text-scribe-3">{r.deviation_mm.toFixed(1)} mm</span>
                 <span className="text-scribe-3">{fmtSeconds(r.duration_s)}</span>

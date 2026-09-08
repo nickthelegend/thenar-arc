@@ -74,9 +74,17 @@ export default function ArchivePage() {
                   key={r.traj_hash}
                   className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule py-3.5 sm:grid-cols-[1fr_repeat(3,minmax(64px,auto))_auto]"
                 >
-                  <span className="truncate font-mono text-[13px] text-scribe-2">
+                  {/* To the chain the run is actually on. Sending these to the
+                      operator page would show a Fuji history for a Monad run
+                      and imply the two are the same ledger. */}
+                  <a
+                    href={`${c.explorer}/address/${r.contributor}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="truncate font-mono text-[13px] text-scribe-2 hover:text-probe"
+                  >
                     {shortHash(r.contributor)}
-                  </span>
+                  </a>
                   <span className="hidden font-mono text-[13px] tabular-nums text-scribe-3 sm:block">
                     task {r.task_id}
                   </span>
