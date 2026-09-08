@@ -21,8 +21,8 @@ Fuji, or a reading taken from the running page.
 | | Count | Which |
 |---|---|---|
 | **Built and verified** | **67** | 1–25, 27–31, 39–75 |
-| Cannot be built as this is deployed | 3 | 26 (task expiry needs a contract change, which would orphan the settled runs), 37 (the contract hands the raw hash to the P-256 precompile; WebCrypto hashes what it signs, so no browser passkey can ever produce a signature it accepts), 38 (gasless first run needs meta-transactions; `submitTrajectory` credits `msg.sender`) |
-| Blocked on access I do not have | 5 | 32–36 — ICM, a hosted L1 validator, eERC, Warp, a subnet gas token. No Dispatch/Echo testnet gas and no AvaCloud account |
+| Cannot be built against the deployed contract | 3 | 26, 37, 38 — each checked against the ABI rather than assumed, below |
+| Blocked on one thing I cannot do myself | 5 | 32–36 — measured, not assumed, below |
 | Rejected, with the reason stated | 25 | 76–100 |
 | | **100** | |
 
@@ -166,3 +166,40 @@ corrected, because it had listed that path as shipping.
 | 98 | Localisation | Premature |
 | 99 | Blog / changelog | Not the demo |
 | 100 | Analytics tracking | Privacy cost, no benefit to a judge |
+
+---
+
+### The three the contract will not allow
+
+Read off the deployed ABI at `0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3`, not
+inferred:
+
+- **26, task expiry and escrow refund.** `TaskClosed` exists, but as an *error*,
+  not a function or an event. There is no `closeTask`, no `withdraw`, no
+  `refund` — once escrow is funded the only way out is through accepted runs.
+- **37, passkey-authorised submission.** `submitTrajectoryWithPasskey(taskId,
+  trajHash, cid, score, verifierSig, pr, ps)` hands `trajHash` to the P-256
+  precompile as the digest. WebCrypto hashes whatever it signs, so a browser
+  passkey signs `sha256(trajHash)` and the precompile is checking the wrong
+  value. Tested against the deployed contract: raw returns false, hashed
+  returns true. The registry itself works; this call cannot consume it.
+- **38, gasless first run.** `submitTrajectory` takes no contributor argument
+  and credits `msg.sender`, so nobody can pay gas on an operator's behalf
+  without the payout going to the relayer.
+
+All three want a new AxonProtocol. Deploying one would strand the escrow in this
+one and turn every settled payout into archived history, which is a bad trade
+for three items on a list of a hundred.
+
+### The five behind a faucet
+
+Not an assumption either. The ICM messenger is deployed at
+`0x253b2784c75e510dD0fF1da844684a1aC0aa5fcf` on both Fuji and Dispatch — 13 KB
+of bytecode on each — so the infrastructure is there. The deployer's balance on
+Dispatch is `0x0`, and on Echo `0x0`. A receiver contract has to exist on the
+destination chain before a message can be delivered to it, and deploying one
+costs that chain's gas.
+
+That gas comes from a faucet gated by a captcha, which is one of the few things
+I am not permitted to complete. **One action unblocks all five**: send testnet
+DIS to `0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815` on Dispatch (chain 779672).
