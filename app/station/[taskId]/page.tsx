@@ -18,6 +18,7 @@ import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
 import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
+import { soundOn, setSound } from "@/lib/click";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { propsForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
@@ -92,6 +93,12 @@ export default function StationPage() {
 
   const [runId, setRunId] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Read after mount: localStorage is not available during the server render.
+  const [sound, setSoundState] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSoundState(soundOn()), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const samples = useRef<Sample[]>([]);
   const settledSince = useRef<number | null>(null);
@@ -311,6 +318,17 @@ export default function StationPage() {
               <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
               <Key keys={["E", "Q"]} action="Raise / lower" />
               <Key keys={["Space"]} action="Open / close the jaws" />
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setSound(!sound); setSoundState(!sound); }}
+                  aria-pressed={sound}
+                  className="border border-rule-strong px-1.5 py-0.5 font-mono text-[12px] text-scribe-2"
+                >
+                  {sound ? "On" : "Off"}
+                </button>
+                <span className="text-[12px] text-scribe-3">Click on grasp and release</span>
+              </div>
               {/* A key hint is not a control. Opening the controls used to need a
                   keyboard, on the one page most likely to be driven by a mouse
                   or a trackpad. */}

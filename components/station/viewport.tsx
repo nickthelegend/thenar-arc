@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, useGLTF } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { click } from "@/lib/click";
 import { REACH_MAX, solve, toolPosition } from "@/lib/kinematics";
 import type { Sample } from "@/lib/types";
 
@@ -205,6 +206,9 @@ function Arm({
     const holding = held?.current === true;
     if (holding !== wasHolding.current) {
       wasHolding.current = holding;
+      // The same transition the jaws colour on, so what is heard and what is
+      // seen cannot disagree.
+      click(holding ? "grasp" : "release");
       for (const jaw of [n.jawL, n.jawR]) {
         jaw?.traverse((o) => {
           const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
