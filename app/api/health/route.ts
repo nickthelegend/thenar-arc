@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createPublicClient, http, hashDomain } from "viem";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
-import { countTrajectories, countByChain } from "@/lib/server/db";
+import { countTrajectories, countByChain, ENGINE } from "@/lib/server/db";
 import { runDomain } from "@/lib/server/verifier";
 
 export const runtime = "nodejs";
@@ -61,7 +61,10 @@ export async function GET() {
 
   try {
     const n = await countTrajectories();
-    checks.database = { ok: true, detail: `${n} trajectories stored` };
+    // Which engine, not just how many rows. The counts are identical either
+    // side of a migration, so a cutover that silently did not happen looks
+    // exactly like one that did.
+    checks.database = { ok: true, detail: `${n} trajectories stored in ${ENGINE}` };
   } catch (e) {
     checks.database = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
   }
