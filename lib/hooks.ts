@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useAccount, useConfig, useReadContract } from "wagmi";
+import { useAccount, useConfig, useReadContract, usePublicClient } from "wagmi";
 import { readContracts } from "wagmi/actions";
 import { formatEther } from "viem";
 import { AXON_ABI } from "./abi";
@@ -226,73 +226,102 @@ export type FeedEntry = {
  * transaction hash is the one field the contract does not keep, so it is
  * joined in from the trajectory store.
  */
+/**
+ * The feed, read from the contract's own log.
+ *
+ * This used to read `trajectoryCount` and then fan out one `getTrajectory` call
+ * per entry — forty round trips for forty rows — and then join the transaction
+ * hashes from our database, because a `Trajectory` struct has no room for the
+ * transaction that created it.
+ *
+ * The event has everything: task, contributor, hash, score, payment. And a log
+ * carries the transaction it was emitted in, so the hashes come for free and
+ * the feed stops depending on our database at all — it resolves from an RPC
+ * endpoint and nothing else.
+ *
+ * Walked backwards in windows rather than asked for in one range: public
+ * endpoints cap how many blocks a single `getLogs` may span, and the contract's
+ * history only grows.
+ */
+const WINDOW = 2_000n;
+const MAX_WINDOWS = 40;
+
 export function useActivity(limit = 40) {
-  const config = useConfig();
+  const client = usePublicClient();
 
   return useQuery({
     queryKey: ["activity", limit],
     enabled: IS_DEPLOYED,
     refetchInterval: 5_000,
     queryFn: async (): Promise<FeedEntry[]> => {
-      const total = Number(
-        ((await readContracts(config, {
-          contracts: [{ address: AXON_ADDRESS, abi: AXON_ABI, functionName: "trajectoryCount" }],
-        }))[0].result as bigint | undefined) ?? 0n,
-      );
-      if (!total) return [];
+      if (!client) return [];
 
-      const first = Math.max(0, total - limit);
-      const ids = Array.from({ length: total - first }, (_, i) => first + i);
+      const head = await client.getBlockNumber();
+      const found: FeedEntry[] = [];
 
-      const rows = await readContracts(config, {
-        contracts: ids.map((i) => ({
+      for (let i = 0; i < MAX_WINDOWS && found.length < limit; i += 1) {
+        const to = head - WINDOW * BigInt(i);
+        const from = to > WINDOW ? to - WINDOW + 1n : 0n;
+
+        const logs = await client.getLogs({
           address: AXON_ADDRESS,
-          abi: AXON_ABI,
-          functionName: "getTrajectory" as const,
-          args: [BigInt(i)] as const,
-        })),
-      });
+          event: {
+            type: "event",
+            name: "TrajectoryAccepted",
+            inputs: [
+              { name: "trajectoryId", type: "uint256", indexed: true },
+              { name: "taskId", type: "uint256", indexed: true },
+              { name: "contributor", type: "address", indexed: true },
+              { name: "trajHash", type: "bytes32", indexed: false },
+              { name: "cid", type: "string", indexed: false },
+              { name: "score", type: "uint16", indexed: false },
+              { name: "paid", type: "uint256", indexed: false },
+            ],
+          },
+          fromBlock: from,
+          toBlock: to,
+        });
 
-      const bad = rows.filter((r) => r.status !== "success").length;
-      if (bad) throw new Error(`${bad} of ${rows.length} trajectory reads failed`);
-
-      const entries = rows
-        .map((r, k) => {
-          if (r.status !== "success") return null;
-          const t = r.result as {
-            taskId: bigint; contributor: `0x${string}`; trajHash: `0x${string}`;
-            score: number; paid: bigint; at: bigint;
+        for (const log of logs.reverse()) {
+          const a = log.args as {
+            trajectoryId?: bigint; taskId?: bigint; contributor?: `0x${string}`;
+            trajHash?: `0x${string}`; score?: number; paid?: bigint;
           };
-          return {
-            trajectoryId: ids[k],
-            taskId: Number(t.taskId),
-            contributor: t.contributor,
-            score: Number(t.score),
-            paidMon: Number(formatEther(t.paid)),
-            trajHash: t.trajHash,
-            at: Number(t.at) * 1000,
-          } as FeedEntry;
-        })
-        .filter(Boolean)
-        .reverse() as FeedEntry[];
-
-      // Join the transaction hashes the contract cannot hold.
-      try {
-        const feed = await fetch("/api/feed?limit=50").then((r) => r.json());
-        const byHash = new Map<string, string>(
-          (feed.runs ?? [])
-            .filter((r: { tx_hash: string | null }) => r.tx_hash)
-            .map((r: { traj_hash: string; tx_hash: string }) => [r.traj_hash.toLowerCase(), r.tx_hash]),
-        );
-        for (const e of entries) {
-          const tx = byHash.get(e.trajHash.toLowerCase());
-          if (tx) e.txHash = tx;
+          if (a.trajectoryId === undefined || a.trajHash === undefined) continue;
+          found.push({
+            trajectoryId: Number(a.trajectoryId),
+            taskId: Number(a.taskId ?? 0n),
+            contributor: a.contributor ?? "0x0000000000000000000000000000000000000000",
+            score: Number(a.score ?? 0),
+            paidMon: Number(formatEther(a.paid ?? 0n)),
+            trajHash: a.trajHash,
+            // Straight off the log, rather than joined from our database.
+            txHash: log.transactionHash ?? undefined,
+            // The block's own time, so the feed is ordered by the chain.
+            at: Number(log.blockNumber) ,
+          } as FeedEntry);
         }
-      } catch {
-        // The chain data stands on its own; the hash join is a convenience.
+
+        if (from === 0n) break;
       }
 
-      return entries;
+      // Timestamps, once, for the blocks actually shown — rather than a call
+      // per entry for blocks most of them share.
+      const blocks = [...new Set(found.map((e) => e.at))];
+      const times = new Map<number, number>();
+      await Promise.all(
+        blocks.slice(0, limit).map(async (n) => {
+          try {
+            const b = await client.getBlock({ blockNumber: BigInt(n) });
+            times.set(n, Number(b.timestamp) * 1000);
+          } catch {
+            // Left as the block number; the row still renders and still links.
+          }
+        }),
+      );
+      for (const e of found) e.at = times.get(e.at) ?? Date.now();
+
+      return found.slice(0, limit);
     },
   });
 }
