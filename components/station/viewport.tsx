@@ -424,7 +424,27 @@ function GhostTrail({ points }: { points: React.RefObject<Float32Array> }) {
 }
 
 /** How far the tool can reach, drawn only when the operator hits the limit. */
-function ReachEnvelope({ visible }: { visible: boolean }) {
+/**
+ * The edge of what the arm can reach.
+ *
+ * A ring appearing said "something is wrong" and left the operator to work out
+ * what. It now marks the bearing the tool is actually pushing against, so the
+ * limit reads as a direction to come back from rather than a general alarm.
+ */
+function ReachEnvelope({ visible, target }: {
+  visible: boolean;
+  target?: React.RefObject<[number, number, number]>;
+}) {
+  const spur = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    const g = spur.current, t = target?.current;
+    if (!g || !t) return;
+    // Point the marker along the bearing of the requested position, which is
+    // the direction the operator is asking the arm to go.
+    g.rotation.y = -Math.atan2(-t[1], t[0]);
+  });
+
   const ring = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     for (let i = 0; i <= 128; i += 1) {
@@ -439,8 +459,15 @@ function ReachEnvelope({ visible }: { visible: boolean }) {
     <group position={[0, TABLE_Z + 0.002, 0]}>
       <line>
         <primitive object={ring} attach="geometry" />
-        <lineBasicMaterial color="#FF2D55" transparent opacity={0.75} />
+        <lineBasicMaterial color="#FF2D55" transparent opacity={0.4} />
       </line>
+      {/* A brighter spur on the bearing being pushed against. */}
+      <group ref={spur}>
+        <mesh position={[REACH_MAX, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[REACH_MAX * 0.045, REACH_MAX * 0.075, 24]} />
+          <meshBasicMaterial color="#FF2D55" transparent opacity={0.95} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -666,7 +693,7 @@ function Rig({
 
       {environmentUrl ? <Room url={environmentUrl} /> : null}
       <SurfacePlate />
-      <ReachEnvelope visible={outOfReach} />
+      <ReachEnvelope visible={outOfReach} target={target} />
       <GhostTrail points={trail} />
       <GoalZone at={goal} payload={object} />
       {/* The landmark the instruction names, sitting at the datum it defines. */}
