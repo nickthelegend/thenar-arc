@@ -12,6 +12,8 @@ import { cn } from "@/lib/cn";
 import { fmtMon, fmtSeconds, shortHash } from "@/lib/format";
 import { PropPicker } from "@/components/prop-picker";
 import { RoomPicker } from "@/components/room-picker";
+import { useTaskCatalogue } from "@/components/tasks-provider";
+import { SCENARIOS } from "@/lib/chain";
 import { payloads, targets, propById, type Prop } from "@/lib/props";
 
 /** Anyone can open work here: the escrow is what makes the bounty real. */
@@ -55,6 +57,11 @@ export default function PostTaskPage() {
   const [reward, setReward] = useState("0.004");
   const [scenario, setScenario] = useState(1);
   const [difficulty, setDifficulty] = useState(3);
+
+  // Existing tasks as starting points. A funder posting a second task usually
+  // wants the same shape as their first with one thing changed, and rebuilding
+  // it from defaults invites a typo in the economics rather than the scene.
+  const { tasks } = useTaskCatalogue();
 
   const slotsN = Number(slots);
   const rewardN = Number(reward);
@@ -134,6 +141,35 @@ export default function PostTaskPage() {
             {!validReward ? <Err>A positive amount in AVAX.</Err> : null}
           </Field>
         </div>
+
+        {tasks.length > 0 ? (
+          <Field
+            label="Start from"
+            hint="Copy an existing task's scene, room, rate and difficulty, then change what you need. Nothing is posted until you sign."
+          >
+            <div className="flex flex-wrap gap-2">
+              {tasks.slice(0, 6).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setPayloadId(t.scene.payload.id);
+                    setTargetId(t.scene.target.id);
+                    setName(t.name);
+                    setScenario(Math.max(0, SCENARIOS.indexOf(t.scenario as (typeof SCENARIOS)[number])));
+                    setDifficulty(t.difficulty);
+                    setReward(String(t.rewardMon));
+                    setSlots(String(t.slotsTotal));
+                  }}
+                  className="border border-rule px-2.5 py-1 font-mono text-[12px] text-scribe-3 transition-colors hover:border-rule-strong hover:text-scribe-2"
+                >
+                  #{t.id} {t.scene.payload.label}&rarr;{t.scene.target.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+        ) : null}
+
 
         <Field
           label="Room"
