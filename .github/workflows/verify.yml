@@ -1,0 +1,42 @@
+name: verify
+
+# The checks that were being typed out by hand after every deploy. Running them
+# on a schedule matters as much as on a push: the invariant that broke in this
+# project — the ledger drifting from the contract's own count — drifts on its
+# own, without anyone committing anything.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npx eslint app components lib
+      - run: npm run build
+      # Every model has to be a real glTF 2.0 binary, and big enough on screen
+      # to see — this project shipped props at 0.1 x 0.1 pixels once.
+      - run: node scripts/projected-size.mjs
+
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Read-only against the deployed system, which is the only place the
+      # frontend, the API, the database and the chain are assembled together.
+      - run: node test/e2e.mjs
+        env:
+          BASE: https://thenar.io
