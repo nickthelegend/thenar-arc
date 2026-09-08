@@ -76,6 +76,17 @@ const health = await json("/api/health").catch(() => null);
 check("health ok", health?.ok === true);
 if (health) {
   for (const [k, v] of Object.entries(health.checks)) check(`health ${k}`, v.ok, v.detail);
+
+  // The key lives in the signer service. Asserted from outside as well as by
+  // the health check itself, because a health check that reports on its own
+  // process is exactly what a key drifting back into this one would defeat:
+  // the public edge must not be able to sign, whatever it says about itself.
+  check("web service reports no signing key", health.checks.keyIsolation?.ok === true,
+    health.checks.keyIsolation?.detail);
+  const signGet = await fetch(`${BASE}/api/sign`);
+  const signBody = await signGet.json().catch(() => ({}));
+  check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,
+    `${signGet.status} ${JSON.stringify(signBody)}`);
 }
 
 // --- archived runs stay archived --------------------------------------------
