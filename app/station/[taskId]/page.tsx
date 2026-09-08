@@ -245,7 +245,36 @@ export default function StationPage() {
   // "reading from the chain…" for ever is a lie about what is happening.
   if (!task) {
     return isLoading ? (
-      <div className="flex h-dvh items-center justify-center bg-ink-1">
+      <div className="flex h-dvh flex-col items-center justify-center gap-5 bg-ink-1">
+        {/* The instrument coming up, rather than a word. Each segment settles in
+            turn, so the wait reads as the arm being assembled from the chain's
+            own answer instead of as a page that has stopped. */}
+        <svg width="132" height="96" viewBox="0 0 132 96" role="img"
+             aria-label={`Reading task ${taskId} from the chain`}>
+          <line x1="20" y1="88" x2="112" y2="88" stroke="#262626" strokeWidth="2" />
+          {[
+            { d: "M34 88 L34 62", delay: 0 },
+            { d: "M34 62 L66 40", delay: 180 },
+            { d: "M66 40 L98 52", delay: 360 },
+            { d: "M98 52 L98 40", delay: 540 },
+          ].map((seg) => (
+            <path
+              key={seg.d}
+              d={seg.d}
+              stroke="#FF6A00"
+              strokeWidth="3"
+              strokeLinecap="round"
+              fill="none"
+              pathLength={1}
+              style={{
+                strokeDasharray: 1,
+                strokeDashoffset: 1,
+                animation: `thenar-draw 1.6s ${seg.delay}ms cubic-bezier(0.16,1,0.3,1) infinite`,
+              }}
+            />
+          ))}
+          <circle cx="34" cy="88" r="4" fill="#3D3D3D" />
+        </svg>
         <span className="font-mono text-[13px] text-scribe-3">
           Reading task #{taskId} from the chain…
         </span>

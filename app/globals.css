@@ -193,6 +193,13 @@
   }
 }
 
+@keyframes thenar-draw {
+  0%   { stroke-dashoffset: 1; }
+  45%  { stroke-dashoffset: 0; }
+  85%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 1; }
+}
+
 /* -------------------------------------------------------------------------
    Print.
 
