@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Pulse } from "@/components/pulse";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
 import { DM_Mono, Hanken_Grotesk, Press_Start_2P } from "next/font/google";
 import { Providers } from "@/components/providers";
@@ -99,6 +100,7 @@ export default function RootLayout({
         <Providers>
           <SiteNav />
           <Conditions />
+          <Pulse />
           <main id="main">{children}</main>
         </Providers>
       </body>

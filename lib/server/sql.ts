@@ -170,6 +170,16 @@ export function migrate(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_traj_created ON trajectory(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
         CREATE INDEX IF NOT EXISTS idx_traj_chain ON trajectory(chain_id);
+
+        -- Two integers and a date. There is deliberately no room in this table
+        -- for an address, an agent string, a session or an id: a counter that
+        -- cannot identify anyone cannot later be asked to.
+        CREATE TABLE IF NOT EXISTS pageview (
+          path  TEXT NOT NULL,
+          day   TEXT NOT NULL,
+          n     INTEGER NOT NULL DEFAULT 0,
+          PRIMARY KEY (path, day)
+        );
       `);
       return;
     }
@@ -232,6 +242,13 @@ export function migrate(): Promise<void> {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
       CREATE INDEX IF NOT EXISTS idx_traj_chain ON trajectory(chain_id);
+
+      CREATE TABLE IF NOT EXISTS pageview (
+        path  TEXT NOT NULL,
+        day   TEXT NOT NULL,
+        n     INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (path, day)
+      );
     `);
   })();
   return ready;

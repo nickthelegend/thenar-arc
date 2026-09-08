@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { DimRule } from "@/components/primitives";
 import { appChain, addressUrl, AXON_ADDRESS } from "@/lib/chain";
 import { cn } from "@/lib/cn";
+import { fmtInt } from "@/lib/format";
+import { PULSE_KEY } from "@/components/pulse";
 
 type Health = { ok: boolean; checks: Record<string, { ok: boolean; detail: string }> };
 
@@ -104,6 +106,118 @@ export default function StatusPage() {
           ) : null}
         </ul>
       )}
+
+      <UsagePanel />
     </div>
+  );
+}
+
+type Stats = {
+  since: string; days: number;
+  views: { path: string; n: number }[];
+  viewsByDay: { day: string; n: number }[];
+  runs: { total: number; operators: number; meanScore: number; byDay: { day: string; n: number }[] };
+};
+
+/**
+ * What is used, in aggregate.
+ *
+ * The opt-out sits on the same page as the numbers rather than in a policy
+ * nobody opens. Anyone reading the counts can see, in the same glance, exactly
+ * what is counted and how to stop being part of it.
+ */
+function UsagePanel() {
+  const [s, setS] = useState<Stats | null>(null);
+  const [out, setOut] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => setS(null));
+    const t = setTimeout(() => {
+      try { setOut(localStorage.getItem(PULSE_KEY) === "1"); } catch { /* storage blocked */ }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const toggle = () => {
+    const next = !out;
+    setOut(next);
+    try {
+      if (next) localStorage.setItem(PULSE_KEY, "1");
+      else localStorage.removeItem(PULSE_KEY);
+    } catch { /* storage blocked; nothing was being stored anyway */ }
+  };
+
+  const peak = s ? Math.max(1, ...s.viewsByDay.map((d) => d.n)) : 1;
+  const totalViews = s ? s.views.reduce((n, v) => n + v.n, 0) : 0;
+
+  return (
+    <>
+      <DimRule className="mt-10" note="Usage" />
+      <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-scribe-2">
+        Counts, with no subject. A page open adds one to a row holding a path, a
+        date and an integer &mdash; there is no cookie, no identifier, and no
+        column the schema could put one in. Requests that signal Do Not Track or
+        Global Privacy Control are not counted at all.
+      </p>
+
+      <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
+        <span className="flex items-baseline gap-2">
+          <span className="label">Page opens</span>
+          <span className="font-mono text-[15px] tabular-nums text-scribe">{s ? fmtInt(totalViews) : "—"}</span>
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="label">Runs paid</span>
+          <span className="font-mono text-[15px] tabular-nums text-signal">{s ? fmtInt(s.runs.total) : "—"}</span>
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="label">Operators</span>
+          <span className="font-mono text-[15px] tabular-nums text-scribe-2">{s ? fmtInt(s.runs.operators) : "—"}</span>
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="label">Window</span>
+          <span className="font-mono text-[15px] tabular-nums text-scribe-2">{s ? `${s.days} days` : "—"}</span>
+        </span>
+      </div>
+
+      {s && s.viewsByDay.length > 0 ? (
+        <div className="mt-5 flex h-20 items-end gap-1" role="img"
+             aria-label={`Page opens per day over ${s.days} days, peaking at ${peak}`}>
+          {s.viewsByDay.map((d) => (
+            <span key={d.day} title={`${d.day} — ${d.n}`}
+                  className="flex-1 bg-rule-strong transition-[height]"
+                  style={{ height: `${Math.max(3, (d.n / peak) * 100)}%` }} />
+          ))}
+        </div>
+      ) : null}
+
+      {s && s.views.length > 0 ? (
+        <ul className="mt-5 flex flex-col">
+          {s.views.slice(0, 8).map((v) => (
+            <li key={v.path} className="flex items-baseline justify-between gap-4 border-b border-rule py-2">
+              <span className="font-mono text-[13px] text-scribe-2">{v.path}</span>
+              <span className="font-mono text-[13px] tabular-nums text-scribe-3">{fmtInt(v.n)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : s ? (
+        <p className="mt-5 font-mono text-[13px] text-scribe-3">
+          Nothing counted yet in this window.
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={toggle}
+        aria-pressed={out}
+        className={cn(
+          "mt-5 border px-3 py-2 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors",
+          out
+            ? "border-rule-strong text-scribe"
+            : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe",
+        )}
+      >
+        {out ? "Not counting this browser" : "Stop counting this browser"}
+      </button>
+    </>
   );
 }
