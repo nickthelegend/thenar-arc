@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { ActivityFeed } from "@/components/activity-feed";
+import { PropPreview } from "@/components/prop-picker";
 import { cn } from "@/lib/cn";
 import { SCENARIOS, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { fmtInt, fmtMon, fmtSeconds } from "@/lib/format";
@@ -268,8 +269,15 @@ export default function HubPage() {
             {rows.map((t) => (
               <li key={t.id} className="border-b border-rule py-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="font-mono text-[12px] text-scribe-3">#{t.id}</span>
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono text-[12px] text-scribe-3">#{t.id}</span>
+                      {/* The objects themselves, from the same GLBs the station
+                          loads — a task should look like what it is before you
+                          open it. Drawn only when the row is on screen. */}
+                      <PropPreview url={t.scene.payload.url} className="h-8 w-8 shrink-0" />
+                      <PropPreview url={t.scene.target.url} className="h-8 w-8 shrink-0" />
+                    </span>
                     <Link href={`/task/${t.id}`} className="text-[15px] text-scribe">{t.name}</Link>
                       <span className="mt-0.5 block font-mono text-[12px] text-scribe-3">
                         {t.scene.payload.label}
