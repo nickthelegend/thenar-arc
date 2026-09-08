@@ -108,6 +108,29 @@ export default function RunPage() {
     }
   }, [data]);
 
+  /**
+   * The moments worth jumping to.
+   *
+   * Scrubbing a two-minute run to find the instant the payload was picked up or
+   * let go is the kind of work a page should do for you. Both are already in the
+   * recording: the jaw opening crosses the grasp threshold and stays there.
+   * Release is the one that matters — it is where the placement is decided, and
+   * therefore where 55% of the score was won or lost.
+   */
+  const moments = useMemo(() => {
+    const s2 = data?.samples ?? [];
+    if (s2.length < 2) return null;
+    const CLOSED = 14; // mm, matching the station's grasp threshold
+    let grasp: number | null = null;
+    let release: number | null = null;
+    for (let i = 1; i < s2.length; i += 1) {
+      const was = s2[i - 1].grip, now = s2[i].grip;
+      if (grasp === null && was > CLOSED && now <= CLOSED) grasp = i;
+      if (grasp !== null && was <= CLOSED && now > CLOSED) release = i;
+    }
+    return { grasp, release, total: s2.length };
+  }, [data]);
+
   const trail = useMemo(() => {
     const pts = data?.samples ?? [];
     const n = Math.max(2, shownIndex + 1);
@@ -240,6 +263,29 @@ export default function RunPage() {
               {path.t.toFixed(1)}s
             </span>
           </label>
+          {moments && (moments.grasp !== null || moments.release !== null) ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="label">Jump to</span>
+              {moments.grasp !== null ? (
+                <button
+                  type="button"
+                  onClick={() => setCursor(Math.max(0.02, (moments.grasp! + 1) / moments.total))}
+                  className="border border-rule px-2.5 py-1 font-mono text-[12px] text-scribe-3 transition-colors hover:border-rule-strong hover:text-scribe-2"
+                >
+                  Picked up
+                </button>
+              ) : null}
+              {moments.release !== null ? (
+                <button
+                  type="button"
+                  onClick={() => setCursor(Math.max(0.02, (moments.release! + 1) / moments.total))}
+                  className="border border-signal px-2.5 py-1 font-mono text-[12px] text-signal transition-colors hover:bg-signal-dim"
+                >
+                  Let go &mdash; where placement was decided
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
