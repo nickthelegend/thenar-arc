@@ -131,6 +131,8 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
         </div>
         <span className="font-mono text-[12px] text-scribe-3">
           from task #{p.taskId} · minted {new Date(p.mintedAt).toLocaleDateString()}
+          {" · "}
+          <Link href={`/licence/${p.id}`} className="hover:text-probe">receipt &rarr;</Link>
         </span>
       </header>
 
