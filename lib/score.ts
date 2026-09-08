@@ -43,6 +43,44 @@ export const REGRASP_PENALTY = 0.03;
 export const REGRASP_PENALTY_CAP = 0.15;
 
 /**
+ * What placing a two-object scene backwards costs.
+ *
+ * A scene that names two payloads names them in an order — "put the spoon and
+ * the mug into the crate" is a sequence, and a policy trained on recordings
+ * that ignore the sequence learns the wrong task. It is a deduction rather
+ * than a rejection because the recording is still a real manipulation, and it
+ * is derived from the samples alone so the verifier reaches the same number
+ * from the same bytes.
+ */
+export const ORDER_PENALTY = 0.08;
+
+/**
+ * Whether the payloads were placed in the order the instruction named them.
+ *
+ * "Placed" is read as "came to rest for the last time": the sample after which
+ * an object never moves again. No knowledge of where the seats are is needed —
+ * only which object stopped first — which is what keeps this computable from a
+ * trajectory on its own, by anyone, without the station's geometry.
+ */
+export function placedInOrder(samples: Sample[]): boolean {
+  if (!samples.some((s) => s.object2)) return true;
+
+  const lastMove = (pick: (s: Sample) => number[] | undefined): number => {
+    let last = 0;
+    for (let i = 1; i < samples.length; i += 1) {
+      const a = pick(samples[i - 1]);
+      const b = pick(samples[i]);
+      if (!a || !b) continue;
+      // A millimetre: below this is the recorder's own noise, not motion.
+      if (Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) > 0.001) last = i;
+    }
+    return last;
+  };
+
+  return lastMove((s) => s.object) <= lastMove((s) => s.object2);
+}
+
+/**
  * How many times the payload was taken during a run.
  *
  * Derived from the samples rather than reported by the client, which is the
@@ -112,7 +150,11 @@ export function evaluate(
   // Every grasp after the first, bounded. Applied last so it reads as a
   // deduction from the run's own quality rather than as a fourth term.
   const grasps = graspCount(traj.samples);
-  const penalty = Math.min(REGRASP_PENALTY_CAP, Math.max(0, grasps - 1) * REGRASP_PENALTY);
+  const regrasp = Math.min(REGRASP_PENALTY_CAP, Math.max(0, grasps - 1) * REGRASP_PENALTY);
+  // Zero on every single-payload run, which is why runs recorded before scenes
+  // could carry two score exactly as they always did.
+  const order = placedInOrder(traj.samples) ? 0 : ORDER_PENALTY;
+  const penalty = Math.min(1, regrasp + order);
 
   const score = Math.round(clamp01(unit) * (1 - penalty) * 10000);
   const accepted = traj.success && score >= ACCEPT_FLOOR;
@@ -122,7 +164,7 @@ export function evaluate(
     success: accepted,
     deviationMm: traj.deviationMm,
     parts: { placement, efficiency, smoothness },
-    raw: { meanJerk: jerk, seconds: traj.durationSeconds, parSeconds, grasps, penalty },
+    raw: { meanJerk: jerk, seconds: traj.durationSeconds, parSeconds, grasps, penalty, outOfOrder: order > 0 },
     payoutMon: accepted ? (rewardPerTrajectory * score) / 10000 : 0,
   };
 }

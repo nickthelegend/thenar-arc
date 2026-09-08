@@ -85,6 +85,10 @@ export function useSubmitRun() {
       durationSeconds: number;
       deviationMm: number;
       success: boolean;
+      /** The props the run was driven against, when the instruction did not
+       *  determine them. Sent so the verifier hashes the same scene the
+       *  operator actually drove, rather than one it guessed at. */
+      payloadIds?: string[];
     }) => {
       if (!address) {
         setState({ phase: "error", error: "Connect a wallet first." });

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Telemetry } from "@/components/station/viewport";
 import { GOAL_R } from "@/components/station/viewport";
 import { Announce, Button, CountUp, Difficulty, ScoreDial, ToleranceBand } from "@/components/primitives";
@@ -14,13 +14,13 @@ import { SKILL_LABEL } from "@/lib/skills";
 import { useRunsOnTask } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
-import { ACCEPT_FLOOR, evaluate, TOLERANCE_MM } from "@/lib/score";
+import { ACCEPT_FLOOR, evaluate, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
 import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
 import { soundOn, setSound } from "@/lib/click";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
-import { propsForTask } from "@/lib/props";
+import { sceneForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import type { Sample, Verdict } from "@/lib/types";
@@ -56,7 +56,8 @@ const START: [number, number] = [0.22, 0.14];
  * that is true.
  */
 const FALLBACK_SCENE = {
-  ...propsForTask("", "general"),
+  ...sceneForTask("", "general"),
+  payload: sceneForTask("", "general").payloads[0],
   room: environmentForScenario("general"),
 };
 
@@ -88,10 +89,52 @@ export default function StationPage() {
   // The scene comes from the catalogue, which derives it once for the whole
   // app. The hub, the floor, the task page and this station therefore cannot
   // disagree about what a task looks like — they used to each resolve it.
-  const scene = task?.scene ?? FALLBACK_SCENE;
-  const room = scene.room;
+  const catalogueScene = task?.scene ?? FALLBACK_SCENE;
+  const room = catalogueScene.room;
 
   const [runId, setRunId] = useState(0);
+
+  /**
+   * Which object this particular run is about.
+   *
+   * Only ever consulted for a task whose instruction names no object we model.
+   * Drawn after mount rather than during render, because a value picked during
+   * the server pass and re-picked on the client is a hydration mismatch, and
+   * re-drawn per run so a task collects a spread of objects rather than forty
+   * recordings of the same mug. Which one was drawn is recorded in the
+   * trajectory, so the run stays reproducible.
+   */
+  const [variant, setVariant] = useState(0);
+  useEffect(() => {
+    if (!catalogueScene.varies) return;
+    // Off the synchronous pass: setting state straight out of an effect makes
+    // React re-render before it has painted the one it is already in.
+    const t = setTimeout(() => setVariant(Math.floor(Math.random() * 1_000_003)), 0);
+    return () => clearTimeout(t);
+  }, [runId, catalogueScene.varies]);
+
+  const scene = useMemo(() => {
+    if (!task || !catalogueScene.varies) return catalogueScene;
+    const drawn = sceneForTask(task.name, task.scenario, variant);
+    return { ...catalogueScene, payload: drawn.payloads[0], payloads: drawn.payloads };
+  }, [task, catalogueScene, variant]);
+
+  /**
+   * The props this run was driven against, or undefined when the instruction
+   * already determines them.
+   *
+   * Undefined is load-bearing: it is what keeps the trajectory serialising as
+   * version 1, which is the exact byte sequence every settled payout so far
+   * was hashed from. Only a scene the instruction left open — a drawn object,
+   * or a second payload — needs recording, and only those hash as version 2.
+   */
+  const payloadIds = useMemo(
+    () =>
+      scene.varies || scene.payloads.length > 1
+        ? scene.payloads.map((p) => p.id)
+        : undefined,
+    [scene],
+  );
   const [helpOpen, setHelpOpen] = useState(false);
   // Read after mount: localStorage is not available during the server render.
   const [sound, setSoundState] = useState(false);
@@ -337,8 +380,25 @@ export default function StationPage() {
         <aside className="order-2 flex flex-col border-rule lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r">
           <Section title="Goal">
             <p className="text-[14px] leading-relaxed text-scribe-2">
-              {task.name}. Bring the payload to rest inside the datum circle.
+              {task.name}.{" "}
+              {scene.payloads.length > 1
+                ? `Both objects come to rest in the datum circle, ${scene.payloads[0].label} first — its seat is the left mark.`
+                : "Bring the payload to rest inside the datum circle."}
             </p>
+            {scene.payloads.length > 1 ? (
+              <p className="mt-2 text-[13px] leading-relaxed text-scribe-3">
+                Placing the {scene.payloads[1].label} first still records, and still
+                pays &mdash; it costs {(ORDER_PENALTY * 100).toFixed(0)}% of the score, because a
+                recording that reverses the sequence teaches the wrong task.
+              </p>
+            ) : null}
+            {scene.varies ? (
+              <p className="mt-2 text-[13px] leading-relaxed text-scribe-3">
+                This task names no object, so each run draws one &mdash; this
+                one is the {scene.payload.label}. Which object you held is
+                recorded in the trajectory, so the run stays reproducible.
+              </p>
+            ) : null}
           </Section>
           <Section title="Controls">
             <dl className="flex flex-col gap-1.5">
@@ -385,8 +445,7 @@ export default function StationPage() {
             running={phase === "running"}
             goal={GOAL}
             start={START}
-            payloadUrl={scene.payload.url}
-            payloadWidthMm={scene.payload.widthMm}
+            payloads={scene.payloads.map((p) => ({ url: p.url, widthMm: p.widthMm }))}
             targetUrl={scene.target.url}
             targetWidthMm={scene.target.widthMm}
             runId={runId}
@@ -541,6 +600,7 @@ export default function StationPage() {
                   durationSeconds: Number(elapsed.toFixed(3)),
                   deviationMm: verdict.deviationMm,
                   success: verdict.success,
+                  payloadIds,
                 })
               }
               onAgain={start}

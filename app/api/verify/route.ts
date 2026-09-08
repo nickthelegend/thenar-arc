@@ -4,7 +4,7 @@ import { createPublicClient, http } from "viem";
 import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { insertTrajectory, getTrajectory } from "@/lib/server/db";
-import { validateSamples, verifyAndSign, VerifyError } from "@/lib/server/verifier";
+import { validateSamples, validatePayloadIds, verifyAndSign, VerifyError } from "@/lib/server/verifier";
 import { parSecondsFor } from "@/lib/par";
 
 export const runtime = "nodejs";
@@ -52,6 +52,14 @@ async function handlePOST(req: Request) {
     }
 
     const samples = validateSamples(body.samples);
+    const payloadIds = validatePayloadIds(body.payloadIds);
+
+    // The scene the client says it drove has to match the recording it sends:
+    // two payload ids and one object column is a claim about an object that
+    // was never recorded moving.
+    if ((payloadIds?.length ?? 1) > 1 !== Boolean(samples[0].object2)) {
+      throw new VerifyError("payloadIds do not match the recorded scene");
+    }
 
     // The task has to exist on chain, and its difficulty sets the par time the
     // efficiency term is scored against.
@@ -77,6 +85,7 @@ async function handlePOST(req: Request) {
       rewardWei: task.rewardPerTrajectory,
       contractAddress: AXON_ADDRESS,
       chainId: appChain.id,
+      payloadIds,
     });
 
     // A hash already on file was already scored; hand back the same signature
@@ -97,6 +106,7 @@ async function handlePOST(req: Request) {
         samples: JSON.stringify(samples),
         signature: result.signature,
         created_at: Date.now(),
+        payload_ids: payloadIds ? JSON.stringify(payloadIds) : null,
       });
     }
 

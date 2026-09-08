@@ -64,6 +64,11 @@ export function getDb(): Database.Database {
       -- has one too, and recording those made the task pages show runs the
       -- contract had never accepted.
       settled       INTEGER NOT NULL DEFAULT 0,
+      -- The prop ids this run was driven against, JSON, or NULL when the
+      -- instruction already determined them. Part of the hashed trajectory
+      -- when present, so a replay draws the objects the operator actually had
+      -- rather than re-deriving a scene that may have been free to vary.
+      payload_ids   TEXT,
       -- Which chain the tx_hash resolves on. NULL means not yet established.
       -- This deployment has settled on more than one chain, and a run is only
       -- verifiable against the chain it was actually written to.
@@ -86,6 +91,11 @@ export function getDb(): Database.Database {
   // on the public feed. /api/reconcile establishes it by asking each chain.
   if (!cols.some((c) => c.name === "chain_id")) {
     db.exec(`ALTER TABLE trajectory ADD COLUMN chain_id INTEGER`);
+  }
+  // Rows written before a scene could vary have no ids, and correctly so: their
+  // instruction named their objects, and they hash as version 1 without them.
+  if (!cols.some((c) => c.name === "payload_ids")) {
+    db.exec(`ALTER TABLE trajectory ADD COLUMN payload_ids TEXT`);
   }
   // Safe either way: the columns exist by now, freshly created or just added.
   db.exec(`CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled)`);
@@ -110,6 +120,7 @@ export type StoredTrajectory = {
   created_at: number;
   tx_hash: string | null;
   chain_id: number | null;
+  payload_ids: string | null;
 };
 
 export function insertTrajectory(row: Omit<StoredTrajectory, "tx_hash" | "chain_id">) {
@@ -117,10 +128,11 @@ export function insertTrajectory(row: Omit<StoredTrajectory, "tx_hash" | "chain_
     .prepare(
       `INSERT OR REPLACE INTO trajectory
        (traj_hash, task_id, contributor, score, deviation_mm, duration_s,
-        placement, efficiency, smoothness, sample_count, samples, signature, created_at, chain_id)
+        placement, efficiency, smoothness, sample_count, samples, signature, created_at,
+        chain_id, payload_ids)
        VALUES (@traj_hash, @task_id, @contributor, @score, @deviation_mm, @duration_s,
                @placement, @efficiency, @smoothness, @sample_count, @samples, @signature,
-               @created_at, @chain_id)`,
+               @created_at, @chain_id, @payload_ids)`,
     )
     .run({ ...row, chain_id: appChain.id });
 }

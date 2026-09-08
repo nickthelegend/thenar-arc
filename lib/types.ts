@@ -35,6 +35,10 @@ export type Sample = {
   grip: number;
   /** Payload pose, metres */
   object: [number, number, number];
+  /** The second payload's pose, on the scenes that have one. Absent — not
+   *  zeroed — on a single-object run, because a zero is a position and the
+   *  hash would then claim an object was sitting at the origin. */
+  object2?: [number, number, number];
 };
 
 export type Trajectory = {
@@ -58,8 +62,12 @@ export type Verdict = {
     meanJerk: number; seconds: number; parSeconds: number;
     /** Times the payload was taken. One is a clean run. */
     grasps: number;
-    /** Fraction deducted for re-grasping, 0..0.15. */
+    /** Fraction deducted for re-grasping and for placing a two-payload scene
+     *  out of order, combined. */
     penalty: number;
+    /** The payloads were placed in the wrong order. Always false on a scene
+     *  with one payload, which is every task recorded so far. */
+    outOfOrder: boolean;
   };
   payoutMon: number;
 };

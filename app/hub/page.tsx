@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { payloadLabel } from "@/lib/props";
 import { useMemo, useState } from "react";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
@@ -213,7 +214,7 @@ export default function HubPage() {
                       <span className="font-mono text-[12px] text-scribe-3">
                       <span className="capitalize">{t.scenario}</span>
                       <span className="mx-1.5 text-rule-strong">/</span>
-                      {t.scene.payload.label}
+                      {payloadLabel(t.scene, t.scenario)}
                       <span className="mx-1.5 text-rule-strong">&rarr;</span>
                       {t.scene.target.label}
                     </span>
@@ -275,12 +276,14 @@ export default function HubPage() {
                       {/* The objects themselves, from the same GLBs the station
                           loads — a task should look like what it is before you
                           open it. Drawn only when the row is on screen. */}
-                      <PropPreview url={t.scene.payload.url} className="h-8 w-8 shrink-0" />
+                      {t.scene.payloads.map((p) => (
+                        <PropPreview key={p.id} url={p.url} className="h-8 w-8 shrink-0" />
+                      ))}
                       <PropPreview url={t.scene.target.url} className="h-8 w-8 shrink-0" />
                     </span>
                     <Link href={`/task/${t.id}`} className="text-[15px] text-scribe">{t.name}</Link>
                       <span className="mt-0.5 block font-mono text-[12px] text-scribe-3">
-                        {t.scene.payload.label}
+                        {payloadLabel(t.scene, t.scenario)}
                         <span className="mx-1.5 text-rule-strong">&rarr;</span>
                         {t.scene.target.label}
                         <span className="mx-1.5 text-rule-strong">/</span>

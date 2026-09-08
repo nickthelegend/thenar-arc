@@ -24,6 +24,8 @@ export type ReplaySample = {
   q?: [number, number, number, number, number, number];
   grip: number;
   object: [number, number, number];
+  /** Present only on a run recorded in a two-payload scene. */
+  object2?: [number, number, number];
 };
 
 function Arm({ frame }: { frame: React.RefObject<ReplaySample | null> }) {
@@ -67,8 +69,10 @@ function Arm({ frame }: { frame: React.RefObject<ReplaySample | null> }) {
   return <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />;
 }
 
-function Payload({ frame, url, widthMm }: {
+function Payload({ frame, url, widthMm, slot = 0 }: {
   frame: React.RefObject<ReplaySample | null>; url: string; widthMm: number;
+  /** Which object column of the recording this model follows. */
+  slot?: number;
 }) {
   const { scene } = useGLTF(url);
   const model = useMemo(() => scene.clone(true), [scene]);
@@ -78,8 +82,9 @@ function Payload({ frame, url, widthMm }: {
     let raf = 0;
     const apply = () => {
       const f = frame.current;
-      if (ref.current && f) {
-        ref.current.position.set(f.object[0], f.object[2] + PAYLOAD_H / 2, -f.object[1]);
+      const o = slot === 0 ? f?.object : f?.object2;
+      if (ref.current && f && o) {
+        ref.current.position.set(o[0], o[2] + PAYLOAD_H / 2, -o[1]);
       }
       raf = requestAnimationFrame(apply);
     };
@@ -155,11 +160,12 @@ function Trail({ points }: { points: Float32Array }) {
 }
 
 export function ReplayViewport({
-  frame, trail, payloadUrl, payloadWidthMm, targetUrl, targetWidthMm, environmentUrl, goal,
+  frame, trail, payloads, targetUrl, targetWidthMm, environmentUrl, goal,
 }: {
   frame: React.RefObject<ReplaySample | null>;
   trail: Float32Array;
-  payloadUrl: string; payloadWidthMm: number;
+  /** Every payload the run was recorded against, in the order it placed them. */
+  payloads: { url: string; widthMm: number }[];
   targetUrl: string; targetWidthMm: number;
   environmentUrl?: string;
   goal: [number, number];
@@ -180,7 +186,9 @@ export function ReplayViewport({
         {environmentUrl ? <Room url={environmentUrl} /> : null}
         <Plate />
         <Landmark url={targetUrl} widthMm={targetWidthMm} at={goal} />
-        <Payload frame={frame} url={payloadUrl} widthMm={payloadWidthMm} />
+        {payloads.map((p, i) => (
+          <Payload key={`${p.url}-${i}`} slot={i} frame={frame} url={p.url} widthMm={p.widthMm} />
+        ))}
         <Arm frame={frame} />
       </Suspense>
       <Trail points={trail} />

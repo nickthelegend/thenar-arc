@@ -1,7 +1,7 @@
 import type { Verdict } from "@/lib/types";
 import {
   ACCEPT_FLOOR, TOLERANCE_MM, JERK_CEIL, JERK_FLOOR,
-  W_PLACEMENT, W_EFFICIENCY, W_SMOOTHNESS,
+  W_PLACEMENT, W_EFFICIENCY, W_SMOOTHNESS, ORDER_PENALTY,
 } from "@/lib/score";
 
 /**
@@ -16,7 +16,7 @@ import {
  */
 
 export type Shortfall = {
-  key: "placement" | "smoothness" | "efficiency" | "regrasp";
+  key: "placement" | "smoothness" | "efficiency" | "regrasp" | "order";
   label: string;
   /** Score points lost, 0..10000, weighted as the total is. */
   lost: number;
@@ -66,16 +66,36 @@ export function shortfalls(v: Verdict, rewardPerTrajectory: number): Shortfall[]
   // Re-grasping is not one of the three terms — it is a deduction from all of
   // them — so it is reported as its own line rather than folded into placement,
   // where it would look like the payload had landed worse than it did.
-  if (v.raw.penalty > 0) {
-    const lost = Math.round(v.raw.penalty * 10000);
+  // The two deductions are reported apart rather than as one "penalty" figure.
+  // They are different mistakes with different fixes, and a single combined
+  // number would tell an operator who placed two objects backwards that they
+  // had been re-grasping.
+  const orderShare = v.raw.outOfOrder ? ORDER_PENALTY : 0;
+  const regraspShare = Math.max(0, v.raw.penalty - orderShare);
+
+  if (regraspShare > 0) {
+    const lost = Math.round(regraspShare * 10000);
     out.push({
       key: "regrasp",
       label: "Re-grasping",
       lost,
       costMon: (rewardPerTrajectory * lost) / 10000,
-      reading: `${v.raw.grasps} grasps, ${(v.raw.penalty * 100).toFixed(0)}% deducted`,
+      reading: `${v.raw.grasps} grasps, ${(regraspShare * 100).toFixed(0)}% deducted`,
       advice:
         "Putting the payload down and picking it up again is allowed and often the right call — it just makes the trajectory worth less as training data. The deduction stops at 15% however many times it happens.",
+    });
+  }
+
+  if (orderShare > 0) {
+    const lost = Math.round(orderShare * 10000);
+    out.push({
+      key: "order",
+      label: "Placement order",
+      lost,
+      costMon: (rewardPerTrajectory * lost) / 10000,
+      reading: `second payload came to rest first, ${(orderShare * 100).toFixed(0)}% deducted`,
+      advice:
+        "The instruction names the objects in the order they are meant to be placed. A recording that places them the other way round teaches the wrong sequence, so it is worth less — place the first-named object first.",
     });
   }
 

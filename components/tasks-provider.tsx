@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { useTasks, type ChainTask } from "@/lib/hooks";
-import { propsForTask, type Prop } from "@/lib/props";
+import { sceneForTask, type Prop } from "@/lib/props";
 import { environmentForScenario, type Environment } from "@/lib/environments";
 import { skillForTask, type Skill } from "@/lib/skills";
 
@@ -20,7 +20,19 @@ import { skillForTask, type Skill } from "@/lib/skills";
  * scene is a pure function of chain state, so it survives this provider being
  * deleted and can be recomputed by anyone reading the contract.
  */
-export type Scene = { payload: Prop; target: Prop; room: Environment };
+export type Scene = {
+  /** The first payload. Every surface that shows one object per task reads
+   *  this; the station reads `payloads`, which may hold two. */
+  payload: Prop;
+  /** Every payload the instruction names, in the order it names them. */
+  payloads: Prop[];
+  target: Prop;
+  room: Environment;
+  /** The instruction named no object we model, so the station draws one from
+   *  the scenario's pool per run and the card says so rather than implying a
+   *  fixed object it does not have. */
+  varies: boolean;
+};
 export type TaskWithScene = ChainTask & { scene: Scene; skill: Skill };
 
 type Ctx = {
@@ -40,10 +52,16 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<Ctx>(() => {
     const tasks: TaskWithScene[] = (data ?? []).map((t) => {
-      const { payload, target } = propsForTask(t.name, t.scenario);
+      const { payloads, target, varies } = sceneForTask(t.name, t.scenario);
       return {
         ...t,
-        scene: { payload, target, room: environmentForScenario(t.scenario) },
+        scene: {
+          payload: payloads[0],
+          payloads,
+          target,
+          room: environmentForScenario(t.scenario),
+          varies,
+        },
         // The manipulation the instruction asks for. Derived, like the scene, so
         // it stays recoverable from chain state rather than kept in a side table.
         skill: skillForTask(t.name),

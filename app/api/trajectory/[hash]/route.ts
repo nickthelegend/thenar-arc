@@ -20,7 +20,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ hash: string }
   }
 
   const samples = JSON.parse(row.samples);
-  const recomputed = keccak256(toHex(canonicalise(row.task_id, row.contributor, samples)));
+  // The scene is part of what was hashed on a run the instruction left open,
+  // so it has to be part of what is hashed again here or the integrity badge
+  // reports a mismatch on a row that is perfectly intact.
+  const payloadIds: string[] | undefined = row.payload_ids
+    ? (JSON.parse(row.payload_ids) as string[])
+    : undefined;
+  const recomputed = keccak256(
+    toHex(canonicalise(row.task_id, row.contributor, samples, payloadIds)),
+  );
 
   return NextResponse.json({
     trajHash: row.traj_hash,
@@ -46,5 +54,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ hash: string }
       matches: recomputed.toLowerCase() === row.traj_hash.toLowerCase(),
     },
     samples,
+    // Which objects this run was actually driven against, when the instruction
+    // did not name them. Null on every run whose scene its instruction fixed.
+    payloadIds: payloadIds ?? null,
   });
 }

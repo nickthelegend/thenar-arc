@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { propById, type Prop } from "@/lib/props";
 import dynamic from "next/dynamic";
 import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
 import { TOLERANCE_MM } from "@/lib/score";
@@ -27,6 +28,9 @@ type RunDoc = {
   parts: { placement: number; efficiency: number; smoothness: number };
   sampleCount: number; createdAt: number; txHash: string | null; chainId: number | null;
   integrity: { recomputedHash: string; matches: boolean };
+  /** The props the run was driven against, when its instruction left the scene
+   *  open. Null on every run whose instruction named its objects. */
+  payloadIds: string[] | null;
   // q is the six joint angles the recorder stored, which is what makes a replay
   // a replay rather than a re-simulation.
   samples: ReplaySample[];
@@ -80,6 +84,21 @@ export default function RunPage() {
   // surface reads, so a replay cannot show a different object from the station.
   const task = data ? byId(data.taskId) : undefined;
 
+  /**
+   * The objects this run held, not the objects its task is about.
+   *
+   * On a task whose instruction names its props these are the same thing. On
+   * one that left the scene open they are not, and reading the catalogue would
+   * replay a run holding an object it never held. The recording says which,
+   * and the recording is what the payout was derived from.
+   */
+  const replayProps = useMemo(() => {
+    const stored = (data?.payloadIds as string[] | null | undefined) ?? null;
+    const fromRun = stored?.map((id) => propById(id)).filter((p): p is Prop => Boolean(p));
+    const resolved = fromRun?.length ? fromRun : task?.scene.payloads;
+    return (resolved ?? []).map((p) => ({ url: p.url, widthMm: p.widthMm }));
+  }, [data, task]);
+
   const shownIndex = data?.samples?.length
     ? Math.max(1, Math.round(data.samples.length * cursor)) - 1
     : 0;
@@ -101,7 +120,16 @@ export default function RunPage() {
   const selfChecked = useMemo(() => {
     if (!data?.samples?.length) return null;
     try {
-      const local = keccak256(toHex(canonicalise(data.taskId, data.contributor, data.samples as never)));
+      const local = keccak256(
+        toHex(
+          canonicalise(
+            data.taskId,
+            data.contributor,
+            data.samples as never,
+            (data.payloadIds as string[] | null) ?? undefined,
+          ),
+        ),
+      );
       return { local, matches: local.toLowerCase() === data.trajHash.toLowerCase() };
     } catch {
       return null;
@@ -230,8 +258,7 @@ export default function RunPage() {
             <ReplayViewport
               frame={frame}
               trail={trail}
-              payloadUrl={task.scene.payload.url}
-              payloadWidthMm={task.scene.payload.widthMm}
+              payloads={replayProps}
               targetUrl={task.scene.target.url}
               targetWidthMm={task.scene.target.widthMm}
               environmentUrl={task.scene.room.url}

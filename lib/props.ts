@@ -51,14 +51,50 @@ const needles = (): { needle: string; id: string }[] => {
   return out.sort((a, b) => b.needle.length - a.needle.length);
 };
 
-export function propsForTask(instruction: string, scenario: string): { payload: Prop; target: Prop } {
+export type TaskScene = {
+  /** Every payload the instruction names, in the order it names them. A run
+   *  places them in that order; one payload is the ordinary case. */
+  payloads: Prop[];
+  target: Prop;
+  /** True when the instruction named no object we model, so the station draws
+   *  one from the scenario's pool per run rather than the same object forever. */
+  varies: boolean;
+};
+
+/**
+ * The payloads a task may legitimately use.
+ *
+ * Only consulted when the instruction names nothing we model. "Put the
+ * toothpaste into the upper drawer" is about the toothpaste and nothing else;
+ * "practise a transfer in the kitchen" is about the transfer, and forty
+ * recordings of the same mug are worth less as training data than forty
+ * recordings of the same motion over different objects. Varying only in the
+ * second case is what keeps the scene from ever contradicting the instruction.
+ */
+export function variantPool(scenario: string): Prop[] {
+  const own = payloads().filter((p) => p.scenario === scenario);
+  const pool = own.length >= 2 ? own : payloads();
+  return [...pool].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** How many payloads one scene may carry. The arm is single, so a third
+ *  object would sit on the table for the whole run doing nothing. */
+export const MAX_PAYLOADS = 2;
+
+export function sceneForTask(
+  instruction: string,
+  scenario: string,
+  /** Which pool entry this particular run drew. Ignored unless the instruction
+   *  named nothing — a named object is never overridden. */
+  variant?: number,
+): TaskScene {
   const text = instruction.toLowerCase();
 
   // Collect every prop the instruction names, with where it was named. Order in
   // the sentence is what disambiguates: "put the shrimp to the left of the
   // honey jar" names the thing being moved first and the landmark second, so
   // picking by label length instead would have moved the jar.
-  const hits: { at: number; prop: Prop }[] = [];
+  const hits: { at: number; end: number; prop: Prop }[] = [];
   const claimed: [number, number][] = [];
   for (const { needle, id } of needles()) {
     const at = text.indexOf(needle);
@@ -68,20 +104,77 @@ export function propsForTask(instruction: string, scenario: string): { payload: 
     const prop = propById(id);
     if (!prop) continue;
     claimed.push([at, at + needle.length]);
-    hits.push({ at, prop });
+    hits.push({ at, end: at + needle.length, prop });
   }
   hits.sort((a, b) => a.at - b.at);
 
-  const payload = hits.find((h) => h.prop.role === "payload")?.prop;
+  // Every payload the sentence names, not only the first — but only where the
+  // sentence actually conjoins them. "Put the fork and the spoon into the
+  // drawer" is two placements in the order written. "Put the shrimp to the
+  // left of the honey jar" is one placement against a landmark that happens to
+  // be a graspable object, and treating the jar as cargo moved the wrong
+  // thing. The connector between the two names is what tells them apart.
+  const CONJOINED = /^[,\s]*(and\s+|&\s+|,\s*)(the\s+|a\s+|an\s+)?$/;
+  const carried = hits.filter((h) => h.prop.role === "payload");
+  const named: Prop[] = [];
+  for (const h of carried) {
+    if (named.length === 0) { named.push(h.prop); continue; }
+    const prev = carried[carried.indexOf(h) - 1];
+    if (CONJOINED.test(text.slice(prev.end, h.at))) named.push(h.prop);
+    else break;
+  }
+
   // A landmark is whatever is named after the payload — usually a target prop,
   // but "stack the honey jar behind the toast" makes a payload the reference.
   const target =
     hits.find((h) => h.prop.role === "target")?.prop ??
-    hits.filter((h) => h.prop !== payload)[0]?.prop;
+    hits.filter((h) => !named.includes(h.prop))[0]?.prop;
 
   const [dp, dt] = DEFAULTS[scenario] ?? DEFAULTS.general;
-  return {
-    payload: payload ?? propById(dp)!,
-    target: target ?? propById(dt)!,
-  };
+
+  // Two payloads at most, and never the same object twice: "put the mug on the
+  // other mug" would otherwise spawn two objects at one position.
+  const unique = named.filter((p, i) => named.indexOf(p) === i).slice(0, MAX_PAYLOADS);
+
+  if (unique.length > 0) {
+    return { payloads: unique, target: target ?? propById(dt)!, varies: false };
+  }
+
+  // Nothing named: the scene is free to vary, and does, per run.
+  const pool = variantPool(scenario);
+  const drawn =
+    variant === undefined
+      ? (propById(dp) ?? pool[0])
+      : pool[((variant % pool.length) + pool.length) % pool.length];
+
+  return { payloads: [drawn], target: target ?? propById(dt)!, varies: true };
+}
+
+/**
+ * The single-payload view, for surfaces that show one object per task.
+ *
+ * Kept as its own function rather than inlined at each call site: a card that
+ * quietly picked `payloads[0]` would look identical whether the task had one
+ * object or two, which is exactly the confusion the multi-object scene exists
+ * to avoid. Callers that can show more use `sceneForTask` directly.
+ */
+export function propsForTask(instruction: string, scenario: string): { payload: Prop; target: Prop } {
+  const { payloads: ps, target } = sceneForTask(instruction, scenario);
+  return { payload: ps[0], target };
+}
+
+/**
+ * What to call a task's payload on a card.
+ *
+ * Three cases, and conflating them is how a list starts lying: a task that
+ * names one object, a task that names two and wants them in that order, and a
+ * task that names none — where every run draws its own object, so printing any
+ * single label would claim a fixture the task does not have.
+ */
+export function payloadLabel(scene: { payloads: Prop[]; varies: boolean }, scenario: string): string {
+  if (scene.varies) {
+    const n = variantPool(scenario).length;
+    return `any of ${n} ${scenario === "general" ? "" : `${scenario} `}objects`.replace("  ", " ");
+  }
+  return scene.payloads.map((p) => p.label).join(" then ");
 }

@@ -28,6 +28,25 @@ export const PAYLOAD_H = 0.075;
  * The test is now a cylinder, so this is the whole plane tolerance.
  */
 export const CAPTURE_R = 0.09;
+/**
+ * How far each payload's seat sits from the datum centre when a scene carries
+ * two of them, in metres.
+ *
+ * Both seats have to stay inside the goal ring — the ring is what the operator
+ * aims at — while leaving the objects far enough apart not to intersect. At
+ * 0.038 the seats are 76 mm apart and the payloads are 56 mm across, so they
+ * sit beside each other rather than through each other, and each is still
+ * within its own 25 mm tolerance of a point inside the 75 mm ring.
+ */
+export const SEAT_OFFSET = 0.038;
+
+/** Where payload `i` of `n` has to come to rest. One payload owns the datum
+ *  itself, which is what keeps every single-object run scoring exactly as it
+ *  did before scenes could carry two. */
+export function seatFor(goal: [number, number], i: number, n: number): [number, number] {
+  if (n < 2) return goal;
+  return [goal[0] + (i === 0 ? -SEAT_OFFSET : SEAT_OFFSET), goal[1]];
+}
 export const GRIP_CLOSED = 12; // mm jaw opening below which a grasp forms
 export const GRIP_OPEN_MM = 42;
 const SAMPLE_HZ = 20;
@@ -65,6 +84,15 @@ export type Telemetry = {
   payloadDist: number;
   settled: boolean;
   deviationMm: number;
+  /** Every payload in the scene, in the order the instruction named them. */
+  objects: [number, number, number][];
+  /** Which one the jaws are on, or null. */
+  activeIndex: number | null;
+  /** Which have come to rest inside their own seat's tolerance. */
+  placed: boolean[];
+  /** True once a later payload has been left placed while an earlier one has
+   *  not been — the operator is doing the task out of the order it was written. */
+  outOfOrder: boolean;
 };
 
 type ViewportProps = {
@@ -74,8 +102,7 @@ type ViewportProps = {
   /** The objects this task is actually about. The instruction names them; the
    *  scene used to render an anonymous cylinder regardless, which made every
    *  recorded trajectory a demonstration of moving a grey puck. */
-  payloadUrl: string;
-  payloadWidthMm: number;
+  payloads: { url: string; widthMm: number }[];
   targetUrl: string;
   targetWidthMm: number;
   /** The room this task happens in, resolved from the scenario the contract
@@ -299,9 +326,13 @@ function SurfacePlate() {
  * and turns green; outside it sits on the tolerance band in red. The operator
  * used to learn this only after letting go.
  */
-function GoalZone({ at, payload }: {
+function GoalZone({ at, payload, seats = 1 }: {
   at: [number, number];
   payload?: React.RefObject<[number, number, number]>;
+  /** How many payloads have to come to rest here. Two seats are drawn as two
+   *  small marks inside the ring, so the operator can see that the datum is
+   *  asking for two placements before finding out at the end. */
+  seats?: number;
 }) {
   const live = useRef<THREE.Group>(null);
   const mat = useRef<THREE.LineBasicMaterial>(null);
@@ -340,8 +371,31 @@ function GoalZone({ at, payload }: {
     return g;
   }, []);
 
+  const seatMarks = useMemo(() => {
+    if (seats < 2) return null;
+    const pts: number[] = [];
+    for (let i = 0; i < seats; i += 1) {
+      const cx = i === 0 ? -SEAT_OFFSET : SEAT_OFFSET;
+      for (let k = 0; k <= 48; k += 1) {
+        const a = (k / 48) * Math.PI * 2;
+        const r = TOLERANCE_M;
+        if (k > 0) pts.push(cx + Math.cos(((k - 1) / 48) * Math.PI * 2) * r, 0, Math.sin(((k - 1) / 48) * Math.PI * 2) * r);
+        pts.push(cx + Math.cos(a) * r, 0, Math.sin(a) * r);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    return g;
+  }, [seats]);
+
   return (
     <group position={[at[0], TABLE_Z + 0.0012, -at[1]]}>
+      {seatMarks ? (
+        <lineSegments>
+          <primitive object={seatMarks} attach="geometry" />
+          <lineBasicMaterial color="#8A9BA5" transparent opacity={0.55} />
+        </lineSegments>
+      ) : null}
       <line>
         <primitive object={ring} attach="geometry" />
         <lineBasicMaterial color="#FF6A00" />
@@ -361,13 +415,19 @@ function GoalZone({ at, payload }: {
   );
 }
 
-function Payload({ pos, url, widthMm }: { pos: React.RefObject<[number, number, number]>; url: string; widthMm: number }) {
+function Payload({ index, all, url, widthMm }: {
+  index: number;
+  all: React.RefObject<[number, number, number][]>;
+  url: string;
+  widthMm: number;
+}) {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
-    if (ref.current) {
+    const pos = all.current?.[index];
+    if (ref.current && pos) {
       // Same sign convention as the goal ring: the arm model is rotated -90
       // about X, so a plane-Y becomes three's -Z.
-      ref.current.position.set(pos.current[0], pos.current[2] + PAYLOAD_H / 2, -pos.current[1]);
+      ref.current.position.set(pos[0], pos[2] + PAYLOAD_H / 2, -pos[1]);
     }
   });
   return (
@@ -502,8 +562,7 @@ function Rig({
   running,
   goal,
   start,
-  payloadUrl,
-  payloadWidthMm,
+  payloads,
   targetUrl,
   targetWidthMm,
   environmentUrl,
@@ -515,7 +574,28 @@ function Rig({
 
   const target = useRef<[number, number, number]>([...INITIAL_TARGET]);
   const grip = useRef<number>(GRIP_OPEN_MM);
-  const object = useRef<[number, number, number]>([start[0], start[1], TABLE_Z]);
+  /**
+   * Every payload in the scene, at rest on the table.
+   *
+   * A one-object scene keeps the exact start position it always had, so its
+   * trajectories are comparable with every run recorded before scenes could
+   * carry two. A two-object scene spreads them far enough apart that "the
+   * nearest one" is never a coin toss.
+   */
+  const [startPoses] = useState<[number, number, number][]>(() =>
+    payloads.length < 2
+      ? [[start[0], start[1], TABLE_Z]]
+      : [
+          [start[0] - 0.03, start[1] + 0.03, TABLE_Z],
+          [start[0] + 0.06, start[1] - 0.05, TABLE_Z],
+        ],
+  );
+  const objects = useRef<[number, number, number][]>(startPoses);
+  /** Kept so everything downstream that only ever cared about one payload —
+   *  the trail, the closing datum ring — keeps reading the one being driven. */
+  const object = useRef<[number, number, number]>(startPoses[0]);
+  const activeIndex = useRef<number | null>(null);
+  const outOfOrderRef = useRef(false);
   const held = useRef(false);
   const keys = useRef<Record<string, boolean>>({});
   const acc = useRef(0);
@@ -599,7 +679,24 @@ function Rig({
     }
 
     const tool = toolPosition(joints.current);
-    const o = object.current;
+
+    // Which payload the jaws are addressing. While holding one it stays that
+    // one; otherwise it is whichever is nearest in the table plane. Nearest
+    // rather than first-within-range, because two objects can both be inside
+    // the capture radius and picking the first would grasp the far one.
+    const list = objects.current;
+    let nearest = 0;
+    if (held.current && activeIndex.current !== null) {
+      nearest = activeIndex.current;
+    } else if (list.length > 1) {
+      let best = Infinity;
+      for (let i = 0; i < list.length; i += 1) {
+        const d = Math.hypot(tool[0] - list[i][0], tool[1] - list[i][1]);
+        if (d < best) { best = d; nearest = i; }
+      }
+    }
+    const o = list[nearest];
+    object.current = o;
 
     // Grasp: the jaws have to be closed and the tool inside the payload's own
     // cylinder — within CAPTURE_R in the table plane, and somewhere along its
@@ -613,21 +710,50 @@ function Rig({
     const overIt = planar < CAPTURE_R;
     const near = overIt && withinHeight;
 
-    if (!held.current && grip.current <= GRIP_CLOSED && near) held.current = true;
-    if (held.current && grip.current > GRIP_CLOSED) held.current = false;
+    if (!held.current && grip.current <= GRIP_CLOSED && near) {
+      held.current = true;
+      activeIndex.current = nearest;
+    }
+    if (held.current && grip.current > GRIP_CLOSED) {
+      held.current = false;
+      activeIndex.current = null;
+    }
 
     if (held.current) {
       o[0] = tool[0];
       o[1] = tool[1];
       o[2] = Math.max(TABLE_Z, tool[2] - PAYLOAD_H / 2);
-    } else if (o[2] > TABLE_Z) {
-      o[2] = Math.max(TABLE_Z, o[2] - 0.9 * dt);
+    }
+    // Everything not in the jaws falls to the table, not just the active one:
+    // a payload released mid-air while the operator moves to the other would
+    // otherwise hang there.
+    for (let i = 0; i < list.length; i += 1) {
+      if (held.current && i === activeIndex.current) continue;
+      if (list[i][2] > TABLE_Z) list[i][2] = Math.max(TABLE_Z, list[i][2] - 0.9 * dt);
     }
 
     if (running) elapsed.current += dt;
 
-    const settled = !held.current && o[2] <= TABLE_Z + 1e-4;
-    const deviationMm = Math.hypot(o[0] - goal[0], o[1] - goal[1]) * 1000;
+    // Each payload is measured against its own seat. With one payload the seat
+    // is the datum, so this is the same number it has always been.
+    const devs = list.map((p, i) => {
+      const seat = seatFor(goal, i, list.length);
+      return Math.hypot(p[0] - seat[0], p[1] - seat[1]) * 1000;
+    });
+    const atRest = list.map((p, i) =>
+      !(held.current && i === activeIndex.current) && p[2] <= TABLE_Z + 1e-4);
+    const placed = devs.map((d, i) => atRest[i] && d <= TOLERANCE_M * 1000);
+
+    // Every payload has to be down before the run can be measured, and the
+    // score is set by the worst of them: a scene is placed when all of it is.
+    const settled = atRest.every(Boolean) && !held.current;
+    const deviationMm = Math.max(...devs);
+
+    // Placing a later payload while an earlier one is still in hand or still
+    // out at its start is doing the task backwards. It is recorded rather than
+    // blocked — the operator may be correcting — and it is derivable from the
+    // samples alone, which is what lets the verifier charge for it too.
+    if (list.length > 1 && placed[1] && !placed[0]) outOfOrderRef.current = true;
 
     acc.current += dt;
     if (acc.current >= 1 / SAMPLE_HZ) {
@@ -647,7 +773,13 @@ function Rig({
           t: Number(elapsed.current.toFixed(3)),
           q: [j.j1, j.j2, j.j3, 0, j.j5, 0],
           grip: grip.current,
-          object: [o[0], o[1], o[2]],
+          // Always the first payload, never "the one being held": a recording
+          // whose object column swaps identity halfway through is not a
+          // trajectory of anything.
+          object: [list[0][0], list[0][1], list[0][2]],
+          ...(list.length > 1
+            ? { object2: [list[1][0], list[1][1], list[1][2]] as [number, number, number] }
+            : {}),
         });
       }
       setOutOfReach(j.clamped);
@@ -664,6 +796,10 @@ function Rig({
         payloadDist: planar,
         settled,
         deviationMm,
+        objects: list.map((p) => [p[0], p[1], p[2]] as [number, number, number]),
+        activeIndex: activeIndex.current,
+        placed,
+        outOfOrder: outOfOrderRef.current,
       });
       setJointsView(j);
     }
@@ -699,11 +835,13 @@ function Rig({
       <SurfacePlate />
       <ReachEnvelope visible={outOfReach} target={target} />
       <GhostTrail points={trail} />
-      <GoalZone at={goal} payload={object} />
+      <GoalZone at={goal} payload={object} seats={payloads.length} />
       {/* The landmark the instruction names, sitting at the datum it defines. */}
       <Prop url={targetUrl} widthMm={targetWidthMm} targetM={GOAL_R * 1.7}
             position={[goal[0], TABLE_Z, -goal[1]]} opacity={0.92} />
-      <Payload pos={object} url={payloadUrl} widthMm={payloadWidthMm} />
+      {payloads.map((p, i) => (
+        <Payload key={`${p.url}-${i}`} index={i} all={objects} url={p.url} widthMm={p.widthMm} />
+      ))}
       <Arm
         target={target}
         grip={grip}
@@ -788,10 +926,10 @@ export function StationViewport(props: ViewportProps) {
   // preload; without the same for the payload and the landmark, the scene pops
   // in a beat late — and in a tab that is not compositing, not at all.
   useEffect(() => {
-    for (const url of [props.payloadUrl, props.targetUrl, props.environmentUrl]) {
+    for (const url of [...props.payloads.map((p) => p.url), props.targetUrl, props.environmentUrl]) {
       if (url) useGLTF.preload(url);
     }
-  }, [props.payloadUrl, props.targetUrl, props.environmentUrl]);
+  }, [props.payloads, props.targetUrl, props.environmentUrl]);
 
   const [lost, setLost] = useState(false);
   // Everything except presence goes to Rig: it must not re-render six times a
