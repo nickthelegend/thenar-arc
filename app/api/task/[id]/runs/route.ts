@@ -10,5 +10,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!Number.isInteger(n) || n < 0) {
     return NextResponse.json({ error: "task id must be a non-negative integer" }, { status: 400 });
   }
-  return NextResponse.json({ taskId: n, runs: trajectoriesForTask(n) });
+  return NextResponse.json({ taskId: n, runs: await trajectoriesForTask(n) });
 }

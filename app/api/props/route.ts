@@ -46,7 +46,7 @@ function readGlb(buf: Buffer): { meshes: number; triangles: number } {
 }
 
 export async function GET() {
-  return NextResponse.json({ props: listProps() });
+  return NextResponse.json({ props: await listProps() });
 }
 
 async function handlePOST(req: Request) {
@@ -103,7 +103,7 @@ async function handlePOST(req: Request) {
   // The same bytes uploaded twice are the same prop; hand back the first one
   // rather than filling the volume with duplicates.
   const sha256 = createHash("sha256").update(buf).digest("hex");
-  const existing = propBySha(sha256);
+  const existing = await propBySha(sha256);
   if (existing) return NextResponse.json({ prop: existing, deduplicated: true });
 
   const id = `u_${sha256.slice(0, 12)}`;
@@ -111,7 +111,7 @@ async function handlePOST(req: Request) {
     id, label, role: role as "payload" | "target", width_mm: widthMm,
     bytes: buf.length, sha256, uploader, created_at: Date.now(),
   };
-  insertProp({ ...row, glb: buf });
+  await insertProp({ ...row, glb: buf });
   return NextResponse.json({ prop: row, ...stats }, { status: 201 });
 }
 

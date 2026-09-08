@@ -67,30 +67,30 @@ export async function GET(req: Request) {
 }
 
 async function reconcile() {
-  const rows = unsettledWithTx();
+  const rows = await unsettledWithTx();
   let settled = 0, cleared = 0;
 
   for (const row of rows) {
     try {
       const receipt = await client.getTransactionReceipt({ hash: row.tx_hash as `0x${string}` });
       if (receipt.status === "success" && receipt.to?.toLowerCase() === AXON_ADDRESS.toLowerCase()) {
-        markSettled(row.traj_hash, row.tx_hash);
+        await markSettled(row.traj_hash, row.tx_hash);
         settled += 1;
       } else {
-        clearTx(row.traj_hash);
+        await clearTx(row.traj_hash);
         cleared += 1;
       }
     } catch {
       // No such transaction on this chain — the claim does not stand here.
       // Which chain it *does* belong to is settled below.
-      clearTx(row.traj_hash);
+      await clearTx(row.traj_hash);
       cleared += 1;
     }
   }
 
   // Establish the chain of every row that has never had one recorded. Each
   // hash is offered to every chain this deployment has used, current first.
-  const unresolved = unresolvedChain();
+  const unresolved = await unresolvedChain();
   const resolved: Record<number, number> = {};
   let unknown = 0;
 
@@ -98,7 +98,7 @@ async function reconcile() {
     let found = false;
     for (const chain of KNOWN_CHAINS) {
       if (await receiptOn(chain.rpc, row.tx_hash)) {
-        setChainId(row.traj_hash, chain.id);
+        await setChainId(row.traj_hash, chain.id);
         resolved[chain.id] = (resolved[chain.id] ?? 0) + 1;
         found = true;
         break;
@@ -111,7 +111,7 @@ async function reconcile() {
   return NextResponse.json({
     checked: rows.length, settled, cleared,
     chainResolution: { attempted: unresolved.length, resolved, unknown },
-    byChain: countByChain(),
+    byChain: await countByChain(),
   });
 }
 

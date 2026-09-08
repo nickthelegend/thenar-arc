@@ -53,7 +53,7 @@ async function handlePOST(req: Request) {
     );
   }
 
-  markSettled(trajHash, txHash);
+  await markSettled(trajHash, txHash);
   return NextResponse.json({ ok: true, block: Number(receipt.blockNumber) });
 }
 

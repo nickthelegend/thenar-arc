@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/server/db";
+import { queryOne, query } from "@/lib/server/db";
 import { appChain } from "@/lib/chain";
 
 export const runtime = "nodejs";
@@ -22,18 +22,17 @@ export async function GET(req: Request) {
     if (!/^0x[0-9a-fA-F]{64}$/.test(one)) {
       return NextResponse.json({ error: "traj must be a 32-byte hash" }, { status: 400 });
     }
-    const row = getDb()
-      .prepare(
-        `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
-                samples, tx_hash, created_at
-           FROM trajectory
-          WHERE traj_hash = ? AND settled = 1 AND chain_id = ?`,
-      )
-      .get(one, appChain.id) as {
+    const row = await queryOne<{
       traj_hash: string; task_id: number; contributor: string; score: number;
       deviation_mm: number; duration_s: number; samples: string;
       tx_hash: string | null; created_at: number;
-    } | undefined;
+    }>(
+      `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
+              samples, tx_hash, created_at
+         FROM trajectory
+        WHERE traj_hash = ? AND settled = 1 AND chain_id = ?`,
+      [one, appChain.id],
+    );
 
     if (!row) {
       return NextResponse.json({ error: "No settled trajectory with that hash on this chain." }, { status: 404 });
@@ -94,19 +93,18 @@ export async function GET(req: Request) {
     );
   }
 
-  const rows = getDb()
-    .prepare(
-      `SELECT traj_hash, contributor, score, deviation_mm, duration_s, samples, tx_hash, created_at
-       -- Scoped to the chain this deployment settles on. A corpus that mixed
-       -- in runs paid on a previous chain would carry transaction hashes a
-       -- buyer could not resolve, against an embodiment they could not audit.
-       FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ?
-       ORDER BY created_at ASC`,
-    )
-    .all(taskId, appChain.id) as {
+  const rows = await query<{
     traj_hash: string; contributor: string; score: number; deviation_mm: number;
     duration_s: number; samples: string; tx_hash: string | null; created_at: number;
-  }[];
+  }>(
+    `SELECT traj_hash, contributor, score, deviation_mm, duration_s, samples, tx_hash, created_at
+     -- Scoped to the chain this deployment settles on. A corpus that mixed
+     -- in runs paid on a previous chain would carry transaction hashes a
+     -- buyer could not resolve, against an embodiment they could not audit.
+     FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ?
+     ORDER BY created_at ASC`,
+    [taskId, appChain.id],
+  );
 
   if (rows.length === 0) {
     return NextResponse.json({ error: "No trajectories recorded for that task." }, { status: 404 });

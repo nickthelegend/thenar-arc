@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/server/db";
+import { query } from "@/lib/server/db";
 import { appChain } from "@/lib/chain";
 
 export const runtime = "nodejs";
@@ -27,17 +27,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: `taskId must be a non-negative integer, got "${raw}"` }, { status: 400 });
   }
 
-  const rows = getDb()
-    .prepare(
-      `SELECT contributor, score, deviation_mm, duration_s, sample_count, created_at
-         FROM trajectory
-        WHERE task_id = ? AND settled = 1 AND chain_id = ?
-        ORDER BY created_at ASC`,
-    )
-    .all(taskId, appChain.id) as {
+  const rows = await query<{
     contributor: string; score: number; deviation_mm: number;
     duration_s: number; sample_count: number; created_at: number;
-  }[];
+  }>(
+    `SELECT contributor, score, deviation_mm, duration_s, sample_count, created_at
+       FROM trajectory
+      WHERE task_id = ? AND settled = 1 AND chain_id = ?
+      ORDER BY created_at ASC`,
+    [taskId, appChain.id],
+  );
 
   if (rows.length === 0) {
     return NextResponse.json({ error: "No trajectories recorded for that task." }, { status: 404 });

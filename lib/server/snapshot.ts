@@ -1,20 +1,20 @@
 import crypto from "node:crypto";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { getDb } from "@/lib/server/db";
+import { ENGINE, query, count } from "@/lib/server/db";
 
 /**
  * Take the corpus somewhere the volume is not.
  *
  * The trajectories are the only thing here that cannot be rebuilt. The chain
- * holds each hash, score and payment, but the samples that earned them exist in
- * one SQLite file on one Railway volume, so every payout stops being auditable
- * the moment that volume does.
+ * holds each hash, score and payment, but the samples that earned them exist
+ * only in this deployment's database, so every payout stops being auditable
+ * the moment that database does.
  *
- * The copy is made with VACUUM INTO rather than by reading the file: under WAL
- * the file on disk is not a consistent database on its own, and a backup that
- * restores to a corrupt page is worse than none because it is believed.
+ * The archive is rows, not a database file. A file is only restorable by the
+ * engine that wrote it and the version that wrote it — which is exactly the
+ * dependency a backup is supposed to remove, and it stopped being possible at
+ * all once the store could be either Postgres or SQLite. NDJSON restores into
+ * anything, including a text editor, and the digest over those bytes means a
+ * truncated upload cannot pass for a whole one.
  */
 
 type S3 = { endpoint: string; bucket: string; key: string; secret: string; region: string };
@@ -82,28 +82,32 @@ export type SnapshotResult = {
 
 /** Consistent copy of the corpus, uploaded and verifiable by digest. */
 export async function snapshot(stamp: string): Promise<SnapshotResult> {
-  const db = getDb();
-  const tmp = path.join(os.tmpdir(), `axon-${stamp}.db`);
-  fs.rmSync(tmp, { force: true });
-
-  // Consistent as of this moment, WAL and all.
-  db.prepare("VACUUM INTO ?").run(tmp);
-
-  const body = fs.readFileSync(tmp);
-  fs.rmSync(tmp, { force: true });
-
   // Every row, not just the settled ones — a backup that dropped the runs
   // nobody submitted would quietly lose the recordings people made. Broken out
   // so this total is never mistaken for the number the feed reports.
-  const one = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
   const counts = {
-    trajectories: one("SELECT COUNT(*) n FROM trajectory"),
-    settled: one("SELECT COUNT(*) n FROM trajectory WHERE settled = 1"),
-    unsettled: one("SELECT COUNT(*) n FROM trajectory WHERE settled = 0"),
-    props: one("SELECT COUNT(*) n FROM prop"),
+    trajectories: await count("SELECT COUNT(*) AS n FROM trajectory"),
+    settled: await count("SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1"),
+    unsettled: await count("SELECT COUNT(*) AS n FROM trajectory WHERE settled = 0"),
+    props: await count("SELECT COUNT(*) AS n FROM prop"),
   };
 
-  const objectKey = `axon-${stamp}.db`;
+  const trajectories = await query("SELECT * FROM trajectory ORDER BY created_at ASC");
+  // The GLB bytes travel base64 rather than raw: one line per row is what makes
+  // this restorable a line at a time, and a binary column would break that.
+  const props = (await query<Record<string, unknown>>(
+    `SELECT id, label, role, width_mm, bytes, sha256, uploader, created_at, glb
+       FROM prop ORDER BY created_at ASC`,
+  )).map((p) => ({ ...p, glb: Buffer.from(p.glb as Uint8Array).toString("base64") }));
+
+  const lines = [
+    JSON.stringify({ _: "manifest", version: 1, engine: ENGINE, stamp, ...counts }),
+    ...trajectories.map((r) => JSON.stringify({ _: "trajectory", ...r })),
+    ...props.map((r) => JSON.stringify({ _: "prop", ...r })),
+  ];
+  const body = Buffer.from(lines.join("\n") + "\n", "utf8");
+
+  const objectKey = `axon-${stamp}.ndjson`;
   const digest = sha256(body);
   const cfg = config();
 
@@ -124,7 +128,7 @@ export async function snapshot(stamp: string): Promise<SnapshotResult> {
       authorization,
       "x-amz-date": amzDate,
       "x-amz-content-sha256": payloadHash,
-      "content-type": "application/x-sqlite3",
+      "content-type": "application/x-ndjson",
       "content-length": String(body.length),
     },
     body: new Uint8Array(body),
@@ -161,21 +165,25 @@ export type DrillResult = {
 };
 
 /**
- * Restore the most recent snapshot and prove it is a database.
+ * Restore the most recent snapshot and prove it is the corpus.
  *
  * A snapshot nobody has restored is a file, not a backup. This pulls the object
- * back out of the bucket, opens it as SQLite, runs the engine's own integrity
- * check, and compares its contents with what the live database currently holds
- * — so a truncated upload or a silent corruption surfaces here rather than on
- * the day it is needed.
+ * back out of the bucket, parses every line, and checks the things that would
+ * actually make it useless: a row that is not valid JSON, a manifest whose
+ * counts disagree with the rows that follow it, a trajectory with no samples,
+ * a prop whose stored digest does not match its own bytes.
  *
- * Reads only, and the restored copy is deleted before returning.
+ * The last of those is the one worth having. The engine's integrity check said
+ * the file was a well-formed database; it could not say the bytes in it were
+ * the bytes that were put there. Re-hashing each GLB does.
+ *
+ * Reads only, and nothing is written anywhere.
  */
 export async function drill(stamp: string): Promise<DrillResult> {
   const cfg = config();
   if (!cfg) throw new Error("No bucket configured; there is nothing to restore.");
 
-  const objectKey = `axon-${stamp}.db`;
+  const objectKey = `axon-${stamp}.ndjson`;
   const now = new Date();
   const signed = sign(cfg, objectKey, Buffer.alloc(0), now, "GET");
 
@@ -191,42 +199,66 @@ export async function drill(stamp: string): Promise<DrillResult> {
   if (!res.ok) throw new Error(`Bucket returned ${res.status} for ${objectKey}`);
 
   const body = Buffer.from(await res.arrayBuffer());
-  const restored = path.join(os.tmpdir(), `axon-drill-${stamp}.db`);
-  fs.writeFileSync(restored, body);
+  const lines = body.toString("utf8").split("\n").filter(Boolean);
 
-  try {
-    const Database = (await import("better-sqlite3")).default;
-    const copy = new Database(restored, { readonly: true });
-    const one = (sql: string) => (copy.prepare(sql).get() as { n: number }).n;
+  const faults: string[] = [];
+  type Manifest = { trajectories?: number; props?: number };
+  let manifest: Manifest | null = null;
+  let trajectories = 0, props = 0, withSamples = 0;
 
-    const integrity = (copy.prepare("PRAGMA integrity_check").get() as { integrity_check: string })
-      .integrity_check;
-    const trajectories = one("SELECT COUNT(*) n FROM trajectory");
-    const props = one("SELECT COUNT(*) n FROM prop");
-    // A corpus without its samples restores as a list of hashes.
-    const withSamples = one("SELECT COUNT(*) n FROM trajectory WHERE length(samples) > 2");
-    copy.close();
-
-    const db = getDb();
-    const liveOne = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
-    const live = {
-      trajectories: liveOne("SELECT COUNT(*) n FROM trajectory"),
-      props: liveOne("SELECT COUNT(*) n FROM prop"),
-    };
-
-    return {
-      key: objectKey,
-      bytes: body.length,
-      sha256: sha256(body),
-      integrity,
-      trajectories,
-      props,
-      withSamples,
-      // The live database only grows, so the restore is sound if it is not ahead.
-      matchesLive: trajectories <= live.trajectories && props <= live.props,
-      live,
-    };
-  } finally {
-    fs.rmSync(restored, { force: true });
+  for (const [i, line] of lines.entries()) {
+    let row: Record<string, unknown>;
+    try {
+      row = JSON.parse(line);
+    } catch {
+      faults.push(`line ${i + 1} is not JSON`);
+      continue;
+    }
+    if (row._ === "manifest") { manifest = row as Manifest; continue; }
+    if (row._ === "trajectory") {
+      trajectories += 1;
+      // A corpus without its samples restores as a list of hashes.
+      if (typeof row.samples === "string" && row.samples.length > 2) withSamples += 1;
+      else faults.push(`${String(row.traj_hash).slice(0, 12)} has no samples`);
+      continue;
+    }
+    if (row._ === "prop") {
+      props += 1;
+      // The stored digest against the bytes themselves — the one check a
+      // file-level integrity test could never make.
+      const glb = Buffer.from(String(row.glb ?? ""), "base64");
+      if (sha256(glb) !== row.sha256) faults.push(`prop ${String(row.id)} digest mismatch`);
+      continue;
+    }
+    faults.push(`line ${i + 1} is an unknown row type`);
   }
+
+  if (!manifest) faults.push("no manifest");
+  else {
+    if (manifest.trajectories !== trajectories) {
+      faults.push(`manifest says ${manifest.trajectories} trajectories, found ${trajectories}`);
+    }
+    if (manifest.props !== props) {
+      faults.push(`manifest says ${manifest.props} props, found ${props}`);
+    }
+  }
+
+  const live = {
+    trajectories: await count("SELECT COUNT(*) AS n FROM trajectory"),
+    props: await count("SELECT COUNT(*) AS n FROM prop"),
+  };
+
+  return {
+    key: objectKey,
+    bytes: body.length,
+    sha256: sha256(body),
+    integrity: faults.length === 0 ? "ok" : faults.join("; "),
+    trajectories,
+    props,
+    withSamples,
+    // The live store only grows, so the restore is sound if it is not ahead.
+    matchesLive:
+      faults.length === 0 && trajectories <= live.trajectories && props <= live.props,
+    live,
+  };
 }

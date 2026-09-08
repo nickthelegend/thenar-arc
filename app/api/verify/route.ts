@@ -118,9 +118,9 @@ async function handlePOST(req: Request) {
 
     // A hash already on file was already scored; hand back the same signature
     // rather than issuing a second one for identical data.
-    const existing = getTrajectory(result.trajHash);
+    const existing = await getTrajectory(result.trajHash);
     if (!existing) {
-      insertTrajectory({
+      await insertTrajectory({
         traj_hash: result.trajHash,
         task_id: taskId,
         contributor: contributor.toLowerCase(),

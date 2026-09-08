@@ -8,10 +8,14 @@ export const dynamic = "force-dynamic";
 /** Runs recorded while this deployment settled on an earlier chain. Kept
  *  separate from /api/feed so nothing can render them as current. */
 export async function GET() {
-  const chains = PRIOR_CHAINS.map((c) => ({
-    id: c.id, name: c.name, explorer: c.explorer, currency: c.currency,
-    runs: trajectoriesOnChain(c.id),
-  })).filter((c) => c.runs.length > 0);
+  const chains = (
+    await Promise.all(
+      PRIOR_CHAINS.map(async (c) => ({
+        id: c.id, name: c.name, explorer: c.explorer, currency: c.currency,
+        runs: await trajectoriesOnChain(c.id),
+      })),
+    )
+  ).filter((c) => c.runs.length > 0);
 
   return NextResponse.json({
     total: chains.reduce((n, c) => n + c.runs.length, 0),

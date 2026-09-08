@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/server/db";
+import { query } from "@/lib/server/db";
 import { appChain } from "@/lib/chain";
 
 export const runtime = "nodejs";
@@ -28,16 +28,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "task id must be a non-negative integer" }, { status: 400 });
   }
 
-  const rows = getDb()
-    .prepare(
-      `SELECT traj_hash, contributor, score, samples
-         FROM trajectory
-        WHERE task_id = ? AND settled = 1 AND chain_id = ?
-        ORDER BY score DESC`,
-    )
-    .all(taskId, appChain.id) as {
+  const rows = await query<{
     traj_hash: string; contributor: string; score: number; samples: string;
-  }[];
+  }>(
+    `SELECT traj_hash, contributor, score, samples
+       FROM trajectory
+      WHERE task_id = ? AND settled = 1 AND chain_id = ?
+      ORDER BY score DESC`,
+    [taskId, appChain.id],
+  );
 
   const paths = rows.map((r) => {
     const s = JSON.parse(r.samples) as { object: [number, number, number] }[];

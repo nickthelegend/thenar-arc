@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(_req: Request, ctx: { params: Promise<{ hash: string }> }) {
   const { hash } = await ctx.params;
-  const row = getTrajectory(hash);
+  const row = await getTrajectory(hash);
 
   if (!row) {
     return NextResponse.json({ error: "No trajectory with that hash." }, { status: 404 });

@@ -60,7 +60,7 @@ export async function GET() {
   };
 
   try {
-    const n = countTrajectories();
+    const n = await countTrajectories();
     checks.database = { ok: true, detail: `${n} trajectories stored` };
   } catch (e) {
     checks.database = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
@@ -131,8 +131,8 @@ export async function GET() {
       const onchain = Number(await client.readContract({
         address: AXON_ADDRESS, abi: AXON_ABI, functionName: "trajectoryCount",
       }));
-      const stored = countTrajectories();
-      const other = countByChain()
+      const stored = await countTrajectories();
+      const other = (await countByChain())
         .filter((r) => r.chain_id !== appChain.id)
         .map((r) => `${r.n} on ${r.chain_id ?? "unresolved"}`)
         .join(", ");
