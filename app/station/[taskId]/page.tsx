@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { VoiceControl } from "@/components/voice-control";
 import { STATION_SEEN } from "@/lib/first-run";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -15,7 +16,7 @@ import { SKILL_LABEL } from "@/lib/skills";
 import { useRunsOnTask } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
-import { ACCEPT_FLOOR, evaluate, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
+import { ACCEPT_FLOOR, evaluate, GRIP_CLOSED_MM, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
 import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
@@ -252,6 +253,10 @@ export default function StationPage() {
     (t: Telemetry) => {
       setTel(t);
       report(t.tool, t.grip, t.held);
+      // Published on the document so a control that is not part of this tree —
+      // voice — can ask what the jaws are doing without a second source of
+      // truth for it. The readout and the voice path read the same value.
+      document.body.dataset.jaws = t.grip <= GRIP_CLOSED_MM ? "closed" : "open";
       if (phase !== "running") return;
 
       if (t.held) everHeld.current = true;
@@ -432,6 +437,14 @@ export default function StationPage() {
               <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
               <Key keys={["E", "Q"]} action="Raise / lower" />
               <Key keys={["Space"]} action="Open / close the jaws" />
+            </dl>
+            {/* Not a novelty control. A discrete, named grammar is what voice
+                is actually good for, and for an operator who cannot use a
+                pointer or hold a key accurately it is the difference between
+                driving this station and not. Every command dispatches the same
+                keystroke the panel above names. */}
+            <VoiceControl className="mt-3" />
+            <dl className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
@@ -525,6 +538,14 @@ export default function StationPage() {
                   <Key keys={["A", "D", "\u2190", "\u2192"]} action="Swing left / right" />
                   <Key keys={["E", "Q"]} action="Raise / lower" />
                   <Key keys={["Space"]} action="Open / close the jaws" />
+            </dl>
+            {/* Not a novelty control. A discrete, named grammar is what voice
+                is actually good for, and for an operator who cannot use a
+                pointer or hold a key accurately it is the difference between
+                driving this station and not. Every command dispatches the same
+                keystroke the panel above names. */}
+            <VoiceControl className="mt-3" />
+            <dl className="flex flex-col gap-1.5">
                   <Key keys={["?"]} action="Show or hide this" />
                   <Key keys={["Esc"]} action="Close" />
                 </dl>
