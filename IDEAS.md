@@ -10,6 +10,34 @@ trained it.* Ideas that don't sharpen that lose on fit however clever they are.
 
 ---
 
+---
+
+## Where all hundred stand
+
+Counted honestly. "Built" means it is live on thenar.io and something other
+than my own assertion says so — an assertion in `npm test`, a transaction on
+Fuji, or a reading taken from the running page.
+
+| | Count | Which |
+|---|---|---|
+| **Built and verified** | **66** | 1–25, 27–31, 39–67, 69–74 |
+| Built in part | 1 | 75 — sitemap and robots ship; the per-page OG image 404s in production and was reverted rather than left broken |
+| Cannot be built as this is deployed | 3 | 26 (task expiry needs a contract change, which would orphan the settled runs), 37 (the contract hands the raw hash to the P-256 precompile; WebCrypto hashes what it signs, so no browser passkey can ever produce a signature it accepts), 38 (gasless first run needs meta-transactions; `submitTrajectory` credits `msg.sender`) |
+| Blocked on access I do not have | 5 | 32–36 — ICM, a hosted L1 validator, eERC, Warp, a subnet gas token. No Dispatch/Echo testnet gas and no AvaCloud account |
+| Rejected, with the reason stated | 25 | 76–100 |
+| | **100** | |
+
+The rejections are part of the work, not a shortfall against it. Half of them —
+a points system, leaderboard prize money, AI-written task descriptions, a
+trained-policy demo — are rejected because building them would mean putting a
+number on screen that nothing backs. In a product whose entire claim is that
+you can check the number yourself, that is the one thing worth refusing.
+
+Three things in the "cannot" row were found by trying. The passkey path was
+built, tested against the deployed contract, and reverted when the precompile
+returned false for the hash the contract passes it — and PRODUCT.md was
+corrected, because it had listed that path as shipping.
+
 ## Tier 1 — build these (score ≥ 80)
 
 | # | Idea | I | F | Fit | Score |

@@ -13,7 +13,7 @@ Built at Monad Blitz Hyderabad V3.
 | **Chain** | Avalanche Fuji (43113) |
 | **AxonProtocol** | [`0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3`](https://testnet.snowtrace.io/address/0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3) — Sourcify `exact_match` |
 | **PasskeyRegistry** | [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.snowtrace.io/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F) — Sourcify `exact_match` |
-| **Hosting** | Vercel (frontend, custom domain) + Railway (API, persistent SQLite volume) |
+| **Hosting** | Vercel (frontend, custom domain) + Railway (API, Postgres, and a signer service holding the verifier key) |
 
 > **Built at Monad Blitz Hyderabad V3, where it placed 3rd.** It ran on Monad
 > then; it settles on Avalanche now. The Monad deployment and the two
@@ -206,7 +206,7 @@ unauditable payout.
 
 **Nothing on these pages is a fixture.** Tasks, slots, escrow, scores, payouts,
 standings and cap tables are all read from the contract. The trajectories behind
-them are in SQLite, addressed by the same hash the chain records.
+them are in Postgres, addressed by the same hash the chain records.
 
 ### Not built, and never presented as built
 
