@@ -72,7 +72,10 @@ export default function ArchivePage() {
               {c.runs.map((r) => (
                 <li
                   key={r.traj_hash}
-                  className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule py-3.5 sm:grid-cols-[1fr_repeat(3,minmax(64px,auto))_auto]"
+                  /* Past tense, in the only way a list can be: dimmer than a
+                     live feed, and lifting only on hover, so the archive is
+                     legible without ever reading as current activity. */
+                  className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule py-3.5 opacity-70 transition-opacity duration-300 hover:opacity-100 sm:grid-cols-[1fr_repeat(3,minmax(64px,auto))_auto]"
                 >
                   {/* To the chain the run is actually on. Sending these to the
                       operator page would show a Fuji history for a Monad run
