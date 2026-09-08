@@ -80,6 +80,8 @@ type ViewportProps = {
   /** The room this task happens in, resolved from the scenario the contract
    *  stores. Absent renders the bare measuring surface, as it always did. */
   environmentUrl?: string;
+  /** How that room is lit. Absent falls back to the neutral bench. */
+  lighting?: import("@/lib/environments").RoomLight;
   /** Incremented by the station on every new run. The rig is keyed on it, so a
    *  new run remounts the scene rather than trying to reset it in place. */
   runId: number;
@@ -474,6 +476,7 @@ function Rig({
   targetUrl,
   targetWidthMm,
   environmentUrl,
+  lighting,
   onTelemetry,
   onSample,
 }: Omit<ViewportProps, "runId">) {
@@ -639,10 +642,15 @@ function Rig({
 
   return (
     <>
-      <hemisphereLight args={["#8F8F8F", "#000000", 0.4]} />
+      <hemisphereLight args={[
+        lighting?.hemi.sky ?? "#8F8F8F",
+        lighting?.hemi.ground ?? "#000000",
+        lighting?.hemi.intensity ?? 0.4,
+      ]} />
       <directionalLight
         position={[0.9, 1.25, 0.6]}
-        intensity={2.3}
+        color={lighting?.key.color ?? "#FFFFFF"}
+        intensity={lighting?.key.intensity ?? 2.3}
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-0.8}
@@ -650,7 +658,11 @@ function Rig({
         shadow-camera-top={0.8}
         shadow-camera-bottom={-0.8}
       />
-      <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.45} color="#FF9A3D" />
+      <directionalLight
+        position={[-0.8, 0.5, -0.7]}
+        color={lighting?.fill.color ?? "#FF9A3D"}
+        intensity={lighting?.fill.intensity ?? 0.45}
+      />
 
       {environmentUrl ? <Room url={environmentUrl} /> : null}
       <SurfacePlate />

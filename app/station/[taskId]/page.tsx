@@ -9,7 +9,7 @@ import { GOAL_R } from "@/components/station/viewport";
 import { Announce, Button, CountUp, Difficulty, ToleranceBand } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useSpace } from "@/lib/space";
-import { environmentForScenario } from "@/lib/environments";
+import { environmentForScenario, lightingFor } from "@/lib/environments";
 import { SKILL_LABEL } from "@/lib/skills";
 import { useRunsOnTask } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
@@ -309,6 +309,7 @@ export default function StationPage() {
             onTelemetry={onTelemetry}
             onSample={onSample}
             environmentUrl={room.url}
+            lighting={lightingFor(room.id)}
             ghosts={ghosts}
           />
 

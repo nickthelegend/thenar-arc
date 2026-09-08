@@ -21,6 +21,19 @@ colors:
   reject-dim: "#2B0611"
   probe: "#6E86A6"
   probe-dim: "#0E1520"
+    scene-key-kitchen: "#FFF1E0"
+    scene-key-office: "#F2F6FF"
+    scene-key-workshop: "#FFF6E6"
+    scene-key-home: "#FFEBD2"
+    scene-key-play: "#FFFBF2"
+    scene-fill-bathroom: "#B8D4E6"
+    scene-fill-home: "#FFB067"
+    scene-hemi-kitchen: "#9A9086"
+    scene-hemi-office: "#8F9299"
+    scene-hemi-bathroom: "#9EA5A8"
+    scene-hemi-workshop: "#7E7A74"
+    scene-hemi-home: "#8F8880"
+    scene-hemi-play: "#93968F"
 typography:
   display:
     fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
@@ -376,6 +389,27 @@ Canvas, because everything inside it renders on a frame that may never come.
 
 Sheets stacked in one grid cell must be `inert` as well as transparent, or their
 links stay clickable and stay in the tab order under the sheet on screen.
+
+## Scene lighting
+
+The only colours in this system that are not surfaces. These are **light
+sources** in the station's 3D scene — a key, a fill and a hemisphere per room —
+not pigments, which is why they sit in their own `scene-*` group rather than
+extending the interface palette.
+
+A kitchen counter lit the same as a workshop bench reads as the same room with
+different furniture, so each room carries its own: the light it would actually
+have, what bounces back off its materials, and the ambient above it.
+
+Held deliberately narrow. The scene is a measuring instrument and the datum has
+to stay legible under every one of them, so no room's lighting is far enough
+from neutral to change how a placement reads. It changes the room, not the
+reading. Values live in `lightingFor()` in `lib/environments.ts`, keyed by the
+scenario the contract stores, so the lighting is derivable from chain state like
+everything else about a scene.
+
+Bathroom and general use `scribe` as their key; signal, go and probe appear as
+fills, because the accents are already the system's.
 
 ## Print
 
