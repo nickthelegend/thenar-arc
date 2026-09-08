@@ -105,6 +105,26 @@ if (feed?.runs?.length) {
   const one = await json(`/api/trajectory/${feed.runs[0].traj_hash}`);
   check("stored samples re-hash to the recorded value", one.integrity?.matches === true);
   check("trajectory reports its settlement chain", one.chainId === 43113, String(one.chainId));
+
+  // Every run on file re-hashes, not just the newest. A scene-carrying run
+  // hashes as version 2 and a run whose instruction named its props still
+  // hashes as version 1; if either serialisation drifted, the twelve payouts
+  // that predate version 2 would stop matching the chain and this would fail.
+  let v1 = 0, v2 = 0, broken = [];
+  for (const r of feed.runs) {
+    const t = await json(`/api/trajectory/${r.traj_hash}`);
+    if (t.integrity?.matches !== true) broken.push(r.traj_hash.slice(0, 12));
+    if (t.payloadIds?.length) v2 += 1; else v1 += 1;
+    // A run that records a second payload must name both props, and one that
+    // names two props must record both — a scene and its recording cannot
+    // disagree about how many objects were in the room.
+    const two = Boolean(t.samples?.[0]?.object2);
+    if (two !== ((t.payloadIds?.length ?? 1) > 1)) {
+      broken.push(`${r.traj_hash.slice(0, 12)} scene/recording mismatch`);
+    }
+  }
+  check(`every stored run re-hashes (${v1} v1, ${v2} v2)`, broken.length === 0, broken.join(" "));
+  check("version 1 runs are still on file", v1 > 0, `${v1}`);
 }
 
 // --- edge cases fail in a specific way, not with a 500 ----------------------
