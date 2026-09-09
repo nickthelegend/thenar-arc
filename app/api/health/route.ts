@@ -153,11 +153,24 @@ export async function GET() {
         .filter((r) => r.chain_id !== appChain.id)
         .map((r) => `${r.n} on ${r.chain_id ?? "unresolved"}`)
         .join(", ");
+      // Not "these two numbers differ" but which direction, because the two
+      // directions are entirely different faults. More stored than the chain
+      // knows is a ledger claiming payouts that were never made. Fewer is a
+      // payout on chain whose trajectory nobody can retrieve — which on a
+      // protocol that pays for data is the more serious of the two, and the
+      // one worth naming rather than reporting as a mismatch.
+      const gap = onchain - stored;
       checks.ledgerMatchesChain = {
-        ok: stored === onchain,
-        detail: stored === onchain
-          ? `${stored} runs stored, ${onchain} on chain${other ? ` (plus ${other}, not shown)` : ""}`
-          : `${stored} runs stored for chain ${appChain.id} but the contract reports ${onchain}`,
+        ok: gap === 0,
+        detail:
+          gap === 0
+            ? `${stored} runs stored, ${onchain} on chain${other ? ` (plus ${other}, not shown)` : ""}`
+            : gap > 0
+              ? `${gap} run${gap === 1 ? "" : "s"} paid on chain ${appChain.id} ` +
+                `${gap === 1 ? "has" : "have"} no stored trajectory — the payout is real and the ` +
+                `artefact behind it cannot be retrieved (${stored} stored, ${onchain} on chain)`
+              : `${-gap} more runs stored than the contract has accepted, which means the ledger ` +
+                `is claiming payouts the chain never made (${stored} stored, ${onchain} on chain)`,
       };
     } catch (e) {
       checks.ledgerMatchesChain = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
