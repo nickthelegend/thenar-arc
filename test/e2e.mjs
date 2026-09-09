@@ -181,11 +181,17 @@ if (feed?.runs?.length) {
   // hashes as version 2 and a run whose instruction named its props still
   // hashes as version 1; if either serialisation drifted, the twelve payouts
   // that predate version 2 would stop matching the chain and this would fail.
-  let v1 = 0, v2 = 0, broken = [];
+  // Counted the way canonicalise decides, not by one field of it. Keying on
+  // payloadIds alone reported a two-arm run as version 1, which is the exact
+  // confusion this assertion exists to prevent.
+  const seen = { 1: 0, 2: 0, 3: 0 };
+  const broken = [];
   for (const r of feed.runs) {
     const t = await json(`/api/trajectory/${r.traj_hash}`);
     if (t.integrity?.matches !== true) broken.push(r.traj_hash.slice(0, 12));
-    if (t.payloadIds?.length) v2 += 1; else v1 += 1;
+    const s0 = t.samples?.[0] ?? {};
+    const version = s0.q2 ? 3 : (t.payloadIds?.length || s0.object2) ? 2 : 1;
+    seen[version] += 1;
     // A run that records a second payload must name both props, and one that
     // names two props must record both — a scene and its recording cannot
     // disagree about how many objects were in the room.
@@ -194,8 +200,11 @@ if (feed?.runs?.length) {
       broken.push(`${r.traj_hash.slice(0, 12)} scene/recording mismatch`);
     }
   }
-  check(`every stored run re-hashes (${v1} v1, ${v2} v2)`, broken.length === 0, broken.join(" "));
-  check("version 1 runs are still on file", v1 > 0, `${v1}`);
+  check(`every stored run re-hashes (${seen[1]} v1, ${seen[2]} v2, ${seen[3]} v3)`,
+    broken.length === 0, broken.join(" "));
+  // The oldest serialisation is the one with settled payouts behind it, so its
+  // continued presence is the assertion that matters most.
+  check("version 1 runs are still on file", seen[1] > 0, `${seen[1]}`);
 }
 
 // --- edge cases fail in a specific way, not with a 500 ----------------------

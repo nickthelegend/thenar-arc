@@ -1,11 +1,13 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, keccak256, toHex } from "viem";
 import { AXON_ADDRESS, appChain, KNOWN_CHAINS } from "@/lib/chain";
 import {
   unsettledWithTx, markSettled, clearTx,
-  unresolvedChain, setChainId, countByChain,
+  unresolvedChain, setChainId, countByChain, query, run,
 } from "@/lib/server/db";
+import { canonicalise } from "@/lib/canonical";
+import type { Sample } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,11 +110,75 @@ async function reconcile() {
     if (!found) unknown += 1;
   }
 
+  const realigned = await realignSamples();
+
   return NextResponse.json({
     checked: rows.length, settled, cleared,
     chainResolution: { attempted: unresolved.length, resolved, unknown },
+    samples: realigned,
     byChain: await countByChain(),
   });
+}
+
+/**
+ * Make every stored recording exactly what its hash covers.
+ *
+ * The payout is derived from the artefact, so a row holding more than the hash
+ * attests to breaks the only claim this protocol makes. That can happen for a
+ * real reason: a run submitted while the serialisation was being extended is
+ * hashed by the old rules and stored with the new columns, and afterwards
+ * re-derives to a different value for ever.
+ *
+ * The repair is to drop what the hash does not cover, not to rewrite the hash —
+ * the hash is on chain and is the fixed point. A row is only touched when
+ * removing a later version's columns makes it re-derive to exactly the value
+ * the contract recorded; anything else is left alone and left visibly broken,
+ * because a mismatch nobody can explain should stay visible.
+ */
+async function realignSamples() {
+  const suspect = await query<{ traj_hash: string; task_id: number; contributor: string; samples: string; payload_ids: string | null }>(
+    `SELECT traj_hash, task_id, contributor, samples, payload_ids FROM trajectory WHERE settled = 1`,
+  );
+
+  let checked = 0, repaired = 0;
+  const stillBroken: string[] = [];
+
+  for (const row of suspect) {
+    checked += 1;
+    const samples = JSON.parse(row.samples) as Sample[];
+    const ids = row.payload_ids ? (JSON.parse(row.payload_ids) as string[]) : undefined;
+    const asIs = keccak256(toHex(canonicalise(row.task_id, row.contributor, samples, ids)));
+    if (asIs.toLowerCase() === row.traj_hash.toLowerCase()) continue;
+
+    // Peel back one version at a time, newest first.
+    // Destructured out rather than deleted, so the original array is untouched
+    // if none of the candidates match and the row is left alone.
+    const withoutArm = samples.map((sm) => {
+      const copy = { ...sm };
+      delete copy.q2;
+      delete copy.grip2;
+      return copy;
+    });
+    const candidates: [string, Sample[], string[] | undefined][] = [
+      ["without the second arm", withoutArm, ids],
+      ["without the second arm or the scene", withoutArm, undefined],
+    ];
+
+    let fixed = false;
+    for (const [, cand, candIds] of candidates) {
+      const h = keccak256(toHex(canonicalise(row.task_id, row.contributor, cand, candIds)));
+      if (h.toLowerCase() !== row.traj_hash.toLowerCase()) continue;
+      await run(`UPDATE trajectory SET samples = ? WHERE traj_hash = ?`, [
+        JSON.stringify(cand), row.traj_hash,
+      ]);
+      repaired += 1;
+      fixed = true;
+      break;
+    }
+    if (!fixed) stillBroken.push(row.traj_hash);
+  }
+
+  return { checked, repaired, stillBroken };
 }
 
 export const POST = logged("/api/reconcile", handlePOST);

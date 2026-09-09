@@ -2,7 +2,7 @@ import "server-only";
 import { appChain } from "@/lib/chain";
 import { migrate, query, queryOne, run, count, ENGINE } from "@/lib/server/sql";
 
-export { ENGINE, query, queryOne, count } from "@/lib/server/sql";
+export { ENGINE, query, queryOne, count, run } from "@/lib/server/sql";
 
 /**
  * Trajectory store.
