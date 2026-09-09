@@ -20,8 +20,8 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **96** | everything except 32, 33, 34, 36 |
-| Needs a second chain or an L1 I cannot fund | 4 | 32, 33, 34, 36 — the Dispatch faucet is a captcha page and no API endpoint answers |
+| **Built and verified** | **97** | everything except 32, 33, 36 |
+| Needs a second chain or an L1 I cannot fund | 3 | 32, 33, 36 — the Dispatch faucet is a captcha page and no API endpoint answers |
 | | **100** | |
 
 Four refusals, not twenty-five. A points token, prize money the contract does
