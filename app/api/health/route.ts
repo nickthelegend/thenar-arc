@@ -3,6 +3,7 @@ import { createPublicClient, http, hashDomain } from "viem";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 import { countTrajectories, countByChain, ENGINE } from "@/lib/server/db";
+import { canonicalShape } from "@/app/api/sign/route";
 import { runDomain } from "@/lib/server/verifier";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ export async function GET() {
     };
     try {
       const r = await fetch(`${signerOrigin}/api/sign`, { cache: "no-store" });
-      const b = (await r.json()) as { holdsKey?: boolean; verifier?: string };
+      const b = (await r.json()) as { holdsKey?: boolean; verifier?: string; canonical?: string };
       const expected = process.env.VERIFIER_ADDRESS?.toLowerCase();
       const same = !expected || b.verifier?.toLowerCase() === expected;
       checks.signer = {
@@ -38,6 +39,19 @@ export async function GET() {
           : same
             ? `signer holds ${b.verifier}`
             : `signer holds ${b.verifier}, expected ${expected}`,
+      };
+
+      // The signer computes the hash, so the two services agreeing about the
+      // canonical form is not a nicety — it is the difference between a
+      // corpus that re-derives and one that does not. They were once deployed
+      // apart, and every run submitted in that window was stored disagreeing
+      // with its own hash while nothing failed loudly.
+      const mine = canonicalShape();
+      checks.serialisation = {
+        ok: b.canonical === mine,
+        detail: b.canonical === mine
+          ? "signer and web agree on the trajectory format"
+          : `signer would hash a run differently from this service (${String(b.canonical).slice(0, 12)} vs ${mine.slice(0, 12)}) — redeploy the older one`,
       };
     } catch (e) {
       checks.signer = {

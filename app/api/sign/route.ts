@@ -5,6 +5,8 @@ import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { validateSamples, validatePayloadIds, verifyAndSign, VerifyError } from "@/lib/server/verifier";
 import { parSecondsFor } from "@/lib/par";
+import { canonicalise } from "@/lib/canonical";
+import { keccak256, toHex } from "viem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -124,8 +126,32 @@ export async function GET() {
     return NextResponse.json({
       holdsKey: true,
       verifier: privateKeyToAccount(pk as `0x${string}`).address,
+      // Which serialisation this process would hash a run with.
+      //
+      // Moving the key into its own service moved the hashing with it, and two
+      // services can be deployed apart. When they were, this one hashed a
+      // two-arm run by the older rules while the service that reads runs back
+      // re-derived them by the newer ones, and every run submitted in that
+      // window was stored disagreeing with its own hash. Nothing failed
+      // loudly: the signature was valid, the transaction succeeded, and only
+      // the integrity badge on a page nobody had opened yet said otherwise.
+      //
+      // So the shape is published, and /api/health compares it against its
+      // own. A drift now shows up as a failed check rather than as a corpus.
+      canonical: canonicalShape(),
     });
   } catch {
     return NextResponse.json({ holdsKey: false, error: "the key is not a valid private key" }, { status: 500 });
   }
+}
+
+/** A fixed sample run through this build's canonicaliser. Two services that
+ *  agree on this agree on every hash they will ever produce. */
+export function canonicalShape(): string {
+  const probe = [{
+    t: 0, q: [0, 0, 0, 0, 0, 0], grip: 42,
+    object: [0, 0, 0], object2: [0, 0, 0],
+    q2: [0, 0, 0, 0, 0, 0], grip2: 42,
+  }] as unknown as Parameters<typeof canonicalise>[2];
+  return keccak256(toHex(canonicalise(0, "0x0000000000000000000000000000000000000000", probe, ["a"])));
 }
