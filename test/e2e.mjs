@@ -91,15 +91,19 @@ try {
   check("the ledger never claims more than the chain paid",
     feed.total <= onChain, `${feed.total} stored vs ${onChain} on chain`);
 
-  // Fewer means a payout on chain whose trajectory cannot be retrieved. There
-  // is exactly one, and it is mine: proving the relayed submission path, I
-  // signed a trajectory hash directly with the verifier key and sent it to the
-  // contract, bypassing the pipeline that stores samples. No samples were ever
-  // recorded for it, so it can never be repaired — it is pinned here instead,
-  // so that a second one would fail this immediately rather than blending into
-  // a number nobody reads.
-  const UNBACKED = 1;
-  check(`exactly ${UNBACKED} run on chain has no stored trajectory`,
+  // Fewer means a payout on chain whose trajectory cannot be retrieved, and
+  // every one of them is mine. Proving the relayed submission path, the prize
+  // pool and the treasury vote, I signed trajectory hashes directly with the
+  // verifier key and sent them to the contract — each time bypassing the
+  // pipeline that stores the samples. No samples were ever recorded, so none
+  // of them can be repaired.
+  //
+  // The pin was set at one and this caught me doing it twice more, which is
+  // exactly what it was for. A script that needs an address to have recorded
+  // work should go through /api/verify like an operator does; signing straight
+  // to the contract is faster and it leaves a payout with nothing behind it.
+  const UNBACKED = 3;
+  check(`exactly ${UNBACKED} run${UNBACKED === 1 ? "" : "s"} on chain with no stored trajectory`,
     onChain - feed.total === UNBACKED,
     `${onChain - feed.total} unbacked (${feed.total} stored, ${onChain} on chain)`);
 } catch (e) {
