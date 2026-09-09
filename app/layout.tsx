@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { LocaleReady } from "@/components/locale-ready";
 import { Pulse } from "@/components/pulse";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
 import { DM_Mono, Hanken_Grotesk, Press_Start_2P } from "next/font/google";
@@ -98,10 +99,12 @@ export default function RootLayout({
           Skip to content
         </a>
         <Providers>
-          <SiteNav />
-          <Conditions />
-          <Pulse />
-          <main id="main">{children}</main>
+          <LocaleReady>
+            <SiteNav />
+            <Conditions />
+            <Pulse />
+            <main id="main">{children}</main>
+          </LocaleReady>
         </Providers>
       </body>
     </html>
