@@ -200,6 +200,21 @@ export function migrate(): Promise<void> {
         );
         CREATE INDEX IF NOT EXISTS idx_note_task ON note(task_id, created_at DESC);
       `);
+
+      // CREATE TABLE IF NOT EXISTS does nothing to a table that already
+      // exists, so the block above can only ever create the schema — it can
+      // never grow it. The SQLite branch had always had an ALTER path and this
+      // one did not, which meant the first column added after the corpus moved
+      // to Postgres took the site down with "column does not exist".
+      //
+      // IF NOT EXISTS on each, so this is safe on every boot and safe on a
+      // database that already has them.
+      await c.query(`
+        ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS settled INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS chain_id INTEGER;
+        ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS payload_ids TEXT;
+        ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS contract TEXT;
+      `);
       return;
     }
 
