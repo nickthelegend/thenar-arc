@@ -180,6 +180,20 @@ export function migrate(): Promise<void> {
           n     INTEGER NOT NULL DEFAULT 0,
           PRIMARY KEY (path, day)
         );
+
+        -- What operators found out about a task by driving it. The signature
+        -- is kept beside the body because it is the only thing making the
+        -- author's name mean anything: there are no accounts here, so an
+        -- address without a signature over the text is a claim, not a byline.
+        CREATE TABLE IF NOT EXISTS note (
+          id         TEXT PRIMARY KEY,
+          task_id    INTEGER NOT NULL,
+          author     TEXT NOT NULL,
+          body       TEXT NOT NULL,
+          signature  TEXT NOT NULL,
+          created_at BIGINT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_note_task ON note(task_id, created_at DESC);
       `);
       return;
     }
@@ -249,6 +263,16 @@ export function migrate(): Promise<void> {
         n     INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (path, day)
       );
+
+      CREATE TABLE IF NOT EXISTS note (
+        id         TEXT PRIMARY KEY,
+        task_id    INTEGER NOT NULL,
+        author     TEXT NOT NULL,
+        body       TEXT NOT NULL,
+        signature  TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_note_task ON note(task_id, created_at DESC);
     `);
   })();
   return ready;

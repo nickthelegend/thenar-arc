@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TaskNotes } from "@/components/task-notes";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
@@ -180,6 +181,8 @@ export default function TaskPage() {
           ) : null}
 
           <FunderHistory taskId={task.id} funder={task.funder} />
+
+          <TaskNotes taskId={task.id} />
 
 
           <ul className="mt-6 flex flex-col">
