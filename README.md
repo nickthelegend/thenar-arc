@@ -210,8 +210,11 @@ them are in Postgres, addressed by the same hash the chain records.
 
 ### Not built, and never presented as built
 
-No MuJoCo rigid-body physics (the station is a kinematic sim with analytic
-grasping), no IsaacSim augmentation, no trained policy, no post-training/DAgger
+The station is still a kinematic sim with analytic grasping, and every payout
+is derived from that — MuJoCo is in the project but measures the recordings
+rather than driving them, reporting per run how far each is from rigid-body
+dynamics (about 1.3 mm, against a ±25 mm band). No IsaacSim augmentation, no
+trained policy, no post-training/DAgger
 loop, no mobile capture, no mainnet deployment. These are named as roadmap in
 the interface wherever a visitor could read them as capabilities.
 

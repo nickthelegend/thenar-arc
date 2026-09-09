@@ -143,6 +143,19 @@ if (health) {
   check("a note cannot be posted under another address", forged.status === 401,
     String(forged.status));
 
+  // Real physics, on a real run. The assertion is not that a number comes
+  // back but that it is a physically correct one: an upright cylinder settles
+  // at exactly half its own height, so a rest height that is not ~37.5 mm
+  // means the engine is not doing what it claims to.
+  const phys = await fetch(`${BASE}/api/physics/${feed.runs[0].traj_hash}`);
+  const p = phys.ok ? await phys.json() : {};
+  check("physics settles the payload at half its own height",
+    phys.status === 200 && Math.abs(p.restHeightMm - 37.5) < 1,
+    `${phys.status} restHeight=${p.restHeightMm}`);
+  check("physics reports a divergence from the kinematic path",
+    typeof p.divergenceMm === "number" && p.divergenceMm >= 0 && p.divergenceMm < 200,
+    `${p.divergenceMm} mm`);
+
   const signGet = await fetch(`${BASE}/api/sign`);
   const signBody = await signGet.json().catch(() => ({}));
   check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,

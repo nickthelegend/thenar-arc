@@ -73,7 +73,14 @@ Confirmed and shipping:
 
 Constraints and explicit non-capabilities. These are roadmap and must never be presented as working:
 
-- No MuJoCo-WASM rigid-body physics. The station runs a kinematic simulation with analytic grasping.
+- The station still runs a kinematic simulation with analytic grasping, and
+  every payout is derived from that. MuJoCo-WASM is now in the project, but
+  deliberately not underneath the station: it integrates a recorded run's
+  release state to rest and reports how far the recording is from rigid-body
+  dynamics, per run, on the run's own page. Replacing the sim under runs
+  already settled would make them incomparable with each other, which is worse
+  than measuring the gap and publishing it. It currently reads about 1.3 mm
+  against a ±25 mm tolerance band.
 - No IsaacSim augmentation, no domain randomization pipeline.
 - No trained policy exists. Nothing autonomously attempts a task.
 - No post-training / DAgger takeover loop.
