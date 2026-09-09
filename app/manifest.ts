@@ -10,6 +10,16 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#000000",
     theme_color: "#FF6A00",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
+    // An SVG alone is not an installable icon: Android wants a 192 and a 512
+    // PNG, and without a maskable variant it crops the mark into whatever
+    // silhouette the launcher uses. Redrawn at each size by scripts/icons.mjs.
+    icons: [
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+    orientation: "any",
+    categories: ["productivity", "utilities"],
   };
 }

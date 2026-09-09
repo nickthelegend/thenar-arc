@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { InstallShell } from "@/components/install";
 import { LocaleReady } from "@/components/locale-ready";
 import { Pulse } from "@/components/pulse";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
@@ -103,6 +104,7 @@ export default function RootLayout({
             <SiteNav />
             <Conditions />
             <Pulse />
+            <InstallShell />
             <main id="main">{children}</main>
           </LocaleReady>
         </Providers>
