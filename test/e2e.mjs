@@ -98,6 +98,31 @@ if (health) {
   check("og:image resolves to an absolute URL",
     /<meta property="og:image" content="https:\/\/[^"]+\/og\.png"/.test(home));
 
+  // The read API is public, and "public" here means callable from another
+  // origin — not merely unauthenticated. Both halves are asserted: the header
+  // that lets a browser read, and the absence of the ones that would let it
+  // write.
+  const cat = await fetch(`${BASE}/api`);
+  const catBody = cat.ok ? await cat.json() : {};
+  check("api catalogue lists its endpoints",
+    cat.status === 200 && Array.isArray(catBody.endpoints) && catBody.endpoints.length > 0,
+    `${cat.status} ${catBody.endpoints?.length ?? 0}`);
+  check("reads are open cross-origin",
+    cat.headers.get("access-control-allow-origin") === "*",
+    String(cat.headers.get("access-control-allow-origin")));
+
+  const pre = await fetch(`${BASE}/api/hit`, {
+    method: "OPTIONS",
+    headers: {
+      origin: "https://elsewhere.example",
+      "access-control-request-method": "POST",
+      "access-control-request-headers": "content-type",
+    },
+  });
+  check("writes are not, by preflight",
+    !pre.headers.get("access-control-allow-methods") && !pre.headers.get("access-control-allow-headers"),
+    `methods=${pre.headers.get("access-control-allow-methods")} headers=${pre.headers.get("access-control-allow-headers")}`);
+
   const signGet = await fetch(`${BASE}/api/sign`);
   const signBody = await signGet.json().catch(() => ({}));
   check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,
