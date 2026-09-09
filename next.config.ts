@@ -39,6 +39,26 @@ const nextConfig: NextConfig = {
     ].join("; ");
 
     return [
+      /**
+       * The read API is public, and until now it was public only in the sense
+       * that it was not authenticated — no page on another origin could
+       * actually call it. Everything it returns is already on chain or already
+       * rendered on this site, so there is nothing here to protect by
+       * accident.
+       *
+       * Reads only, and deliberately by omission rather than by rule: allowing
+       * the origin without allowing methods or headers means a cross-origin
+       * GET succeeds while anything that needs a preflight — every POST here
+       * sends JSON, which always preflights — is refused by the browser. The
+       * writes stay same-origin without a second list to keep in step.
+       */
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Vary", value: "Origin" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
