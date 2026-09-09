@@ -20,10 +20,10 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **86** | 1–31, 37, 38, 39–75, 79, 81–86, 89–91, 95–100 |
-| Would assert what nothing backs | 3 | 76, 77, 78 |
+| **Built and verified** | **88** | 1–31, 37, 38, 39–77, 79, 81–86, 89–91, 94–100 |
+| Would assert what nothing backs | 2 | 76, 78 |
 | Rejected on the merits | 2 | 87, 88 |
-| Needs a credential or capability I do not have | 9 | 32–36, 80, 92, 93, 94 |
+| Needs a credential or capability I do not have | 8 | 32–36, 80, 92, 93 |
 | | **100** | |
 
 Four refusals, not twenty-five. A points token, prize money the contract does

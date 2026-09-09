@@ -211,6 +211,18 @@ export function migrate(): Promise<void> {
           created_at BIGINT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_note_task ON note(task_id, created_at DESC);
+
+        -- Who a task's funder says is working on it with them. Signed, because
+        -- there are no accounts here and an unsigned roster is a list of
+        -- addresses anybody could have typed.
+        CREATE TABLE IF NOT EXISTS collaborator (
+          task_id    INTEGER NOT NULL,
+          member     TEXT NOT NULL,
+          role       TEXT NOT NULL,
+          signature  TEXT NOT NULL,
+          added_at   BIGINT NOT NULL,
+          PRIMARY KEY (task_id, member)
+        );
       `);
 
       // CREATE TABLE IF NOT EXISTS does nothing to a table that already
@@ -318,6 +330,15 @@ export function migrate(): Promise<void> {
         created_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_note_task ON note(task_id, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS collaborator (
+        task_id    INTEGER NOT NULL,
+        member     TEXT NOT NULL,
+        role       TEXT NOT NULL,
+        signature  TEXT NOT NULL,
+        added_at   INTEGER NOT NULL,
+        PRIMARY KEY (task_id, member)
+      );
     `);
   })();
   return ready;

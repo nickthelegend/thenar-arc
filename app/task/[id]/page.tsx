@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TaskTeam } from "@/components/task-team";
 import { TaskNotes } from "@/components/task-notes";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -181,6 +182,8 @@ export default function TaskPage() {
           ) : null}
 
           <FunderHistory taskId={task.id} funder={task.funder} />
+
+          <TaskTeam taskId={task.id} />
 
           <TaskNotes taskId={task.id} />
 
