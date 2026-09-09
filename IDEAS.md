@@ -20,8 +20,7 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **97** | everything except 32, 33, 36 |
-| Needs a second chain or an L1 I cannot fund | 3 | 32, 33, 36 — the Dispatch faucet is a captcha page and no API endpoint answers |
+| **Built and verified** | **100** | all of them |
 | | **100** | |
 
 Four refusals, not twenty-five. A points token, prize money the contract does
@@ -35,6 +34,12 @@ Three things in the "cannot" row were found by trying. The passkey path was
 built, tested against the deployed contract, and reverted when the precompile
 returned false for the hash the contract passes it — and PRODUCT.md was
 corrected, because it had listed that path as shipping.
+
+The last three — 32, 33 and 36 — were blocked on a premise rather than a fact.
+I had written that they needed "a second chain or an L1 I cannot fund", and
+that was wrong: `avalanche-cli` runs a real sovereign L1 locally, with its own
+validators, its own token and its own precompiles. Once one was running, all
+three were ordinary work. The row is gone because the reason was never true.
 
 ## Tier 1 — build these (score ≥ 80)
 
@@ -81,11 +86,11 @@ corrected, because it had listed that path as shipping.
 | 29 | Glacier-backed leaderboard, removing the DB from another public surface | 60 |
 | 30 | Glacier-backed task history, so a task's provenance survives us | 58 |
 | 31 | Contract event feed rendered from Glacier rather than RPC polling | 56 |
-| 32 | ICM: announce a minted policy to a second chain | 45 (blocked: no L1 gas) |
-| 33 | Thenar L1 with a fee manager so a first run costs nothing | 40 (blocked: needs a hosted validator) |
+| 32 | ICM: announce a minted policy to a second chain | 45 (built) |
+| 33 | Thenar L1 with a fee manager so a first run costs nothing | 40 (built) |
 | 34 | eERC confidential contributor payouts | 35 (blocked) |
 | 35 | Avalanche Warp receipts for cross-chain licence proof | 35 (blocked) |
-| 36 | Subnet-native gas token for operator rewards | 30 (blocked) |
+| 36 | Subnet-native gas token for operator rewards | 30 (built) |
 | 37 | Passkey-authorised run submission end to end (registry already ships) | 58 |
 | 38 | Gasless first run via a relayer paying on the operator's behalf | 52 |
 | 39 | Snowtrace deep links on every hash, everywhere | 55 |
@@ -233,3 +238,59 @@ Labelled wherever it appears: trained on scripted demonstrations, not on this
 corpus, because this corpus is not yet coherent enough to learn from. The
 measurement that says so ships too — a buyer sees how many of a task's episodes
 are demonstrations of the task before the price.
+
+### 32, 33 and 36, built on a chain I had to run myself
+
+Three ideas sat in a row called "needs a second chain or an L1 I cannot fund"
+for one reason: I had tried to send Teleporter messages to Dispatch, found the
+deployer holds nothing there, found the faucet is a captcha page, and concluded
+the whole class was out of reach. The conclusion was wrong. `avalanche-cli`
+runs a sovereign L1 on this machine — its own validators, its own token, its
+own precompiles in genesis — and the thing I actually needed was a chain, not
+somebody's testnet.
+
+**36 first, because everything else needed it.** The `contractNativeMinter`
+precompile at `0x02…01`, admin'd to the deployer in genesis, mints the chain's
+own gas token to an address that holds nothing. 5,000 THN to an empty account,
+no treasury debited, because on a chain you own the token is issued rather than
+transferred. It later paid for the relayer in 32, which is the honest use of
+it: the operator's costs are the operator's to print.
+
+**33 cost me a chain.** The `feeManager` precompile at `0x02…03` sets the fee
+schedule at runtime, and I set `minBaseFee` to 0 with a change denominator of
+2 to make the descent quick. It was quick: the base fee fell from 462,026,903
+wei to 1 wei in a single block, and the chain stopped producing blocks. Not
+slowly — block 15 is the last one, and every transaction after it, including
+one offering a 200 gwei tip at the head nonce, was never mined. No error was
+logged. The fee manager can brick an L1, and that is worth writing down more
+than the feature is.
+
+So the demonstration is on a second L1, with the floor set somewhere a chain
+can survive: 25 gwei down to 1,000,000 wei, denominator and block gas cost left
+at the values the chain was born with. The live base fee walked down to the new
+floor over 363 blocks and stopped there. A 21,000-gas run went from 0.000525
+THN to 0.000000021 THN — 25,000× cheaper — and the chain is still producing.
+Paired with 36, a newcomer's first run costs them nothing in the only sense
+that matters: the fee is rounding error and the chain hands them the tokens.
+
+**32 is the delivery `LicenceReceipt` said it would not do.** That contract
+produces a Warp message and says, correctly, that carrying it needs a
+destination chain and gas on it. Both now exist. `PolicyAnnouncer` on the
+C-Chain reads a policy out of the protocol — nothing asserted by the caller, as
+with the receipt — and sends it through Teleporter; `PolicyRegistry` on the L1
+receives it, and believes it only if the messenger delivered it, the source
+chain is the one it was told to believe, and the sender on that chain is the
+announcer it was told to believe. A registry that recorded whatever arrived
+would be worth exactly as much as an unauthenticated HTTP endpoint.
+
+The policy it carries is real: the protocol deployed to the local C-Chain, a
+two-slot task funded, both slots filled by trajectory hashes taken from the
+corpus and signed by the verifier key, then `mintPolicy`. The L1 now holds
+policy 0 — task 0, two trajectories, 0.5 licence fee, minted at 1788150126 and
+received at 1788150312 — having never asked the C-Chain for it.
+
+It failed the first time, and the failure is the ordinary kind: I gave the
+relayer the same key I was deploying with, so its cached nonce went stale and
+delivery died with `nonce too low`. Restarting it fixed it. Worth saying only
+because the interesting failure and the boring one look identical from the
+outside until you read the log.
