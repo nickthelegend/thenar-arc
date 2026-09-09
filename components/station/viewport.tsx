@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, useGLTF } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { EnterXR, XRControls } from "@/components/station/xr";
 import { click } from "@/lib/click";
 import { REACH_MAX, solve, toolPosition } from "@/lib/kinematics";
 import type { Sample } from "@/lib/types";
@@ -932,6 +933,7 @@ export function StationViewport(props: ViewportProps) {
   }, [props.payloads, props.targetUrl, props.environmentUrl]);
 
   const [lost, setLost] = useState(false);
+  const [renderer, setRenderer] = useState<THREE.WebGLRenderer | null>(null);
   // Everything except presence goes to Rig: it must not re-render six times a
   // second just because somebody else moved.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -940,6 +942,11 @@ export function StationViewport(props: ViewportProps) {
   // A lost context leaves a black rectangle and no error anyone can see. Catch
   // it, tell the operator, and let the browser hand the context back.
   const onCreated = ({ gl }: { gl: THREE.WebGLRenderer }) => {
+    // Lifted out so the headset button, which has to live outside the Canvas
+    // to be reachable before a session exists, can hand the renderer its
+    // session. Set through a ref rather than state: this runs during the
+    // Canvas's own setup, and a setState here re-renders the thing being set up.
+    setRenderer(gl);
     const canvas = gl.domElement;
     canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); setLost(true); });
     canvas.addEventListener("webglcontextrestored", () => setLost(false));
@@ -1007,7 +1014,10 @@ export function StationViewport(props: ViewportProps) {
           or the whole scene reconciles on every presence update. */}
       <Rig key={props.runId} {...rigProps} />
       <Ghosts ghosts={props.ghosts ?? []} />
+      <XRControls />
     </Canvas>
+    {/* Only rendered at all where a headset answers. */}
+    <EnterXR gl={renderer} className="absolute bottom-3 right-3 z-10" />
     </>
   );
 }
