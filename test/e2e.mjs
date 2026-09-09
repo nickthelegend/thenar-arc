@@ -123,6 +123,26 @@ if (health) {
     !pre.headers.get("access-control-allow-methods") && !pre.headers.get("access-control-allow-headers"),
     `methods=${pre.headers.get("access-control-allow-methods")} headers=${pre.headers.get("access-control-allow-headers")}`);
 
+  // A byline that anyone can type is not a byline. The check is not that a
+  // note can be posted but that one cannot be posted under someone else's
+  // address, so the forgery is the assertion that matters.
+  const notes = await fetch(`${BASE}/api/task/10/notes`);
+  const notesBody = notes.ok ? await notes.json() : {};
+  check("task notes are readable", notes.status === 200 && Array.isArray(notesBody.notes),
+    String(notes.status));
+
+  const forged = await fetch(`${BASE}/api/task/10/notes`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      body: "posted under an address I do not hold",
+      author: "0x000000000000000000000000000000000000dEaD",
+      signature: "0x" + "11".repeat(65),
+    }),
+  });
+  check("a note cannot be posted under another address", forged.status === 401,
+    String(forged.status));
+
   const signGet = await fetch(`${BASE}/api/sign`);
   const signBody = await signGet.json().catch(() => ({}));
   check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,
