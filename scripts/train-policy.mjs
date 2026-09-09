@@ -50,7 +50,12 @@ function features(tool, object, grip) {
   ];
 }
 
-const all = JSON.parse(readFileSync("/tmp/corpus.json", "utf8"));
+// CORPUS=1 trains on what the ledger holds; the default trains on the scripted
+// demonstrations, because the ledger's are not yet coherent enough to learn
+// from and the two facts are worth keeping separate.
+const SOURCE = process.env.CORPUS ? "/tmp/corpus.json" : "/tmp/demos.json";
+const all = JSON.parse(readFileSync(SOURCE, "utf8"));
+console.log(`source: ${SOURCE}`);
 
 /**
  * Only episodes whose arm and payload agree.
@@ -154,10 +159,22 @@ function loss(set) {
   let s = 0;
   for (const r of set) {
     const { y } = forward(norm(r.x));
-    for (let i = 0; i < O; i += 1) s += (y[i] - r.y[i]) ** 2;
+    for (let i = 0; i < O; i += 1) s += OUT_WEIGHT[i] * (y[i] - r.y[i]) ** 2;
   }
   return s / (set.length * O);
 }
+
+/**
+ * The jaws matter more than their share of the loss.
+ *
+ * Three of the four outputs are a tool delta and one is the grip. Under a plain
+ * mean-squared error the grip is a quarter of the signal, and the moment that
+ * actually decides the task — opening the jaws over the datum — is a handful of
+ * frames out of two hundred and sixty. The first policy trained this way
+ * reached the datum on every rollout and then held the payload two millimetres
+ * above it for ever, because letting go was never worth much to it.
+ */
+const OUT_WEIGHT = [1, 1, 1, 6];
 
 const LR = 0.002, BATCH = 64, EPOCHS = 60;
 for (let epoch = 1; epoch <= EPOCHS; epoch += 1) {
@@ -170,7 +187,7 @@ for (let epoch = 1; epoch <= EPOCHS; epoch += 1) {
     for (const r of batch) {
       const x = norm(r.x);
       const { z1, a1, z2, a2, y } = forward(x);
-      const dy = y.map((v, i) => (2 * (v - r.y[i])) / (batch.length * O));
+      const dy = y.map((v, i) => (2 * OUT_WEIGHT[i] * (v - r.y[i])) / (batch.length * O));
       for (let i = 0; i < O; i += 1) {
         gb3[i] += dy[i];
         for (let j = 0; j < H; j += 1) gW3[i][j] += dy[i] * a2[j];

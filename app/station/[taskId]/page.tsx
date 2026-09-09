@@ -149,6 +149,24 @@ export default function StationPage() {
    * authorised this trajectory rather than merely this transaction.
    */
   const [usePasskey, setUsePasskey] = useState(false);
+  /**
+   * Watch the trained policy drive instead of driving it yourself.
+   *
+   * Never during a run that could be submitted. A recording of a network
+   * driving is not a demonstration by the operator whose address it would be
+   * paid to, and the whole value of this corpus is that its episodes are what
+   * they say they are — so choosing this makes the run a practice run.
+   */
+  const [policyOn, setPolicyOn] = useState(false);
+  const [policy, setPolicy] = useState<import("@/lib/policy").Policy | null>(null);
+  useEffect(() => {
+    if (!policyOn || policy) return;
+    let live = true;
+    void import("@/lib/policy").then(({ loadPolicy }) => loadPolicy())
+      .then((p) => { if (live) setPolicy(p); })
+      .catch(() => { if (live) setPolicyOn(false); });
+    return () => { live = false; };
+  }, [policyOn, policy]);
   const [hasPasskey, setHasPasskey] = useState(false);
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -398,7 +416,7 @@ export default function StationPage() {
    */
   // Practice is forced when there is nothing to pay for, and chosen when a
   // first-time operator would rather not spend a slot learning the controls.
-  const practice = !task.open || capped || chosePractice;
+  const practice = !task.open || capped || chosePractice || policyOn;
   // Measured on this chain: a submit reserves roughly 0.03 AVAX against the gas
   // limit regardless of what it spends, and the chain rejects the transaction
   // outright below that. Warn before the wallet does.
@@ -473,6 +491,38 @@ export default function StationPage() {
                 driving this station and not. Every command dispatches the same
                 keystroke the panel above names. */}
             <VoiceControl className="mt-3" />
+
+            {/* A trained network driving the same arm, through the same
+                kinematics and the same grasp rule. Marked as practice while it
+                does: a recording of a policy driving is not a demonstration by
+                the address it would be paid to, and the corpus is only worth
+                anything if its episodes are what they say they are. */}
+            <button
+              type="button"
+              onClick={() => setPolicyOn((v) => !v)}
+              aria-pressed={policyOn}
+              className={cn(
+                "mt-2 flex w-full items-center justify-between gap-3 border px-3 py-2 text-left transition-colors",
+                policyOn
+                  ? "border-probe text-probe"
+                  : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe",
+              )}
+            >
+              <span className="font-mono text-[12px] uppercase tracking-[0.14em]">
+                {policyOn ? "Policy driving" : "Let the policy drive"}
+              </span>
+              <span className="font-mono text-[11px] text-scribe-3">
+                {policyOn && !policy ? "loading…" : policyOn ? "practice" : ""}
+              </span>
+            </button>
+            {policyOn ? (
+              <p className="mt-1.5 text-[12px] leading-relaxed text-scribe-3">
+                3,076 parameters, trained on 220 scripted demonstrations &mdash; not on
+                this corpus, which is not yet coherent enough to learn from. It
+                grasps from every start tested and reaches the datum; it releases
+                in five of eight. Nothing it does is submitted.
+              </p>
+            ) : null}
             <dl className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2 pt-1">
                 <button
@@ -514,6 +564,7 @@ export default function StationPage() {
             start={START}
             payloads={scene.payloads.map((p) => ({ url: p.url, widthMm: p.widthMm }))}
             arms={scene.arms}
+            policy={policyOn ? policy : null}
             targetUrl={scene.target.url}
             targetWidthMm={scene.target.widthMm}
             runId={runId}
@@ -575,6 +626,38 @@ export default function StationPage() {
                 driving this station and not. Every command dispatches the same
                 keystroke the panel above names. */}
             <VoiceControl className="mt-3" />
+
+            {/* A trained network driving the same arm, through the same
+                kinematics and the same grasp rule. Marked as practice while it
+                does: a recording of a policy driving is not a demonstration by
+                the address it would be paid to, and the corpus is only worth
+                anything if its episodes are what they say they are. */}
+            <button
+              type="button"
+              onClick={() => setPolicyOn((v) => !v)}
+              aria-pressed={policyOn}
+              className={cn(
+                "mt-2 flex w-full items-center justify-between gap-3 border px-3 py-2 text-left transition-colors",
+                policyOn
+                  ? "border-probe text-probe"
+                  : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe",
+              )}
+            >
+              <span className="font-mono text-[12px] uppercase tracking-[0.14em]">
+                {policyOn ? "Policy driving" : "Let the policy drive"}
+              </span>
+              <span className="font-mono text-[11px] text-scribe-3">
+                {policyOn && !policy ? "loading…" : policyOn ? "practice" : ""}
+              </span>
+            </button>
+            {policyOn ? (
+              <p className="mt-1.5 text-[12px] leading-relaxed text-scribe-3">
+                3,076 parameters, trained on 220 scripted demonstrations &mdash; not on
+                this corpus, which is not yet coherent enough to learn from. It
+                grasps from every start tested and reaches the datum; it releases
+                in five of eight. Nothing it does is submitted.
+              </p>
+            ) : null}
             <dl className="flex flex-col gap-1.5">
                   <Key keys={["?"]} action="Show or hide this" />
                   <Key keys={["Esc"]} action="Close" />

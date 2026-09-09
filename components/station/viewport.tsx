@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { EnterXR, XRControls } from "@/components/station/xr";
 import { click } from "@/lib/click";
+import { act as policyAct } from "@/lib/policy";
 import { REACH_MAX, solve, solveAt, toolPositionAt } from "@/lib/kinematics";
 import type { Sample } from "@/lib/types";
 
@@ -127,6 +128,15 @@ type ViewportProps = {
   environmentUrl?: string;
   /** How that room is lit. Absent falls back to the neutral bench. */
   lighting?: import("@/lib/environments").RoomLight;
+  /**
+   * Hand the controls to the trained policy.
+   *
+   * It drives the same target the keys and the pointer drive, through the same
+   * kinematics and the same grasp rule — anything else would be a different
+   * machine wearing this one's viewport, and what it did would say nothing
+   * about what an operator's recording is worth.
+   */
+  policy?: import("@/lib/policy").Policy | null;
   /** Incremented by the station on every new run. The rig is keyed on it, so a
    *  new run remounts the scene rather than trying to reset it in place. */
   runId: number;
@@ -628,6 +638,7 @@ function Rig({
   lighting,
   onTelemetry,
   onSample,
+  policy,
 }: Omit<ViewportProps, "runId">) {
   const { camera } = useThree();
 
@@ -753,6 +764,17 @@ function Rig({
     const A = activeArm.current;
     const t = A === 0 ? target.current : targetB.current;
     const activeBase: [number, number] = A === 0 ? [0, 0] : ARM_B_BASE;
+
+    // The policy drives the same target the keys do, and only while it is
+    // handed the controls. Its action is a tool delta, so it is applied where
+    // a key press would be rather than by moving the arm directly.
+    if (policy && running) {
+      const now = toolPositionAt(activeBase, A === 0 ? joints.current : jointsB.current);
+      const o0 = objects.current[0];
+      const a = policyAct(policy, now, o0, goal, grip.current);
+      t[0] += a.delta[0]; t[1] += a.delta[1]; t[2] += a.delta[2];
+      grip.current = a.close ? 6 : GRIP_OPEN_MM;
+    }
 
     // Motion is in the camera's ground plane so "up" always means away.
     // WASD and the arrows are the same control. Reaching for one and getting

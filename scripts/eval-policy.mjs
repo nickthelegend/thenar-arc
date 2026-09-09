@@ -61,7 +61,8 @@ function rollout(startOffset = [0, 0]) {
   let held = false;
   let grasped = false;
 
-  for (let step = 0; step < 900; step += 1) {
+  const HORIZON = Number(process.env.HORIZON ?? 900);
+  for (let step = 0; step < HORIZON; step += 1) {
     const q = solve(target);
     const tool = toolPosition(q);
     const a = policy(tool, object, grip);
