@@ -172,9 +172,6 @@ export function migrate(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_traj_task ON trajectory(task_id);
         CREATE INDEX IF NOT EXISTS idx_traj_contributor ON trajectory(contributor);
         CREATE INDEX IF NOT EXISTS idx_traj_created ON trajectory(created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
-        CREATE INDEX IF NOT EXISTS idx_traj_chain ON trajectory(chain_id);
-        CREATE INDEX IF NOT EXISTS idx_traj_contract ON trajectory(contract);
 
         -- Two integers and a date. There is deliberately no room in this table
         -- for an address, an agent string, a session or an id: a counter that
@@ -214,6 +211,17 @@ export function migrate(): Promise<void> {
         ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS chain_id INTEGER;
         ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS payload_ids TEXT;
         ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS contract TEXT;
+      `);
+
+      // And only now the indexes that name those columns. This is the same
+      // ordering the SQLite branch already had, and putting them in the create
+      // block above was what actually broke the deploy: CREATE INDEX on a
+      // column that does not exist yet throws, taking the ALTER that would
+      // have added it down with the rest of the statement.
+      await c.query(`
+        CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
+        CREATE INDEX IF NOT EXISTS idx_traj_chain ON trajectory(chain_id);
+        CREATE INDEX IF NOT EXISTS idx_traj_contract ON trajectory(contract);
       `);
       return;
     }
