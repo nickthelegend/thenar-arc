@@ -3,6 +3,13 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
+# v2 came out at 24,976 bytes against the EVM's 24,576 limit and would not
+# deploy at all. 200 runs is the usual balance: it costs a little gas per call
+# against a contract that now fits. v1 is already deployed and verified, and
+# its on-chain match is unaffected by what this file says today.
+optimizer = true
+optimizer_runs = 200
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
 [rpc_endpoints]

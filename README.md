@@ -11,7 +11,8 @@ Built at Monad Blitz Hyderabad V3.
 | **Live** | **https://thenar.io** |
 | **Repo** | https://github.com/nickthelegend/axon-monad |
 | **Chain** | Avalanche Fuji (43113) |
-| **AxonProtocol** | [`0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3`](https://testnet.snowtrace.io/address/0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3) — Sourcify `exact_match` |
+| **AxonProtocolV2** | [`0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0`](https://testnet.snowtrace.io/address/0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0) — Sourcify `exact_match`. Adds escrow refunds, relayed submission, and a passkey digest that works. |
+| **AxonProtocol v1** | [`0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3`](https://testnet.snowtrace.io/address/0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3) — superseded; its runs are in the archive |
 | **PasskeyRegistry** | [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.snowtrace.io/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F) — Sourcify `exact_match` |
 | **Hosting** | Vercel (frontend, custom domain) + Railway (API, Postgres, and a signer service holding the verifier key) |
 

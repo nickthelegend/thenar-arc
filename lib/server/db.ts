@@ -1,6 +1,7 @@
 import "server-only";
 import { appChain } from "@/lib/chain";
-import { migrate, query, queryOne, run, count, ENGINE } from "@/lib/server/sql";
+import { migrate, query, queryOne, run, count, ENGINE, backfillContracts } from "@/lib/server/sql";
+import { AXON_ADDRESS, PRIOR_CONTRACTS } from "@/lib/chain";
 
 export { ENGINE, query, queryOne, count, run } from "@/lib/server/sql";
 
@@ -20,9 +21,18 @@ export { ENGINE, query, queryOne, count, run } from "@/lib/server/sql";
 
 /** Called before every access. The promise is memoised, so this is one round
  *  trip on the first query and free afterwards. */
+let backfilled: Promise<number> | null = null;
 async function db() {
   await migrate();
+  // Once per process, and only rows that have no answer yet.
+  backfilled ??= backfillContracts(AXON_ADDRESS, PRIOR_CONTRACTS);
+  await backfilled;
 }
+
+/** Only what the live contract accepted. A run settled against a superseded
+ *  deployment is real and paid, but the current contract has never heard of
+ *  it, and a feed that mixed them would report a count the chain would deny. */
+const HERE = () => AXON_ADDRESS.toLowerCase();
 
 export type StoredTrajectory = {
   traj_hash: string;
@@ -41,10 +51,11 @@ export type StoredTrajectory = {
   tx_hash: string | null;
   chain_id: number | null;
   payload_ids: string | null;
+  contract: string | null;
 };
 
 export async function insertTrajectory(
-  row: Omit<StoredTrajectory, "tx_hash" | "chain_id">,
+  row: Omit<StoredTrajectory, "tx_hash" | "chain_id" | "contract">,
 ): Promise<void> {
   await db();
   // Re-scoring the same recording must not create a second row, and must not
@@ -53,14 +64,14 @@ export async function insertTrajectory(
     `INSERT INTO trajectory
        (traj_hash, task_id, contributor, score, deviation_mm, duration_s,
         placement, efficiency, smoothness, sample_count, samples, signature,
-        created_at, chain_id, payload_ids)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        created_at, chain_id, payload_ids, contract)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT (traj_hash) DO NOTHING`,
     [
       row.traj_hash, row.task_id, row.contributor, row.score, row.deviation_mm,
       row.duration_s, row.placement, row.efficiency, row.smoothness,
       row.sample_count, row.samples, row.signature, row.created_at,
-      appChain.id, row.payload_ids ?? null,
+      appChain.id, row.payload_ids ?? null, HERE(),
     ],
   );
 }
@@ -97,8 +108,9 @@ export async function recentTrajectories(limit = 20) {
   return query<Omit<StoredTrajectory, "samples" | "signature" | "placement" | "efficiency" | "smoothness" | "payload_ids">>(
     `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
             sample_count, created_at, tx_hash
-       FROM trajectory WHERE settled = 1 AND chain_id = ? ORDER BY created_at DESC LIMIT ?`,
-    [appChain.id, limit],
+       FROM trajectory WHERE settled = 1 AND chain_id = ? AND contract = ?
+      ORDER BY created_at DESC LIMIT ?`,
+    [appChain.id, HERE(), limit],
   );
 }
 
@@ -109,15 +121,18 @@ export async function trajectoriesForTask(taskId: number, limit = 200) {
     deviation_mm: number; duration_s: number; created_at: number; tx_hash: string | null;
   }>(
     `SELECT traj_hash, contributor, score, deviation_mm, duration_s, created_at, tx_hash
-       FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ?
+       FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ? AND contract = ?
       ORDER BY score DESC LIMIT ?`,
-    [taskId, appChain.id, limit],
+    [taskId, appChain.id, HERE(), limit],
   );
 }
 
 export async function countTrajectories(): Promise<number> {
   await db();
-  return count(`SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1 AND chain_id = ?`, [appChain.id]);
+  return count(
+    `SELECT COUNT(*) AS n FROM trajectory WHERE settled = 1 AND chain_id = ? AND contract = ?`,
+    [appChain.id, HERE()],
+  );
 }
 
 /** Settled rows whose chain has never been established. */
@@ -213,5 +228,17 @@ export async function propBySha(sha: string): Promise<StoredProp | undefined> {
     `SELECT id, label, role, width_mm, bytes, sha256, uploader, created_at
        FROM prop WHERE sha256 = ?`,
     [sha],
+  );
+}
+
+/** Runs settled against a deployment that has since been superseded. */
+export async function trajectoriesOnContract(address: string, limit = 500) {
+  await db();
+  return query<Omit<StoredTrajectory, "samples" | "signature" | "placement" | "efficiency" | "smoothness" | "payload_ids">>(
+    `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
+            sample_count, created_at, tx_hash, chain_id, contract
+       FROM trajectory WHERE settled = 1 AND contract = ?
+      ORDER BY created_at DESC LIMIT ?`,
+    [address.toLowerCase(), limit],
   );
 }

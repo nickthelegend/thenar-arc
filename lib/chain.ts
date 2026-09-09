@@ -68,6 +68,33 @@ export const PRIOR_CHAINS = [
   },
 ] as const;
 
+/**
+ * Contracts this protocol has settled on before the current one.
+ *
+ * A deployment can be superseded without moving chain — v2 added escrow
+ * refunds, relayed submission and a passkey digest that works, none of which
+ * an already-deployed contract can grow. The runs settled against the earlier
+ * one are still real, still paid, and still verifiable against it; they are
+ * simply not part of what the current contract knows about, and a feed that
+ * mixed them would report a count the contract would deny.
+ *
+ * So they are archived rather than dropped, exactly as the move off Monad was.
+ */
+export const PRIOR_CONTRACTS = [
+  {
+    address: "0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3",
+    chainId: 43113,
+    label: "AxonProtocol v1 on Avalanche Fuji",
+    why: "Superseded by v2, which can refund escrow, accept a relayed run, and verify a browser passkey.",
+  },
+  {
+    address: "0x89384f46e430F37DB61Afb98810eba995C0d6Ed4",
+    chainId: 10143,
+    label: "AxonProtocol on Monad Testnet",
+    why: "The deployment this project was built on before moving to Avalanche.",
+  },
+] as const;
+
 /** Every chain a stored run could legitimately belong to. */
 export const KNOWN_CHAINS = [
   { id: appChain.id, name: appChain.name, rpc: appChain.rpcUrls.default.http[0],

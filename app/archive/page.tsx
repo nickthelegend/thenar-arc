@@ -10,15 +10,21 @@ type Run = {
   created_at: number; tx_hash: string | null;
 };
 type Chain = { id: number; name: string; explorer: string; currency: string; runs: Run[] };
+type Contract = { address: string; chainId: number; label: string; why: string; runs: Run[] };
 
 export default function ArchivePage() {
   const [chains, setChains] = useState<Chain[] | null>(null);
+  const [contracts, setContracts] = useState<Contract[]>([]);
 
   useEffect(() => {
     let live = true;
     fetch("/api/archive")
       .then((r) => r.json())
-      .then((d: { chains?: Chain[] }) => { if (live) setChains(d.chains ?? []); })
+      .then((d: { chains?: Chain[]; contracts?: Contract[] }) => {
+        if (!live) return;
+        setChains(d.chains ?? []);
+        setContracts(d.contracts ?? []);
+      })
       .catch(() => { if (live) setChains([]); });
     return () => { live = false; };
   }, []);
@@ -30,11 +36,13 @@ export default function ArchivePage() {
     <div className="mx-auto max-w-[1000px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Archive</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        Thenar settled on Monad Testnet before it moved to Avalanche Fuji. These runs
-        are real and their operators were really paid, but they were paid on a chain
-        this deployment no longer writes to. They are kept here, and left out of the
-        feed, the standings and the task pages, because a transaction is only
-        verifiable against the chain it was actually written to.
+        Runs this deployment no longer answers for. Some were settled on Monad
+        Testnet, before the move to Avalanche Fuji; others were settled on Fuji
+        against a contract that has since been superseded. All of them are real
+        and their operators were really paid &mdash; they are kept out of the
+        feed, the standings and the task pages because a payout is only
+        verifiable against the deployment that made it, and the live contract
+        has never heard of these.
       </p>
 
       <DimRule className="mt-6" />
@@ -43,7 +51,7 @@ export default function ArchivePage() {
         <ul className="mt-4 flex flex-col gap-2" aria-busy="true">
           {Array.from({ length: 5 }, (_, i) => <li key={i} className="hatch h-8" />)}
         </ul>
-      ) : list.length === 0 ? (
+      ) : list.length === 0 && contracts.length === 0 ? (
         <div className="mt-6 border border-rule px-6 py-16 text-center">
           <p className="text-[15px] text-scribe-2">Nothing archived.</p>
           <p className="mx-auto mt-1 max-w-[46ch] text-[14px] text-scribe-3">
@@ -115,6 +123,58 @@ export default function ArchivePage() {
           </section>
         ))
       )}
+
+      {contracts.map((c) => (
+        <section key={c.address} className="mt-8">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
+            <span className="flex items-baseline gap-2">
+              <span className="label">Contract</span>
+              <span className="font-mono text-[15px]">{c.label}</span>
+            </span>
+            <span className="flex items-baseline gap-2">
+              <span className="label">Runs</span>
+              <span className="font-mono text-[15px] tabular-nums">{fmtInt(c.runs.length)}</span>
+            </span>
+            <a
+              href={`https://testnet.snowtrace.io/address/${c.address}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[12px] text-scribe-3 hover:text-probe sm:ml-auto"
+            >
+              {shortHash(c.address)} &rarr;
+            </a>
+          </div>
+          <p className="mt-2 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">{c.why}</p>
+
+          <ol className="mt-2">
+            {c.runs.map((r) => (
+              <li
+                key={r.traj_hash}
+                className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule py-3.5 opacity-70 transition-opacity duration-300 hover:opacity-100 sm:grid-cols-[1fr_repeat(3,minmax(64px,auto))_auto]"
+              >
+                {/* Same chain as the live deployment, so the operator page is
+                    the right destination — unlike the cross-chain rows above. */}
+                <a href={`/operator/${r.contributor}`} className="truncate font-mono text-[13px] text-scribe-2 hover:text-probe">
+                  {shortHash(r.contributor)}
+                </a>
+                <span className="hidden font-mono text-[13px] tabular-nums text-scribe-3 sm:block">task {r.task_id}</span>
+                <span className="hidden font-mono text-[13px] tabular-nums text-scribe-2 sm:block">{fmtScore(r.score)}</span>
+                <span className="hidden font-mono text-[13px] tabular-nums text-scribe-3 sm:block">
+                  {r.deviation_mm.toFixed(1)} mm
+                </span>
+                {r.tx_hash ? (
+                  <a href={`https://testnet.snowtrace.io/tx/${r.tx_hash}`} target="_blank" rel="noreferrer"
+                     className="font-mono text-[12px] text-scribe-3 hover:text-probe">
+                    {shortHash(r.tx_hash)} &rarr;
+                  </a>
+                ) : (
+                  <span className="font-mono text-[12px] text-scribe-3">&mdash;</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
     </div>
   );
 }

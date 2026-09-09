@@ -163,13 +163,18 @@ export function migrate(): Promise<void> {
           tx_hash       TEXT,
           settled       INTEGER NOT NULL DEFAULT 0,
           chain_id      INTEGER,
-          payload_ids   TEXT
+          payload_ids   TEXT,
+          -- Which deployment accepted this run. A protocol can be superseded
+          -- without moving chain, and a feed that mixed two contracts would
+          -- report a count the live one would deny.
+          contract      TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_traj_task ON trajectory(task_id);
         CREATE INDEX IF NOT EXISTS idx_traj_contributor ON trajectory(contributor);
         CREATE INDEX IF NOT EXISTS idx_traj_created ON trajectory(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_traj_settled ON trajectory(settled);
         CREATE INDEX IF NOT EXISTS idx_traj_chain ON trajectory(chain_id);
+        CREATE INDEX IF NOT EXISTS idx_traj_contract ON trajectory(contract);
 
         -- Two integers and a date. There is deliberately no room in this table
         -- for an address, an agent string, a session or an id: a counter that
@@ -228,7 +233,8 @@ export function migrate(): Promise<void> {
         tx_hash       TEXT,
         settled       INTEGER NOT NULL DEFAULT 0,
         chain_id      INTEGER,
-        payload_ids   TEXT
+        payload_ids   TEXT,
+        contract      TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_traj_task ON trajectory(task_id);
       CREATE INDEX IF NOT EXISTS idx_traj_contributor ON trajectory(contributor);
@@ -249,6 +255,7 @@ export function migrate(): Promise<void> {
       ["settled", "INTEGER NOT NULL DEFAULT 0"],
       ["chain_id", "INTEGER"],
       ["payload_ids", "TEXT"],
+      ["contract", "TEXT"],
     ] as const) {
       if (!cols.includes(name)) db.exec(`ALTER TABLE trajectory ADD COLUMN ${name} ${decl}`);
     }
@@ -276,4 +283,34 @@ export function migrate(): Promise<void> {
     `);
   })();
   return ready;
+}
+
+/**
+ * Give every pre-existing row the deployment it actually settled against.
+ *
+ * Rows written before the column existed carry no contract, and they are not
+ * all the same one — this project has settled on Monad and on two Avalanche
+ * deployments. The chain each row already records is enough to say which,
+ * because only one contract was ever live per chain at the time. Run once,
+ * touching only rows that have no contract, so it cannot rewrite a row that
+ * already knows its own answer.
+ */
+export async function backfillContracts(current: string, prior: readonly { address: string; chainId: number }[]) {
+  await migrate();
+  let filled = 0;
+  for (const p of prior) {
+    const before = await count(`SELECT COUNT(*) AS n FROM trajectory WHERE contract IS NULL AND chain_id = ?`, [p.chainId]);
+    if (before === 0) continue;
+    await run(`UPDATE trajectory SET contract = ? WHERE contract IS NULL AND chain_id = ?`,
+      [p.address.toLowerCase(), p.chainId]);
+    filled += before;
+  }
+  // Anything still unattributed settled on a chain no prior deployment claims,
+  // which for this project means the current one.
+  const rest = await count(`SELECT COUNT(*) AS n FROM trajectory WHERE contract IS NULL`);
+  if (rest > 0) {
+    await run(`UPDATE trajectory SET contract = ? WHERE contract IS NULL`, [current.toLowerCase()]);
+    filled += rest;
+  }
+  return filled;
 }
