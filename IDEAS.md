@@ -20,8 +20,7 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **90** | 1–31, 37, 38, 39–77, 79, 81–91, 94–100 |
-| Would assert what nothing backs | 2 | 76, 78 |
+| **Built and verified** | **92** | 1–31, 37, 38, 39–79, 81–91, 94–100 |
 | Needs a credential or capability I do not have | 8 | 32–36, 80, 92, 93 |
 | | **100** | |
 

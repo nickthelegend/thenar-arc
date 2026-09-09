@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { suggestInstructions } from "@/lib/instructions";
+import { useEffect, useState, useMemo } from "react";
 import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
@@ -66,6 +67,18 @@ export default function PostTaskPage() {
   const slotsN = Number(slots);
   const rewardN = Number(reward);
   const validName = name.trim().length >= 8;
+
+  /**
+   * Other ways to say the same task, from the two objects already chosen.
+   *
+   * Recomputed rather than stored: it is a pure function of the props and the
+   * scenario, and a stale list would offer wording for objects the funder has
+   * since changed.
+   */
+  const suggestions = useMemo(
+    () => suggestInstructions(payloadId, targetId, SCENARIOS[scenario] ?? "general", uploaded),
+    [payloadId, targetId, scenario, uploaded],
+  );
   const validSlots = Number.isInteger(slotsN) && slotsN > 0 && slotsN <= 10_000;
   const validReward = /^\d*\.?\d*$/.test(reward) && rewardN > 0;
   const total = validSlots && validReward ? slotsN * rewardN : 0;
@@ -114,6 +127,44 @@ export default function PostTaskPage() {
           />
           {!validName && name.length > 0 ? (
             <Err>Give the operator a full instruction — at least eight characters.</Err>
+          ) : null}
+
+          {/* Phrasings for the two objects already chosen. Not a language
+              model — composed from those objects, then round-tripped through
+              the same parser the station uses, so a suggestion that would
+              render a different scene never appears. The wording stays the
+              funder's: these are a starting point, and the field above is
+              still free text. */}
+          {suggestions.length > 0 ? (
+            <div className="mt-1 flex flex-col gap-1.5">
+              <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3">
+                Or say it another way
+              </span>
+              <ul className="flex flex-wrap gap-1.5">
+                {suggestions.map((s) => (
+                  <li key={s.text}>
+                    <button
+                      type="button"
+                      onClick={() => setName(s.text)}
+                      className={cn(
+                        "border px-2 py-1 text-left font-mono text-[12px] transition-colors",
+                        name === s.text
+                          ? "border-signal text-signal"
+                          : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe",
+                      )}
+                    >
+                      {s.text}
+                      <span className="ml-2 uppercase tracking-[0.12em] text-scribe-3">{s.skill}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <span className="text-[12px] leading-relaxed text-scribe-3">
+                Each one is composed from the objects above and checked against
+                the parser that builds the scene &mdash; the label on the right
+                is the manipulation the app will read back from it.
+              </span>
+            </div>
           ) : null}
         </Field>
 
