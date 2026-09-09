@@ -78,3 +78,29 @@ export function toolPosition(j: Joints): [number, number, number] {
   const wz = SHOULDER_HEIGHT + L1 * Math.cos(j.j2) + L2 * Math.cos(j.j2 + j.j3);
   return [wr * Math.cos(j.j1), wr * Math.sin(j.j1), wz - TOOL];
 }
+
+/**
+ * The same solver, for an arm whose base is not at the origin.
+ *
+ * A second arm is not a second solver. Every arm in this scene is a THENAR-6
+ * with the same link lengths, so the only difference between them is where
+ * they stand — which is a change of frame, not of kinematics. Translating the
+ * target into the arm's own frame and the result back out keeps one closed
+ * form for all of them, and keeps a bimanual scene using the exact arithmetic
+ * that produced every single-arm run already on the ledger.
+ *
+ * The base offset is planar. These arms are bolted to the same bench.
+ */
+export function solveAt(base: [number, number], target: [number, number, number]): Joints {
+  return solve([target[0] - base[0], target[1] - base[1], target[2]]);
+}
+
+export function toolPositionAt(base: [number, number], j: Joints): [number, number, number] {
+  const p = toolPosition(j);
+  return [p[0] + base[0], p[1] + base[1], p[2]];
+}
+
+/** Whether a point is inside the reach of an arm standing at `base`. */
+export function withinReachAt(base: [number, number], p: [number, number]): boolean {
+  return Math.hypot(p[0] - base[0], p[1] - base[1]) <= REACH_MAX;
+}

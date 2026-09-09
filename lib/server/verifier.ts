@@ -31,7 +31,11 @@ export function validateSamples(raw: unknown): Sample[] {
       s.object.every((n: unknown) => typeof n === "number" && Number.isFinite(n)) &&
       (s.object2 === undefined ||
         (Array.isArray(s.object2) && s.object2.length === 3 &&
-         s.object2.every((n: unknown) => typeof n === "number" && Number.isFinite(n))));
+         s.object2.every((n: unknown) => typeof n === "number" && Number.isFinite(n)))) &&
+      (s.q2 === undefined ||
+        (Array.isArray(s.q2) && s.q2.length === 6 &&
+         s.q2.every((n: unknown) => typeof n === "number" && Number.isFinite(n)) &&
+         typeof s.grip2 === "number" && Number.isFinite(s.grip2)));
     if (!ok) throw new VerifyError(`sample ${i} is malformed`);
     if (s.t < lastT) throw new VerifyError(`sample ${i} goes backwards in time`);
     lastT = s.t;
@@ -42,6 +46,11 @@ export function validateSamples(raw: unknown): Sample[] {
     // object's whole placement would be unmeasurable on the samples that omit it.
     if (Boolean(s.object2) !== Boolean(all[0].object2)) {
       throw new VerifyError(`sample ${i} disagrees with the scene's payload count`);
+    }
+    // Nor does it gain or lose an arm. A recording whose second arm appears
+    // halfway through is a recording of two different rooms.
+    if (Boolean(s.q2) !== Boolean(all[0].q2)) {
+      throw new VerifyError(`sample ${i} disagrees with the scene's arm count`);
     }
     return s;
   });

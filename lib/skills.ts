@@ -60,3 +60,19 @@ export function skillForTask(instruction: string): Skill {
 
   return best?.skill ?? "place";
 }
+
+/**
+ * Whether a task wants two arms.
+ *
+ * Read from the instruction, like the scene and the skill are, so it stays a
+ * pure function of chain state and cannot drift into a side table nobody
+ * updates. Only where the sentence actually says so: "with both arms",
+ * "two-handed", "hold it while". A task that merely names two objects is not
+ * bimanual — one arm can place two things in sequence, and that is the
+ * ordinary case #25 already covers.
+ */
+export function armsForTask(instruction: string): 1 | 2 {
+  return /\b(both arms|two arms|two-handed|bimanual|hold(ing)? it while|while holding)\b/i.test(instruction)
+    ? 2
+    : 1;
+}

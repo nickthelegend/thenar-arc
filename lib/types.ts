@@ -39,6 +39,12 @@ export type Sample = {
    *  zeroed — on a single-object run, because a zero is a position and the
    *  hash would then claim an object was sitting at the origin. */
   object2?: [number, number, number];
+  /** The second arm's joint angles, on the scenes that have two arms. Absent
+   *  for the same reason: a column of zeroes is a pose, and it would claim the
+   *  arm was folded flat rather than absent. */
+  q2?: [number, number, number, number, number, number];
+  /** The second arm's jaw opening, mm. */
+  grip2?: number;
 };
 
 export type Trajectory = {

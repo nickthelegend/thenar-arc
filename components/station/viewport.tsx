@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { EnterXR, XRControls } from "@/components/station/xr";
 import { click } from "@/lib/click";
-import { REACH_MAX, solve, toolPosition } from "@/lib/kinematics";
+import { REACH_MAX, solve, solveAt, toolPositionAt } from "@/lib/kinematics";
 import type { Sample } from "@/lib/types";
 
 /* Scene constants, metres. The table height and goal radius are the two the
@@ -40,6 +40,16 @@ export const CAPTURE_R = 0.09;
  * within its own 25 mm tolerance of a point inside the 75 mm ring.
  */
 export const SEAT_OFFSET = 0.038;
+
+/**
+ * Where a second arm stands, when a scene has one.
+ *
+ * Far enough that the two envelopes overlap only across the middle of the
+ * bench — which is the whole point of a two-arm scene, a region both can reach
+ * and a region only one can — and close enough that both bases and the datum
+ * are in the camera's frame at once.
+ */
+export const ARM_B_BASE: [number, number] = [0.34, 0.02];
 
 /** Where payload `i` of `n` has to come to rest. One payload owns the datum
  *  itself, which is what keeps every single-object run scoring exactly as it
@@ -94,6 +104,9 @@ export type Telemetry = {
   /** True once a later payload has been left placed while an earlier one has
    *  not been — the operator is doing the task out of the order it was written. */
   outOfOrder: boolean;
+  /** How many arms the scene has, and which one the controls are driving. */
+  arms: number;
+  activeArm: number;
 };
 
 type ViewportProps = {
@@ -104,6 +117,9 @@ type ViewportProps = {
    *  scene used to render an anonymous cylinder regardless, which made every
    *  recorded trajectory a demonstration of moving a grey puck. */
   payloads: { url: string; widthMm: number }[];
+  /** Two arms, when the task needs two. A scene with one is untouched: the
+   *  single arm keeps the origin, its solver and its recorded columns. */
+  arms?: 1 | 2;
   targetUrl: string;
   targetWidthMm: number;
   /** The room this task happens in, resolved from the scenario the contract
@@ -172,12 +188,21 @@ function Arm({
   grip,
   held,
   onJoints,
+  base = [0, 0],
+  dim = false,
 }: {
   target: React.RefObject<[number, number, number]>;
   grip: React.RefObject<number>;
   /** Whether the jaws currently have the payload. */
   held?: React.RefObject<boolean>;
   onJoints: (j: ReturnType<typeof solve>) => void;
+  /** Where this arm is bolted to the bench, in the table plane. Every arm here
+   *  is the same THENAR-6, so a second one is a change of frame and nothing
+   *  else — the solver, the link lengths and the reach are shared. */
+  base?: [number, number];
+  /** Drawn back when this is not the arm the controls are driving, so the
+   *  operator can see which one will move before they move it. */
+  dim?: boolean;
 }) {
   const wasHolding = useRef(false);
   const { scene } = useGLTF("/models/thenar-6.glb");
@@ -217,7 +242,9 @@ function Arm({
     const idleT = state.clock.elapsedTime;
     const idle = held?.current ? 0 : Math.sin(idleT * 0.7) * 0.004;
 
-    const j = solve(target.current);
+    // Solved in this arm's own frame. `target` is in world coordinates, which
+    // is what the payload and the datum are in.
+    const j = solveAt(base, target.current);
     const n = nodes.current;
     if (n.j1) n.j1.rotation.z = j.j1;
     if (n.j2) n.j2.rotation.y = j.j2;
@@ -250,8 +277,38 @@ function Arm({
     onJoints(j);
   });
 
-  // The CAD frame is Z-up, as URDF is; three.js is Y-up.
-  return <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />;
+  // The CAD frame is Z-up, as URDF is; three.js is Y-up. The base offset is a
+  // plane translation, and the plane's Y is three's -Z.
+  return (
+    <group position={[base[0], 0, -base[1]]}>
+      <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />
+      {/* Which arm the controls are on, said in the scene rather than only in
+          the panel: a ring on the bench under the arm that is live. */}
+      {!dim ? <ActiveRing /> : null}
+    </group>
+  );
+}
+
+/** A mark under the arm the controls are currently driving. */
+function ActiveRing() {
+  const ring = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 64; i += 1) {
+      const a = (i / 64) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * 0.085, 0, Math.sin(a) * 0.085));
+    }
+    return new THREE.BufferGeometry().setFromPoints(pts);
+  }, []);
+  // Wrapped in a group rather than positioning the line itself: `position` on
+  // a bare <line> resolves to the SVG element's attributes, not three's.
+  return (
+    <group position={[0, TABLE_Z + 0.0015, 0]}>
+      <line>
+        <primitive object={ring} attach="geometry" />
+        <lineBasicMaterial color="#FF6A00" transparent opacity={0.7} />
+      </line>
+    </group>
+  );
 }
 
 /**
@@ -564,6 +621,7 @@ function Rig({
   goal,
   start,
   payloads,
+  arms = 1,
   targetUrl,
   targetWidthMm,
   environmentUrl,
@@ -575,6 +633,29 @@ function Rig({
 
   const target = useRef<[number, number, number]>([...INITIAL_TARGET]);
   const grip = useRef<number>(GRIP_OPEN_MM);
+
+  /**
+   * The second arm, when the task has one.
+   *
+   * Held in its own refs rather than an array, so the single-arm path reads
+   * exactly as it did: one target, one grip, one solve. The controls drive
+   * whichever arm is active, and only one is active at a time — a scene where
+   * both move at once needs two operators, and a run recorded by one person
+   * pretending otherwise would not be a recording of the task.
+   */
+  const [initialB] = useState<[number, number, number]>(() => [
+    ARM_B_BASE[0] + INITIAL_TARGET[0] * 0.5,
+    ARM_B_BASE[1] + INITIAL_TARGET[1],
+    INITIAL_TARGET[2],
+  ]);
+  const targetB = useRef<[number, number, number]>(initialB);
+  const gripB = useRef<number>(GRIP_OPEN_MM);
+  const heldB = useRef(false);
+  const holdsB = useRef<number | null>(null);
+  const jointsB = useRef(solveAt(ARM_B_BASE, initialB));
+  /** 0 is the arm at the origin. Switched with Tab. */
+  const activeArm = useRef(0);
+  const [activeArmView, setActiveArmView] = useState(0);
   /**
    * Every payload in the scene, at rest on the table.
    *
@@ -628,12 +709,24 @@ function Rig({
         // was ending the run instead.
         e.preventDefault();
       }
+      // Tab switches which arm the controls drive, and only where there are
+      // two — otherwise it stays the browser's focus key, which the keyboard
+      // path this station already supports depends on.
+      if (k === "tab" && arms > 1) {
+        e.preventDefault();
+        if (e.repeat) return;
+        activeArm.current = activeArm.current === 0 ? 1 : 0;
+        setActiveArmView(activeArm.current);
+        return;
+      }
+
       if (k === " ") {
         // Held keys auto-repeat. A toggle on every repeat flips the jaws open
         // and shut many times a second and leaves them wherever the last event
         // landed, which is why closing them appeared to do nothing at all.
         if (e.repeat) return;
-        grip.current = grip.current > GRIP_CLOSED ? 6 : GRIP_OPEN_MM;
+        const g = activeArm.current === 0 ? grip : gripB;
+        g.current = g.current > GRIP_CLOSED ? 6 : GRIP_OPEN_MM;
         return;
       }
       keys.current[k] = true;
@@ -647,12 +740,19 @@ function Rig({
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, []);
+    // `arms` decides whether Tab is ours or the browser's focus key, so the
+    // listener has to be rebound if a scene ever changes shape under it.
+  }, [arms]);
 
   useFrame((_, dt) => {
     const step = dt * 0.42;
     const k = keys.current;
-    const t = target.current;
+    // The controls drive one arm at a time. Only one is active because a scene
+    // where both move at once needs two operators, and a run recorded by one
+    // person pretending otherwise would not be a recording of the task.
+    const A = activeArm.current;
+    const t = A === 0 ? target.current : targetB.current;
+    const activeBase: [number, number] = A === 0 ? [0, 0] : ARM_B_BASE;
 
     // Motion is in the camera's ground plane so "up" always means away.
     // WASD and the arrows are the same control. Reaching for one and getting
@@ -673,63 +773,95 @@ function Rig({
     }
 
     t[2] = Math.max(TABLE_Z + 0.012, Math.min(0.46, t[2]));
-    const radial = Math.hypot(t[0], t[1]);
+    // Reach is measured from this arm's own base, not from the origin. A
+    // second arm clamped against the first one's axis would be unable to reach
+    // its own bench.
+    const radial = Math.hypot(t[0] - activeBase[0], t[1] - activeBase[1]);
     if (radial > REACH_MAX) {
-      t[0] = (t[0] / radial) * REACH_MAX;
-      t[1] = (t[1] / radial) * REACH_MAX;
+      t[0] = activeBase[0] + ((t[0] - activeBase[0]) / radial) * REACH_MAX;
+      t[1] = activeBase[1] + ((t[1] - activeBase[1]) / radial) * REACH_MAX;
     }
 
-    const tool = toolPosition(joints.current);
-
-    // Which payload the jaws are addressing. While holding one it stays that
-    // one; otherwise it is whichever is nearest in the table plane. Nearest
-    // rather than first-within-range, because two objects can both be inside
-    // the capture radius and picking the first would grasp the far one.
+    // Each arm reads its own tool, holds its own payload and closes its own
+    // jaws. Written as a loop rather than twice, so the second arm cannot
+    // quietly drift from the first in behaviour the recording would then carry.
     const list = objects.current;
-    let nearest = 0;
-    if (held.current && activeIndex.current !== null) {
-      nearest = activeIndex.current;
-    } else if (list.length > 1) {
-      let best = Infinity;
-      for (let i = 0; i < list.length; i += 1) {
-        const d = Math.hypot(tool[0] - list[i][0], tool[1] - list[i][1]);
-        if (d < best) { best = d; nearest = i; }
+    const rigs = [
+      { i: 0, base: [0, 0] as [number, number], joints: joints.current, grip, held, holds: activeIndex },
+      { i: 1, base: ARM_B_BASE, joints: jointsB.current, grip: gripB, held: heldB, holds: holdsB },
+    ].slice(0, arms);
+
+    let planar = Infinity;
+    let overIt = false;
+    let withinHeight = false;
+    let activeTool: [number, number, number] = toolPositionAt(activeBase, A === 0 ? joints.current : jointsB.current);
+    let activeObject: [number, number, number] = list[0];
+
+    for (const rig of rigs) {
+      const tool = toolPositionAt(rig.base, rig.joints);
+
+      // Which payload these jaws are addressing. While holding one it stays
+      // that one; otherwise it is whichever is nearest in the table plane, and
+      // never one the other arm already has.
+      let nearest = -1;
+      if (rig.held.current && rig.holds.current !== null) {
+        nearest = rig.holds.current;
+      } else {
+        let best = Infinity;
+        for (let j = 0; j < list.length; j += 1) {
+          if (rigs.some((r) => r !== rig && r.held.current && r.holds.current === j)) continue;
+          const d = Math.hypot(tool[0] - list[j][0], tool[1] - list[j][1]);
+          if (d < best) { best = d; nearest = j; }
+        }
+      }
+      if (nearest < 0) continue;
+      const o = list[nearest];
+
+      // Grasp: the jaws have to be closed and the tool inside the payload's own
+      // cylinder — within CAPTURE_R in the table plane, and somewhere along its
+      // height rather than at one exact point on it.
+      const d = Math.hypot(tool[0] - o[0], tool[1] - o[1]);
+      // The tool starts at z 0.16 and the payload's top is at 0.075, so the band
+      // reaches up far enough that one press of Q from the rest pose puts the
+      // jaws on it. Tighter than this and the operator is over the payload,
+      // pressing space, and nothing happens for no visible reason.
+      const inHeight = tool[2] > o[2] - 0.02 && tool[2] < o[2] + PAYLOAD_H + 0.055;
+      const over = d < CAPTURE_R;
+
+      if (!rig.held.current && rig.grip.current <= GRIP_CLOSED && over && inHeight) {
+        rig.held.current = true;
+        rig.holds.current = nearest;
+      }
+      if (rig.held.current && rig.grip.current > GRIP_CLOSED) {
+        rig.held.current = false;
+        rig.holds.current = null;
+      }
+
+      if (rig.held.current) {
+        o[0] = tool[0];
+        o[1] = tool[1];
+        o[2] = Math.max(TABLE_Z, tool[2] - PAYLOAD_H / 2);
+      }
+
+      // The readouts follow the arm the operator is driving.
+      if (rig.i === A) {
+        object.current = o;
+        activeTool = tool;
+        activeObject = o;
+        planar = d;
+        overIt = over;
+        withinHeight = inHeight;
       }
     }
-    const o = list[nearest];
-    object.current = o;
-
-    // Grasp: the jaws have to be closed and the tool inside the payload's own
-    // cylinder — within CAPTURE_R in the table plane, and somewhere along its
-    // height rather than at one exact point on it.
-    const planar = Math.hypot(tool[0] - o[0], tool[1] - o[1]);
-    // The tool starts at z 0.16 and the payload's top is at 0.075, so the band
-    // reaches up far enough that one press of Q from the rest pose puts the
-    // jaws on it. Tighter than this and the operator is over the payload,
-    // pressing space, and nothing happens for no visible reason.
-    const withinHeight = tool[2] > o[2] - 0.02 && tool[2] < o[2] + PAYLOAD_H + 0.055;
-    const overIt = planar < CAPTURE_R;
     const near = overIt && withinHeight;
+    const tool = activeTool;
+    const o = activeObject;
 
-    if (!held.current && grip.current <= GRIP_CLOSED && near) {
-      held.current = true;
-      activeIndex.current = nearest;
-    }
-    if (held.current && grip.current > GRIP_CLOSED) {
-      held.current = false;
-      activeIndex.current = null;
-    }
-
-    if (held.current) {
-      o[0] = tool[0];
-      o[1] = tool[1];
-      o[2] = Math.max(TABLE_Z, tool[2] - PAYLOAD_H / 2);
-    }
-    // Everything not in the jaws falls to the table, not just the active one:
+    // Everything in nobody's jaws falls to the table, not just the active one:
     // a payload released mid-air while the operator moves to the other would
     // otherwise hang there.
     for (let i = 0; i < list.length; i += 1) {
-      if (held.current && i === activeIndex.current) continue;
+      if (rigs.some((r) => r.held.current && r.holds.current === i)) continue;
       if (list[i][2] > TABLE_Z) list[i][2] = Math.max(TABLE_Z, list[i][2] - 0.9 * dt);
     }
 
@@ -781,6 +913,17 @@ function Rig({
           ...(list.length > 1
             ? { object2: [list[1][0], list[1][1], list[1][2]] as [number, number, number] }
             : {}),
+          // The second arm's pose, recorded whether or not it is the one being
+          // driven. An arm that was in the room and holding something is part
+          // of what happened, and a recording that omits it is a recording of
+          // a different scene.
+          ...(arms > 1
+            ? {
+                q2: [jointsB.current.j1, jointsB.current.j2, jointsB.current.j3, 0, jointsB.current.j5, 0] as
+                  [number, number, number, number, number, number],
+                grip2: gripB.current,
+              }
+            : {}),
         });
       }
       setOutOfReach(j.clamped);
@@ -788,8 +931,8 @@ function Rig({
         joints: j,
         tool,
         object: [o[0], o[1], o[2]],
-        grip: grip.current,
-        held: held.current,
+        grip: A === 0 ? grip.current : gripB.current,
+        held: A === 0 ? held.current : heldB.current,
         inRange: near,
         // Over the payload but too high to close on it — the operator needs to
         // be told to descend, not left guessing why space does nothing.
@@ -801,6 +944,8 @@ function Rig({
         activeIndex: activeIndex.current,
         placed,
         outOfOrder: outOfOrderRef.current,
+        arms,
+        activeArm: A,
       });
       setJointsView(j);
     }
@@ -847,10 +992,23 @@ function Rig({
         target={target}
         grip={grip}
         held={held}
+        dim={arms > 1 && activeArmView !== 0}
         onJoints={(next) => {
           joints.current = next;
         }}
       />
+      {arms > 1 ? (
+        <Arm
+          base={ARM_B_BASE}
+          target={targetB}
+          grip={gripB}
+          held={heldB}
+          dim={activeArmView !== 1}
+          onJoints={(next) => {
+            jointsB.current = next;
+          }}
+        />
+      ) : null}
 
       {/* Datum axis — the single vertical spine every reading is pinned to. */}
       <line>

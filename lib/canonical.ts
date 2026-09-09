@@ -29,20 +29,27 @@ export function canonicalise(
       s.object.map((o) => Number(o.toFixed(5))),
     ];
     if (s.object2) row.push(s.object2.map((o) => Number(o.toFixed(5))));
+    if (s.q2) {
+      row.push(s.q2.map((q) => Number(q.toFixed(5))));
+      row.push(Number((s.grip2 ?? 0).toFixed(2)));
+    }
     return row;
   });
 
-  // Version 1 is not a legacy branch to be tidied away: it is the exact byte
-  // sequence twelve settled payouts were derived from, and any change to it
-  // makes those hashes stop matching the chain. A run that needs nothing
-  // version 2 adds must still serialise as version 1, character for character.
-  const needsV2 = (payloadIds?.length ?? 0) > 0 || samples.some((s) => s.object2);
+  // Neither earlier version is a legacy branch to be tidied away: each is the
+  // exact byte sequence some settled payout was derived from, and any change
+  // to one makes those hashes stop matching the chain. A run that needs
+  // nothing a later version adds must still serialise as the earlier one,
+  // character for character.
+  const needsV3 = samples.some((s) => s.q2);
+  const needsV2 = needsV3 || (payloadIds?.length ?? 0) > 0 || samples.some((s) => s.object2);
+
   if (!needsV2) {
     return JSON.stringify({ v: 1, taskId, contributor: contributor.toLowerCase(), samples: rows });
   }
 
   return JSON.stringify({
-    v: 2,
+    v: needsV3 ? 3 : 2,
     taskId,
     contributor: contributor.toLowerCase(),
     // In the scene, the object the trajectory was actually recorded against is

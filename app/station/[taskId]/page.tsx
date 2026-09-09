@@ -61,6 +61,7 @@ const FALLBACK_SCENE = {
   ...sceneForTask("", "general"),
   payload: sceneForTask("", "general").payloads[0],
   room: environmentForScenario("general"),
+  arms: 1 as const,
 };
 
 export default function StationPage() {
@@ -422,6 +423,15 @@ export default function StationPage() {
                 recording that reverses the sequence teaches the wrong task.
               </p>
             ) : null}
+            {scene.arms > 1 ? (
+              <p className="mt-2 text-[13px] leading-relaxed text-scribe-3">
+                Two arms. <kbd className="border border-rule-strong px-1">Tab</kbd> switches
+                which one the controls drive &mdash; the ring on the bench marks
+                the live one. Both are recorded whether or not you are driving
+                them, because an arm that was holding something is part of what
+                happened.
+              </p>
+            ) : null}
             {scene.varies ? (
               <p className="mt-2 text-[13px] leading-relaxed text-scribe-3">
                 This task names no object, so each run draws one &mdash; this
@@ -484,6 +494,7 @@ export default function StationPage() {
             goal={GOAL}
             start={START}
             payloads={scene.payloads.map((p) => ({ url: p.url, widthMm: p.widthMm }))}
+            arms={scene.arms}
             targetUrl={scene.target.url}
             targetWidthMm={scene.target.widthMm}
             runId={runId}

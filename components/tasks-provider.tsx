@@ -4,7 +4,7 @@ import { createContext, useContext, useMemo } from "react";
 import { useTasks, type ChainTask } from "@/lib/hooks";
 import { sceneForTask, type Prop } from "@/lib/props";
 import { environmentForScenario, type Environment } from "@/lib/environments";
-import { skillForTask, type Skill } from "@/lib/skills";
+import { skillForTask, armsForTask, type Skill } from "@/lib/skills";
 
 /**
  * A task and everything it takes to draw it.
@@ -28,6 +28,8 @@ export type Scene = {
   payloads: Prop[];
   target: Prop;
   room: Environment;
+  /** How many arms the instruction asks for. Two only where it says so. */
+  arms: 1 | 2;
   /** The instruction named no object we model, so the station draws one from
    *  the scenario's pool per run and the card says so rather than implying a
    *  fixed object it does not have. */
@@ -60,6 +62,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
           payloads,
           target,
           room: environmentForScenario(t.scenario),
+          arms: armsForTask(t.name),
           varies,
         },
         // The manipulation the instruction asks for. Derived, like the scene, so
