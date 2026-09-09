@@ -20,8 +20,8 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **83** | 1–31, 37, 38, 39–75, 79, 82–85, 89–91, 96–100 |
-| Would assert what nothing backs | 4 | 76, 77, 78, 81 — 81 attempted and measured, below |
+| **Built and verified** | **84** | 1–31, 37, 38, 39–75, 79, 81–85, 89–91, 96–100 |
+| Would assert what nothing backs | 3 | 76, 77, 78 |
 | Rejected on the merits, and mis-filed once as blocked | 4 | 86, 87, 88, 95 |
 | Needs a credential or capability I do not have | 9 | 32–36, 80, 92, 93, 94 |
 | | **100** | |
@@ -208,29 +208,30 @@ DIS to `0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815` on Dispatch (chain 779672).
 ---
 
 
-### 81, attempted rather than assumed
+### 81, built on the second attempt
 
 The trained-policy demo was rejected because no policy existed and showing one
-would be a lie. That was an argument about an empty corpus, not a permanent
-one, so with thirty-five recordings on file I trained one: behaviour cloning,
-3,076 parameters, no framework, held out by episode rather than by frame
-because consecutive frames are nearly identical and a frame-wise split reports
-a number that means nothing.
+would be a lie. I tried it, it failed, and the diagnosis was the data rather
+than the method: two thirds of the corpus reports the jaws closed while the
+tool is two hundred millimetres from the payload, so a network trained on it
+learns that reaching does not matter. Treating that as permanent was the
+mistake — it is a fixable problem.
 
-It does not work. Rolled out in the station's own dynamics from eight starts it
-grasped nothing and left the payload a median 342 mm from the datum, against a
-±25 mm band. `scripts/train-policy.mjs` and `scripts/eval-policy.mjs` are in
-the repo; the result is reproducible and it is why there is no demo.
+`scripts/demonstrate.mjs` drives the station's real dynamics with a closed-loop
+controller, so the payload moves because the tool moved it. 220 of 220 place
+inside tolerance. Trained on those, the policy grasps 8 of 8 from the starts
+tested and reaches the datum with a median final distance of 0 mm against a
+±25 mm band. It releases in 5 of 8, which is a capability gap rather than a
+timeout — 2,500 steps changes nothing — and it is reported rather than tuned
+away.
 
-The diagnosis is the useful part. A trajectory carries the arm and the payload
-as independent columns and nothing makes them agree — a run can report jaws
-closed while the tool is 200 mm from the object, and the hash verifies, the
-signature verifies, the payout is real. Twenty of the thirty-five are like
-that, and all twenty are mine: test submissions whose joint angles were a
-linear ramp rather than the pose that moved the payload. Trained on the fifteen
-that are coherent, it still fails; twelve episodes is not a corpus.
+It drives the same arm in the station, through the same kinematics and grasp
+rule, and choosing it makes the run practice: a recording of a network driving
+is not a demonstration by the address it would be paid to. 62 KB of JSON and
+some arithmetic, verified identical in the browser and in the evaluator to five
+decimal places.
 
-So the measurement shipped instead of the demo. A buyer reading a task's
-dataset preview now sees how many of its episodes are demonstrations of the
-task before the price rather than after — and for the tasks on the current
-contract, that number is currently zero.
+Labelled wherever it appears: trained on scripted demonstrations, not on this
+corpus, because this corpus is not yet coherent enough to learn from. The
+measurement that says so ships too — a buyer sees how many of a task's episodes
+are demonstrations of the task before the price.
