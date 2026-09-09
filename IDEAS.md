@@ -20,11 +20,11 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **78** | 1–25, 27–31, 39–75, 79, 84, 85, 89, 90, 91, 96, 97, 98, 99, 100 |
+| **Built and verified** | **79** | 1–25, 27–31, 39–75, 79, 83, 84, 85, 89, 90, 91, 96, 97, 98, 99, 100 |
 | Would assert what nothing backs | 4 | 76, 77, 78, 81 |
 | Needs a contract this deployment does not have | 6 | 26, 37, 38, 86, 87, 95 |
 | Needs a credential or capability I do not have | 9 | 32–36, 80, 92, 93, 94 |
-| Genuinely large, and named as unbuilt | 2 | 82, 83 |
+| Genuinely large, and named as unbuilt | 1 | 82 — MuJoCo rigid-body physics, which needs a WASM build this project does not have |
 | Still rejected on the merits | 1 | 88 |
 | | **100** | |
 
