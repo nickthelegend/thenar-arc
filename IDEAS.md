@@ -20,8 +20,8 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **92** | 1–31, 37, 38, 39–79, 81–91, 94–100 |
-| Needs a credential or capability I do not have | 8 | 32–36, 80, 92, 93 |
+| **Built and verified** | **95** | 1–31, 37, 38, 39–79, 80–100 minus 32–36 |
+| Needs testnet gas I cannot obtain | 5 | 32–36 — the faucet is a captcha page, and no API-accessible endpoint answers |
 | | **100** | |
 
 Four refusals, not twenty-five. A points token, prize money the contract does

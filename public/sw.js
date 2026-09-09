@@ -12,7 +12,7 @@
  * Bumping VERSION drops every previous cache on activate. A stale shell is the
  * failure mode worth being paranoid about.
  */
-const VERSION = "thenar-shell-v1";
+const VERSION = "thenar-shell-v2";
 const SHELL = ["/", "/hub", "/offline"];
 
 self.addEventListener("install", (e) => {
@@ -27,6 +27,38 @@ self.addEventListener("activate", (e) => {
       .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
+});
+
+/**
+ * A pushed notice.
+ *
+ * The payload is small and deliberately not trusted: whatever arrives is
+ * rendered as text and nothing in it becomes a URL or markup. A notification
+ * is the one place a service worker will happily render something it was
+ * handed by the network.
+ */
+self.addEventListener("push", (e) => {
+  let body = "Something you asked about happened.";
+  let url = "/hub";
+  try {
+    const d = e.data ? e.data.json() : {};
+    if (typeof d.body === "string") body = d.body.slice(0, 200);
+    // Same-origin only. A pushed absolute URL is somebody else's page.
+    if (typeof d.path === "string" && d.path.startsWith("/") && !d.path.startsWith("//")) url = d.path;
+  } catch { /* keep the defaults */ }
+
+  e.waitUntil(self.registration.showNotification("Thenar", {
+    body,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url },
+  }));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/hub";
+  e.waitUntil(clients.openWindow(url));
 });
 
 self.addEventListener("fetch", (e) => {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AskPanel } from "@/components/ask-panel";
 import Link from "next/link";
 import spec from "@/lib/arm-spec.json";
 import { NON_CAPABILITIES } from "@/lib/chain";
@@ -144,6 +145,17 @@ export default function SpecPage() {
         one to an address, and a run can be authorised with it.{" "}
         <Link href="/passkey" className="text-signal hover:text-signal-hi">Register a passkey &rarr;</Link>
       </p>
+
+      <DimRule className="mt-14" note="Ask the instrument" />
+      <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
+        Not a chatbot. Every answer below is read from the constant the scorer
+        actually uses and says where it came from, and a question it cannot
+        answer exactly is refused rather than approximated &mdash; which is the
+        whole reason the list is short.
+      </p>
+      <div className="mt-5">
+        <AskPanel />
+      </div>
 
       <DimRule className="mt-14" note="What this is not" />
       <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">

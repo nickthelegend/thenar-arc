@@ -215,6 +215,19 @@ export function migrate(): Promise<void> {
         -- Who a task's funder says is working on it with them. Signed, because
         -- there are no accounts here and an unsigned roster is a list of
         -- addresses anybody could have typed.
+        -- Where to push a notice, and what the reader asked to hear about.
+        -- No address, no email, no name: a push endpoint is issued by the
+        -- browser's own push service and identifies a subscription rather than
+        -- a person, which is the only kind of contact detail this project has
+        -- any business holding.
+        CREATE TABLE IF NOT EXISTS pushsub (
+          endpoint   TEXT PRIMARY KEY,
+          p256dh     TEXT NOT NULL,
+          auth       TEXT NOT NULL,
+          topic      TEXT NOT NULL,
+          created_at BIGINT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS collaborator (
           task_id    INTEGER NOT NULL,
           member     TEXT NOT NULL,
@@ -330,6 +343,14 @@ export function migrate(): Promise<void> {
         created_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_note_task ON note(task_id, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS pushsub (
+        endpoint   TEXT PRIMARY KEY,
+        p256dh     TEXT NOT NULL,
+        auth       TEXT NOT NULL,
+        topic      TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
 
       CREATE TABLE IF NOT EXISTS collaborator (
         task_id    INTEGER NOT NULL,
