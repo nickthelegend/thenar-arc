@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/server/db";
+import { coherenceOf } from "@/lib/coherence";
+import type { Sample } from "@/lib/types";
 import { appChain } from "@/lib/chain";
 
 export const runtime = "nodejs";
@@ -29,9 +31,9 @@ export async function GET(req: Request) {
 
   const rows = await query<{
     contributor: string; score: number; deviation_mm: number;
-    duration_s: number; sample_count: number; created_at: number;
+    duration_s: number; sample_count: number; created_at: number; samples: string;
   }>(
-    `SELECT contributor, score, deviation_mm, duration_s, sample_count, created_at
+    `SELECT contributor, score, deviation_mm, duration_s, sample_count, created_at, samples
        FROM trajectory
       WHERE task_id = ? AND settled = 1 AND chain_id = ?
       ORDER BY created_at ASC`,
@@ -56,9 +58,36 @@ export async function GET(req: Request) {
     buckets[i].n += 1;
   }
 
+  /**
+   * How much of this corpus is a demonstration of anything.
+   *
+   * A trajectory carries the arm and the payload as independent columns, and
+   * nothing in the format makes them agree: a run can report jaws closed while
+   * the tool is two hundred millimetres from the object, and the hash, the
+   * signature and the payout are all still valid. It is simply not usable as
+   * training data, and a buyer has no way to see that from a score.
+   *
+   * Measured rather than assumed, and reported before the price.
+   */
+  const coherence = rows.map((r) => {
+    try { return coherenceOf(JSON.parse(r.samples) as Sample[]); }
+    catch { return null; }
+  });
+  const usable = coherence.filter((c) => c?.coherent).length;
+
   return NextResponse.json({
     taskId,
     episodes: rows.length,
+    trainable: {
+      episodes: usable,
+      of: rows.length,
+      note:
+        usable === rows.length
+          ? "In every episode the arm and the payload agree about what happened."
+          : `${rows.length - usable} of ${rows.length} episodes record the jaws closed while the ` +
+            "tool is too far from the payload to be holding it. Those are not demonstrations of " +
+            "the task and should not be trained on.",
+    },
     frames: rows.reduce((n, r) => n + r.sample_count, 0),
     frequencyHz: 20,
     contributors: new Set(rows.map((r) => r.contributor.toLowerCase())).size,
