@@ -21,21 +21,19 @@ Fuji, or a reading taken from the running page.
 | | Count | Which |
 |---|---|---|
 | **Built and verified** | **73** | 1–25, 27–31, 39–75, 85, 89, 90, 91, 99, 100 |
-| Cannot be built against the deployed contract | 3 | 26, 37, 38 — each checked against the ABI rather than assumed, below |
-| Blocked on one thing I cannot do myself | 5 | 32–36 — measured, not assumed, below |
-| Built after re-reading my own rejections | 6 | 85, 89, 90, 91, 99, 100 |
-| Will not build: would assert what nothing backs | 4 | 76, 77, 78, 81 |
-| Needs a contract this deployment does not have | 4 | 86, 87, 95, and 77 again if it were funded |
-| Needs a credential or capability I do not have | 4 | 80, 92, 93, 94 |
-| Genuinely large, honestly named as unbuilt | 4 | 79, 82, 83, 84 |
-| Still standing as rejected on the merits | 3 | 88, 96, 97, 98 minus one — see below |
+| Would assert what nothing backs | 4 | 76, 77, 78, 81 |
+| Needs a contract this deployment does not have | 6 | 26, 37, 38, 86, 87, 95 |
+| Needs a credential or capability I do not have | 9 | 32–36, 80, 92, 93, 94 |
+| Genuinely large, and named as unbuilt | 4 | 79, 82, 83, 84 |
+| Still rejected on the merits | 4 | 88, 96, 97, 98 |
 | | **100** | |
 
-The rejections are part of the work, not a shortfall against it. Half of them —
-a points system, leaderboard prize money, AI-written task descriptions, a
-trained-policy demo — are rejected because building them would mean putting a
-number on screen that nothing backs. In a product whose entire claim is that
-you can check the number yourself, that is the one thing worth refusing.
+Four refusals, not twenty-five. A points token, prize money the contract does
+not hold, AI-written task descriptions and a demo of a policy nobody trained
+would each put a number on screen that nothing backs — and this product's whole
+claim is that you can check the numbers. Everything else that is unbuilt is
+unbuilt for a reason with a name, and the names are different enough that
+collapsing them into one heading was the thing worth fixing.
 
 Three things in the "cannot" row were found by trying. The passkey path was
 built, tested against the deployed contract, and reverted when the precompile
@@ -210,28 +208,3 @@ I am not permitted to complete. **One action unblocks all five**: send testnet
 DIS to `0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815` on Dispatch (chain 779672).
 
 ---
-
-### On the twenty-five I had rejected
-
-The rejected tier was one heading over two very different things, and filing
-them together let a preference borrow the authority of a principle.
-
-Four of them would put a number on screen that nothing backs — a points token,
-prize money the contract does not hold, AI-written task descriptions, a demo of
-a policy that was never trained. Those stay refused, and the reason is the same
-in each case: this product's whole claim is that you can check the numbers, and
-the fastest way to lose that is to print one that cannot be checked.
-
-Six were not that at all. Badges, a theme toggle, onboarding, voice control, a
-changelog and usage counts were things I did not want to build, described as
-things that should not be built. They are built now, and each one is narrower
-than the idea as written: the badges award nothing and only restate the ledger,
-the counts have no subject, the onboarding is three lines in a panel rather
-than a carousel in front of the product, and voice is a discrete grammar for
-someone who cannot use a pointer rather than a party trick.
-
-The rest are honestly unbuilt rather than principled: four need a contract this
-deployment does not have, four need a credential or capability I do not have —
-no camera pipeline, no model key, no mail service, no accounts — and four
-(comments, MuJoCo physics, bimanual kinematics, a WebXR station) are simply
-large. Naming which is which is worth more than a bigger number.
