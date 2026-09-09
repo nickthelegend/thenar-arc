@@ -6,12 +6,16 @@
   "build": {
     "env": {
       "NEXT_PUBLIC_AXON_ADDRESS": "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
-      "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app"
+      "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app",
+      "NEXT_PUBLIC_CORPUS_ACCESS": "0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165",
+      "NEXT_PUBLIC_TRAJECTORY_CERTIFICATE": "0x7a060129A3730852A606Bbe985207952AC25c4f6"
     }
   },
   "env": {
     "NEXT_PUBLIC_AXON_ADDRESS": "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
-    "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app"
+    "BACKEND_ORIGIN": "https://web-production-2d1d0.up.railway.app",
+    "NEXT_PUBLIC_CORPUS_ACCESS": "0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165",
+    "NEXT_PUBLIC_TRAJECTORY_CERTIFICATE": "0x7a060129A3730852A606Bbe985207952AC25c4f6"
   },
   "crons": [
     {

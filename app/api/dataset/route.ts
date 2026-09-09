@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryOne, query } from "@/lib/server/db";
-import { appChain, AXON_ADDRESS } from "@/lib/chain";
+import { appChain, AXON_ADDRESS, CORPUS_ACCESS } from "@/lib/chain";
+import { corpusAccess } from "@/lib/server/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,6 +91,23 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { error: `taskId must be a non-negative integer, got "${raw}"` },
       { status: 400 },
+    );
+  }
+
+  // Whole-corpus pulls are what a subscription is for. A single episode by
+  // hash stays open: that is the sample a buyer looks at before deciding, and
+  // charging for the look is how you end up with nobody looking.
+  const access = await corpusAccess(req.headers.get("x-subscriber"));
+  if (access.gated && !access.allowed) {
+    return NextResponse.json(
+      {
+        error: access.who
+          ? "That address has no active corpus subscription."
+          : "Pulling a whole task's corpus needs an active subscription. Send the address as x-subscriber.",
+        contract: CORPUS_ACCESS,
+        single: "A single episode by hash is open: /api/dataset?traj=0x…",
+      },
+      { status: 402 },
     );
   }
 

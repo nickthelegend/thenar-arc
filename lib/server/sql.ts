@@ -89,6 +89,7 @@ async function lite(): Promise<SqliteDb> {
 // --------------------------------------------------------------------- calls
 
 export async function query<T = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
+  await migrate();
   if (ENGINE === "postgres") {
     const c = await pg();
     const r = await c.query(toPg(sql), params);
@@ -103,6 +104,7 @@ export async function queryOne<T = Row>(sql: string, params: unknown[] = []): Pr
 }
 
 export async function run(sql: string, params: unknown[] = []): Promise<void> {
+  await migrate();
   if (ENGINE === "postgres") {
     const c = await pg();
     await c.query(toPg(sql), params);
@@ -120,6 +122,19 @@ export async function count(sql: string, params: unknown[] = []): Promise<number
 
 // ------------------------------------------------------------------ schema
 
+/**
+ * Memoised, and awaited by every call above rather than by convention.
+ *
+ * The schema used to be created by whichever caller happened to run first,
+ * because only the typed accessors in db.ts awaited it and the three routes
+ * that write their own SQL import `query` straight from here. In production
+ * something else always ran first and it looked fine; locally the dataset
+ * route was hit on a cold process and answered "no such column: contract".
+ *
+ * A migration that depends on call order is not a migration. Awaiting it here
+ * costs one already-settled promise per query and makes the ordering
+ * impossible to get wrong.
+ */
 let ready: Promise<void> | null = null;
 
 /**

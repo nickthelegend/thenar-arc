@@ -34,6 +34,15 @@ export const FAUCET_URL = "https://core.app/tools/testnet-faucet/?subnet=c&token
  *  quoting one chain's currency while settling in another's. */
 export const CURRENCY = appChain.nativeCurrency.symbol;
 
+/** Time-boxed read access to the corpus. Sells time, not rights: a
+ *  subscription conveys no licence and no claim on any policy. */
+export const CORPUS_ACCESS = (process.env.NEXT_PUBLIC_CORPUS_ACCESS ?? "") as `0x${string}`;
+
+/** Certificates naming who recorded a run. Soulbound, and they convey nothing
+ *  over the data they name. */
+export const TRAJECTORY_CERTIFICATE =
+  (process.env.NEXT_PUBLIC_TRAJECTORY_CERTIFICATE ?? "") as `0x${string}`;
+
 export const AXON_ADDRESS = (process.env.NEXT_PUBLIC_AXON_ADDRESS ?? "") as `0x${string}`;
 
 export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);
