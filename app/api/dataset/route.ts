@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryOne, query } from "@/lib/server/db";
-import { appChain } from "@/lib/chain";
+import { appChain, AXON_ADDRESS } from "@/lib/chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,8 +30,8 @@ export async function GET(req: Request) {
       `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
               samples, tx_hash, created_at
          FROM trajectory
-        WHERE traj_hash = ? AND settled = 1 AND chain_id = ?`,
-      [one, appChain.id],
+        WHERE traj_hash = ? AND settled = 1 AND chain_id = ? AND contract = ?`,
+      [one, appChain.id, AXON_ADDRESS.toLowerCase()],
     );
 
     if (!row) {
@@ -101,9 +101,9 @@ export async function GET(req: Request) {
      -- Scoped to the chain this deployment settles on. A corpus that mixed
      -- in runs paid on a previous chain would carry transaction hashes a
      -- buyer could not resolve, against an embodiment they could not audit.
-     FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ?
+     FROM trajectory WHERE task_id = ? AND settled = 1 AND chain_id = ? AND contract = ?
      ORDER BY created_at ASC`,
-    [taskId, appChain.id],
+    [taskId, appChain.id, AXON_ADDRESS.toLowerCase()],
   );
 
   if (rows.length === 0) {

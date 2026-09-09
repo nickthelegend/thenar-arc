@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/server/db";
 import { coherenceOf } from "@/lib/coherence";
 import type { Sample } from "@/lib/types";
-import { appChain } from "@/lib/chain";
+import { appChain, AXON_ADDRESS } from "@/lib/chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,9 +35,9 @@ export async function GET(req: Request) {
   }>(
     `SELECT contributor, score, deviation_mm, duration_s, sample_count, created_at, samples
        FROM trajectory
-      WHERE task_id = ? AND settled = 1 AND chain_id = ?
+      WHERE task_id = ? AND settled = 1 AND chain_id = ? AND contract = ?
       ORDER BY created_at ASC`,
-    [taskId, appChain.id],
+    [taskId, appChain.id, AXON_ADDRESS.toLowerCase()],
   );
 
   if (rows.length === 0) {

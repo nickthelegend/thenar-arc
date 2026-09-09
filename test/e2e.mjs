@@ -211,6 +211,22 @@ if (health) {
     typeof p.divergenceMm === "number" && p.divergenceMm >= 0 && p.divergenceMm < 200,
     `${p.divergenceMm} mm`);
 
+  // Every surface that shows current work must be scoped to the live contract,
+  // not merely to the live chain. A deployment can be superseded without moving
+  // chain, and the dataset routes were still filtering on chain alone — a
+  // buyer priced a corpus that included runs the live contract had never heard
+  // of. Asserted against the feed, which is scoped correctly.
+  const t0 = await fetch(`${BASE}/api/dataset/summary?taskId=0`);
+  if (t0.status === 200) {
+    const sum = await t0.json();
+    const feedTask0 = feed.runs.filter((r) => r.task_id === 0).length;
+    check("dataset preview counts only the live contract's runs",
+      sum.episodes === feedTask0, `${sum.episodes} in preview vs ${feedTask0} in feed`);
+    check("dataset preview says how much of it is trainable",
+      typeof sum.trainable?.episodes === "number" && sum.trainable.of === sum.episodes,
+      JSON.stringify(sum.trainable));
+  }
+
   const signGet = await fetch(`${BASE}/api/sign`);
   const signBody = await signGet.json().catch(() => ({}));
   check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,

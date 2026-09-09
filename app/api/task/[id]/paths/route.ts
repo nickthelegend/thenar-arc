@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/server/db";
-import { appChain } from "@/lib/chain";
+import { appChain, AXON_ADDRESS } from "@/lib/chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,9 +33,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   }>(
     `SELECT traj_hash, contributor, score, samples
        FROM trajectory
-      WHERE task_id = ? AND settled = 1 AND chain_id = ?
+      WHERE task_id = ? AND settled = 1 AND chain_id = ? AND contract = ?
       ORDER BY score DESC`,
-    [taskId, appChain.id],
+    [taskId, appChain.id, AXON_ADDRESS.toLowerCase()],
   );
 
   const paths = rows.map((r) => {
