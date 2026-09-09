@@ -76,7 +76,13 @@ const nextConfig: NextConfig = {
     const backend = process.env.BACKEND_ORIGIN?.replace(/\/$/, "");
     return {
       beforeFiles: backend
-        ? [{ source: "/api/:path*", destination: `${backend}/api/:path*` }]
+        ? [
+            // The bare path as well as everything under it. `/api/:path*` does
+            // not match `/api`, so the catalogue fell through to a trailing-
+            // slash redirect and never reached the backend at all.
+            { source: "/api", destination: `${backend}/api` },
+            { source: "/api/:path*", destination: `${backend}/api/:path*` },
+          ]
         : [],
       afterFiles: [],
       fallback: [],
