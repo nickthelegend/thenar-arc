@@ -141,6 +141,25 @@ export default function StationPage() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [chosePractice, setChosePractice] = useState(false);
   /**
+   * Whether to bind this run's consent to a passkey.
+   *
+   * Only offered where one is actually registered on this device — an option
+   * that cannot be taken is worse than no option. The wallet still sends the
+   * transaction either way; what the passkey adds is that the operator
+   * authorised this trajectory rather than merely this transaction.
+   */
+  const [usePasskey, setUsePasskey] = useState(false);
+  const [hasPasskey, setHasPasskey] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      try {
+        const { storedKey } = await import("@/lib/passkey");
+        setHasPasskey(Boolean(await storedKey()));
+      } catch { setHasPasskey(false); }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+  /**
    * Whether this browser has driven a station before.
    *
    * A carousel was the rejected idea and it deserved rejecting: it delays the
@@ -674,6 +693,7 @@ export default function StationPage() {
               verdict={verdict}
               accepted={accepted}
               practice={practice}
+              passkey={hasPasskey ? { on: usePasskey, set: setUsePasskey } : undefined}
               rewardMon={task.rewardMon}
               session={s}
               thinOnGas={thinOnGas}
@@ -686,6 +706,7 @@ export default function StationPage() {
                   deviationMm: verdict.deviationMm,
                   success: verdict.success,
                   payloadIds,
+                  withPasskey: usePasskey,
                 })
               }
               onAgain={() => { setChosePractice(false); start(); }}
@@ -788,12 +809,13 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, practice, rewardMon, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
+  verdict, accepted, practice, passkey, rewardMon, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
   verdict: Verdict;
   accepted: boolean;
   /** The chain will not pay this one, and said so before it started. */
   practice: boolean;
+  passkey?: { on: boolean; set: (v: boolean) => void };
   /** This task's rate, so a lost point can be priced in AVAX. */
   rewardMon: number;
   session: ReturnType<typeof useSession>;
@@ -935,6 +957,29 @@ function MeasurementSnap({
             </p>
           ) : null}
         </div>
+
+        {/* Only where a passkey is actually registered on this device. An
+            option that cannot be taken is worse than no option. */}
+        {passkey && accepted && !done && !practice ? (
+          <label className="flex cursor-pointer items-start gap-2 border-t border-rule px-4 py-2.5">
+            <input
+              type="checkbox"
+              checked={passkey.on}
+              onChange={(e) => passkey.set(e.target.checked)}
+              className="mt-0.5 accent-signal"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-2">
+                Authorise with your passkey
+              </span>
+              <span className="text-[12px] leading-relaxed text-scribe-3">
+                The wallet still sends the transaction. The passkey binds your
+                consent to this trajectory rather than to the transaction that
+                happens to carry it.
+              </span>
+            </span>
+          </label>
+        ) : null}
 
         <div className="flex flex-wrap items-stretch gap-px border-t border-rule bg-rule">
           {accepted && !done ? (

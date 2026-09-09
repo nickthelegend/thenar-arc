@@ -89,6 +89,13 @@ export function useSubmitRun() {
        *  determine them. Sent so the verifier hashes the same scene the
        *  operator actually drove, rather than one it guessed at. */
       payloadIds?: string[];
+      /**
+       * Authorise the run with a registered passkey instead of a wallet
+       * signature. The wallet still sends the transaction and pays the gas;
+       * what changes is that the operator's consent to *this run* is bound to
+       * the trajectory rather than implied by the transaction.
+       */
+      withPasskey?: boolean;
     }) => {
       if (!address) {
         setState({ phase: "error", error: "Connect a wallet first." });
@@ -119,12 +126,30 @@ export function useSubmitRun() {
         setState({ phase: "signing", trajHash: v.trajHash, cid: v.cid, score: v.score });
         const started = performance.now();
 
-        const txHash = await writeContractAsync({
-          address: AXON_ADDRESS,
-          abi: AXON_ABI,
-          functionName: "submitTrajectory",
-          args: [BigInt(args.taskId), v.trajHash, v.cid, v.score, v.signature],
-        });
+        // The passkey path exists again because the contract can now verify
+        // what a browser is able to sign. v1 handed the raw trajectory hash to
+        // the precompile while WebCrypto signs sha256 of it, so the call could
+        // never succeed and the path was removed rather than shipped broken.
+        let txHash: `0x${string}`;
+        if (args.withPasskey) {
+          const { storedKey, signDigest } = await import("@/lib/passkey");
+          const pair = await storedKey();
+          if (!pair) throw new Error("No passkey on this device. Register one first.");
+          const { r, s: sv } = await signDigest(pair, v.trajHash);
+          txHash = await writeContractAsync({
+            address: AXON_ADDRESS,
+            abi: AXON_ABI,
+            functionName: "submitTrajectoryWithPasskey",
+            args: [BigInt(args.taskId), v.trajHash, v.cid, v.score, v.signature, r, sv],
+          });
+        } else {
+          txHash = await writeContractAsync({
+            address: AXON_ADDRESS,
+            abi: AXON_ABI,
+            functionName: "submitTrajectory",
+            args: [BigInt(args.taskId), v.trajHash, v.cid, v.score, v.signature],
+          });
+        }
 
         setState((s) => ({ ...s, phase: "pending", txHash }));
 
