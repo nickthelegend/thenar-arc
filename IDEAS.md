@@ -20,9 +20,9 @@ Fuji, or a reading taken from the running page.
 
 | | Count | Which |
 |---|---|---|
-| **Built and verified** | **84** | 1–31, 37, 38, 39–75, 79, 81–85, 89–91, 96–100 |
+| **Built and verified** | **86** | 1–31, 37, 38, 39–75, 79, 81–86, 89–91, 95–100 |
 | Would assert what nothing backs | 3 | 76, 77, 78 |
-| Rejected on the merits, and mis-filed once as blocked | 4 | 86, 87, 88, 95 |
+| Rejected on the merits | 2 | 87, 88 |
 | Needs a credential or capability I do not have | 9 | 32–36, 80, 92, 93, 94 |
 | | **100** | |
 

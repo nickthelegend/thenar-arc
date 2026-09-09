@@ -227,6 +227,22 @@ if (health) {
       JSON.stringify(sum.trainable));
   }
 
+  // The subscription is enforced against the chain, not against a flag. The
+  // assertion that matters is the pair: an address that paid gets the corpus
+  // and an address that did not is refused, from the same endpoint.
+  const SUBSCRIBER = "0x7ccdbF40439c740DEA8345e5606c4f9C89a67b34";
+  const paid = await fetch(`${BASE}/api/dataset?taskId=0`, { headers: { "x-subscriber": SUBSCRIBER } });
+  const unpaid = await fetch(`${BASE}/api/dataset?taskId=0`, {
+    headers: { "x-subscriber": "0x000000000000000000000000000000000000dEaD" },
+  });
+  check("a corpus subscription is honoured", paid.status === 200, String(paid.status));
+  check("no subscription, no corpus", unpaid.status === 402, String(unpaid.status));
+
+  // And the sample a buyer looks at before deciding stays open, or nobody
+  // ever gets as far as deciding.
+  const oneEpisode = await fetch(`${BASE}/api/dataset?traj=${feed.runs[0].traj_hash}`);
+  check("a single episode needs no subscription", oneEpisode.status === 200, String(oneEpisode.status));
+
   const signGet = await fetch(`${BASE}/api/sign`);
   const signBody = await signGet.json().catch(() => ({}));
   check("public /api/sign holds no key", signGet.status === 503 && signBody.holdsKey === false,
@@ -294,7 +310,11 @@ if (feed?.runs?.length) {
 // --- edge cases fail in a specific way, not with a 500 ----------------------
 const EDGES = [
   ["/api/dataset", 400], ["/api/dataset?taskId=-1", 400],
-  ["/api/dataset?traj=0xdead", 400], ["/api/dataset?taskId=4", 404],
+  ["/api/dataset?traj=0xdead", 400],
+  // 402, not 404. A whole-corpus pull is refused before we look up whether
+  // that task has any data — telling an unsubscribed caller which tasks exist
+  // and which are empty is part of what the subscription is for.
+  ["/api/dataset?taskId=4", 402],
   ["/api/glacier/notanaddress", 400], ["/api/trajectory/0xdeadbeef", 404],
   ["/api/space/abc", 400], ["/api/props/u_missing", 404],
   ["/api/task/abc/paths", 400], ["/api/dataset/summary", 400],
