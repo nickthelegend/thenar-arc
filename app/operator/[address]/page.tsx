@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isAddress } from "viem";
+import { useReadContract } from "wagmi";
 import { DimRule } from "@/components/primitives";
-import { addressUrl, txUrlOn, appChain, CURRENCY } from "@/lib/chain";
+import { addressUrl, txUrlOn, appChain, CURRENCY, AXON_ADDRESS } from "@/lib/chain";
 import { fmtInt, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { badgesFor, ACCEPTED_MEANS } from "@/lib/badges";
@@ -34,6 +35,31 @@ export default function OperatorPage() {
 
   const [runs, setRuns] = useState<Run[] | null>(null);
   const [calls, setCalls] = useState<Settlement[] | null>(null);
+
+  /**
+   * How many runs the contract paid this address for.
+   *
+   * The ledger below is the store of trajectories, and it is not the same
+   * number. Three payouts on this contract have no stored trajectory — proofs
+   * of the relayed submission path, signed straight to the contract without
+   * going through the pipeline that keeps the samples — so an address whose
+   * only paid run is one of those read "nothing recorded" here while the
+   * leaderboard, which counts the chain, credited it with a run. Two surfaces,
+   * one address, two different answers, and no way to tell which was lying.
+   *
+   * Both were right. What was missing was the subtraction, so it is done here.
+   */
+  const { data: onChainIds } = useReadContract({
+    address: AXON_ADDRESS,
+    abi: [{
+      type: "function", name: "trajectoriesOf",
+      inputs: [{ name: "who", type: "address" }],
+      outputs: [{ type: "uint256[]" }], stateMutability: "view",
+    }],
+    functionName: "trajectoriesOf",
+    args: [address as `0x${string}`],
+    query: { enabled: valid },
+  });
 
   useEffect(() => {
     if (!valid) return;
@@ -66,6 +92,12 @@ export default function OperatorPage() {
   }
 
   const accepted = runs ?? [];
+  /** Paid on chain but with no artefact in the ledger. Never negative: more
+   *  stored than the chain paid would be a different and much worse fault, and
+   *  it is asserted against in the test suite rather than papered over here. */
+  const paidOnChain = onChainIds?.length ?? null;
+  const unretrievable =
+    paidOnChain === null || runs === null ? 0 : Math.max(0, paidOnChain - accepted.length);
   const best = accepted.length ? Math.max(...accepted.map((r) => r.score)) : 0;
   const mean = accepted.length ? accepted.reduce((n, r) => n + r.score, 0) / accepted.length : 0;
   const gas = (calls ?? []).reduce((n, c) => n + c.feeAvax, 0);
@@ -83,6 +115,9 @@ export default function OperatorPage() {
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
         <Reading label="Accepted runs" value={runs === null ? "—" : fmtInt(accepted.length)} />
+        {unretrievable > 0 ? (
+          <Reading label="Paid, not retrievable" value={fmtInt(unretrievable)} />
+        ) : null}
         <Reading label="Best score" value={best ? fmtScore(best) : "—"} />
         <Reading label="Mean score" value={accepted.length ? fmtScore(Math.round(mean)) : "—"} />
         <Reading label="Protocol calls" value={calls === null ? "—" : fmtInt(calls.length)} />
@@ -137,7 +172,17 @@ export default function OperatorPage() {
         </ul>
       ) : accepted.length === 0 ? (
         <p className="mt-4 text-[14px] text-scribe-3">
-          Nothing recorded against this address on {appChain.name}.
+          {unretrievable > 0 ? (
+            <>
+              The contract paid this address for {fmtInt(unretrievable)}{" "}
+              {unretrievable === 1 ? "run" : "runs"}, and the trajectory behind{" "}
+              {unretrievable === 1 ? "it" : "them"} was never stored — so the payout
+              is real and the recording cannot be shown. The calls below are still
+              on {appChain.name} and still checkable.
+            </>
+          ) : (
+            <>Nothing recorded against this address on {appChain.name}.</>
+          )}
         </p>
       ) : (
         <ol className="mt-2">
