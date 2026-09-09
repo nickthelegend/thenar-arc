@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["better-sqlite3"],
+  // Both are native or WebAssembly and must not be bundled: better-sqlite3 is
+  // a compiled addon, and mujoco ships an eight-megabyte .wasm its own loader
+  // resolves beside itself.
+  serverExternalPackages: ["better-sqlite3", "mujoco"],
 
   /**
    * The frontend and the backend are deployed separately: the API routes own a

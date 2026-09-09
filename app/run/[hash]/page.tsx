@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PhysicsCheck } from "@/components/physics-check";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -268,6 +269,8 @@ export default function RunPage() {
         </>
       ) : null}
 
+
+      <PhysicsCheck hash={data.trajHash} />
 
       <DimRule className="mt-10" note="Recorded tool path" />
 
