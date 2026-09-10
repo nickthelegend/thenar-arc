@@ -146,9 +146,9 @@ thought about.
 
 # What got built
 
-Eleven of the hundred, top of the list down, each verified against the live
+Fourteen of the hundred, top of the list down, each verified against the live
 site with real data before the next was started. Regression after every one:
-48 unit tests, 69 end-to-end assertions, 108 contract tests, all passing, and
+51 unit tests, 69 end-to-end assertions, 108 contract tests, all passing, and
 `/api/health` reporting the same single known fault it reported at the start.
 
 | # | Idea | Evidence it is real |
@@ -164,6 +164,28 @@ site with real data before the next was started. Regression after every one:
 | 10 | Command palette | ⌘K, subsequence search over pages, tasks and stations; a pasted hash or address is a destination. Verified navigating to `/spec`. |
 | 13 | Failure taxonomy | `lib/failure.ts`, 7 tests. The recorded failure is labelled `dropped` — "Let go 54 mm above the table". |
 | 14 | Phase timeline on the run page | Clickable segments that seek the replay, drawn from the same function the corpus ships. |
+| 23 | Frame-accurate replay control | Frame stepping verified exact on the live page: 281 → 280 → 281, 14.0s → 13.9s. Play/pause toggles. **Time-based playback is built and not verified** — see below. |
+| 24 | Similar-run finder | `/api/trajectory/{hash}/similar`, measured with the same function the verifier refuses duplicates with, so 14 mm here and 14 mm in a rejection mean the same thing. |
+| 25 | Corpus diversity | On task 0: 0.34 mm mean pairwise separation, closest pair 0 mm. Three episodes that are one route. Shown on the task page with the reason. |
+
+## Built but not fully verified
+
+**23, time-based playback.** Frame stepping, the speed buttons and the
+play/pause toggle were all verified on the live page. The clock-driven
+advancement was not: the automation pane reports `visibilityState: "hidden"`
+and **zero requestAnimationFrame ticks per second**, so the loop cannot run
+there — the same limitation that stops react-three-fiber drawing in that pane.
+The logic is deployed and the controls around it work; a browser with a visible
+tab is the one thing this environment cannot supply.
+
+## What the new measurements found
+
+Worth stating because it is unflattering and was invisible before. Task 0's
+three episodes sit **0.34 mm apart on average, with the closest pair at 0 mm**,
+against a coverage of **2% of the reachable workspace**. They are one route
+recorded three times. The duplicate rejection built as idea 5 would have
+refused two of them; they predate it, and the task page now says so rather
+than reporting a mean of 94.87 and leaving it there.
 
 ## Not built, and why
 
