@@ -146,7 +146,7 @@ thought about.
 
 # What got built
 
-Twenty-four of the hundred, top of the list down, each verified against the
+Twenty-six of the hundred, top of the list down, each verified against the
 live site with real data before the next was started. Regression after every
 one: **57 unit tests, 73 end-to-end assertions, 108 contract tests**, all
 passing, and `/api/health` reporting the same single known fault it reported
@@ -171,7 +171,8 @@ at the start.
 | 12 | Demo mode | Six steps through the loop, each a navigation to the live surface. Verified stepping from `/hub?tour=1` to `/task/0?tour=2`. |
 | 15 | Corpus explorer | `/corpus` and `/api/corpus`: 28 episodes, 38,348 frames, filterable by outcome and task. |
 | 18 | Policy leaderboard | `/policies` and `/api/policy`. The live server rolled out the real shipped policy and measured **8/8 grasped, 5/8 placed, median 0 mm** — matching its published result. Nothing submitted is executed; a policy is 3,076 numbers. |
-| 21 | Onion-skinned paths | *(see 22)* |
+| 20 | Placement heatmap | Every accepted run's resting position against the goal ring and the ±25 mm band. Verified: 3 dots on task 0. |
+| 21 | Fill history | The only view of a task as something that happened over time rather than a total. Verified: 3 points, Aug 31 to Aug 31. |
 | 22 | Onion-skin on the run page | Two sibling paths drawn behind the run's own, in the same projection. |
 | 26 | Active-start suggestion | The crosshair marks the middle of the largest hole in coverage, by maximin distance. |
 | 27 | OpenAPI spec | `/api/openapi`, 22 paths, and the e2e suite fetches every one and asserts the status is documented. |
