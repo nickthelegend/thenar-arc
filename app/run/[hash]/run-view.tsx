@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PhysicsCheck } from "@/components/physics-check";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { propById, type Prop } from "@/lib/props";
 import dynamic from "next/dynamic";
 import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
@@ -48,6 +48,11 @@ const GOAL: [number, number] = [0.16, -0.18];
 export default function RunView() {
   const { hash } = useParams<{ hash: string }>();
   const [cursor, setCursor] = useState(1);
+  const [playing, setPlaying] = useState(false);
+  /** Playback rate. A run is a minute or two of twenty-hertz frames, so real
+   *  time is often the wrong speed to look at it in — a placement is decided
+   *  in about four frames, and the approach to it is a long slow arc. */
+  const [rate, setRate] = useState(1);
   const { byId } = useTaskCatalogue();
   const frame = useRef<ReplaySample | null>(null);
 
@@ -105,6 +110,54 @@ export default function RunView() {
   const shownIndex = data?.samples?.length
     ? Math.max(1, Math.round(data.samples.length * cursor)) - 1
     : 0;
+
+  /**
+   * Move the cursor by whole frames.
+   *
+   * The scrubber's own arrow keys move by its `step`, which is a fraction of
+   * the run and lands between samples. The moments worth stopping on are one
+   * frame wide — the frame the jaws close, the frame the payload is let go —
+   * so stepping is done in the recording's units rather than the widget's.
+   */
+  const step = useCallback((by: number) => {
+    const total = data?.samples?.length ?? 0;
+    if (total < 2) return;
+    const at = Math.max(0, Math.min(total - 1, shownIndex + by));
+    setCursor(Math.max(0.02, (at + 1) / total));
+  }, [data, shownIndex]);
+
+  /**
+   * Playback.
+   *
+   * Driven by the wall clock rather than by a frame counter, so a browser that
+   * drops frames plays the run at the right speed with gaps instead of playing
+   * it slowly. Stops at the end rather than looping: the last frame is the
+   * placement, and a loop would carry the reader past the thing they came for.
+   */
+  useEffect(() => {
+    if (!playing) return;
+    const total = data?.samples?.length ?? 0;
+    if (total < 2) return;
+    const hz = 20;
+    let raf = 0;
+    let last = performance.now();
+    let at = shownIndex;
+    const tick = (now: number) => {
+      const advanced = ((now - last) / 1000) * hz * rate;
+      if (advanced >= 1) {
+        at = Math.min(total - 1, at + Math.floor(advanced));
+        last = now;
+        setCursor(Math.max(0.02, (at + 1) / total));
+        if (at >= total - 1) { setPlaying(false); return; }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // shownIndex is deliberately not a dependency: it changes every frame this
+    // effect sets, and depending on it would restart playback on each one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, rate, data]);
 
   // Keeping the frame in a ref means dragging the scrubber re-poses the arm
   // without re-rendering the page around it.
@@ -295,14 +348,75 @@ export default function RunView() {
             <span className="label shrink-0">Scrub</span>
             <input
               type="range" min={0.02} max={1} step={0.005} value={cursor}
-              onChange={(e) => setCursor(Number(e.target.value))}
+              onChange={(e) => { setPlaying(false); setCursor(Number(e.target.value)); }}
+              onKeyDown={(e) => {
+                // Frame-accurate stepping. A range input's own arrow keys move
+                // by `step`, which is a fraction of the run and lands between
+                // samples; the interesting moments — the frame a grasp forms,
+                // the frame a payload is let go — are single frames wide.
+                if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                  e.preventDefault();
+                  setPlaying(false);
+                  step(e.key === "ArrowRight" ? 1 : -1);
+                }
+              }}
               className="flex-1 accent-signal"
-              aria-label="Scrub through the recorded run"
+              aria-label="Scrub through the recorded run. Left and right arrows step one frame."
             />
-            <span className="w-[64px] shrink-0 text-right font-mono text-[12px] tabular-nums text-scribe-2">
+            <span className="w-[86px] shrink-0 text-right font-mono text-[12px] tabular-nums text-scribe-2">
               {path.t.toFixed(1)}s
+              <span className="text-scribe-3"> ·{shownIndex + 1}</span>
             </span>
           </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPlaying((p) => !p)}
+              aria-pressed={playing}
+              className={cn(
+                "border px-2.5 py-1 font-mono text-[12px] transition-colors",
+                playing
+                  ? "border-signal text-signal"
+                  : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe-2",
+              )}
+            >
+              {playing ? "Pause" : "Play"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPlaying(false); step(-1); }}
+              aria-label="Step back one frame"
+              className="border border-rule px-2.5 py-1 font-mono text-[12px] text-scribe-3 transition-colors hover:border-rule-strong hover:text-scribe-2"
+            >
+              ◂ frame
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPlaying(false); step(1); }}
+              aria-label="Step forward one frame"
+              className="border border-rule px-2.5 py-1 font-mono text-[12px] text-scribe-3 transition-colors hover:border-rule-strong hover:text-scribe-2"
+            >
+              frame ▸
+            </button>
+            <span className="label ml-2">Speed</span>
+            {[0.25, 0.5, 1, 2, 4].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRate(r)}
+                aria-pressed={rate === r}
+                className={cn(
+                  "border px-2 py-1 font-mono text-[12px] tabular-nums transition-colors",
+                  rate === r
+                    ? "border-signal text-signal"
+                    : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe-2",
+                )}
+              >
+                {r}×
+              </button>
+            ))}
+          </div>
           {moments && (moments.grasp !== null || moments.release !== null) ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="label">Jump to</span>
