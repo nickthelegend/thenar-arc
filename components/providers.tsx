@@ -6,6 +6,7 @@ import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { TasksProvider } from "@/components/tasks-provider";
 import { ModelStageProvider } from "@/components/model-stage";
+import { Palette } from "@/components/palette";
 import { wagmiConfig } from "@/lib/wagmi";
 import { appChain } from "@/lib/chain";
 
@@ -40,7 +41,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={theme} initialChain={appChain} modalSize="compact">
           <TasksProvider>
-          <ModelStageProvider>{children}</ModelStageProvider>
+          <ModelStageProvider>{children}<Palette /></ModelStageProvider>
           </TasksProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
