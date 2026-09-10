@@ -38,6 +38,10 @@ type Signed = {
   trajHash: `0x${string}`; cid: string; score: number; accepted: boolean;
   parts: { placement: number; efficiency: number; smoothness: number };
   signature: `0x${string}`; parSeconds: number; rewardWei: string;
+  /** The deviation the signer measured from the samples. The request carries a
+   *  deviation too and it is not this one — that is the claim, and it is not
+   *  what gets scored or stored. */
+  deviationMm: number;
 };
 
 async function sign(args: {
@@ -125,7 +129,8 @@ async function handlePOST(req: Request) {
         task_id: taskId,
         contributor: contributor.toLowerCase(),
         score: result.score,
-        deviation_mm: deviationMm,
+        // The verifier's measurement, not the request's claim.
+        deviation_mm: result.deviationMm,
         duration_s: durationSeconds,
         placement: result.parts.placement,
         efficiency: result.parts.efficiency,

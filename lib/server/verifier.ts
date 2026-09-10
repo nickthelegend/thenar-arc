@@ -79,6 +79,10 @@ export type VerifyResult = {
   parts: { placement: number; efficiency: number; smoothness: number };
   signature: `0x${string}`;
   accepted: boolean;
+  /** Measured from the samples, not the figure the caller sent. This is what
+   *  the ledger records, so a run page shows the distance the recording
+   *  actually ends at rather than the one it was described with. */
+  deviationMm: number;
 };
 
 /**
@@ -163,6 +167,7 @@ export async function verifyAndSign(args: {
     parts: verdict.parts,
     signature,
     accepted: verdict.success,
+    deviationMm: verdict.deviationMm,
   };
 }
 
