@@ -123,3 +123,54 @@ is a fail.
 | F5 | Responsive | Mobile (375) and desktop both usable; no horizontal body scroll |
 | F6 | Locale | Figures formatted in the reader's locale without a hydration mismatch |
 | F7 | No mocks | No stubbed data anywhere in the tested surface |
+
+---
+
+# Results
+
+Run against https://thenar.io on 2026-08-31, in a real browser, with every fix
+deployed and the whole plan re-run from the top afterwards.
+
+**82 of 83 PASS. 1 permanently unrepairable (C6), reported rather than hidden.**
+
+Automated re-run at the end: 60/60 page and API items, 69/69 in `npm test`,
+99/99 in `forge test`.
+
+## What failed, and what it took to fix
+
+| # | Failure | Root cause | Fix |
+|---|---|---|---|
+| B30 | `POST /api/hit` → 400 on every run page | The 64-character length guard ran *before* the collapse to a section, and `/run/0x…` is 71 characters | Collapse first, then bound at 512 only to stop an absurd body |
+| A4, A7 | `/task/999` and `/run/0xdead` answered **200** | Both views are client components; the server never knew the subject was missing, so it was a soft 404 | Server component in front of each: a hash is refused on shape, a task id is checked against the registry and renders anyway if the chain does not answer |
+| A9, E3 | Leaderboard credited an address with 1 run; its operator page said "nothing recorded" | The leaderboard counts the chain, the operator page counted the ledger, and they differ by exactly the 3 payouts whose samples were never kept | Operator page reads `trajectoriesOf()` too and reports "paid, not retrievable" in those terms |
+| A11 | Most inventory previews blank — the original "nothing in inventory" report | Measured 30 canvases, 16 alive, **14 with the context already taken**. One WebGL context per tile against a browser cap of 16; the browser evicts oldest-first, so the tiles at the top of the page went black | A stated budget of 14 contexts, released by distance from the middle of the viewport, so eviction is ours and lands on what is furthest from being read |
+| F5 | Hub read "SCENARI" on a phone | Label column 58px, "Scenario" measures 71px, and the chips after it are opaque | Column widened to 72px |
+| — | `vercel.json` VAPID key inert at build time | Written as a sibling of `build.env` instead of inside it | Moved in. Push works either way — the key is served by `/api/notify` at runtime — which is what made it worth fixing |
+| — | e2e suite asserted `page /task/7` → 200 | There is no task 7. It passed only because of the soft 404, so the assertion checked that a page which should not exist could be fetched | Checks `/task/0`, and pins the three 404s |
+
+## C6 — the one that cannot be closed
+
+Three runs paid on chain have no stored trajectory. They were proofs of the
+relayed submission path, signed straight to the contract without going through
+the pipeline that keeps the samples. The samples were never recorded, so
+repairing this would need a keccak256 preimage.
+
+It is not marked PASS. What is verified is that the system refuses to hide it:
+`/api/health` answers **503** while it is true, `/status` shows the check as
+FAIL with the count, the foundry shows "6 trajectories / 3 episodes", and the
+operator page now names it per address. A new run recorded during this test
+went through `/api/verify`, so the count stayed at 3 rather than becoming 4.
+
+## Not testable here
+
+| Item | Why |
+|---|---|
+| Wallet-signed submission through the browser UI | Needs a funded browser wallet, and entering wallet credentials is not something I will do. The same path was proven end to end instead: `/api/verify` scored a real run 90.54, the contract accepted the verifier's signature, and the run is on Fuji at `0x3d82ea92…` — chain 8→9, ledger 5→6 |
+| 3D rendering under Claude in Chrome | That window is occluded, so `visibilityState` is `hidden` and react-three-fiber does not draw. Every 3D surface was verified in a foregrounded browser instead |
+
+## Observation, not a plan failure
+
+`placement` — 55% of the score — is computed from the `deviationMm` the client
+reports, not from the samples. The samples are stored and the hash is checked,
+so a claim is auditable after the fact, but a client can assert its own
+placement at submission time. Out of scope for this plan; worth a decision.
