@@ -32,6 +32,7 @@ const PAGES: Item[] = [
   { id: "p-hub", label: "Open work", hint: "every funded task", href: "/hub", group: "Pages" },
   { id: "p-floor", label: "The floor", hint: "rooms you can join", href: "/space", group: "Pages" },
   { id: "p-corpus", label: "The corpus", hint: "every episode, across every task", href: "/corpus", group: "Pages" },
+  { id: "p-pol", label: "Policies", hint: "models, ranked by what they actually did", href: "/policies", group: "Pages" },
   { id: "p-inv", label: "Inventory", hint: "every object a task can use", href: "/inventory", group: "Pages" },
   { id: "p-lead", label: "Operators", hint: "the standings", href: "/leaderboard", group: "Pages" },
   { id: "p-found", label: "Foundry", hint: "minted policies and cap tables", href: "/foundry", group: "Pages" },
