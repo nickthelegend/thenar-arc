@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { propById, type Prop } from "@/lib/props";
 import dynamic from "next/dynamic";
 import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
+import { PhaseTimeline } from "@/components/phase-timeline";
 import { TOLERANCE_MM } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
@@ -245,6 +246,12 @@ export default function RunView() {
       <div className="mt-6 max-w-[440px]">
         <ToleranceBand deviationMm={data.deviationMm} toleranceMm={TOLERANCE_MM} label="Placement" />
       </div>
+
+      <PhaseTimeline
+        samples={data.samples ?? []}
+        cursor={cursor}
+        onSeek={setCursor}
+      />
 
       {task && data.samples?.[0]?.q ? (
         <>

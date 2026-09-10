@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { phasesOf } from "@/lib/phases";
+import type { Sample } from "@/lib/types";
 import { queryOne, query } from "@/lib/server/db";
 import { appChain, AXON_ADDRESS, CORPUS_ACCESS } from "@/lib/chain";
 import { corpusAccess } from "@/lib/server/access";
@@ -39,9 +41,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "No settled trajectory with that hash on this chain." }, { status: 404 });
     }
 
-    const samples = JSON.parse(row.samples) as {
-      t: number; q: number[]; grip: number; object: number[];
-    }[];
+    const samples = JSON.parse(row.samples) as Sample[];
 
     const body = JSON.stringify({
       dataset: `thenar-run-${row.traj_hash.slice(0, 10)}`,
@@ -70,6 +70,10 @@ export async function GET(req: Request) {
         },
         action: samples.map((s) => [...s.q, s.grip]),
         timestamp: samples.map((s) => s.t),
+        // Reach, grasp, transport, place, release, as frame ranges. Derived
+        // from the jaw column and the payload's height, so a buyer can rederive
+        // them from the arrays above rather than take them on trust.
+        phases: phasesOf(samples),
       }],
     }, null, 2);
 
@@ -129,9 +133,7 @@ export async function GET(req: Request) {
   }
 
   const episodes = rows.map((r, i) => {
-    const samples = JSON.parse(r.samples) as {
-      t: number; q: number[]; grip: number; object: number[];
-    }[];
+    const samples = JSON.parse(r.samples) as Sample[];
     return {
       episode_index: i,
       trajectory_hash: r.traj_hash,
@@ -149,6 +151,7 @@ export async function GET(req: Request) {
       },
       action: samples.map((s) => [...s.q, s.grip]),
       timestamp: samples.map((s) => s.t),
+      phases: phasesOf(samples),
     };
   });
 
