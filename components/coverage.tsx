@@ -80,7 +80,44 @@ export function Coverage({ taskId }: { taskId: number }) {
       busiest = Math.max(busiest, visited[i]);
     }
 
-    return { n, reachable, visited, fraction: reach ? seen / reach : 0, busiest, cells: seen, reach };
+    /**
+     * The reachable cell furthest from anywhere this corpus has been.
+     *
+     * The map says where the gaps are; this says which gap is worth filling
+     * next. Chosen by maximin — the unvisited cell whose nearest visited cell
+     * is furthest away — because that is the middle of the largest hole rather
+     * than the first empty cell in reading order, and a run started there adds
+     * more than a run started just outside the existing cluster.
+     *
+     * Null once there is nothing unvisited left, which on this corpus is a
+     * long way off.
+     */
+    let suggest: { x: number; y: number; gapMm: number } | null = null;
+    if (seen > 0) {
+      const visitedCells: [number, number][] = [];
+      for (let i = 0; i < visited.length; i += 1) {
+        if (visited[i] > 0) visitedCells.push([i % n, Math.floor(i / n)]);
+      }
+      let best = -1;
+      for (let i = 0; i < reachable.length; i += 1) {
+        if (!reachable[i] || visited[i] > 0) continue;
+        const ix = i % n, iy = Math.floor(i / n);
+        let nearest = Infinity;
+        for (const [vx, vy] of visitedCells) {
+          nearest = Math.min(nearest, Math.hypot(ix - vx, iy - vy));
+        }
+        if (nearest > best) {
+          best = nearest;
+          suggest = {
+            x: -EXTENT + (ix + 0.5) * CELL,
+            y: -EXTENT + (iy + 0.5) * CELL,
+            gapMm: nearest * CELL * 1000,
+          };
+        }
+      }
+    }
+
+    return { n, reachable, visited, fraction: reach ? seen / reach : 0, busiest, cells: seen, reach, suggest };
   }, [data]);
 
   /**
@@ -103,7 +140,7 @@ export function Coverage({ taskId }: { taskId: number }) {
   if (failed) return null;
   if (!grid) return <div className="hatch mt-4 h-40 max-w-[420px]" aria-busy="true" />;
 
-  const { n, reachable, visited, fraction, busiest } = grid;
+  const { n, reachable, visited, fraction, busiest, suggest } = grid;
   const px = 420 / n;
 
   return (
@@ -136,6 +173,33 @@ export function Coverage({ taskId }: { taskId: number }) {
                   className="fill-signal" opacity={heat} />
           );
         })}
+        {/* Where the next run would add most: the middle of the largest hole. */}
+        {suggest ? (
+          <g>
+            <circle
+              cx={((suggest.x + EXTENT) / (EXTENT * 2)) * 420}
+              cy={420 - ((suggest.y + EXTENT) / (EXTENT * 2)) * 420}
+              r={9}
+              className="fill-none stroke-probe"
+              strokeWidth={1.5}
+              strokeDasharray="3 3"
+            />
+            <line
+              x1={((suggest.x + EXTENT) / (EXTENT * 2)) * 420 - 13}
+              x2={((suggest.x + EXTENT) / (EXTENT * 2)) * 420 + 13}
+              y1={420 - ((suggest.y + EXTENT) / (EXTENT * 2)) * 420}
+              y2={420 - ((suggest.y + EXTENT) / (EXTENT * 2)) * 420}
+              className="stroke-probe" strokeWidth={0.75}
+            />
+            <line
+              y1={420 - ((suggest.y + EXTENT) / (EXTENT * 2)) * 420 - 13}
+              y2={420 - ((suggest.y + EXTENT) / (EXTENT * 2)) * 420 + 13}
+              x1={((suggest.x + EXTENT) / (EXTENT * 2)) * 420}
+              x2={((suggest.x + EXTENT) / (EXTENT * 2)) * 420}
+              className="stroke-probe" strokeWidth={0.75}
+            />
+          </g>
+        ) : null}
         {/* The datum, so the map has a landmark that is not a statistic. */}
         <circle
           cx={((GOAL[0] + EXTENT) / (EXTENT * 2)) * 420}
@@ -160,6 +224,15 @@ export function Coverage({ taskId }: { taskId: number }) {
           Below the {DUPLICATE_MM} mm a new run would now have to clear. These were
           recorded before duplicate rejection existed, and they are close enough
           that the corpus has fewer distinct approaches in it than episodes.
+        </p>
+      ) : null}
+
+      {suggest ? (
+        <p className="mt-3 max-w-[52ch] text-[13px] leading-relaxed text-scribe-3">
+          <span className="text-probe">The crosshair</span> is the middle of the
+          largest hole — {Math.round(suggest.gapMm)} mm from the nearest place
+          this corpus has been. A run that starts the payload around there adds
+          more than one that starts beside the existing cluster.
         </p>
       ) : null}
 
