@@ -40,12 +40,18 @@ import { cn } from "@/lib/cn";
 /**
  * How many previews may hold a WebGL context at once.
  *
- * Under the limit every browser tested enforces, with room for the station or
- * a hero arm to be mounted at the same time — those are contexts too, and a
- * budget that spent all sixteen on thumbnails would black out the scene the
- * page is actually about.
+ * Sixteen is the cap the browsers tested enforce, and the station or a hero
+ * arm is a context too, so this leaves two spare rather than spending the lot
+ * on thumbnails and blacking out the scene the page is actually about.
+ *
+ * It was ten first, which was too careful: it fixed the eviction and left the
+ * last two tiles of a full screen blank, which is the same complaint in a
+ * smaller size. Fourteen covers every viewport the grid produces here. A
+ * screen wide enough to show more than fourteen tiles at once would start
+ * dropping the furthest again — deliberately, at the edge, and to the tile
+ * least likely to be read rather than to the one at the top of the page.
  */
-const BUDGET = 10;
+const BUDGET = 14;
 
 type Slot = { el: HTMLElement; grant: (on: boolean) => void; near: boolean; granted: boolean };
 const slots = new Set<Slot>();
