@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { phasesOf } from "@/lib/phases";
 import { ACCEPT_FLOOR } from "@/lib/score";
 import { classifyFailure } from "@/lib/failure";
+import { splitFor } from "@/lib/split";
 import { failedTrajectories } from "@/lib/server/db";
 import type { Sample } from "@/lib/types";
 import { queryOne, query } from "@/lib/server/db";
@@ -155,6 +156,9 @@ export async function GET(req: Request) {
       action: samples.map((s) => [...s.q, s.grip]),
       timestamp: samples.map((s) => s.t),
       phases: phasesOf(samples),
+      // Held out by operator, not by episode: episodes from one address share a
+      // style, and cutting at random puts that style in train and in test.
+      split: splitFor(r.contributor),
     };
   });
 
@@ -209,7 +213,18 @@ export async function GET(req: Request) {
       episodes: episodes.length,
       total_frames: episodes.reduce((n, e) => n + e.length, 0),
       exported_at: new Date().toISOString(),
-      schema_version: 2,
+      schema_version: 3,
+      splits: {
+        held_out_by: "contributor",
+        why:
+          "Episodes from one operator share an approach. Splitting by episode " +
+          "puts the same person in train and in test, and the test score then " +
+          "measures memorising a person rather than learning the task.",
+        counts: episodes.reduce((acc: Record<string, number>, e) => {
+          acc[e.split] = (acc[e.split] ?? 0) + 1;
+          return acc;
+        }, {}),
+      },
       data: episodes,
       negatives: failures,
       negatives_note:
