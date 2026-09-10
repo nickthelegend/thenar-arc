@@ -1,3 +1,4 @@
+import { GOAL, GOAL_R, seatFor } from "./bench";
 import type { Sample, Trajectory, Verdict } from "./types";
 
 /**
@@ -107,6 +108,58 @@ function clamp01(x: number) {
   return Math.min(1, Math.max(0, x));
 }
 
+/**
+ * How far the payloads finished from where they were meant to finish, in mm.
+ *
+ * Placement is 55% of the score and it used to be read off a number the
+ * submitter put in the request. Everything else the score is made of — jerk,
+ * grasp count, placement order — is derived from the samples precisely because
+ * a signed score cannot rest on a claim, and this one term was the exception:
+ * the verifier signed "came to rest 2 mm from the datum" because it had been
+ * told so, having the whole recording in front of it the entire time.
+ *
+ * The measurement is the station's own, moved rather than reinvented: distance
+ * in the table plane from each payload to its seat, and the worst of them,
+ * because a scene is placed when all of it is. Height is excluded for the same
+ * reason it always was — the tool cannot descend below 12 mm and the payload's
+ * waist sits at 37.5 mm, so vertical error is furniture, not aim.
+ *
+ * The resting position is the last sample's. After a payload's final movement
+ * its position does not change, so the end of the recording is where it came
+ * to rest, and no search for that moment is needed.
+ */
+export function deviationFromSamples(samples: Sample[]): number {
+  const last = samples[samples.length - 1];
+  if (!last) return Infinity;
+
+  const resting: [number, number, number][] = last.object2
+    ? [last.object, last.object2]
+    : [last.object];
+
+  let worst = 0;
+  for (let i = 0; i < resting.length; i += 1) {
+    const seat = seatFor(GOAL, i, resting.length);
+    worst = Math.max(worst, Math.hypot(resting[i][0] - seat[0], resting[i][1] - seat[1]) * 1000);
+  }
+  return worst;
+}
+
+/**
+ * Whether the payloads finished inside the goal ring at all.
+ *
+ * Distinct from placement, which grades how well: the ring is 75 mm and the
+ * scoring band is 25 mm, so a run can be inside the ring and still score zero
+ * for placement. Outside it, nothing was placed and no part of the score is
+ * earned.
+ *
+ * Derived here for the same reason the deviation is. `success` arrived as a
+ * flag in the request, and a flag that gates every term of the score is worth
+ * more to a liar than the placement figure it sat next to.
+ */
+export function placedInRing(samples: Sample[]): boolean {
+  return deviationFromSamples(samples) <= GOAL_R * 1000;
+}
+
 /** Mean magnitude of the third derivative of the tool path, in m/s^3. */
 export function meanJerk(samples: Sample[]): number {
   if (samples.length < 4) return 0;
@@ -131,16 +184,25 @@ export function evaluate(
   parSeconds: number,
   rewardPerTrajectory: number,
 ): Verdict {
-  const placement = traj.success
-    ? clamp01(1 - Math.abs(traj.deviationMm) / TOLERANCE_MM)
-    : 0;
+  // Measured, not accepted. `traj.deviationMm` is what the submitter said and
+  // is kept only to be reported back beside this; every term below is computed
+  // from the recording, which is the same recording the trajectory hash is
+  // derived from, so the score and the artefact cannot disagree.
+  const deviationMm = deviationFromSamples(traj.samples);
 
-  const efficiency = traj.success
+  // Both have to hold. The caller can still say a run failed — an operator who
+  // abandons a run should not be scored on where the payload happened to be —
+  // but it can no longer say one succeeded that the samples show did not.
+  const success = traj.success && deviationMm <= GOAL_R * 1000;
+
+  const placement = success ? clamp01(1 - deviationMm / TOLERANCE_MM) : 0;
+
+  const efficiency = success
     ? clamp01(parSeconds / Math.max(parSeconds * 0.35, traj.durationSeconds))
     : 0;
 
   const jerk = meanJerk(traj.samples);
-  const smoothness = traj.success
+  const smoothness = success
     ? clamp01((JERK_CEIL - jerk) / (JERK_CEIL - JERK_FLOOR))
     : 0;
 
@@ -157,14 +219,25 @@ export function evaluate(
   const penalty = Math.min(1, regrasp + order);
 
   const score = Math.round(clamp01(unit) * (1 - penalty) * 10000);
-  const accepted = traj.success && score >= ACCEPT_FLOOR;
+  const accepted = success && score >= ACCEPT_FLOOR;
 
   return {
     score,
     success: accepted,
-    deviationMm: traj.deviationMm,
+    // The measured figure, so everything downstream — the ledger row, the run
+    // page, the shortfall note — shows what the samples say rather than what
+    // the request said.
+    deviationMm,
     parts: { placement, efficiency, smoothness },
-    raw: { meanJerk: jerk, seconds: traj.durationSeconds, parSeconds, grasps, penalty, outOfOrder: order > 0 },
+    raw: {
+      meanJerk: jerk, seconds: traj.durationSeconds, parSeconds, grasps, penalty,
+      outOfOrder: order > 0,
+      // What the submitter claimed, kept so a disagreement is visible rather
+      // than silently overwritten. The station computes its figure a frame
+      // later than the last sample, so a fraction of a millimetre apart is
+      // ordinary; far apart is worth seeing.
+      claimedDeviationMm: traj.deviationMm,
+    },
     payoutMon: accepted ? (rewardPerTrajectory * score) / 10000 : 0,
   };
 }

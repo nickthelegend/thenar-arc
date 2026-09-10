@@ -74,6 +74,10 @@ export type Verdict = {
     /** The payloads were placed in the wrong order. Always false on a scene
      *  with one payload, which is every task recorded so far. */
     outOfOrder: boolean;
+    /** The deviation the submitter reported, against which `deviationMm` is
+     *  the one measured from the samples. Kept so the two can be compared;
+     *  only the measured one is scored or signed. */
+    claimedDeviationMm: number;
   };
   payoutMon: number;
 };

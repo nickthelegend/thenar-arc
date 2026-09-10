@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Telemetry } from "@/components/station/viewport";
-import { GOAL_R } from "@/components/station/viewport";
+import { GOAL, GOAL_R } from "@/lib/bench";
 import { Announce, Button, CountUp, Difficulty, ScoreDial, ToleranceBand } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useSpace } from "@/lib/space";
@@ -47,7 +47,8 @@ type Phase = "brief" | "running" | "measured";
 // tool a long way. The pair are still 0.33 m apart, so the task is a real
 // transfer rather than a nudge, and both objects sit inside the camera frame
 // with the arm rather than out at the edges of the table.
-const GOAL: [number, number] = [0.16, -0.18];
+// GOAL is imported: the scorer measures against it too, so it is defined in
+// lib/bench.ts where both can reach it rather than once here and once there.
 const START: [number, number] = [0.22, 0.14];
 
 /**

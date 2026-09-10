@@ -9,14 +9,17 @@ import { click } from "@/lib/click";
 import { act as policyAct } from "@/lib/policy";
 import { REACH_MAX, solve, solveAt, toolPositionAt } from "@/lib/kinematics";
 import type { Sample } from "@/lib/types";
+import { GOAL_R, TOLERANCE_M, SEAT_OFFSET, seatFor } from "@/lib/bench";
 
-/* Scene constants, metres. The table height and goal radius are the two the
-   scoring depends on, so they live here and nowhere else. */
+/* Scene constants, metres.
+
+   The goal radius and the placement band are not here: the scorer needs them
+   too and cannot import a three.js module, so they live in lib/bench.ts and
+   are re-exported from here for everything that already reads them off the
+   viewport. One datum, one definition, two readers. */
+export { GOAL, GOAL_R, TOLERANCE_M, SEAT_OFFSET, seatFor } from "@/lib/bench";
 export const TABLE_Z = 0.0;
 export const TABLE_HALF = 0.42;
-export const GOAL_R = 0.075;
-/** The placement band, in scene units. 25 mm is the scorer's own tolerance. */
-export const TOLERANCE_M = 0.025;
 export const PAYLOAD_R = 0.028;
 export const PAYLOAD_H = 0.075;
 /**
@@ -31,18 +34,6 @@ export const PAYLOAD_H = 0.075;
  */
 export const CAPTURE_R = 0.09;
 /**
- * How far each payload's seat sits from the datum centre when a scene carries
- * two of them, in metres.
- *
- * Both seats have to stay inside the goal ring — the ring is what the operator
- * aims at — while leaving the objects far enough apart not to intersect. At
- * 0.038 the seats are 76 mm apart and the payloads are 56 mm across, so they
- * sit beside each other rather than through each other, and each is still
- * within its own 25 mm tolerance of a point inside the 75 mm ring.
- */
-export const SEAT_OFFSET = 0.038;
-
-/**
  * Where a second arm stands, when a scene has one.
  *
  * Far enough that the two envelopes overlap only across the middle of the
@@ -52,13 +43,6 @@ export const SEAT_OFFSET = 0.038;
  */
 export const ARM_B_BASE: [number, number] = [0.34, 0.02];
 
-/** Where payload `i` of `n` has to come to rest. One payload owns the datum
- *  itself, which is what keeps every single-object run scoring exactly as it
- *  did before scenes could carry two. */
-export function seatFor(goal: [number, number], i: number, n: number): [number, number] {
-  if (n < 2) return goal;
-  return [goal[0] + (i === 0 ? -SEAT_OFFSET : SEAT_OFFSET), goal[1]];
-}
 export const GRIP_CLOSED = 12; // mm jaw opening below which a grasp forms
 export const GRIP_OPEN_MM = 42;
 const SAMPLE_HZ = 20;
@@ -112,7 +96,7 @@ export type Telemetry = {
 
 type ViewportProps = {
   running: boolean;
-  goal: [number, number];
+  goal: readonly [number, number];
   start: [number, number];
   /** The objects this task is actually about. The instruction names them; the
    *  scene used to render an anonymous cylinder regardless, which made every
@@ -395,7 +379,7 @@ function SurfacePlate() {
  * used to learn this only after letting go.
  */
 function GoalZone({ at, payload, seats = 1 }: {
-  at: [number, number];
+  at: readonly [number, number];
   payload?: React.RefObject<[number, number, number]>;
   /** How many payloads have to come to rest here. Two seats are drawn as two
    *  small marks inside the ring, so the operator can see that the datum is
