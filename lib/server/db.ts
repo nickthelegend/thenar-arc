@@ -325,7 +325,9 @@ export async function trajectoriesOnContract(address: string, limit = 500) {
  * silently omits them is the old survivorship filter with extra steps.
  */
 export async function corpusIndex(opts: {
-  outcome?: "paid" | "failed" | "all";
+  outcome?: "paid" | "failed" | "unsubmitted" | "all";
+  /** The acceptance floor, needed to tell a failure from an abandonment. */
+  floor: number;
   taskId?: number;
   minScore?: number;
   limit?: number;
@@ -337,8 +339,12 @@ export async function corpusIndex(opts: {
   const where: string[] = ["chain_id = ?", "contract = ?"];
   const args: (string | number)[] = [appChain.id, HERE()];
 
+  // The three outcomes have to filter the way they are labelled. "settled = 0"
+  // alone is both a failure and an abandonment, and using it for "failed"
+  // returned every unsent run under a heading that said below the floor.
   if (opts.outcome === "paid") where.push("settled = 1");
-  if (opts.outcome === "failed") where.push("settled = 0");
+  if (opts.outcome === "failed") { where.push("settled = 0 AND score < ?"); args.push(opts.floor); }
+  if (opts.outcome === "unsubmitted") { where.push("settled = 0 AND score >= ?"); args.push(opts.floor); }
   if (typeof opts.taskId === "number") { where.push("task_id = ?"); args.push(opts.taskId); }
   if (floor > 0) { where.push("score >= ?"); args.push(floor); }
 

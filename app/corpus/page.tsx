@@ -29,6 +29,7 @@ const OUTCOMES = [
   { key: "all", label: "Everything" },
   { key: "paid", label: "Paid" },
   { key: "failed", label: "Below the floor" },
+  { key: "unsubmitted", label: "Never sent" },
 ] as const;
 
 const TONE: Record<Episode["outcome"], string> = {

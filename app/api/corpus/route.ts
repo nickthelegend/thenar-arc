@@ -21,8 +21,11 @@ async function handleGET(req: Request) {
   const q = new URL(req.url).searchParams;
 
   const outcomeParam = q.get("outcome") ?? "all";
-  if (!["all", "paid", "failed"].includes(outcomeParam)) {
-    return NextResponse.json({ error: "outcome must be all, paid or failed" }, { status: 400 });
+  if (!["all", "paid", "failed", "unsubmitted"].includes(outcomeParam)) {
+    return NextResponse.json(
+      { error: "outcome must be all, paid, failed or unsubmitted" },
+      { status: 400 },
+    );
   }
 
   const taskParam = q.get("taskId");
@@ -36,7 +39,8 @@ async function handleGET(req: Request) {
   }
 
   const rows = await corpusIndex({
-    outcome: outcomeParam as "all" | "paid" | "failed",
+    outcome: outcomeParam as "all" | "paid" | "failed" | "unsubmitted",
+    floor: ACCEPT_FLOOR,
     taskId: taskParam === null ? undefined : Number(taskParam),
     minScore: minParam === null ? undefined : Number(minParam),
     limit: 300,
