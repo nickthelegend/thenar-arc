@@ -3,15 +3,19 @@
  *
  *     npm run test:unit
  *
- * Placement is 55% of a run's score and it used to be read out of the request.
- * These are the assertions that say it no longer can be — written against the
- * real lib/score.ts, so a change that reintroduces the hole fails here rather
- * than being caught later by someone reading a payout that looks too good.
+ * Placement is 55% of a run's score and efficiency is 20%, and both used to be
+ * read out of the request: the submitter said how close it landed and how long
+ * it took, and the verifier signed both. These are the assertions that say it
+ * no longer can — written against the real lib/score.ts, so a change that
+ * reintroduces either hole fails here rather than being caught later by
+ * someone reading a payout that looks too good.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GOAL, GOAL_R, SEAT_OFFSET } from "../lib/bench.ts";
-import { deviationFromSamples, evaluate, placedInRing, TOLERANCE_MM } from "../lib/score.ts";
+import {
+  deviationFromSamples, durationFromSamples, evaluate, placedInRing, TOLERANCE_MM,
+} from "../lib/score.ts";
 
 const PAR = 120;
 
@@ -48,9 +52,10 @@ function run(endsAt, { seconds = 60, second } = {}) {
   return samples;
 }
 
-/** What a caller submits. `deviationMm` is the claim under test. */
-const traj = (samples, claim, success = true) => ({
-  taskId: "0", samples, durationSeconds: 60, success, deviationMm: claim,
+/** What a caller submits. `deviationMm` and `durationSeconds` are the claims
+ *  under test — neither should reach the score. */
+const traj = (samples, claim, success = true, seconds = 60) => ({
+  taskId: "0", samples, durationSeconds: seconds, success, deviationMm: claim,
 });
 
 test("deviation is measured from where the payload came to rest", () => {
@@ -122,4 +127,38 @@ test("the ring and the band are different questions", () => {
   const inRingOutOfBand = run([GOAL[0] + (GOAL_R * 1000 - 10) / 1000, GOAL[1]]);
   assert.equal(placedInRing(inRingOutOfBand), true);
   assert.equal(evaluate(traj(inRingOutOfBand, 0), PAR, 1).parts.placement, 0);
+});
+
+test("duration is read off the recording's own clock", () => {
+  assert.equal(Math.round(durationFromSamples(run(GOAL, { seconds: 45 }))), 45);
+  assert.equal(Math.round(durationFromSamples(run(GOAL, { seconds: 90 }))), 90);
+});
+
+test("a claimed duration cannot buy an efficiency the samples do not show", () => {
+  // A slow run: 90 s against a 120 s par, submitted as if it took 10.
+  const samples = run(GOAL, { seconds: 90 });
+
+  const honest = evaluate(traj(samples, 0, true, 90), PAR, 1);
+  const lying = evaluate(traj(samples, 0, true, 10), PAR, 1);
+
+  assert.equal(lying.score, honest.score, "the claim changed the score");
+  assert.equal(Math.round(lying.raw.seconds), 90, "the verdict reports the measurement");
+  assert.equal(lying.raw.claimedSeconds, 10, "the claim is kept, and kept separate");
+});
+
+test("a recording with no clock earns no efficiency", () => {
+  // Every timestamp identical: "no time passed" would otherwise read as the
+  // fastest run possible and take the term's ceiling.
+  const samples = run(GOAL).map((s) => ({ ...s, t: 0 }));
+  assert.equal(durationFromSamples(samples), 0);
+  assert.equal(evaluate(traj(samples, 0), PAR, 1).parts.efficiency, 0);
+});
+
+test("a faster honest run still scores better than a slower one", () => {
+  const quick = evaluate(traj(run(GOAL, { seconds: 60 }), 0), PAR, 1);
+  const slow = evaluate(traj(run(GOAL, { seconds: 180 }), 0), PAR, 1);
+  assert.ok(
+    quick.parts.efficiency > slow.parts.efficiency,
+    `60 s (${quick.parts.efficiency}) should beat 180 s (${slow.parts.efficiency})`,
+  );
 });

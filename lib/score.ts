@@ -145,6 +145,30 @@ export function deviationFromSamples(samples: Sample[]): number {
 }
 
 /**
+ * How long the run took, from the recording's own clock.
+ *
+ * The other half of the same problem as the deviation: efficiency is 20% of
+ * the score and was read from a `durationSeconds` in the request, so a run
+ * could be described as fast without having been fast.
+ *
+ * The samples carry timestamps because the recorder writes one per frame, so
+ * the elapsed time is the span between the first and the last. Compressing
+ * those timestamps to claim a quick run is not a way around this: jerk is a
+ * third derivative and divides by dt cubed, so halving the clock multiplies
+ * the measured jerk eightfold and the smoothness term collapses. The two
+ * readings are taken from the same numbers and constrain each other, which is
+ * what a single reported figure never did.
+ */
+export function durationFromSamples(samples: Sample[]): number {
+  if (samples.length < 2) return 0;
+  const span = samples[samples.length - 1].t - samples[0].t;
+  // A recording whose clock runs backwards or not at all is not a duration.
+  // Zero reads as "no time passed", which scores efficiency at its ceiling, so
+  // it is refused rather than rewarded.
+  return Number.isFinite(span) && span > 0 ? span : 0;
+}
+
+/**
  * Whether the payloads finished inside the goal ring at all.
  *
  * Distinct from placement, which grades how well: the ring is 75 mm and the
@@ -197,8 +221,12 @@ export function evaluate(
 
   const placement = success ? clamp01(1 - deviationMm / TOLERANCE_MM) : 0;
 
-  const efficiency = success
-    ? clamp01(parSeconds / Math.max(parSeconds * 0.35, traj.durationSeconds))
+  // Timed by the recording, not by the request. Guarded against a zero span
+  // because the ratio below reads "no time passed" as the fastest possible run
+  // and would hand full marks to a recording with no clock at all.
+  const seconds = durationFromSamples(traj.samples);
+  const efficiency = success && seconds > 0
+    ? clamp01(parSeconds / Math.max(parSeconds * 0.35, seconds))
     : 0;
 
   const jerk = meanJerk(traj.samples);
@@ -230,8 +258,10 @@ export function evaluate(
     deviationMm,
     parts: { placement, efficiency, smoothness },
     raw: {
-      meanJerk: jerk, seconds: traj.durationSeconds, parSeconds, grasps, penalty,
+      meanJerk: jerk, seconds, parSeconds, grasps, penalty,
       outOfOrder: order > 0,
+      /** The duration the submitter reported, against the measured `seconds`. */
+      claimedSeconds: traj.durationSeconds,
       // What the submitter claimed, kept so a disagreement is visible rather
       // than silently overwritten. The station computes its figure a frame
       // later than the last sample, so a fraction of a millimetre apart is

@@ -78,6 +78,9 @@ export type Verdict = {
      *  the one measured from the samples. Kept so the two can be compared;
      *  only the measured one is scored or signed. */
     claimedDeviationMm: number;
+    /** The duration the submitter reported. `seconds` is the one measured from
+     *  the samples' own timestamps, and is the one scored. */
+    claimedSeconds: number;
   };
   payoutMon: number;
 };
