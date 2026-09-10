@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --import ./test/register.mjs --test test/score.test.mjs test/phases.test.mjs test/merkle.test.mjs test/similarity.test.mjs test/failure.test.mjs test/split.test.mjs",
+    "test:unit": "node --import ./test/register.mjs --test test/score.test.mjs test/phases.test.mjs test/merkle.test.mjs test/similarity.test.mjs test/failure.test.mjs test/split.test.mjs test/rollout.test.mjs",
     "test:e2e": "node test/e2e.mjs"
   },
   "dependencies": {

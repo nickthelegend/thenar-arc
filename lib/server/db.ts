@@ -362,3 +362,49 @@ export async function corpusIndex(opts: {
     args,
   );
 }
+
+// ------------------------------------------------------- policy submissions
+
+export type PolicySubmission = {
+  weights_hash: string; submitter: string; label: string;
+  grasped: number; placed: number; median_mm: number; starts: number;
+  created_at: number;
+};
+
+/**
+ * Record a policy and what it scored.
+ *
+ * Keyed by the hash of the weights, so submitting the same model twice is the
+ * same entry rather than two — the leaderboard ranks models, not submissions,
+ * and a model does not get better by being sent again.
+ */
+export async function insertPolicy(row: PolicySubmission & { weights: string }): Promise<void> {
+  await db();
+  await run(
+    `INSERT INTO policy_submission
+       (weights_hash, submitter, label, grasped, placed, median_mm, starts, weights, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)
+     ON CONFLICT (weights_hash) DO NOTHING`,
+    [row.weights_hash, row.submitter, row.label, row.grasped, row.placed,
+     row.median_mm, row.starts, row.weights, row.created_at],
+  );
+}
+
+export async function policyByHash(hash: string) {
+  await db();
+  return queryOne<PolicySubmission & { weights: string }>(
+    `SELECT * FROM policy_submission WHERE weights_hash = ?`, [hash],
+  );
+}
+
+/** Best first: placed, then grasped, then how close the misses were. */
+export async function policyLeaderboard(limit = 100) {
+  await db();
+  return query<PolicySubmission>(
+    `SELECT weights_hash, submitter, label, grasped, placed, median_mm, starts, created_at
+       FROM policy_submission
+      ORDER BY placed DESC, grasped DESC, median_mm ASC, created_at ASC
+      LIMIT ?`,
+    [limit],
+  );
+}

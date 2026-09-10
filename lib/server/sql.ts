@@ -202,7 +202,43 @@ export function migrate(): Promise<void> {
         -- is kept beside the body because it is the only thing making the
         -- author's name mean anything: there are no accounts here, so an
         -- address without a signature over the text is a claim, not a byline.
-        CREATE TABLE IF NOT EXISTS note (
+        -- A policy somebody submitted, and what it scored when this server
+        -- rolled it out. The weights are kept so the evaluation can be
+        -- reproduced by anyone: a leaderboard whose entries cannot be re-run
+        -- is a list of claims.
+        CREATE TABLE IF NOT EXISTS policy_submission (
+          weights_hash TEXT PRIMARY KEY,
+          submitter    TEXT NOT NULL,
+          label        TEXT NOT NULL,
+          grasped      INTEGER NOT NULL,
+          placed       INTEGER NOT NULL,
+          median_mm    DOUBLE PRECISION NOT NULL,
+          starts       INTEGER NOT NULL,
+          weights      TEXT NOT NULL,
+          created_at   BIGINT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_policy_rank
+          ON policy_submission(placed DESC, grasped DESC, median_mm ASC);
+
+        -- A policy somebody submitted, and what it scored when this server
+      -- rolled it out. The weights are kept so the evaluation can be
+      -- reproduced by anyone: a leaderboard whose entries cannot be re-run
+      -- is a list of claims.
+      CREATE TABLE IF NOT EXISTS policy_submission (
+        weights_hash TEXT PRIMARY KEY,
+        submitter    TEXT NOT NULL,
+        label      TEXT NOT NULL,
+        grasped      INTEGER NOT NULL,
+        placed       INTEGER NOT NULL,
+        median_mm    REAL NOT NULL,
+        starts       INTEGER NOT NULL,
+        weights      TEXT NOT NULL,
+        created_at   BIGINT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_policy_rank
+        ON policy_submission(placed DESC, grasped DESC, median_mm ASC);
+
+      CREATE TABLE IF NOT EXISTS note (
           id         TEXT PRIMARY KEY,
           task_id    INTEGER NOT NULL,
           author     TEXT NOT NULL,
