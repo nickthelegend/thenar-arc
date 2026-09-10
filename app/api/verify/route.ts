@@ -1,10 +1,13 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 import { IS_DEPLOYED } from "@/lib/chain";
-import { insertTrajectory, getTrajectory } from "@/lib/server/db";
+import { insertTrajectory, getTrajectory, settledSamplesForTask } from "@/lib/server/db";
+import { nearestNeighbour, DUPLICATE_MM } from "@/lib/similarity";
 import { validateSamples, validatePayloadIds, VerifyError } from "@/lib/server/verifier";
 import { POST as signLocally } from "@/app/api/sign/route";
 import type { Sample } from "@/lib/types";
+import { canonicalise } from "@/lib/canonical";
+import { keccak256, toHex } from "viem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,6 +109,48 @@ async function handlePOST(req: Request) {
     // was never recorded moving.
     if ((payloadIds?.length ?? 1) > 1 !== Boolean(samples[0].object2)) {
       throw new VerifyError("payloadIds do not match the recorded scene");
+    }
+
+    /**
+     * The same route, submitted twice.
+     *
+     * The contract already refuses an identical trajectory hash, which catches
+     * a copy-paste and nothing else: move one sample by a micrometre and it is
+     * a new hash, a new signature and a second payout for a recording that
+     * adds nothing. What a funder is buying is variety, and six copies of one
+     * route is a worse dataset than one copy — it also overstates how much
+     * evidence there is.
+     *
+     * Checked before signing rather than after, so a refused run never gets a
+     * signature it could submit anyway.
+     */
+    // The run's own hash, derived here by the same canonicalisation the signer
+    // uses. Only needed to keep a run from being called a duplicate of itself:
+    // an operator whose client re-verifies a recording already on file must get
+    // its signature back, not a refusal.
+    const ownHash = keccak256(
+      toHex(canonicalise(taskId, contributor as `0x${string}`, samples, payloadIds)),
+    ).toLowerCase();
+
+    const priorRuns = await settledSamplesForTask(taskId);
+    const near = nearestNeighbour(
+      samples,
+      priorRuns
+        .filter((r) => r.traj_hash.toLowerCase() !== ownHash)
+        .map((r) => ({ hash: r.traj_hash, samples: JSON.parse(r.samples) as Sample[] })),
+    );
+    if (near && near.distanceMm < DUPLICATE_MM) {
+      return NextResponse.json(
+        {
+          error:
+            `This run follows a route already recorded on this task, ` +
+            `${near.distanceMm.toFixed(1)} mm from it on average. Drive it differently — ` +
+            `a task pays for six ways of doing it, not six copies of one.`,
+          duplicateOf: near.hash,
+          distanceMm: Number(near.distanceMm.toFixed(2)),
+        },
+        { status: 409 },
+      );
     }
 
     // Signing happens in the signer service, which holds the key this one

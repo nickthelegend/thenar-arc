@@ -195,6 +195,26 @@ export async function attemptsForTask(taskId: number, floor: number, limit = 400
   );
 }
 
+/**
+ * The paid runs of a task, with their samples, for comparing a new one against.
+ *
+ * Settled only, and that restriction is the point. An unsettled row is often
+ * the same operator's previous attempt at the very run they are submitting now
+ * — they verified, the wallet prompt was refused, they tried again — and
+ * refusing that as a duplicate would punish the one recovery path the flow
+ * has. What must not happen twice is being *paid* twice, so the comparison is
+ * against what was paid.
+ */
+export async function settledSamplesForTask(taskId: number, limit = 50) {
+  await db();
+  return query<{ traj_hash: string; samples: string }>(
+    `SELECT traj_hash, samples FROM trajectory
+      WHERE task_id = ? AND settled = 1 AND chain_id = ? AND contract = ?
+      ORDER BY created_at DESC LIMIT ?`,
+    [taskId, appChain.id, HERE(), limit],
+  );
+}
+
 /** The runs a buyer would want as negative examples: scored, recorded, and
  *  below the floor that pays. Never mixed into the paid corpus. */
 export async function failedTrajectories(taskId: number, floor: number, limit = 200) {
