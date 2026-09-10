@@ -43,6 +43,18 @@ export const CORPUS_ACCESS = (process.env.NEXT_PUBLIC_CORPUS_ACCESS ?? "") as `0
 export const TRAJECTORY_CERTIFICATE =
   (process.env.NEXT_PUBLIC_TRAJECTORY_CERTIFICATE ?? "") as `0x${string}`;
 
+/**
+ * Where a task's corpus contents are committed.
+ *
+ * The protocol holds each episode's hash one at a time, which proves every
+ * episode is real and nothing about the set. This holds one hash over the
+ * whole set, so a buyer can tell a complete corpus from a corpus with an
+ * episode quietly missing.
+ */
+export const CORPUS_MANIFEST =
+  (process.env.NEXT_PUBLIC_CORPUS_MANIFEST
+    ?? "0x318e5faf04c9db5d844aaa93850e71406012dd62") as `0x${string}`;
+
 export const AXON_ADDRESS = (process.env.NEXT_PUBLIC_AXON_ADDRESS ?? "") as `0x${string}`;
 
 export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);

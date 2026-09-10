@@ -9,6 +9,7 @@ import { propById, type Prop } from "@/lib/props";
 import dynamic from "next/dynamic";
 import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
 import { PhaseTimeline } from "@/components/phase-timeline";
+import { InCorpus } from "@/components/in-corpus";
 import { TOLERANCE_MM } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
@@ -252,6 +253,8 @@ export default function RunView() {
         cursor={cursor}
         onSeek={setCursor}
       />
+
+      <InCorpus taskId={data.taskId} trajHash={data.trajHash} />
 
       {task && data.samples?.[0]?.q ? (
         <>
