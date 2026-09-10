@@ -41,20 +41,33 @@ const TONE: Record<Episode["outcome"], string> = {
 export default function CorpusPage() {
   const [outcome, setOutcome] = useState<(typeof OUTCOMES)[number]["key"]>("all");
   const [taskId, setTaskId] = useState<number | "all">("all");
-  const [data, setData] = useState<{ episodes: Episode[]; floor: number } | null>(null);
-  const [failed, setFailed] = useState(false);
+  /**
+   * The answer, tagged with the question it answers.
+   *
+   * Clearing the result at the top of the effect would be setting state
+   * synchronously from inside one, which makes React render again before it
+   * has painted the render it is in — the rule this codebase follows in the
+   * locale, XR and palette paths. Tagging instead means "still loading" is a
+   * comparison rather than a write: the data on hand either belongs to the
+   * filter on screen or it does not.
+   */
+  const [answer, setAnswer] = useState<
+    { key: string; data: { episodes: Episode[]; floor: number } | null } | null
+  >(null);
   const { tasks } = useTaskCatalogue();
+
+  const key = `${outcome}:${taskId}`;
+  const data = answer?.key === key ? answer.data : null;
+  const failed = answer?.key === key && answer.data === null;
 
   useEffect(() => {
     let live = true;
-    setData(null);
-    setFailed(false);
     const q = new URLSearchParams({ outcome });
     if (taskId !== "all") q.set("taskId", String(taskId));
     fetch(`/api/corpus?${q}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d) => { if (live) setData(d); })
-      .catch(() => { if (live) setFailed(true); });
+      .then((d) => { if (live) setAnswer({ key: `${outcome}:${taskId}`, data: d }); })
+      .catch(() => { if (live) setAnswer({ key: `${outcome}:${taskId}`, data: null }); });
     return () => { live = false; };
   }, [outcome, taskId]);
 
