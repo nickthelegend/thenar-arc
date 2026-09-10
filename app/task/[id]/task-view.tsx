@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Attempts } from "@/components/attempts";
 import { TaskTeam } from "@/components/task-team";
 import { TaskNotes } from "@/components/task-notes";
 import { useParams } from "next/navigation";
@@ -162,12 +163,14 @@ export default function TaskView() {
                 </span>
               ) : null}
               <span className="max-w-[52ch] text-[13px] leading-relaxed text-scribe-3">
-                From this task&rsquo;s own runs. Not a pass rate &mdash; a run that misses
-                the datum is never written to the chain, so failures leave no record and
-                the denominator is not knowable.
+                From this task&rsquo;s own runs on chain. The attempts below add the
+                ones that were scored and not paid, which is where a pass rate
+                comes from.
               </span>
             </div>
           ) : null}
+
+          <Attempts taskId={n} />
 
           {stats.runs > 0 ? (
             <>
