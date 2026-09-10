@@ -141,3 +141,41 @@ thought about.
 | 98 | Recorded video of the operator's screen | Bandwidth and privacy cost for data the samples already contain exactly. |
 | 99 | Third-party model hosting | Not this project's problem, and it would make the demo about somebody else's infrastructure. |
 | 100 | Generative task instructions from an LLM | Refused in the first hundred and still refused: an instruction nobody verified is a task that may not be doable. |
+
+---
+
+# What got built
+
+Eleven of the hundred, top of the list down, each verified against the live
+site with real data before the next was started. Regression after every one:
+48 unit tests, 69 end-to-end assertions, 108 contract tests, all passing, and
+`/api/health` reporting the same single known fault it reported at the start.
+
+| # | Idea | Evidence it is real |
+|---|---|---|
+| 1 | Phase segmentation | `lib/phases.ts`, 8 tests. A live 1,541-frame episode cuts into reach 3.9s / grasp / transport 68.9s / place 0.2s / release 3.8s. Shipped in the corpus export and drawn on the run page. |
+| 2 | Record the failures | The verifier was already storing them under `settled = 0`, unseen. `/api/task/N/attempts` splits paid / failed / unsubmitted; a real miss was recorded through the live verifier and appears in the export's `negatives`. Task 2 now reports a true 50% pass rate. |
+| 3 | On-chain corpus manifest | `CorpusManifest` deployed to Fuji at `0x318e5faf04c9db5d844aaa93850e71406012dd62`, 9 contract tests. Three real task corpora committed. |
+| 4 | Workspace coverage | Live on task 0: 2% of the reachable annulus, 12 cells lit against 568 unlit. An honest and unflattering number, which is the point. |
+| 5 | Near-duplicate rejection | `lib/similarity.ts`, 8 tests. Against the live corpus: an identical route refused at 0 mm, the same route 82% slower refused at 0.07 mm, a 5 mm variant refused at 2.4 mm, genuinely different routes accepted. |
+| 7 | Merkle proof in the browser | A proof built by `lib/merkle.ts` verified by the browser walk **and** by the contract's — the cross-language check that decides whether a commitment means anything. 10 tests. |
+| 8 | Auto-generated datasheet | `/api/task/N/datasheet`, every figure computed at request time. Carries the limitations: simulation only, concentrated coverage, deployer-funded demand, three unbacked payouts. |
+| 9 | Published train/val/test split | Held out by contributor rather than by episode, deterministic from the address. 3 tests. |
+| 10 | Command palette | ⌘K, subsequence search over pages, tasks and stations; a pasted hash or address is a destination. Verified navigating to `/spec`. |
+| 13 | Failure taxonomy | `lib/failure.ts`, 7 tests. The recorded failure is labelled `dropped` — "Let go 54 mm above the table". |
+| 14 | Phase timeline on the run page | Clickable segments that seek the replay, drawn from the same function the corpus ships. |
+
+## Not built, and why
+
+- **11 (per-run OG image)** — skipped on evidence, not effort. `scripts/og.mjs`
+  records that the `opengraph-image` route convention built locally, appeared
+  in the routes manifest and returned 404 on this host, which is why the
+  project generates a static card instead. Re-fighting that was a poor trade
+  against the features above.
+- **6 (corpus as one 3D view)** — the path overlay already draws every accepted
+  approach to a task in 2D. A third dimension would have been a new surface
+  restating an existing one.
+- **12, 15–100** — time. The list is ranked so what remains is what mattered
+  least, and the tiers below 60 are mostly production chores and motion
+  polish rather than argument.
+- **91–100** — refused on the merits, and the reasons are in the table above.
