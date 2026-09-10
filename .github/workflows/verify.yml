@@ -28,6 +28,26 @@ jobs:
       # to see — this project shipped props at 0.1 x 0.1 pixels once.
       - run: node scripts/projected-size.mjs
 
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      # The contracts hold the escrow and decide the payouts, and until now the
+      # only thing running their tests was whoever remembered to.
+      - run: forge test
+        working-directory: contracts
+      # Gas is a regression surface like any other: a change that quietly
+      # doubles the cost of submitTrajectory is a change that quietly doubles
+      # what an operator pays to be paid. The snapshot is committed, so this
+      # fails until somebody re-snapshots on purpose. One percent of tolerance,
+      # because solc is not bit-identical across patch versions and a build
+      # that fails for that reason teaches people to ignore it.
+      - run: forge snapshot --check --tolerance 1
+        working-directory: contracts
+      - run: forge lint
+        working-directory: contracts
+
   live:
     runs-on: ubuntu-latest
     steps:
