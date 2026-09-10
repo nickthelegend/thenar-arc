@@ -123,6 +123,42 @@ try {
 // Read without requiring a 2xx: /api/health answers 503 when it is reporting a
 // fault, and the point of reading it is to find out which fault. Insisting on
 // a 2xx here made a degraded system indistinguishable from an unreachable one.
+/**
+ * The published API description, checked against the API.
+ *
+ * A spec nobody verifies is a document that drifts until it is fiction, and
+ * this one exists to be built against. Every path it lists is fetched with a
+ * real id, a real hash and a real address, and the status that comes back has
+ * to be one the spec says can come back.
+ */
+try {
+  const spec = await json("/api/openapi");
+  const paths = Object.keys(spec.paths ?? {});
+  check("the API describes itself", paths.length > 10, `${paths.length} paths`);
+
+  const REAL = {
+    "{id}": "0",
+    "{hash}": "0xcc53fbeed294d77960d3f746b69d8b29ec03d6f4efac0f6e76cb0669cac0cc5d",
+    "{address}": "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815",
+  };
+  let drifted = [];
+  for (const path of paths) {
+    let url = path;
+    for (const [token, value] of Object.entries(REAL)) url = url.replaceAll(token, value);
+    // The two routes that need a query parameter to mean anything.
+    if (url.endsWith("/history")) url += "?funder=" + REAL["{address}"];
+    if (url.endsWith("/dataset/summary")) url += "?taskId=0";
+    if (url.endsWith("/api/dataset")) url += "?taskId=0";
+
+    const documented = Object.keys(spec.paths[path].get?.responses ?? {}).map(Number);
+    const got = await status(url);
+    if (!documented.includes(got)) drifted.push(`${path} -> ${got}, documented ${documented.join("/")}`);
+  }
+  check("every documented route answers as documented", drifted.length === 0, drifted.join("; "));
+} catch (e) {
+  check("openapi reachable", false, String(e));
+}
+
 const health = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(30_000) })
   .then((r) => r.json())
   .catch(() => null);
