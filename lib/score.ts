@@ -29,6 +29,11 @@ export const TOLERANCE_MM = 25;      // placement band, half-width
 export const JERK_FLOOR = 18;   // at or below this, full marks
 export const JERK_CEIL = 60;    // at or above this, none
 
+/** The columns a placement is measured from: where the payloads finished, and
+ *  nothing else. Narrower than a Sample so a replay's frames — which carry the
+ *  joint angles optionally — can still be measured. */
+export type Placeable = Pick<Sample, "object" | "object2">;
+
 export const W_PLACEMENT = 0.55;
 export const W_EFFICIENCY = 0.2;
 export const W_SMOOTHNESS = 0.25;
@@ -128,7 +133,7 @@ function clamp01(x: number) {
  * its position does not change, so the end of the recording is where it came
  * to rest, and no search for that moment is needed.
  */
-export function deviationFromSamples(samples: Sample[]): number {
+export function deviationFromSamples(samples: Placeable[]): number {
   const last = samples[samples.length - 1];
   if (!last) return Infinity;
 
@@ -180,7 +185,7 @@ export function durationFromSamples(samples: Sample[]): number {
  * flag in the request, and a flag that gates every term of the score is worth
  * more to a liar than the placement figure it sat next to.
  */
-export function placedInRing(samples: Sample[]): boolean {
+export function placedInRing(samples: Placeable[]): boolean {
   return deviationFromSamples(samples) <= GOAL_R * 1000;
 }
 

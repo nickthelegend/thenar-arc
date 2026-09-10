@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { phasesOf } from "@/lib/phases";
 import { ACCEPT_FLOOR } from "@/lib/score";
+import { classifyFailure } from "@/lib/failure";
 import { failedTrajectories } from "@/lib/server/db";
 import type { Sample } from "@/lib/types";
 import { queryOne, query } from "@/lib/server/db";
@@ -191,6 +192,10 @@ export async function GET(req: Request) {
       action: samples.map((s) => [...s.q, s.grip]),
       timestamp: samples.map((s) => s.t),
       phases: phasesOf(samples),
+      // What went wrong, read from the same samples. A negative example is
+      // only trainable if you know what it is an example of: "scored 6.6" says
+      // a run was bad, "the jaws never closed" says what happened.
+      failure: classifyFailure(samples),
     };
   });
 
