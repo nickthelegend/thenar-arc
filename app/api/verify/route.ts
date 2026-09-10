@@ -152,6 +152,10 @@ async function handlePOST(req: Request) {
       signature: existing ? (existing.signature as `0x${string}`) : result.signature,
       parSeconds: result.parSeconds,
       rewardWei: result.rewardWei,
+      // What the verifier measured, which is not necessarily what the caller
+      // sent. Returned so a client can see the figure its score was actually
+      // computed from rather than assume its own was used.
+      deviationMm: result.deviationMm,
     });
   } catch (e) {
     if (e instanceof VerifyError) {
