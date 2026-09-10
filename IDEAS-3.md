@@ -146,10 +146,11 @@ thought about.
 
 # What got built
 
-Fourteen of the hundred, top of the list down, each verified against the live
-site with real data before the next was started. Regression after every one:
-51 unit tests, 69 end-to-end assertions, 108 contract tests, all passing, and
-`/api/health` reporting the same single known fault it reported at the start.
+Twenty-four of the hundred, top of the list down, each verified against the
+live site with real data before the next was started. Regression after every
+one: **57 unit tests, 73 end-to-end assertions, 108 contract tests**, all
+passing, and `/api/health` reporting the same single known fault it reported
+at the start.
 
 | # | Idea | Evidence it is real |
 |---|---|---|
@@ -167,6 +168,29 @@ site with real data before the next was started. Regression after every one:
 | 23 | Frame-accurate replay control | Frame stepping verified exact on the live page: 281 → 280 → 281, 14.0s → 13.9s. Play/pause toggles. **Time-based playback is built and not verified** — see below. |
 | 24 | Similar-run finder | `/api/trajectory/{hash}/similar`, measured with the same function the verifier refuses duplicates with, so 14 mm here and 14 mm in a rejection mean the same thing. |
 | 25 | Corpus diversity | On task 0: 0.34 mm mean pairwise separation, closest pair 0 mm. Three episodes that are one route. Shown on the task page with the reason. |
+| 12 | Demo mode | Six steps through the loop, each a navigation to the live surface. Verified stepping from `/hub?tour=1` to `/task/0?tour=2`. |
+| 15 | Corpus explorer | `/corpus` and `/api/corpus`: 28 episodes, 38,348 frames, filterable by outcome and task. |
+| 18 | Policy leaderboard | `/policies` and `/api/policy`. The live server rolled out the real shipped policy and measured **8/8 grasped, 5/8 placed, median 0 mm** — matching its published result. Nothing submitted is executed; a policy is 3,076 numbers. |
+| 21 | Onion-skinned paths | *(see 22)* |
+| 22 | Onion-skin on the run page | Two sibling paths drawn behind the run's own, in the same projection. |
+| 26 | Active-start suggestion | The crosshair marks the middle of the largest hole in coverage, by maximin distance. |
+| 27 | OpenAPI spec | `/api/openapi`, 22 paths, and the e2e suite fetches every one and asserts the status is documented. |
+| 28 | Per-episode annotation | Signed by the recording address only. Verified: 401 on a bad signature, 403 on a stranger, 200 and read back on a real signed one. |
+| 29 | Gas snapshot regression | `.gas-snapshot` committed; `forge snapshot --check --tolerance 1` in CI. |
+| 30 | Contract tests and lint in CI | A `contracts` job running `forge test`, the gas gate and `forge lint`. |
+
+## A regression I caused and caught
+
+Adding annotations to the corpus export broke the download with
+`Cannot access 'v' before initialization`: the lookup was declared after the
+map that reads it, and a const referenced from a callback which runs
+immediately is still in its temporal dead zone. The type checker allows it
+because the reference sits inside a closure; the runtime refuses it because
+the closure runs now. It compiled, typechecked and linted clean.
+
+The end-to-end suite's subscription assertion caught it — the one check that
+actually downloads a corpus. Fixed, redeployed, and the download is back at
+372,073 bytes.
 
 ## Built but not fully verified
 
