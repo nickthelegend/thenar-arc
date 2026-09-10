@@ -21,7 +21,60 @@ import { cn } from "@/lib/cn";
  *
  * `rootMargin` starts the load a screen early, so scrolling reveals a model
  * rather than an empty box that fills in late.
+ *
+ * That bound was still too loose to be one. Counted in a real browser on the
+ * inventory: thirty canvases, sixteen alive and fourteen with their context
+ * already taken away — because a screen of margin on a grid six tiles wide is
+ * most of the library, and "visible" was never the limit that mattered. The
+ * browser was still doing the evicting, still oldest-first, so the tiles that
+ * went black were the ones at the top of the page the reader was looking at.
+ *
+ * So the limit is stated instead of hoped for. At most BUDGET tiles hold a
+ * context, and when more want one the ones furthest from the middle of the
+ * viewport give theirs up. The eviction is the same eviction; the difference
+ * is that it now happens to whatever is furthest from being read, and a tile
+ * that loses its slot unmounts and comes back rather than staying a dead
+ * canvas that will never draw again.
  */
+
+/**
+ * How many previews may hold a WebGL context at once.
+ *
+ * Under the limit every browser tested enforces, with room for the station or
+ * a hero arm to be mounted at the same time — those are contexts too, and a
+ * budget that spent all sixteen on thumbnails would black out the scene the
+ * page is actually about.
+ */
+const BUDGET = 10;
+
+type Slot = { el: HTMLElement; grant: (on: boolean) => void; near: boolean; granted: boolean };
+const slots = new Set<Slot>();
+
+/** Distance from the middle of the viewport to the middle of the tile. The
+ *  sort key, so "furthest from being read" is a measurement and not a guess. */
+function distance(el: HTMLElement): number {
+  const r = el.getBoundingClientRect();
+  return Math.abs((r.top + r.bottom) / 2 - window.innerHeight / 2);
+}
+
+/**
+ * Hand out the slots.
+ *
+ * Called whenever a tile enters or leaves; cheap enough at library size, and
+ * it has to consider every tile at once because the decision is comparative —
+ * one tile cannot know whether it deserves a context without the others.
+ */
+function reallocate() {
+  const wanting = [...slots].filter((s) => s.near).sort((a, b) => distance(a.el) - distance(b.el));
+  const keep = new Set(wanting.slice(0, BUDGET));
+  for (const s of slots) {
+    const want = keep.has(s);
+    if (want !== s.granted) {
+      s.granted = want;
+      s.grant(want);
+    }
+  }
+}
 function ModelMesh({ url }: { url: string }) {
   const { scene } = useGLTF(url);
   const model = useMemo(() => {
@@ -70,12 +123,25 @@ export function ModelView({ url, className }: { url: string; className?: string 
       const t = setTimeout(() => setNear(true), 0);
       return () => clearTimeout(t);
     }
+
+    const slot: Slot = { el, grant: setNear, near: false, granted: false };
+    slots.add(slot);
+
     const io = new IntersectionObserver(
-      ([e]) => setNear(e.isIntersecting),
+      ([e]) => {
+        slot.near = e.isIntersecting;
+        reallocate();
+      },
       { rootMargin: "300px" },
     );
     io.observe(el);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      slots.delete(slot);
+      // Leaving would otherwise strand a slot: the tile is gone and its share
+      // of the budget with it, so whatever is on screen now can have it.
+      reallocate();
+    };
   }, []);
 
   return (
