@@ -26,7 +26,7 @@ is a fail.
 | A9 | `/operator/[address]` | That address's runs only; totals agree with the chain; unknown address renders an empty state, not an error |
 | A10 | `/portfolio` | Connected-wallet view; with no wallet shows a clear connect prompt rather than an empty table |
 | A11 | `/inventory` | Lists props from `/api/props`; each renders a 3D preview; upload control present; empty state is explicit |
-| A12 | `/space` | Scene/environment picker; each environment loads its models; selection persists into the station |
+| A12 | `/space` — "The floor" | Lists every open task as a joinable room with live occupancy and slots left; counts agree with the hub |
 | A13 | `/foundry` | Task creation form; validates slots/reward; connect-wallet gating is explicit |
 | A14 | `/licence/[policyId]` (0) | Policy 0's figures match the chain (task, trajectories, fee, minter); purchase path gated on wallet |
 | A15 | `/archive` | Runs recorded under superseded deployments (Monad + prior Fuji contracts), labelled as archived |

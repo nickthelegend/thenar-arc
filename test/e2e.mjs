@@ -73,9 +73,19 @@ console.log(`\n  thenar e2e — ${BASE}\n`);
 const PAGES = [
   "/", "/hub", "/space", "/inventory", "/post", "/leaderboard", "/portfolio",
   "/foundry", "/spec", "/archive", "/passkey", "/status", "/changelog",
-  "/licence/0", "/task/7", "/station/4",
+  "/licence/0", "/task/0", "/station/4",
 ];
 for (const p of PAGES) check(`page ${p}`, (await status(p)) === 200);
+
+// This list used to name /task/7, which is not a task and never has been —
+// there are six. It passed because a missing task still answered 200 and drew
+// its own "no such task" in the browser, so the assertion was checking that a
+// page which should not exist could be fetched. Both halves are pinned now: a
+// real task answers, and an unreal one says so in the status line, where a
+// crawler and a monitor can hear it.
+for (const [p, want] of [["/task/999", 404], ["/run/0xdeadbeef", 404], ["/task/abc", 404]]) {
+  check(`missing ${p} -> ${want}`, (await status(p)) === want);
+}
 
 // --- the ledger agrees with the chain ---------------------------------------
 // trajectoryCount() — the invariant that broke once and must never break again.

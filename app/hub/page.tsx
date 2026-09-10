@@ -341,7 +341,12 @@ function Reading({ label, value, unit, tone }: { label: string; value: string; u
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="label mt-[7px] w-[58px] shrink-0">{label}</span>
+      {/* Wide enough for "Scenario", which is the longest of the four and
+          measured 71px against the 58px this column used to be. The chips that
+          follow it are opaque and come later in the flex order, so the excess
+          was not clipped or wrapped — it was painted over, and the row read
+          "SCENARI" on a phone. The other three labels fit either width. */}
+      <span className="label mt-[7px] w-[72px] shrink-0">{label}</span>
       <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
         {children}
       </div>
