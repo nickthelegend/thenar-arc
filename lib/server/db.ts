@@ -312,3 +312,47 @@ export async function trajectoriesOnContract(address: string, limit = 500) {
     [address.toLowerCase(), limit],
   );
 }
+
+/**
+ * Every episode this deployment holds, across every task.
+ *
+ * The task pages answer "what is in this task"; nothing answered "what is in
+ * the corpus". A buyer deciding whether any of this is worth licensing is
+ * asking the second question, and had to visit six pages and add up.
+ *
+ * Failures are included and labelled rather than filtered out, because the
+ * point of keeping them was that somebody might want them — a search that
+ * silently omits them is the old survivorship filter with extra steps.
+ */
+export async function corpusIndex(opts: {
+  outcome?: "paid" | "failed" | "all";
+  taskId?: number;
+  minScore?: number;
+  limit?: number;
+}) {
+  await db();
+  const floor = opts.minScore ?? 0;
+  const limit = Math.min(500, Math.max(1, opts.limit ?? 200));
+
+  const where: string[] = ["chain_id = ?", "contract = ?"];
+  const args: (string | number)[] = [appChain.id, HERE()];
+
+  if (opts.outcome === "paid") where.push("settled = 1");
+  if (opts.outcome === "failed") where.push("settled = 0");
+  if (typeof opts.taskId === "number") { where.push("task_id = ?"); args.push(opts.taskId); }
+  if (floor > 0) { where.push("score >= ?"); args.push(floor); }
+
+  args.push(limit);
+  return query<{
+    traj_hash: string; task_id: number; contributor: string; score: number;
+    deviation_mm: number; duration_s: number; sample_count: number;
+    created_at: number; settled: number; tx_hash: string | null;
+  }>(
+    `SELECT traj_hash, task_id, contributor, score, deviation_mm, duration_s,
+            sample_count, created_at, settled, tx_hash
+       FROM trajectory
+      WHERE ${where.join(" AND ")}
+      ORDER BY created_at DESC LIMIT ?`,
+    args,
+  );
+}

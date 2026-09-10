@@ -72,7 +72,7 @@ console.log(`\n  thenar e2e — ${BASE}\n`);
 // --- every page answers -----------------------------------------------------
 const PAGES = [
   "/", "/hub", "/space", "/inventory", "/post", "/leaderboard", "/portfolio",
-  "/foundry", "/spec", "/archive", "/passkey", "/status", "/changelog",
+  "/foundry", "/spec", "/archive", "/passkey", "/status", "/changelog", "/corpus",
   "/licence/0", "/task/0", "/station/4",
 ];
 for (const p of PAGES) check(`page ${p}`, (await status(p)) === 200);
