@@ -35,7 +35,10 @@ const SHEETS = [
     note: "No hardware. No GPU. A browser and a wallet.",
     cta: [
       { href: "/hub", label: "Find a task", primary: true },
-      { href: "/foundry", label: "See a cap table", primary: false },
+      // Six steps through the loop, each one a live surface rather than a
+      // slide. Someone seeing this for the first time gets the argument in the
+      // order it makes sense in.
+      { href: "/hub?tour=1", label: "Show me the loop", primary: false },
     ],
   },
   {

@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { WagmiProvider } from "wagmi";
@@ -7,6 +9,7 @@ import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { TasksProvider } from "@/components/tasks-provider";
 import { ModelStageProvider } from "@/components/model-stage";
 import { Palette } from "@/components/palette";
+import { Tour } from "@/components/tour";
 import { wagmiConfig } from "@/lib/wagmi";
 import { appChain } from "@/lib/chain";
 
@@ -41,7 +44,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={theme} initialChain={appChain} modalSize="compact">
           <TasksProvider>
-          <ModelStageProvider>{children}<Palette /></ModelStageProvider>
+          <ModelStageProvider>
+            {children}
+            <Palette />
+            {/* The tour reads its step from the query string, and a component
+                that reads search params cannot be prerendered — without this
+                boundary the 404 page fails to build. Nothing renders here
+                until a ?tour= is present, so an empty fallback is the whole
+                fallback. */}
+            <Suspense fallback={null}>
+              <Tour />
+            </Suspense>
+          </ModelStageProvider>
           </TasksProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
