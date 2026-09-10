@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { REACH_MAX, REACH_MIN } from "@/lib/kinematics";
 import { GOAL } from "@/lib/bench";
 import { fmtPercent } from "@/lib/format";
+import { diversityMm, DUPLICATE_MM } from "@/lib/similarity";
 
 /**
  * How much of the workspace this corpus has actually been in.
@@ -82,6 +83,23 @@ export function Coverage({ taskId }: { taskId: number }) {
     return { n, reachable, visited, fraction: reach ? seen / reach : 0, busiest, cells: seen, reach };
   }, [data]);
 
+  /**
+   * How far apart the routes are, from the paths already fetched.
+   *
+   * The same function the verifier refuses duplicates with, so the number here
+   * and the number in a rejection mean the same thing. Computed from the points
+   * on hand rather than by asking the server again — coverage and diversity are
+   * two readings of one download.
+   */
+  const diversity = useMemo(() => {
+    if (!data?.paths?.length) return null;
+    return diversityMm(
+      data.paths.map((p) => ({
+        samples: p.points.map(([x, y]) => ({ t: 0, grip: 0, object: [x, y, 0] as [number, number, number] })),
+      })),
+    );
+  }, [data]);
+
   if (failed) return null;
   if (!grid) return <div className="hatch mt-4 h-40 max-w-[420px]" aria-busy="true" />;
 
@@ -127,6 +145,23 @@ export function Coverage({ taskId }: { taskId: number }) {
           strokeWidth={1.5}
         />
       </svg>
+
+      {diversity !== null ? (
+        <div className="mt-3 flex items-baseline gap-3">
+          <span className="label">Routes differ by</span>
+          <span className="font-mono text-[15px] tabular-nums text-scribe">
+            {diversity.toFixed(1)}{" "}
+            <span className="text-[12px] text-scribe-3">mm, on average, between every pair</span>
+          </span>
+        </div>
+      ) : null}
+      {diversity !== null && diversity < DUPLICATE_MM ? (
+        <p className="mt-1 max-w-[52ch] text-[13px] leading-relaxed text-signal">
+          Below the {DUPLICATE_MM} mm a new run would now have to clear. These were
+          recorded before duplicate rejection existed, and they are close enough
+          that the corpus has fewer distinct approaches in it than episodes.
+        </p>
+      ) : null}
 
       <p className="mt-2 text-[13px] leading-relaxed text-scribe-3">
         Every accepted run&rsquo;s payload path, binned into {Math.round(CELL * 1000)} mm cells
