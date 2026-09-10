@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Attempts } from "@/components/attempts";
 import { Coverage } from "@/components/coverage";
+import { Filling } from "@/components/filling";
 import { TaskTeam } from "@/components/task-team";
 import { TaskNotes } from "@/components/task-notes";
 import { useParams } from "next/navigation";
@@ -173,6 +174,7 @@ export default function TaskView() {
 
           <Attempts taskId={n} />
           <Coverage taskId={n} />
+          <Filling taskId={n} />
 
           {stats.runs > 0 ? (
             <>
