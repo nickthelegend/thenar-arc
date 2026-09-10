@@ -286,7 +286,13 @@ export function DimRule({ note, className }: { note?: string; className?: string
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div data-anim="rule" className="dim-rule flex-1" />
-      <span className="label shrink-0">{note}</span>
+      {/* Shrinkable, not fixed. `shrink-0` kept the note at its full width and
+          let the rules take whatever was left, which is right until the note
+          is wider than the viewport — then it runs off the edge instead, and
+          on a 375 px screen "Ranked by placements, then grasps, then how close
+          the misses were" lost its last four words. min-w-0 is what lets a
+          flex child wrap below its content width at all. */}
+      <span className="label min-w-0 shrink text-center">{note}</span>
       <div className="dim-rule flex-1" />
     </div>
   );
