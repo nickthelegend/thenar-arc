@@ -65,6 +65,35 @@ export default function RunView() {
     },
   });
 
+  /**
+   * The other runs on this task, faintly, behind this one.
+   *
+   * A single path says what this operator did. It does not say whether that
+   * was the usual route or an unusual one, and that is the question a reader
+   * comparing runs actually has. Drawn in the same projection as the trace
+   * above it, so "further left" means the same thing in both.
+   *
+   * Fetched separately and allowed to fail: the run page is about this run,
+   * and a missing overlay should cost nothing.
+   */
+  const [siblings, setSiblings] = useState<[number, number][][]>([]);
+  useEffect(() => {
+    if (!data) return;
+    let live = true;
+    fetch(`/api/task/${data.taskId}/paths`)
+      .then((r) => r.json())
+      .then((d: { paths?: { trajHash: string; points: [number, number][] }[] }) => {
+        if (!live) return;
+        setSiblings(
+          (d.paths ?? [])
+            .filter((p) => p.trajHash.toLowerCase() !== data.trajHash.toLowerCase())
+            .map((p) => p.points),
+        );
+      })
+      .catch(() => { if (live) setSiblings([]); });
+    return () => { live = false; };
+  }, [data]);
+
   const path = useMemo(() => {
     if (!data?.samples?.length) return null;
     const pts = data.samples.map((s) => s.object);
@@ -79,14 +108,17 @@ export default function RunView() {
       300 - ((p[1] - minY) / span) * 300,
     ];
     const shown = Math.max(2, Math.round(pts.length * cursor));
+    const project = (p: [number, number][]) =>
+      p.map(([x, y]) => to([x, y])).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
     return {
+      others: siblings.map(project),
       full: pts.map(to).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "),
       trace: pts.slice(0, shown).map(to).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "),
       head: to(pts[shown - 1]),
       grip: data.samples[shown - 1]?.grip ?? 0,
       t: data.samples[shown - 1]?.t ?? 0,
     };
-  }, [data, cursor]);
+  }, [data, cursor, siblings]);
 
   // The scene the run was recorded in, from the same catalogue every other
   // surface reads, so a replay cannot show a different object from the station.
@@ -339,11 +371,24 @@ export default function RunView() {
 
       {path ? (
         <div className="mt-5 flex flex-col gap-3">
-          <svg viewBox="0 0 300 300" className="w-full max-w-[420px] border border-rule bg-ink-0" role="img" aria-label="Path the payload travelled">
+          <svg viewBox="0 0 300 300" className="w-full max-w-[420px] border border-rule bg-ink-0" role="img"
+               aria-label={`Path the payload travelled${path.others.length ? `, with ${path.others.length} other accepted runs behind it` : ""}`}>
+            {/* Every other accepted run on this task, underneath. */}
+            {path.others.map((pts, i) => (
+              <polyline key={i} points={pts} fill="none" stroke="#6E86A6" strokeWidth="1" opacity={0.28} />
+            ))}
             <polyline points={path.full} fill="none" stroke="#3D3D3D" strokeWidth="1.5" />
             <polyline points={path.trace} fill="none" stroke="#FF6A00" strokeWidth="2" />
             <circle cx={path.head[0]} cy={path.head[1]} r="4" fill={path.grip < 14 ? "#FF6A00" : "#6E86A6"} />
           </svg>
+          {path.others.length ? (
+            <p className="max-w-[420px] text-[13px] leading-relaxed text-scribe-3">
+              <span className="text-probe">The faint lines</span> are the other{" "}
+              {path.others.length} accepted run{path.others.length === 1 ? "" : "s"} on this
+              task, in the same projection — so whether this route was the usual
+              one is a thing you can see rather than take on trust.
+            </p>
+          ) : null}
           <label className="flex max-w-[420px] items-center gap-3">
             <span className="label shrink-0">Scrub</span>
             <input
