@@ -136,6 +136,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "No trajectories recorded for that task." }, { status: 404 });
   }
 
+  // What operators said about their own runs, joined on the hash. Absent for
+  // most episodes: an annotation is written by hand and most are not.
+  //
+  // Declared before the map that reads it, and that ordering is load-bearing:
+  // a const referenced from a callback that runs immediately is still in its
+  // temporal dead zone, which the type checker allows because the reference is
+  // inside a closure and the runtime does not because the closure runs now.
+  const notes = new Map((await annotationsForTask(taskId)).map((a) => [a.traj_hash, a.body]));
+
   const episodes = rows.map((r, i) => {
     const samples = JSON.parse(r.samples) as Sample[];
     return {
@@ -206,10 +215,6 @@ export async function GET(req: Request) {
       failure: classifyFailure(samples),
     };
   });
-
-  // What operators said about their own runs, joined on the hash. Absent for
-  // most episodes: an annotation is written by hand and most are not.
-  const notes = new Map((await annotationsForTask(taskId)).map((a) => [a.traj_hash, a.body]));
 
   const body = JSON.stringify(
     {
