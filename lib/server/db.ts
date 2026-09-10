@@ -408,3 +408,51 @@ export async function policyLeaderboard(limit = 100) {
     [limit],
   );
 }
+
+// ------------------------------------------------------------- annotations
+
+/**
+ * What the operator says happened on one run.
+ *
+ * The task instruction says what was asked. This says what the person driving
+ * it actually did — "came in too flat and had to re-seat it" — which is the
+ * kind of language a text-conditioned policy needs and which exists nowhere
+ * else in the record. The samples say where the arm went; they do not say the
+ * operator meant to correct.
+ *
+ * One per run, replaceable by its author. A second sentence about the same
+ * recording is a correction, not a second opinion.
+ */
+export async function upsertAnnotation(row: {
+  traj_hash: string; author: string; body: string; signature: string; created_at: number;
+}): Promise<void> {
+  await db();
+  await run(
+    `INSERT INTO annotation (traj_hash, author, body, signature, created_at)
+     VALUES (?,?,?,?,?)
+     ON CONFLICT (traj_hash) DO UPDATE
+       SET body = EXCLUDED.body,
+           signature = EXCLUDED.signature,
+           created_at = EXCLUDED.created_at`,
+    [row.traj_hash, row.author.toLowerCase(), row.body, row.signature, row.created_at],
+  );
+}
+
+export async function annotationFor(hash: string) {
+  await db();
+  return queryOne<{ traj_hash: string; author: string; body: string; signature: string; created_at: number }>(
+    `SELECT * FROM annotation WHERE traj_hash = ?`, [hash],
+  );
+}
+
+/** Every annotation on a task's runs, for shipping with the corpus. */
+export async function annotationsForTask(taskId: number) {
+  await db();
+  return query<{ traj_hash: string; author: string; body: string }>(
+    `SELECT a.traj_hash, a.author, a.body
+       FROM annotation a
+       JOIN trajectory t ON t.traj_hash = a.traj_hash
+      WHERE t.task_id = ? AND t.chain_id = ? AND t.contract = ?`,
+    [taskId, appChain.id, HERE()],
+  );
+}

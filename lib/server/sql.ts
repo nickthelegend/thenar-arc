@@ -206,7 +206,37 @@ export function migrate(): Promise<void> {
         -- rolled it out. The weights are kept so the evaluation can be
         -- reproduced by anyone: a leaderboard whose entries cannot be re-run
         -- is a list of claims.
-        CREATE TABLE IF NOT EXISTS policy_submission (
+        -- What the operator says they did on one specific run.
+        --
+        -- The task instruction says what was asked; this says what happened —
+        -- "came in too flat and had to re-seat it" — which is the language a
+        -- policy conditioned on text actually needs and which exists nowhere
+        -- else. Signed, because there are no accounts here and an unsigned
+        -- annotation is a sentence anybody could have typed against your run.
+        CREATE TABLE IF NOT EXISTS annotation (
+          traj_hash  TEXT PRIMARY KEY,
+          author     TEXT NOT NULL,
+          body       TEXT NOT NULL,
+          signature  TEXT NOT NULL,
+          created_at BIGINT NOT NULL
+        );
+
+        -- What the operator says they did on one specific run.
+      --
+      -- The task instruction says what was asked; this says what happened —
+      -- "came in too flat and had to re-seat it" — which is the language a
+      -- policy conditioned on text actually needs and which exists nowhere
+      -- else. Signed, because there are no accounts here and an unsigned
+      -- annotation is a sentence anybody could have typed against your run.
+      CREATE TABLE IF NOT EXISTS annotation (
+        traj_hash  TEXT PRIMARY KEY,
+        author     TEXT NOT NULL,
+        body       TEXT NOT NULL,
+        signature  TEXT NOT NULL,
+        created_at BIGINT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS policy_submission (
           weights_hash TEXT PRIMARY KEY,
           submitter    TEXT NOT NULL,
           label        TEXT NOT NULL,

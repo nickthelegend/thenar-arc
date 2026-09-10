@@ -3,7 +3,7 @@ import { phasesOf } from "@/lib/phases";
 import { ACCEPT_FLOOR } from "@/lib/score";
 import { classifyFailure } from "@/lib/failure";
 import { splitFor } from "@/lib/split";
-import { failedTrajectories } from "@/lib/server/db";
+import { failedTrajectories, annotationsForTask } from "@/lib/server/db";
 import type { Sample } from "@/lib/types";
 import { queryOne, query } from "@/lib/server/db";
 import { appChain, AXON_ADDRESS, CORPUS_ACCESS } from "@/lib/chain";
@@ -156,6 +156,10 @@ export async function GET(req: Request) {
       action: samples.map((s) => [...s.q, s.grip]),
       timestamp: samples.map((s) => s.t),
       phases: phasesOf(samples),
+      // What the operator said about this run, in their own words. Null when
+      // nobody wrote one — most episodes have none, and an invented sentence
+      // would be worse than the absence.
+      annotation: notes.get(r.traj_hash) ?? null,
       // Held out by operator, not by episode: episodes from one address share a
       // style, and cutting at random puts that style in train and in test.
       split: splitFor(r.contributor),
@@ -202,6 +206,10 @@ export async function GET(req: Request) {
       failure: classifyFailure(samples),
     };
   });
+
+  // What operators said about their own runs, joined on the hash. Absent for
+  // most episodes: an annotation is written by hand and most are not.
+  const notes = new Map((await annotationsForTask(taskId)).map((a) => [a.traj_hash, a.body]));
 
   const body = JSON.stringify(
     {
