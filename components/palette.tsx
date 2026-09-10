@@ -71,6 +71,21 @@ export function Palette() {
   const router = useRouter();
   const { tasks } = useTaskCatalogue();
 
+  /**
+   * Closing is where the query is cleared, not opening.
+   *
+   * Resetting on open meant setting state from inside an effect, which makes
+   * React render again before it has painted the render it is already in. It
+   * is also the wrong moment: nothing is on screen while this is closed, so
+   * clearing then is free, where clearing on open is a frame of the last
+   * search still visible.
+   */
+  const close = useCallback(() => {
+    setOpen(false);
+    setQ("");
+    setCursor(0);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -78,20 +93,17 @@ export function Palette() {
         setOpen((v) => !v);
         return;
       }
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [close]);
 
   useEffect(() => {
-    if (open) {
-      setQ("");
-      setCursor(0);
-      // After paint, or the field is not in the document yet to be focused.
-      const t = setTimeout(() => input.current?.focus(), 0);
-      return () => clearTimeout(t);
-    }
+    if (!open) return;
+    // After paint: the field is not in the document to be focused until then.
+    const t = setTimeout(() => input.current?.focus(), 0);
+    return () => clearTimeout(t);
   }, [open]);
 
   const items = useMemo<Item[]>(() => {
@@ -141,16 +153,16 @@ export function Palette() {
   }, [items, q, direct]);
 
   const go = useCallback((it: Item) => {
-    setOpen(false);
+    close();
     router.push(it.href);
-  }, [router]);
+  }, [close, router]);
 
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center bg-ink-0/80 px-4 pt-[12vh] backdrop-blur-sm"
-      onClick={() => setOpen(false)}
+      onClick={close}
       role="dialog"
       aria-modal="true"
       aria-label="Search this site"
