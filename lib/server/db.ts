@@ -162,6 +162,56 @@ export async function countByChain() {
   return rows.map((r) => ({ chain_id: r.chain_id, n: Number(r.n) }));
 }
 
+/**
+ * Every attempt at a task, not only the ones that were paid for.
+ *
+ * The task page says a pass rate is not knowable because a run that misses the
+ * datum is never written to the chain. The first half is true and the second
+ * hid something: the verifier scores every run it is sent and stores it either
+ * way, so the misses have been on file the whole time with `settled = 0`. What
+ * was missing was the distinction between two very different rows that both
+ * look unsettled — a run that scored too low to be paid, and a run that scored
+ * well and whose operator never signed the transaction.
+ *
+ * The first is a failure and is the scarcest thing in manipulation data. The
+ * second is an abandonment and says nothing about the task. Counting them
+ * together would produce a pass rate that moves when somebody closes a tab.
+ */
+export async function attemptsForTask(taskId: number, floor: number, limit = 400) {
+  await db();
+  return query<{
+    traj_hash: string; contributor: string; score: number;
+    deviation_mm: number; duration_s: number; created_at: number;
+    settled: number; outcome: string;
+  }>(
+    `SELECT traj_hash, contributor, score, deviation_mm, duration_s, created_at, settled,
+            CASE WHEN settled = 1 THEN 'paid'
+                 WHEN score < ? THEN 'failed'
+                 ELSE 'unsubmitted' END AS outcome
+       FROM trajectory
+      WHERE task_id = ? AND chain_id = ? AND contract = ?
+      ORDER BY created_at DESC LIMIT ?`,
+    [floor, taskId, appChain.id, HERE(), limit],
+  );
+}
+
+/** The runs a buyer would want as negative examples: scored, recorded, and
+ *  below the floor that pays. Never mixed into the paid corpus. */
+export async function failedTrajectories(taskId: number, floor: number, limit = 200) {
+  await db();
+  return query<{
+    traj_hash: string; contributor: string; score: number; deviation_mm: number;
+    duration_s: number; sample_count: number; samples: string; created_at: number;
+  }>(
+    `SELECT traj_hash, contributor, score, deviation_mm, duration_s,
+            sample_count, samples, created_at
+       FROM trajectory
+      WHERE task_id = ? AND settled = 0 AND score < ? AND chain_id = ? AND contract = ?
+      ORDER BY created_at DESC LIMIT ?`,
+    [taskId, floor, appChain.id, HERE(), limit],
+  );
+}
+
 /** Runs recorded under a previous deployment, for the archive. */
 export async function trajectoriesOnChain(chainId: number, limit = 500) {
   await db();

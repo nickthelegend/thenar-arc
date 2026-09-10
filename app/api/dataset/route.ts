@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { phasesOf } from "@/lib/phases";
+import { ACCEPT_FLOOR } from "@/lib/score";
+import { failedTrajectories } from "@/lib/server/db";
 import type { Sample } from "@/lib/types";
 import { queryOne, query } from "@/lib/server/db";
 import { appChain, AXON_ADDRESS, CORPUS_ACCESS } from "@/lib/chain";
@@ -155,6 +157,43 @@ export async function GET(req: Request) {
     };
   });
 
+  /**
+   * The runs that did not work.
+   *
+   * Kept in their own array and never mixed into `data`, because a buyer who
+   * concatenates the file must not silently train on failures as though they
+   * were demonstrations. They are here because negative examples are the
+   * scarcest thing in manipulation data and this corpus has been discarding
+   * them from view since it started — scored, stored, and shown to nobody.
+   *
+   * Nothing here was paid for and nothing here is on chain. That is the whole
+   * distinction, and it is stated per episode as well as here.
+   */
+  const failures = (await failedTrajectories(taskId, ACCEPT_FLOOR)).map((r, i) => {
+    const samples = JSON.parse(r.samples) as Sample[];
+    return {
+      episode_index: i,
+      trajectory_hash: r.traj_hash,
+      contributor: r.contributor,
+      outcome: "failed" as const,
+      paid: false,
+      on_chain: false,
+      quality_score: r.score / 10000,
+      deviation_mm: r.deviation_mm,
+      duration_s: r.duration_s,
+      length: samples.length,
+      frequency_hz: 20,
+      observation: {
+        "state.joints": samples.map((s) => s.q),
+        "state.gripper": samples.map((s) => s.grip),
+        "state.object_pose": samples.map((s) => s.object),
+      },
+      action: samples.map((s) => [...s.q, s.grip]),
+      timestamp: samples.map((s) => s.t),
+      phases: phasesOf(samples),
+    };
+  });
+
   const body = JSON.stringify(
     {
       dataset: `thenar-task-${taskId}`,
@@ -165,7 +204,13 @@ export async function GET(req: Request) {
       episodes: episodes.length,
       total_frames: episodes.reduce((n, e) => n + e.length, 0),
       exported_at: new Date().toISOString(),
+      schema_version: 2,
       data: episodes,
+      negatives: failures,
+      negatives_note:
+        "Runs that scored below the acceptance floor. Real recordings, unpaid " +
+        "and not on chain. Kept separate so they are never trained on as " +
+        "demonstrations by accident.",
     },
     null,
     2,
