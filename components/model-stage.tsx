@@ -84,16 +84,34 @@ function reallocate() {
 function ModelMesh({ url }: { url: string }) {
   const { scene } = useGLTF(url);
   const model = useMemo(() => {
-    const c = scene.clone(true);
+    const inner = scene.clone(true);
+
+    // Z-up source, Y-up scene. Done before anything is measured, so the box
+    // below is the box of the model as it will actually be seen rather than as
+    // it was authored.
+    inner.rotation.set(-Math.PI / 2, 0, 0);
+    inner.updateMatrixWorld(true);
+
     // The library runs from a 12 mm pen to a 980 mm counter. A shared camera
     // can only frame all of that if every model is normalised to one box.
-    const box = new THREE.Box3().setFromObject(c);
+    const box = new THREE.Box3().setFromObject(inner);
     const size = box.getSize(new THREE.Vector3());
     const centre = box.getCenter(new THREE.Vector3());
-    const k = 1 / Math.max(size.x, size.y, size.z || 1);
-    c.position.sub(centre);
-    c.scale.setScalar(k);
-    return c;
+
+    // Centre on the inner object, scale on a wrapper around it. Both on one
+    // object cannot work and did not: three composes a transform as T·R·S, so
+    // a position set here is applied after the rotation and without the scale,
+    // and the model lands at −centre while its geometry sits at R·k·centre.
+    // The difference is an offset, the tile spins about the origin, and an
+    // object that is not on the origin orbits it — which is what these were
+    // doing. A pen with its origin at the nib swung a body-length across the
+    // tile every revolution and passed the camera close enough to fill it.
+    inner.position.sub(centre);
+
+    const outer = new THREE.Group();
+    outer.add(inner);
+    outer.scale.setScalar(1 / Math.max(size.x, size.y, size.z || 1));
+    return outer;
   }, [scene]);
 
   const ref = useRef<THREE.Group>(null);
@@ -110,7 +128,11 @@ function ModelMesh({ url }: { url: string }) {
 
   return (
     <group ref={ref}>
-      <primitive object={model} rotation={[-Math.PI / 2, 0, 0]} />
+      {/* No rotation here any more: the axis conversion is baked into the
+          model above, before it was measured and centred. Setting it here as
+          well would rotate the centred result about the tile's origin and put
+          the orbit straight back. */}
+      <primitive object={model} />
     </group>
   );
 }
