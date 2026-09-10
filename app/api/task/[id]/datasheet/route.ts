@@ -4,6 +4,9 @@ import { logged } from "@/lib/server/log";
 import { trajectoriesForTask, attemptsForTask, failedTrajectories } from "@/lib/server/db";
 import { ACCEPT_FLOOR, TOLERANCE_MM } from "@/lib/score";
 import { rootOf } from "@/lib/merkle";
+import { diversityMm } from "@/lib/similarity";
+import { settledSamplesForTask } from "@/lib/server/db";
+import type { Sample } from "@/lib/types";
 import { appChain, AXON_ADDRESS, CORPUS_MANIFEST } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 
@@ -37,10 +40,11 @@ async function handleGET(_req: Request, ctx: { params: Promise<{ id: string }> }
     return NextResponse.json({ error: "task id must be a non-negative integer" }, { status: 400 });
   }
 
-  const [accepted, attempts, failures] = await Promise.all([
+  const [accepted, attempts, failures, withSamples] = await Promise.all([
     trajectoriesForTask(taskId, 500),
     attemptsForTask(taskId, ACCEPT_FLOOR),
     failedTrajectories(taskId, ACCEPT_FLOOR),
+    settledSamplesForTask(taskId, 200),
   ]);
 
   if (accepted.length === 0 && attempts.length === 0) {
@@ -121,6 +125,13 @@ async function handleGET(_req: Request, ctx: { params: Promise<{ id: string }> }
       worst_score: scores.length ? Math.min(...scores) / 100 : null,
       pass_rate: attempted ? counts.paid / attempted : null,
       attempts: counts,
+      // How far apart the routes are, on average, in millimetres. Duplicate
+      // rejection puts a floor of 12 mm under this; a corpus can clear that
+      // and still be one corridor walked repeatedly. Null below two episodes,
+      // because a single run is not diverse or undiverse.
+      diversity_mm: diversityMm(
+        withSamples.map((r) => ({ samples: JSON.parse(r.samples) as Sample[] })),
+      ),
     },
     provenance: {
       chain: appChain.name,

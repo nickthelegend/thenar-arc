@@ -105,3 +105,31 @@ export function nearestNeighbour(
   }
   return best;
 }
+
+/**
+ * How different a corpus's runs are from each other, in millimetres.
+ *
+ * The mean separation between every pair of paths. Duplicate rejection sets a
+ * floor under this — nothing within 12 mm of an existing run gets in — but a
+ * corpus can clear that floor and still be six runs down one corridor, all
+ * 15 mm apart. Coverage answers "where has this been"; this answers "how
+ * different are the ways of doing it", and the two come apart: a corpus can
+ * cover a wide area with one route through it.
+ *
+ * Reported rather than scored. There is no threshold here for what counts as
+ * enough, because that depends on what a buyer is training and this system is
+ * in no position to decide it for them.
+ */
+export function diversityMm(runs: { samples: Segmentable[] }[]): number | null {
+  if (runs.length < 2) return null;
+  const sigs = runs.map((r) => pathSignature(r.samples));
+  let total = 0;
+  let pairs = 0;
+  for (let i = 0; i < sigs.length; i += 1) {
+    for (let j = i + 1; j < sigs.length; j += 1) {
+      total += signatureDistance(sigs[i], sigs[j]);
+      pairs += 1;
+    }
+  }
+  return pairs ? total / pairs : null;
+}

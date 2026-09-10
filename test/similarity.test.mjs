@@ -2,7 +2,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  pathSignature, signatureDistance, nearestNeighbour, DUPLICATE_MM, SIGNATURE_POINTS,
+  pathSignature, signatureDistance, nearestNeighbour, diversityMm,
+  DUPLICATE_MM, SIGNATURE_POINTS,
 } from "../lib/similarity.ts";
 
 /** A run along a straight line from `a` to `b`, at `hz` for `secs`. */
@@ -71,4 +72,27 @@ test("a path that never moved still produces a signature", () => {
 test("an empty recording has no signature to compare", () => {
   assert.deepEqual(pathSignature([]), []);
   assert.equal(signatureDistance([], pathSignature(line([0, 0], [1, 1]))), Infinity);
+});
+
+test("diversity is null for a corpus too small to have pairs", () => {
+  assert.equal(diversityMm([]), null);
+  assert.equal(diversityMm([{ samples: line([0, 0], [1, 1]) }]), null);
+});
+
+test("a corpus of copies has almost no diversity", () => {
+  const same = { samples: line([0.3, 0.2], [0.16, -0.18]) };
+  const d = diversityMm([same, same, same]);
+  assert.ok(d < 1, `copies measured ${d} mm apart`);
+});
+
+test("a corpus of different routes has more diversity than one of copies", () => {
+  const copies = diversityMm([
+    { samples: line([0.3, 0.2], [0.16, -0.18]) },
+    { samples: line([0.3, 0.2], [0.16, -0.18], { secs: 30 }) },
+  ]);
+  const varied = diversityMm([
+    { samples: line([0.3, 0.2], [0.16, -0.18]) },
+    { samples: line([-0.1, 0.3], [0.16, -0.18]) },
+  ]);
+  assert.ok(varied > copies * 10, `varied ${varied} vs copies ${copies}`);
 });
