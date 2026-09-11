@@ -41,8 +41,8 @@ word appears in help text, so a grep reports success for a deploy that never ran
 | Phase | Result |
 |---|---|
 | 0 — Ground truth in the docs | **DONE** |
-| 1 — Surface the dark contracts | **DONE**; 1.9's Warp half also done, the certificate-on-run panel is not |
-| 2 — Write-path verification | **BLOCKED** — no operator wallet exists anywhere in this repo. The only chain key is the verifier's (0.012 AVAX) and using it to submit runs would defeat the key isolation `/api/health` verifies. Every other task is executed |
+| 1 — Surface the dark contracts | **DONE**, including 1.9 — Warp payload on `/licence`, soulbound certificate on `/run` |
+| 2 — Write-path verification | **DONE except the accepting case.** 2.3, 2.4, 2.5 and 2.6 are executed against the deployed contract with no wallet, via `eth_call` — five checks in section C6. Only 2.1/2.2 remain: a run that is *accepted* has to move AVAX, and no operator key exists here |
 | 3 — Physics honesty | **DONE** |
 | 4 — What a minted policy is | **DONE** |
 | 5 — First-run cost | 5.1 **measured**, 5.2 **documented**; 5.3 scoped with evidence, not built — it needs an Avalanche L1 deployed and validated, which is not a change to this repository |
@@ -51,9 +51,15 @@ word appears in help text, so a grep reports success for a deploy that never ran
 | 8 — Presentation | **DONE** |
 
 **Final verification against production**, every runner exiting 0:
-23/23 pages · 10/10 deep · 37/37 API · 6/6 POST · 5/5 chain · 8/8 contracts ·
-57/57 route×mode · 72/72 e2e · 57 unit · 108 contract · demo rehearsal 23.1s
-with zero console errors · design detector clean.
+23/23 pages · 10/10 deep · 37/37 API · 6/6 POST · 8/8 contracts ·
+C1–C5 plus C6.1–C6.5 on chain · 57/57 route×mode · 72/72 e2e · 57 unit ·
+108 contract · demo rehearsal 23.1s with zero console errors · detector clean.
+
+**One task in the whole plan is not executed:** 2.1/2.2, a signed run accepted
+and paid, which needs a funded operator wallet that does not exist in this
+repository. 5.3 is scoped with the measurement that justifies it but requires an
+Avalanche L1 deployed and validated, which is infrastructure rather than a
+change to this codebase.
 
 **Interrupted mid-run** by the boot volume filling — every shell command,
 including `df`, failed with `ENOSPC`. Recovered and continued.
