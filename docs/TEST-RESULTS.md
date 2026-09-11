@@ -98,3 +98,39 @@ requests the product itself issued.
 | E2/E3 + D8/D9 | Console and network clean on every page in light, dark and mobile | **PASS** | 57/57 page-mode combinations clean |
 
 **87 items PASS · 0 FAIL · 1 UNTESTED (C6) · 57/57 route×mode combinations clean.**
+
+
+## Executed through Claude in Chrome
+
+The extension reported "not connected" for most of this run. It was installed
+and signed in the whole time — Chrome simply was not running, so there was no
+instance for it to register. Launching Chrome connected it immediately.
+
+Re-verified through the extension against the deployed site, with the console
+and network panels read on each: A1, A2, A7, A8, A10, A11, A19, D6. All match
+the results the headless runners produced.
+
+Two things only the real browser surfaced:
+
+**A HEAD request to the current page returning 503.** Investigated and excluded
+as a product defect, on evidence rather than assumption: there is no HEAD
+request anywhere in the source; the service worker returns early on any
+non-GET; a HEAD issued from inside the page to the same URL returns 200 with a
+Vercel request id; HEAD from outside the browser returns 200 under every
+plausible header combination, including navigation, prefetch and Chrome's own
+user agent; and it does not occur on a control site in the same browser. It is
+an artifact of the browser environment.
+
+**The station's canvas at 300x150 inside a 500x334 container.** Real, and only
+visible in a real browser — the automation tab the extension drives is
+permanently hidden, and a hidden tab has its rendering lifecycle paused, so
+ResizeObserver notifications are never delivered and nothing can size the
+canvas. A fix was written, deployed, and then reverted after being tested
+rather than assumed: invoking it by hand in the tab that reproduces the fault
+left the canvas at 300x150, for the same reason the fault exists. A tab a
+person actually looks at resumes that lifecycle and flushes the pending
+observation, which is very likely to size the canvas with no intervention. The
+transition itself could not be produced in either browser available here —
+headless bringToFront does not mark a page hidden, and the extension's tab is
+never visible — so the question is left open and documented rather than closed
+with something unverifiable.
