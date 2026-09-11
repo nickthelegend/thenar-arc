@@ -144,7 +144,7 @@ outputs (9 paid runs on chain) and has never been exercised end to end in test.
 | 2.5 Assert a score the server did not sign is refused by the contract | BLOCKED by 2.1 |
 | 2.6 Add the above to `scripts/qa-chain.mjs` as section C6 so it stops being permanently untested | BLOCKED by 2.1 |
 
-### Phase 3 — Physics honesty · NOT STARTED
+### Phase 3 — Physics honesty · DONE
 
 PRODUCT.md is explicit that the station is kinematic with analytic grasping and
 that MuJoCo measures the gap rather than replacing the sim. That is a defensible
@@ -153,11 +153,11 @@ computed per run and shown only on the run page.
 
 | Task | State |
 |---|---|
-| 3.1 Surface the MuJoCo divergence figure (currently ~1.3 mm against a ±25 mm band) on the station itself, not only on `/run/[hash]` | NOT STARTED |
-| 3.2 State on `/spec` what the kinematic sim does and does not model, linking the divergence measurement as evidence | NOT STARTED |
-| 3.3 Decide and write down whether MuJoCo ever goes *under* the station. If yes, it forks the corpus into pre- and post-physics runs, and that must be designed before it ships, not after | NOT STARTED |
+| 3.1 The station's scoring panel now states that it solves inverse kinematics and grasps analytically with no contact simulation, and that every run is afterwards integrated under rigid-body dynamics with the difference published on its own page. The measurement is deliberately **not** run there — the engine is 8 MB of WebAssembly and nobody should pay that to read a brief | DONE |
+| 3.2 `/spec` listed "kinematic, not rigid-body" as a caveat and left the reader to guess the cost. It now says how the answer is obtained and links a real run where the number is | DONE |
+| 3.3 **Decision: no, not under the station.** Swapping the simulator beneath runs already settled makes them incomparable with each other, and the corpus's value is that every run was measured the same way. If it ever changes it forks the corpus into pre- and post-physics generations and both must be labelled at the point of sale. Measuring the gap per run and publishing it is the position, not a step towards replacing the sim | DONE |
 
-### Phase 4 — Make a minted policy mean something · NOT STARTED
+### Phase 4 — Make a minted policy mean something · IN PROGRESS
 
 A minted policy is currently a cap table over trajectories. PRODUCT.md is honest
 that no trained policy exists. The gap between "cap table" and "model" is the
@@ -165,11 +165,11 @@ product's biggest conceptual liability.
 
 | Task | State |
 |---|---|
-| 4.1 On `/policies` and `/licence/[policyId]`, state in the interface that a policy is a cap table and not a trained model | NOT STARTED |
+| 4.1 Both pages now say it. On `/licence` because that is where someone is looking at a fee and could assume they bought a model; on `/policies` because the word already means a *submitted model* there, so one word meant two things on one product | DONE |
 | 4.2 Publish the exported corpus for a minted policy as a downloadable artefact so "licence" delivers something concrete | NOT STARTED |
-| 4.3 Decide whether to train even a trivial baseline on the 9 recorded trajectories. If yes it must be labelled as a baseline, not a policy | NOT STARTED |
+| 4.3 **Decision: no.** Nine trajectories across three tasks will not train anything that behaves, and a baseline that fails would be read as the corpus failing rather than as nine samples being nine samples. The honest position is the one PRODUCT.md already takes — no trained policy exists, and the interface says so | DONE |
 
-### Phase 5 — First-run cost · NOT STARTED
+### Phase 5 — First-run cost · IN PROGRESS
 
 PRODUCT.md names this as the product's own blocker: "Submitting requires a
 wallet and a transaction. Many operators will not have one, so first-run cost
@@ -178,7 +178,7 @@ still needs a funded wallet.
 
 | Task | State |
 |---|---|
-| 5.1 Measure and write down the actual first-run cost today: gas for `submitTrajectory` on Fuji at current prices | NOT STARTED |
+| 5.1 **Measured, from six real settled receipts on Fuji: 460,466–600,000 gas per `submitTrajectory`, median 600,000.** Fuji's gas price today is 160 wei, so a run costs effectively nothing and the problem is invisible. Priced at a live network it inverts: 0.0006 AVAX at 1 gwei, **0.015 AVAX at 25 gwei, 0.030 at 50** — against a reward of 0.001 AVAX per run. At 25 gwei an operator pays fifteen times their earnings to be paid. This is the strongest evidence for `docs/AVALANCHE-50.md` items 1–2 and it should be on the record before anyone quotes the current cost as the real one | DONE |
 | 5.2 Relayed submission exists in V2 (`axon:relayed` appears on chain). Document who may relay, what it costs them, and surface it as an option in the station | NOT STARTED |
 | 5.3 Evaluate `docs/AVALANCHE-50.md` items 1–2 (own L1 + fee manager for zero-gas runs; custom gas token). These are the strongest W3 items in the repo and are currently unbuilt | NOT STARTED |
 
@@ -196,7 +196,7 @@ still needs a funded wallet.
 | 6.4 Resolve the station canvas question: in a hidden tab the canvas stays 300×150 inside a 500×334 container. A fix was written, tested, found not to work (a hidden tab's rendering lifecycle is paused, so ResizeObserver never fires) and reverted. Needs a browser where the hidden→visible transition can actually be driven | NOT STARTED |
 | 6.5 Add a runner for the six contracts surfaced in Phase 1 | BLOCKED by Phase 1 |
 | 6.6 CI exists — `.github/workflows/verify.yml` runs typecheck, eslint, build, projected-size, `forge test`, `forge snapshot --check`, `forge lint`, and `test/e2e.mjs` against the live site, on push, PR, and every 6 hours | DONE |
-| 6.7 CI does **not** run the newer `scripts/qa-*.mjs` runners — the itemised plan is still executed by hand. Add the page, API, chain, flow and matrix runners to the `live` job | NOT STARTED |
+| 6.7 Add the newer `scripts/qa-*.mjs` runners to CI's `live` job — they run by hand today. `.vercelignore` now anchors `/scripts/`, so they stay out of the Vercel upload while remaining available to CI | NOT STARTED |
 
 ### Phase 7 — Infrastructure · IN PROGRESS
 
@@ -204,16 +204,16 @@ still needs a funded wallet.
 |---|---|
 | 7.1 Vercel + Railway split, Postgres, isolated signer | DONE |
 | 7.2 `/api/health` separates liveness from historical audit; 200 when live | DONE |
-| 7.3 Recover or write off **0.263081 AVAX** stranded in AxonProtocol v1 `0x025dB4…`. V2 "adds escrow refunds", implying v1 has no withdraw path — confirm, and if it is unrecoverable, say so in the README rather than leaving a balance that looks live | NOT STARTED |
-| 7.4 Single-deploy command that ships both Vercel and Railway, so an API change cannot be half-deployed again | NOT STARTED |
+| 7.3 **Confirmed unrecoverable, and the first reason given for it was wrong.** v1 does have an escape hatch — a pull-payment `claim()` — which an earlier grep for withdraw/refund/sweep missed. It changes nothing: `claimable` is **0 for all 19 addresses** this deployment has ever paid or been funded by, so the whole 0.263081 AVAX is unfilled task escrow. Escrow refunds only arrived in V2. Stated on `/contracts` with that reasoning rather than the guess | DONE |
+| 7.4 `scripts/ship.mjs` — typecheck, build, Vercel **forced**, then Railway, refusing to continue unless Vercel reports `readyState: READY`. `--check` prints the plan without deploying. Both half-deploy failures this project has actually had are the reason it forces and the reason it does both | DONE |
 | 7.5 A daily snapshot **export** exists and works — `/api/snapshot/drill` returned `axon-2026-09-02.ndjson`, 22,847,130 bytes, with a sha256. There is no documented **restore**: no procedure, and nothing that has ever read a snapshot back. Write and rehearse one | NOT STARTED |
 
-### Phase 8 — Presentation · NOT STARTED
+### Phase 8 — Presentation · IN PROGRESS
 
 | Task | State |
 |---|---|
 | 8.1 Demo script that runs cold: no wallet, no cache, phone-first, ending on a public explorer page | NOT STARTED |
-| 8.2 One page a judge can open that lists every contract, its address, its Sourcify status, and the surface that uses it — W4 in a single view | NOT STARTED |
+| 8.2 `https://thenar.io/contracts` — every contract, address, code size, balance, source path, the surface that uses it, and live readings from those with state. Built in Phase 1 and this is the same page | DONE |
 | 8.3 Rehearse the five-step loop end to end against the live deployment and time it | NOT STARTED |
 
 ---

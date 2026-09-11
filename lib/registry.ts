@@ -126,7 +126,10 @@ export const SUPERSEDED: Deployed[] = [
     key: "axon-v1",
     name: "AxonProtocol v1",
     address: "0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3",
-    does: "The first deployment. Its runs are in the archive; it has no withdraw path, so the balance it holds is stranded.",
+    does:
+      "The first deployment. Its runs are in the archive. It has a pull-payment claim(), " +
+      "but claimable is zero for every address this deployment has ever paid or been funded by — " +
+      "the balance it holds is unfilled task escrow, and refunds only arrived in V2, so it is stuck.",
     source: "contracts/src/AxonProtocol.sol",
     surface: "/archive",
   },
