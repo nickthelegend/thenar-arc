@@ -5,6 +5,11 @@
  * behaviour as the site's.
  */
 const BASE = process.argv[2] ?? "https://thenar.io";
+const REAL_HASH = "0x77f0cc8cd166ce38679fee669324dc3b898ed308dbf7aee8752c96490941a7a2";
+// A real uploaded prop id, read from the table rather than pinned, so the item
+// keeps testing a prop that exists rather than one that used to.
+const PROP_ID = await fetch(BASE + "/api/props").then(r => r.json())
+  .then(j => (j.props ?? [])[0]?.id).catch(() => null);
 
 // [id, path, expectedStatus, assert(json|text, res) -> [ok, detail]]
 const J = (f) => (b, r) => {
@@ -58,6 +63,21 @@ const ITEMS = [
   // POST-only by design; 405 on GET is the correct answer, not a defect.
   ["B25", "/api/submitted",     405, () => [true, "GET refused (allow: OPTIONS, POST)"]],
   ["B33", "/api/reconcile",     200, nonEmpty],
+  ["B24", "/api/snapshot/drill", 200, J((j) => [!!j.sha256 && j.bytes > 0, `${j.key} ${j.bytes}B sha256=${String(j.sha256).slice(0,10)}…`])],
+  // A real prop id serves the binary the CAD kernel generated; a bogus one 404s
+  // in JSON like every other error on this API.
+  ["B14", `/api/props/${PROP_ID}`, 200, (b, r) => [
+      (r.headers.get("content-type")||"").includes("gltf") && b.startsWith("glTF"),
+      `${(r.headers.get("content-type")||"").split(";")[0]} magic=${b.slice(0,4)}`]],
+  ["B28", `/api/trajectory/${REAL_HASH}`, 200, J((j) => [j.trajHash === REAL_HASH, `trajHash echoes, taskId=${j.taskId}`])],
+  ["B28b", "/api/trajectory/0xdeadbeef", 404, J((j) => [/no trajectory/i.test(j.error ?? ""), `refuses: ${j.error}`])],
+  ["B29", `/api/trajectory/${REAL_HASH}/similar`, 200, nonEmpty],
+  ["B30", `/api/trajectory/${REAL_HASH}/annotation`, 200, nonEmpty],
+  ["B31", `/api/physics/${REAL_HASH}`, 200, J((j) => [!!j.engine, `engine=${j.engine}`])],
+  // The one live third-party dependency: Glacier must answer, and the payload
+  // must say it came from Glacier rather than from anything of ours.
+  ["B32", "/api/glacier/0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0", 200,
+          J((j) => [j.source === "glacier", `source=${j.source}`])],
   ["D4",  "/api/props/definitely-not-a-prop", 404, (b, r) => {
       const ct = r.headers.get("content-type") ?? "";
       return [ct.includes("json"), `content-type ${ct.split(";")[0]}`];
