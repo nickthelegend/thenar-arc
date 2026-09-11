@@ -68,18 +68,18 @@ Ordered by what unblocks what. Phase 1 is first because six finished contracts
 being invisible is the single largest gap between what exists and what a judge
 can see.
 
-### Phase 0 — Ground truth in the docs · IN PROGRESS
+### Phase 0 — Ground truth in the docs · DONE
 
 The repo's own documents disagree with the deployment.
 
 | Task | State |
 |---|---|
-| 0.1 Fix README opening line: it says "get paid on **Monad**"; the chain is Avalanche Fuji | NOT STARTED |
+| 0.1 README chain claims corrected. Larger than one line: there were **two** "Live deployment" tables and the second presented Monad chain 10143 with monadscan links as current. Also corrected — the Contracts section, the Run it faucet (MON → AVAX on Fuji), and four pieces of architectural rationale that argued from Monad's parallel execution, which Avalanche C-Chain does not have | DONE |
 | 0.2 Reconcile README's contract table against on-chain code — all 12 verified present this run, keep it that way | DONE |
 | 0.3 Replace the stale PLAN.md (named `0x025dB4…` as current; that is the superseded v1) | DONE — this file |
-| 0.4 Record in README that `/api/*` is served by Railway, not Vercel | NOT STARTED |
-| 0.5 Delete or date-stamp the four stale root-level TESTPLAN files (`TESTPLAN.md`, `-V2`, `-V3`, `-V4`); `docs/TESTPLAN.md` + `docs/TEST-RESULTS.md` are current | NOT STARTED |
-| 0.6 Repo is named `monad-blitz` and the remote is `axon-monad`; the product is Thenar on Avalanche. Decide: rename, or state the history in README so it does not read as a stale fork | NOT STARTED |
+| 0.4 README "Live endpoints" now states that every `/api/*` is rewritten to the Railway `web` service, so an API change deployed only to Vercel changes nothing | DONE |
+| 0.5 The four earlier plans moved to `docs/history/` with an index naming what each covered and pointing at the current pair. Kept, not deleted — they are evidence of what was checked and when | DONE |
+| 0.6 README states the directory and remote names are from the original build and are left alone so the history stays traceable | DONE |
 
 ### Phase 1 — Surface the six dark contracts · NOT STARTED
 

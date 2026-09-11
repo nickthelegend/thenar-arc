@@ -1,8 +1,8 @@
 # Thenar
 
 **The data foundry for physical AI.** Teleoperate a robot arm in the browser,
-have the run measured against the goal datum, and get paid on Monad in the same
-transaction that records the trajectory.
+have the run measured against the goal datum, and get paid on Avalanche in the
+same transaction that records the trajectory.
 
 Built at Monad Blitz Hyderabad V3.
 
@@ -24,6 +24,10 @@ Built at Monad Blitz Hyderabad V3.
 | **PasskeyRegistry** | [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.snowtrace.io/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F) — Sourcify `exact_match` |
 | **Hosting** | Vercel (frontend, custom domain) + Railway (API, Postgres, and a signer service holding the verifier key) |
 
+> **The directory is named `monad-blitz` and the git remote is `axon-monad`.**
+> Both are from the build this started as; the product is Thenar and it settles
+> on Avalanche. The names are left alone so the history stays traceable.
+>
 > **Built at Monad Blitz Hyderabad V3, where it placed 3rd.** It ran on Monad
 > then; it settles on Avalanche now. The Monad deployment and the two
 > transactions in the demo below are left in place because they happened, and
@@ -55,15 +59,20 @@ The two transactions the video shows, on Monad Testnet:
 
 ## Contracts
 
-Solidity, Foundry, deployed and source-verified on Monad Testnet (chain 10143).
+Solidity, Foundry, deployed and source-verified on **Avalanche Fuji (chain
+43113)**. The full set with addresses is in the table at the top of this file;
+every one reports `exact_match` on Sourcify, so the verified source is the
+source in this repo.
 
-| Contract | Address | Source |
+The pair below is the **Monad Testnet** deployment this project was built on at
+Monad Blitz Hyderabad V3. It is kept because it happened, and because the demo
+video and its two transactions are from it. It is not what the live app talks
+to.
+
+| Contract (Monad Testnet, historical) | Address | Source |
 | --- | --- | --- |
 | `AxonProtocol` — tasks, escrow, trajectories, policies, cap tables | [`0x89384f46…C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) | [`contracts/src/AxonProtocol.sol`](contracts/src/AxonProtocol.sol) |
-| `PasskeyRegistry` — secp256r1 verification via Monad's P256 precompile at `0x0100` | [`0xD6dE823E…DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) | [`contracts/src/PasskeyRegistry.sol`](contracts/src/PasskeyRegistry.sol) |
-
-Both report `exact_match` on the explorer, so the verified source is the source
-in this repo.
+| `PasskeyRegistry` — secp256r1 verification via the P256 precompile at `0x0100` | [`0xD6dE823E…DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) | [`contracts/src/PasskeyRegistry.sol`](contracts/src/PasskeyRegistry.sol) |
 
 What the protocol does, in the order the video shows it:
 
@@ -80,8 +89,12 @@ What the protocol does, in the order the video shows it:
   later with `claim`.
 
 Slot counters are **sharded** (`MAX_SHARDS`, `SLOTS_PER_SHARD`) so concurrent
-submissions to the same task write to different storage slots — the point is to
-not serialise against Monad's parallel execution.
+submissions to the same task write to different storage slots. The design was
+made for Monad, where a shared counter forces optimistically-parallel execution
+to re-run transactions serially. Avalanche C-Chain executes sequentially, so
+that particular argument does not apply on Fuji — the sharding stays because it
+costs nothing, still removes the one contended write, and is what the deployed
+contract does.
 
 Tests: [`contracts/test/AxonProtocol.t.sol`](contracts/test/AxonProtocol.t.sol)
 (23, including a 256-run fuzz and the sharding invariants) and
@@ -110,22 +123,33 @@ contributor cap table attached, so a licence fee splits to everyone who trained
 it without anyone claiming anything. That is several times the state writes of a
 bare anchor, and those writes barely touch each other — different operators,
 different tasks, one shared slot counter. It is the workload parallel execution
-exists for, which is why it is on Monad.
+exists for, which is why it was built on Monad. It settles on Avalanche now,
+where the argument for the chain is different — see the top of this file.
 
 ---
 
-## Live deployment
+## The Monad deployment
+
+Historical. This is what the project ran on at Monad Blitz Hyderabad V3, and
+what the demo video shows. The live app settles on Avalanche Fuji — see the
+table at the top of this file.
+
+| | |
+| --- | --- |
+| AxonProtocol | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — **verified**, exact match |
+| PasskeyRegistry | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — **verified**, exact match |
+| Network | Monad Testnet, chain `10143` |
+
+## Live endpoints
 
 | | |
 | --- | --- |
 | **Live app** | **https://thenar.io** |
-| AxonProtocol | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — **verified**, exact match |
-| PasskeyRegistry | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — **verified**, exact match |
-| Network | Monad Testnet, chain `10143` |
-| Verifier key | `0x5beE0b22906c28F747279217F5C8019c39fB086b` |
+| Network | Avalanche Fuji, chain `43113` |
+| Verifier key | `0x5beE0b22906c28F747279217F5C8019c39fB086b` — held only by the signer service |
 | Contract metadata | [`https://thenar.io/api/contract`](https://thenar.io/api/contract) — address, chain and full ABI |
 | Health | [`https://thenar.io/api/health`](https://thenar.io/api/health) |
-| Hosting | Railway, with a persistent volume for the trajectory store |
+| Hosting | Vercel serves the pages. **Every `/api/*` request is rewritten to the Railway `web` service**, so an API change deployed only to Vercel changes nothing. Postgres and an isolated signer service also run on Railway |
 
 ## Run it
 
@@ -138,9 +162,10 @@ pnpm dev
 ```
 
 Open http://localhost:3000. Browsing, the hub, the leaderboard, the foundry and
-the station all work read-only with no wallet. Submitting a run needs a wallet
-on Monad Testnet with a little MON for gas — the faucet is at
-https://faucet.monad.xyz.
+the station all work read-only with no wallet, and the station's practice mode
+records a run without one. Submitting a run for payment needs a wallet on
+**Avalanche Fuji** with a little AVAX for gas — the faucet is at
+https://core.app/tools/testnet-faucet/ (select Fuji C-Chain).
 
 To regenerate the robot arm geometry (optional — the GLB is committed):
 
@@ -177,7 +202,8 @@ node scripts/e2e.mjs https://thenar.io
 every slot, minting its policy, and buying a licence, asserting the cap table
 sums to 100% and that the contributor is paid exactly its share.
 
-Two Monad behaviours are worth knowing before you run these. Gas is reserved
+Two Monad behaviours were worth knowing when these ran there, and are recorded
+because the numbers below came from that deployment. Gas is reserved
 against the **limit**, not usage, and the floor is higher than `value + gas`:
 the same licence call reverted at 0.3 MON and settled at 2. And consensus and
 execution are pipelined, so a transaction receipt means the transaction was
@@ -281,7 +307,9 @@ it seeds eight funded task bounties as part of the same run.
 **Sharded slot accounting.** A single `slotsFilled` counter is one storage
 slot that every operator on a task writes to, which on an optimistically
 parallel chain forces them to re-execute serially — the exact anti-pattern
-Monad punishes. Each operator instead writes only the shard their address
+Monad punishes, and the reason this was built. On Avalanche's sequential
+C-Chain the contention argument does not apply; the shape is kept because it is
+what is deployed and it costs nothing. Each operator instead writes only the shard their address
 maps to, and each shard carries its own quota, so concurrent submissions from
 different operators touch no shared state. A caller whose own shard is spent
 falls back to a scan; that is the only path that can contend and it only
@@ -291,7 +319,8 @@ never contend at all.
 The first deployment (`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`) carried the
 single-counter version and is kept for the record.
 
-**Passkeys.** Monad ships EIP-7951's P256 precompile at `0x0100`, so a
+**Passkeys.** Both chains ship the P-256 precompile at `0x0100` — EIP-7951 on
+Monad, RIP-7212 on Avalanche — so a
 secp256r1 signature — the curve a passkey already uses — can be verified by the
 chain itself. `PasskeyRegistry` binds a public key to an address and spends
 signatures through it, and `submitTrajectoryWithPasskey` lets an operator
