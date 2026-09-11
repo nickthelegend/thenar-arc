@@ -3,7 +3,7 @@ import { InstallShell } from "@/components/install";
 import { LocaleReady } from "@/components/locale-ready";
 import { Pulse } from "@/components/pulse";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
-import { Archivo, DM_Mono, Hanken_Grotesk } from "next/font/google";
+import { Archivo, DM_Mono, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteNav } from "@/components/site-nav";
 import { Conditions } from "@/components/conditions";
@@ -44,6 +44,17 @@ const dmMono = DM_Mono({
   subsets: ["latin"],
   weight: ["300", "400", "500"],
   variable: "--font-dm-mono",
+  display: "swap",
+});
+
+// The landing page's metadata voice. Plex Mono is drawn for technical setting
+// and holds up at 10-12px with wide positive tracking, which is the entire job
+// it does there: a constant layer of small type pinned to edges, counterweight
+// to poster-scale display.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
   display: "swap",
 });
 
@@ -97,7 +108,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${grotesk.variable} ${dmMono.variable} ${archivo.variable}`}
+      className={`${grotesk.variable} ${dmMono.variable} ${archivo.variable} ${plexMono.variable}`}
     >
       <head>
         {/* Before the first paint, or the default theme renders for a frame and

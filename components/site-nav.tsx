@@ -25,6 +25,7 @@ const LOW_BALANCE = 0.02;
 
 export function SiteNav() {
   const pathname = usePathname();
+
   const s = useSession();
   const { data: block } = useBlockNumber({ watch: true, query: { enabled: IS_DEPLOYED } });
 
@@ -60,6 +61,13 @@ export function SiteNav() {
     return () => ro.disconnect();
   }, [pathname]);
 
+  // Below the hooks, with the station's, for the reason the note above gives:
+  // a hook after a conditional return is a hook that does not always run.
+  //
+  // The landing page carries its own nav — a different structure, a different
+  // palette, and a brand lockup sized to a poster rather than to an app bar.
+  // Rendering both would stack two fixed headers on top of one another.
+  if (pathname === "/") return null;
   if (pathname?.startsWith("/station/")) return null;
 
   const lowOnGas = s.connected && !s.wrongNetwork && s.balance < LOW_BALANCE;

@@ -1,0 +1,261 @@
+/*
+ * The landing page's own system.
+ *
+ * Deliberately not the product's. Every other route runs on the dark token set
+ * in globals.css — near-black ground, orange signal — and this page commits to
+ * a cool achromatic ground with one blue accent. So it is scoped entirely under
+ * .lp and defines its own variables rather than reaching for the global ones:
+ * nothing here leaks out, and nothing out there reaches in.
+ *
+ * Two colours and one accent, and the accent is only ever small type, a dot, a
+ * rule or a single trace. It is never a fill and never a large area.
+ */
+
+.lp {
+  --ground: #EFEFEE;
+  --stage: #E4E4E2;
+  --ink: #0D0D0F;
+  --ink-2: #43444A;
+  --muted: #6E6F76;
+  --accent: #2F5BFF;
+  --accent-lift: #7C97FF;
+  --hair: rgba(13, 13, 15, 0.12);
+  --hair-on-ink: rgba(239, 239, 238, 0.16);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  background: var(--ground);
+  color: var(--ink);
+  /* The word crops past both edges and the subject bleeds 4vw past the right;
+     both are deliberate, and both would otherwise put a horizontal scrollbar on
+     the page. Clip, not hidden, so nothing becomes a scroll container. */
+  overflow-x: clip;
+  font-family: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hard corners everywhere. The pill buttons are the single exception. */
+.lp *,
+.lp *::before,
+.lp *::after {
+  border-radius: 0;
+}
+
+.lp ::selection {
+  background: var(--accent);
+  color: var(--ground);
+}
+
+/* ---- type ------------------------------------------------------------- */
+
+.lp .d {
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.042em;
+  line-height: 0.98;
+}
+
+.lp .d-tight {
+  letter-spacing: -0.055em;
+  line-height: 0.74;
+}
+
+/* The counterweight. Small, wide-tracked, uppercase, and pinned to edges and
+   corners all the way down the page — it is what makes poster type read as
+   design rather than as a banner. */
+.lp .meta {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
+.lp .meta-sm { font-size: 10px; letter-spacing: 0.16em; }
+.lp .meta-md { font-size: 12px; letter-spacing: 0.14em; }
+.lp .meta-500 { font-weight: 500; }
+
+.lp .num { font-variant-numeric: tabular-nums; }
+.lp .accent { color: var(--accent); }
+.lp .muted { color: var(--muted); }
+.lp .ink-2 { color: var(--ink-2); }
+
+/* ---- ground alternation ------------------------------------------------ */
+
+.lp .on-stage { background: var(--stage); }
+.lp .on-ground { background: var(--ground); }
+
+.lp .on-ink {
+  background: var(--ink);
+  color: var(--ground);
+}
+.lp .on-ink .muted { color: rgba(239, 239, 238, 0.56); }
+.lp .on-ink .ink-2 { color: rgba(239, 239, 238, 0.74); }
+/* The accent lifts on dark ground: #2F5BFF against near-black is too close to
+   the ground to read as emphasis. */
+.lp .on-ink .accent { color: var(--accent-lift); }
+
+/* ---- shell ------------------------------------------------------------- */
+
+.lp .wrap {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 56px);
+}
+
+.lp .sec { padding-block: clamp(72px, 11vh, 132px); }
+
+.lp .rule { border-top: 1px solid var(--hair); }
+.lp .on-ink .rule { border-top-color: var(--hair-on-ink); }
+
+/* ---- pills ------------------------------------------------------------- */
+
+.lp .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  padding: 13px 24px;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 1px solid var(--ink);
+  transition: background-color 0.4s var(--ease), color 0.4s var(--ease),
+    border-color 0.4s var(--ease);
+}
+
+.lp .pill-solid { background: var(--ink); color: var(--ground); }
+.lp .pill-solid:hover { background: var(--accent); border-color: var(--accent); }
+
+.lp .pill-line { background: transparent; color: var(--ink); border-color: var(--hair); }
+.lp .pill-line:hover { border-color: var(--ink); }
+
+.lp .on-ink .pill-solid { background: var(--ground); color: var(--ink); border-color: var(--ground); }
+.lp .on-ink .pill-solid:hover { background: var(--accent-lift); border-color: var(--accent-lift); }
+.lp .on-ink .pill-line { color: var(--ground); border-color: var(--hair-on-ink); }
+.lp .on-ink .pill-line:hover { border-color: var(--ground); }
+
+/* ---- nav --------------------------------------------------------------- */
+
+.lp-nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, #EFEFEE 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hair);
+}
+
+.lp-nav .brand {
+  font-family: var(--font-archivo), sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+}
+
+.lp-nav a.navlink {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  border-bottom: 1px solid transparent;
+  padding-bottom: 3px;
+  transition: color 0.35s var(--ease), border-color 0.35s var(--ease);
+}
+.lp-nav a.navlink:hover { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* ---- the occlusion weave ---------------------------------------------- */
+
+/* Two layers of the same word, overlaid exactly, with the subject between them.
+   Each layer holds every letter and hides the ones it does not own, so the flex
+   metrics are identical and the layers register perfectly.
+
+   This cannot be done with per-letter z-index inside one element: the word
+   needs a transform for the baseline crop and another for the parallax, each
+   creates a stacking context, and the letters' z-index is then trapped at the
+   word's level — every overlapping letter falls behind the subject and the
+   effect silently does not exist. */
+.lp .weave { position: absolute; inset: auto 0 0 0; }
+
+.lp .word {
+  position: absolute;
+  left: -2.5%;
+  bottom: 0;
+  width: 105%;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-archivo), sans-serif;
+  font-weight: 900;
+  font-size: clamp(88px, 20.5vw, 304px);
+  line-height: 0.74;
+  letter-spacing: -0.055em;
+  color: var(--ink);
+  transform: translateY(0.10em);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.lp .word-back { z-index: 1; }
+.lp .word-front { z-index: 3; }
+.lp .word span[data-off] { visibility: hidden; }
+
+.lp .subject {
+  position: absolute;
+  z-index: 2;
+  right: -4vw;
+  bottom: 0;
+  width: min(58vw, 940px);
+  height: auto;
+  filter: drop-shadow(0 26px 34px rgba(13, 13, 15, 0.20));
+  pointer-events: none;
+}
+
+/* ---- motion ------------------------------------------------------------ */
+
+/* Every reveal is scoped to .js, which is only added when motion is wanted. The
+   reduced-motion render and the no-JS render are simply the finished page. */
+.js .lp .rv {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 1.05s var(--ease), transform 1.05s var(--ease);
+}
+.js .lp .rv.in { opacity: 1; transform: none; }
+
+.js .lp .rv-d1 { transition-delay: 0.07s; }
+.js .lp .rv-d2 { transition-delay: 0.14s; }
+.js .lp .rv-d3 { transition-delay: 0.21s; }
+
+/* The datum line draws itself in with the figure. pathLength normalises the
+   geometry to 1 so the dash values do not depend on the arm's real length. */
+.js .lp .draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.25s var(--ease) 0.12s;
+}
+.js .lp .rv.in .draw { stroke-dashoffset: 0; }
+
+/* Below the point where five mono links and a pill stop fitting, the links go
+   and the brand and the action stay. At 390px they were overrunning the pill
+   and "Foundry" was printing underneath it. Every one of them is in the footer
+   and in the page body, so nothing becomes unreachable. */
+@media (max-width: 900px) {
+  .lp-nav a.navlink { display: none; }
+}
+
+/* The hero's reserved space at the bottom is sized for a poster-scale word. On
+   a narrow viewport the word is much shorter, so the reservation left a large
+   empty band above it. */
+@media (max-width: 700px) {
+  .lp .subject { width: min(96vw, 620px); right: -8vw; }
+}
