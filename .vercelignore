@@ -4,9 +4,15 @@
 .env*.local
 
 # Not part of the frontend deployment.
-contracts/
-cad/
-scripts/
+#
+# Anchored with a leading slash, all three of them. Unanchored, `contracts/`
+# matches a directory of that name at any depth — which silently excluded
+# `app/contracts/`, the page that lists every deployed contract. The build
+# succeeded, the route simply was not there, and the page 404'd on the alias
+# while working on the origin that deploys from git.
+/contracts/
+/cad/
+/scripts/
 *.db
 *.db-wal
 *.db-shm

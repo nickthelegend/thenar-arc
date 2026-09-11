@@ -21,6 +21,27 @@ current and a database engine the project no longer uses).
 just Vercel. Deploying only to Vercel changes nothing about the live API — this
 cost half a day once already.
 
+**Deploying, second trap:** `vercel --prod` will happily reuse a cached build and
+report success. A real build of this project compiles in 12–18s; a log saying
+`Compiled successfully in 2.3s` means nothing was rebuilt and a new route will
+404 on the alias while working on the origin. Use `--force`, and read
+`readyState` out of the JSON rather than grepping the output for "ready" — the
+word appears in help text, so a grep reports success for a deploy that never ran.
+
+---
+
+## Execution log — 3 Sep 2026
+
+| Phase | Result |
+|---|---|
+| 0 — Ground truth in the docs | **DONE**, deployed |
+| 1 — Surface the dark contracts | **DONE** — live at `thenar.io/contracts`, and `/api/contract` returns all eleven |
+| 6.8 — corpus e2e no longer pinned to an expiring subscription | **DONE**, 72/72 green |
+| 2–5, 7, 8 | Not reached this run |
+
+**Interrupted mid-run** by the boot volume filling — every shell command,
+including `df`, failed with `ENOSPC`. Recovered and continued.
+
 ---
 
 ## 1. Goals
@@ -86,6 +107,16 @@ The repo's own documents disagree with the deployment.
 Deployed, Sourcify `exact_match`, holding balances in two cases, and referenced
 by **zero** application files. Each task below is "give it a page or a panel a
 visitor can reach from the nav, reading live chain state."
+
+**Live at https://thenar.io/contracts** — 200, eleven deployed contracts plus the
+superseded one, every figure a call made at request time.
+
+It took three attempts to get there, and the cause is worth keeping. The page
+404'd on the alias while returning 200 on the Railway origin, through a build
+that reported success. `.vercelignore` contained `contracts/` **unanchored**,
+which matches a directory of that name at any depth — so `app/contracts/` was
+silently excluded from the upload. The build was correct about what it received.
+All three entries are anchored to the repo root now.
 
 | Task | State |
 |---|---|
