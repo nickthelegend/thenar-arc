@@ -259,50 +259,86 @@ export function useActivity(limit = 40) {
       const head = await client.getBlockNumber();
       const found: FeedEntry[] = [];
 
-      for (let i = 0; i < MAX_WINDOWS && found.length < limit; i += 1) {
-        const to = head - WINDOW * BigInt(i);
-        const from = to > WINDOW ? to - WINDOW + 1n : 0n;
+      /**
+       * The windows are read in parallel batches, not one after another.
+       *
+       * Forty sequential getLogs calls of two thousand blocks each is eighty
+       * thousand blocks and forty round trips to a public RPC, which measured
+       * fourteen seconds before the standings appeared — on a page whose whole
+       * job is to show them. The windows do not depend on each other, so the
+       * only reason they were serial was the shape of the loop.
+       *
+       * Batched rather than all forty at once, because a public endpoint will
+       * rate-limit a fan-out that wide, and the early exit is kept: with the
+       * default limit a few batches are usually enough and the rest are never
+       * requested.
+       */
+      const BATCH = 8;
+      const event = {
+        type: "event",
+        name: "TrajectoryAccepted",
+        inputs: [
+          { name: "trajectoryId", type: "uint256", indexed: true },
+          { name: "taskId", type: "uint256", indexed: true },
+          { name: "contributor", type: "address", indexed: true },
+          { name: "trajHash", type: "bytes32", indexed: false },
+          { name: "cid", type: "string", indexed: false },
+          { name: "score", type: "uint16", indexed: false },
+          { name: "paid", type: "uint256", indexed: false },
+        ],
+      } as const;
 
-        const logs = await client.getLogs({
-          address: AXON_ADDRESS,
-          event: {
-            type: "event",
-            name: "TrajectoryAccepted",
-            inputs: [
-              { name: "trajectoryId", type: "uint256", indexed: true },
-              { name: "taskId", type: "uint256", indexed: true },
-              { name: "contributor", type: "address", indexed: true },
-              { name: "trajHash", type: "bytes32", indexed: false },
-              { name: "cid", type: "string", indexed: false },
-              { name: "score", type: "uint16", indexed: false },
-              { name: "paid", type: "uint256", indexed: false },
-            ],
-          },
-          fromBlock: from,
-          toBlock: to,
-        });
+      // Typed from the call that produces them, so `args` keeps the event's
+      // shape instead of degrading to the untyped Log union.
+      type EventLog = Awaited<ReturnType<typeof client.getLogs<typeof event>>>[number];
+      const hits: { log: EventLog }[] = [];
 
-        for (const log of logs.reverse()) {
-          const a = log.args as {
-            trajectoryId?: bigint; taskId?: bigint; contributor?: `0x${string}`;
-            trajHash?: `0x${string}`; score?: number; paid?: bigint;
-          };
-          if (a.trajectoryId === undefined || a.trajHash === undefined) continue;
-          found.push({
-            trajectoryId: Number(a.trajectoryId),
-            taskId: Number(a.taskId ?? 0n),
-            contributor: a.contributor ?? "0x0000000000000000000000000000000000000000",
-            score: Number(a.score ?? 0),
-            paidMon: Number(formatEther(a.paid ?? 0n)),
-            trajHash: a.trajHash,
-            // Straight off the log, rather than joined from our database.
-            txHash: log.transactionHash ?? undefined,
-            // The block's own time, so the feed is ordered by the chain.
-            at: Number(log.blockNumber) ,
-          } as FeedEntry);
+      outer: for (let base = 0; base < MAX_WINDOWS; base += BATCH) {
+        const windows = [];
+        for (let i = base; i < Math.min(base + BATCH, MAX_WINDOWS); i += 1) {
+          const to = head - WINDOW * BigInt(i);
+          if (to < 0n) break;
+          windows.push({ from: to > WINDOW ? to - WINDOW + 1n : 0n, to });
         }
+        if (!windows.length) break;
 
-        if (from === 0n) break;
+        const batches = await Promise.all(
+          windows.map((w) =>
+            client
+              .getLogs({ address: AXON_ADDRESS, event, fromBlock: w.from, toBlock: w.to })
+              .catch(() => []),
+          ),
+        );
+        for (const logs of batches) for (const log of logs) hits.push({ log });
+
+        if (hits.length >= limit) break outer;
+        if (windows[windows.length - 1].from === 0n) break;
+      }
+
+      // Ordered explicitly rather than by the order the requests happened to
+      // return in. Newest first, and within a block the later log first, which
+      // is what the feed and the standings both assume.
+      hits.sort((a, b) => {
+        const d = Number((b.log.blockNumber ?? 0n) - (a.log.blockNumber ?? 0n));
+        return d !== 0 ? d : (b.log.logIndex ?? 0) - (a.log.logIndex ?? 0);
+      });
+
+      for (const { log } of hits) {
+        const a = log.args as {
+          trajectoryId?: bigint; taskId?: bigint; contributor?: `0x${string}`;
+          trajHash?: `0x${string}`; score?: number; paid?: bigint;
+        };
+        if (a.trajectoryId === undefined || a.trajHash === undefined) continue;
+        found.push({
+          trajectoryId: Number(a.trajectoryId),
+          taskId: Number(a.taskId ?? 0n),
+          contributor: a.contributor ?? "0x0000000000000000000000000000000000000000",
+          score: Number(a.score ?? 0),
+          paidMon: Number(formatEther(a.paid ?? 0n)),
+          trajHash: a.trajHash,
+          txHash: log.transactionHash ?? undefined,
+          at: Number(log.blockNumber),
+        } as FeedEntry);
       }
 
       // Timestamps, once, for the blocks actually shown — rather than a call
