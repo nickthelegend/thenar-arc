@@ -132,8 +132,20 @@ export async function GET(req: Request) {
     [taskId, appChain.id, AXON_ADDRESS.toLowerCase()],
   );
 
-  if (rows.length === 0) {
-    return NextResponse.json({ error: "No trajectories recorded for that task." }, { status: 404 });
+  /**
+   * The runs that did not work, fetched before deciding whether there is a
+   * corpus at all.
+   *
+   * This used to bail out on "no settled runs" with "No trajectories recorded
+   * for that task", which was false twice over on a task people had attempted
+   * and failed: trajectories were recorded, and the negatives this project
+   * makes a point of keeping were unreachable for exactly the tasks made
+   * entirely of them.
+   */
+  const failureRows = await failedTrajectories(taskId, ACCEPT_FLOOR);
+
+  if (rows.length === 0 && failureRows.length === 0) {
+    return NextResponse.json({ error: "Nothing recorded for that task." }, { status: 404 });
   }
 
   // What operators said about their own runs, joined on the hash. Absent for
@@ -187,7 +199,7 @@ export async function GET(req: Request) {
    * Nothing here was paid for and nothing here is on chain. That is the whole
    * distinction, and it is stated per episode as well as here.
    */
-  const failures = (await failedTrajectories(taskId, ACCEPT_FLOOR)).map((r, i) => {
+  const failures = failureRows.map((r, i) => {
     const samples = JSON.parse(r.samples) as Sample[];
     return {
       episode_index: i,
@@ -243,7 +255,11 @@ export async function GET(req: Request) {
       negatives_note:
         "Runs that scored below the acceptance floor. Real recordings, unpaid " +
         "and not on chain. Kept separate so they are never trained on as " +
-        "demonstrations by accident.",
+        "demonstrations by accident." +
+        (episodes.length === 0
+          ? " This task has no paid episodes at all: everything recorded on it " +
+            "so far is in this array, and `data` is empty rather than missing."
+          : ""),
     },
     null,
     2,
