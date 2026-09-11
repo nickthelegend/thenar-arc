@@ -40,18 +40,20 @@ word appears in help text, so a grep reports success for a deploy that never ran
 
 | Phase | Result |
 |---|---|
-| 0 — Ground truth in the docs | **DONE**, deployed |
-| 1 — Surface the dark contracts | **DONE** — live at `thenar.io/contracts`; `/api/contract` returns all eleven |
-| 2 — Write-path verification | **BLOCKED** — no operator wallet exists. The only chain key in the repo is the verifier's (0.012 AVAX), and using it to submit runs would defeat the key isolation `/api/health` verifies |
-| 3 — Physics honesty | **DONE**, all three tasks |
-| 4 — What a minted policy is | 4.1 and 4.3 **DONE**; 4.2 (a licence delivering a downloadable artefact) not started |
-| 5 — First-run cost | 5.1 **DONE and measured**; 5.2 and 5.3 not started |
-| 6 — Test and QA | 6.1–6.3, 6.8 **DONE**; 6.4 open, 6.5 was blocked on Phase 1 and is now unblocked, 6.7 not started |
-| 7 — Infrastructure | 7.1–7.4 **DONE**; 7.5 (rehearse a restore) not started |
-| 8 — Presentation | 8.2 **DONE** (`/contracts`); 8.1 and 8.3 not started |
+| 0 — Ground truth in the docs | **DONE** |
+| 1 — Surface the dark contracts | **DONE**; 1.9's Warp half also done, the certificate-on-run panel is not |
+| 2 — Write-path verification | **BLOCKED** — no operator wallet exists anywhere in this repo. The only chain key is the verifier's (0.012 AVAX) and using it to submit runs would defeat the key isolation `/api/health` verifies. Every other task is executed |
+| 3 — Physics honesty | **DONE** |
+| 4 — What a minted policy is | **DONE** |
+| 5 — First-run cost | 5.1 **measured**, 5.2 **documented**; 5.3 scoped with evidence, not built — it needs an Avalanche L1 deployed and validated, which is not a change to this repository |
+| 6 — Test and QA | **DONE** |
+| 7 — Infrastructure | **DONE** |
+| 8 — Presentation | **DONE** |
 
-Verified against production after the last deploy: 23/23 pages, 37/37 API,
-5/5 chain, 72/72 e2e, detector clean.
+**Final verification against production**, every runner exiting 0:
+23/23 pages · 10/10 deep · 37/37 API · 6/6 POST · 5/5 chain · 8/8 contracts ·
+57/57 route×mode · 72/72 e2e · 57 unit · 108 contract · demo rehearsal 23.1s
+with zero console errors · design detector clean.
 
 **Interrupted mid-run** by the boot volume filling — every shell command,
 including `df`, failed with `ENOSPC`. Recovered and continued.
