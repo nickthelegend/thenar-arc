@@ -216,13 +216,13 @@ still needs a funded wallet.
 | 7.4 `scripts/ship.mjs` — typecheck, build, Vercel **forced**, then Railway, refusing to continue unless Vercel reports `readyState: READY`. `--check` prints the plan without deploying. Both half-deploy failures this project has actually had are the reason it forces and the reason it does both | DONE |
 | 7.5 **Rehearsed.** `scripts/restore.mjs --rehearse` exports the database, restores it into a scratch file and verifies the result against the snapshot's own manifest: 18 trajectories out, 18 back, 0 faults. Between it and the existing drill both halves are now covered — the drill checks every prop's sha256 against its actual bytes on the real 22.8 MB snapshot (`integrity: ok`, 104 trajectories, 3 props, `matchesLive: true`), and this proves the rows write back. The target defaults to a scratch path so a rehearsal cannot touch the live corpus by being run in the wrong directory | DONE |
 
-### Phase 8 — Presentation · IN PROGRESS
+### Phase 8 — Presentation · DONE
 
 | Task | State |
 |---|---|
-| 8.1 Demo script that runs cold: no wallet, no cache, phone-first, ending on a public explorer page | NOT STARTED |
+| 8.1 `docs/DEMO.md` — six steps from a private window with no wallet and nothing cached, each ending on something the watcher can check, plus what not to claim and the numbers worth having ready | DONE |
 | 8.2 `https://thenar.io/contracts` — every contract, address, code size, balance, source path, the surface that uses it, and live readings from those with state. Built in Phase 1 and this is the same page | DONE |
-| 8.3 Rehearse the five-step loop end to end against the live deployment and time it | NOT STARTED |
+| 8.3 **Rehearsed against production: 22.8s across six steps, zero console errors.** `scripts/demo-rehearse.mjs` re-runs and re-times it and exits non-zero if anything logs an error. It caught its own bug first — step 5 read the first 64-hex string in the feed, which is a trajectory hash and never resolves; it reads `tx_hash` by name now and returns a real receipt | DONE |
 
 ---
 
