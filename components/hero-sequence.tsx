@@ -131,7 +131,7 @@ export function HeroSequence() {
   // frame, nothing that moves on its own.
   if (reduced) {
     return (
-      <section className="grid items-start gap-8 py-14 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-14 lg:py-20">
+      <section className="grid items-start gap-8 py-14 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-10 lg:gap-14 lg:py-20">
         <div className="flex flex-col gap-12">
           {SHEETS.map((s, i) => <Sheet key={s.kicker} sheet={s} level={i === 0 ? 1 : 2} />)}
         </div>
@@ -149,7 +149,7 @@ export function HeroSequence() {
             first thing anyone saw was a paragraph and the top edge of an empty
             black rectangle. The whole argument was one scroll away from being
             visible. */}
-        <div className="grid w-full items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-14">
+        <div className="grid w-full items-center gap-8 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-10 lg:gap-14">
           <div className="flex items-start gap-5 sm:gap-7">
             <Rail active={active} onSelect={goTo} />
 
@@ -222,7 +222,7 @@ function Sheet({ sheet, level = 1 }: { sheet: (typeof SHEETS)[number]; level?: 1
           not compute." and said the same thing in smaller type — the heading
           carries its own weight, and the rail beside it already says which of
           the four this is. */}
-      <Head className="font-display text-[clamp(2.2rem,5.4vw,4rem)] font-700 leading-[0.94] tracking-[-0.02em]">
+      <Head className="text-balance font-display text-[clamp(2rem,4.4vw,3.4rem)] font-700 leading-[0.96] tracking-[-0.025em]">
         {sheet.head.map((line, i) => (
           <span key={line} className="block">
             {line}
