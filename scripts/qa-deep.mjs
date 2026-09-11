@@ -85,3 +85,4 @@ for (const [id, route, heading, figures, extra] of ITEMS) {
 }
 await browser.close();
 console.log(`\n${pass}/${ITEMS.length} pass`);
+process.exit(pass === ITEMS.length ? 0 : 1);

@@ -60,3 +60,17 @@ jobs:
       - run: node test/e2e.mjs
         env:
           BASE: https://thenar.io
+
+      # The itemised plan in docs/TESTPLAN.md, which until now only ran when
+      # somebody remembered to type it. The API and chain runners need no
+      # browser; the page ones drive a real Chromium and check the console and
+      # network panel on every item, which is the half a fetch cannot do.
+      - run: npm ci --no-audit --no-fund
+      - run: node scripts/qa-api.mjs https://thenar.io
+      - run: node scripts/qa-chain.mjs
+      - run: node scripts/qa-post.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/qa-pages.mjs https://thenar.io
+      - run: node scripts/qa-contracts.mjs https://thenar.io
+      - run: node scripts/qa-deep.mjs
+      - run: node scripts/qa-matrix.mjs https://thenar.io

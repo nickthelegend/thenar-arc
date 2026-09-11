@@ -58,3 +58,4 @@ const check = (id, ok, detail) => { total++; if (ok) pass++; console.log(`${ok?"
   check("B37", bad.length === 0, `openapi advertises ${paths.length} paths, unanswered: ${bad.length}${bad.length?" · "+bad.slice(0,3).join(" | "):""}`);
 }
 console.log(`\n${pass}/${total} pass`);
+process.exit(pass === total ? 0 : 1);

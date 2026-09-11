@@ -98,3 +98,4 @@ for (const [id, path, want, assert] of ITEMS) {
 let p = 0;
 for (const r of results) { if (r.pass) p++; console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.id.padEnd(4)} ${r.path.padEnd(34)} ${r.detail}`); }
 console.log(`\n${p}/${results.length} pass`);
+process.exit(p === results.length ? 0 : 1);

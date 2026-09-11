@@ -15,7 +15,8 @@ const [tasks, trajs, pols] = await Promise.all([
   c.readContract({address:A,abi,functionName:"trajectoryCount"}),
   c.readContract({address:A,abi,functionName:"policyCount"}),
 ]);
-const say = (id, ok, d) => console.log(`${ok?"PASS":"FAIL"}  ${id.padEnd(4)} ${d}`);
+let failed = 0;
+const say = (id, ok, d) => { if (!ok) failed++; console.log(`${ok?"PASS":"FAIL"}  ${id.padEnd(4)} ${d}`); };
 
 // The plan's wording is "matches the count shown on /hub" — the chain figures
 // are rendered by the pages, not served by /api/stats, which is page-view
@@ -50,3 +51,5 @@ for (let i = 0; i < Number(tasks); i++) {
 const avax = Number(sum) / 1e18;
 say("C5", avax >= 0, `sum(escrow) over ${tasks} tasks = ${avax.toFixed(6)} AVAX`);
 
+// Non-zero when anything failed, so CI can fail on it.
+process.exit(failed === 0 ? 0 : 1);

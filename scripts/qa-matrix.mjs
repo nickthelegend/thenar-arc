@@ -57,3 +57,4 @@ for (const r of rows) {
   }
 }
 console.log(`\n${rows.length - fails}/${rows.length} page-mode combinations clean`);
+process.exit(fails === 0 ? 0 : 1);

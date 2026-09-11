@@ -155,3 +155,5 @@ for (const r of results) {
   r.netFail.forEach((e) => console.log(`         network: ${e}`));
 }
 console.log(`\n${passed}/${results.length} pass`);
+// Non-zero when anything failed, or CI reports green over a red run.
+process.exit(passed === results.length ? 0 : 1);
