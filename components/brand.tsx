@@ -51,12 +51,21 @@ export function ThenarMark({
   );
 }
 
-/** Mark plus wordmark, set in the pixel face. */
+/**
+ * Mark plus wordmark.
+ *
+ * The name used to be set in an arcade face — eight-bit, one weight, in the
+ * corner of every page. It made the mark beside it look like a sticker. The
+ * mark is drawn to one stroke weight and survives at 16px; the lettering now
+ * has to hold the same line, so it is the display face at its heaviest, cut
+ * tight, with the tracking pulled in until the five letters read as one word
+ * rather than five.
+ */
 export function ThenarWordmark({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <ThenarMark className="size-[22px] shrink-0" />
-      <span className="pixel text-[15px] leading-none text-scribe">THENAR</span>
+      <span className="wordmark text-[18px] uppercase text-scribe">Thenar</span>
     </span>
   );
 }

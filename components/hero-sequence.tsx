@@ -131,7 +131,7 @@ export function HeroSequence() {
   // frame, nothing that moves on its own.
   if (reduced) {
     return (
-      <section className="grid items-start gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-20">
+      <section className="grid items-start gap-8 py-14 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-14 lg:py-20">
         <div className="flex flex-col gap-12">
           {SHEETS.map((s, i) => <Sheet key={s.kicker} sheet={s} level={i === 0 ? 1 : 2} />)}
         </div>
@@ -143,7 +143,13 @@ export function HeroSequence() {
   return (
     <section ref={ref} className="relative" style={{ height: `${SHEETS.length * 100}vh` }}>
       <div className="sticky top-14 flex h-[calc(100dvh-3.5rem)] items-center">
-        <div className="grid w-full items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
+        {/* Two columns from md rather than lg. The arm is the claim this page
+            is making, and below 1024px it used to sit under the copy — which
+            on any laptop-height viewport put it entirely below the fold, so the
+            first thing anyone saw was a paragraph and the top edge of an empty
+            black rectangle. The whole argument was one scroll away from being
+            visible. */}
+        <div className="grid w-full items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-14">
           <div className="flex items-start gap-5 sm:gap-7">
             <Rail active={active} onSelect={goTo} />
 
@@ -168,7 +174,25 @@ function ScrollSheet({ sheet, on }: { sheet: (typeof SHEETS)[number]; on: boolea
     <motion.div
       animate={{ opacity: on ? 1 : 0, y: on ? 0 : 14 }}
       initial={false}
-      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      /**
+       * Out fast, in after it has gone.
+       *
+       * Both sheets used to cross-fade over the same 0.55s, symmetrically, in
+       * the same grid cell — so halfway through, each sat near half opacity and
+       * both were legible at once. Two headlines, two paragraphs and two rows
+       * of buttons printed over each other. It did not read as a transition; it
+       * read as a rendering fault, and it was the first thing on the page.
+       *
+       * A cross-fade between two opaque texts has no midpoint that works. So
+       * they take turns: the outgoing sheet is gone in 160ms, and the incoming
+       * one does not begin until it is. The total is shorter than before and
+       * only one sheet is ever readable.
+       */
+      transition={
+        on
+          ? { duration: 0.34, delay: 0.16, ease: [0.16, 1, 0.3, 1] }
+          : { duration: 0.16, ease: "linear" }
+      }
       // Every sheet occupies the same cell. The ones that are not showing have
       // to be inert as well as invisible, or their links stay clickable and
       // stay in the tab order under the sheet that is actually on screen.
@@ -194,8 +218,10 @@ function Sheet({ sheet, level = 1 }: { sheet: (typeof SHEETS)[number]; level?: 1
   const Head = level === 1 ? "h1" : "h2";
   return (
     <div className="flex flex-col gap-5">
-      <span className="label">{sheet.kicker}</span>
-
+      {/* No eyebrow. "The shortage" sat above "Physical AI is short of data,
+          not compute." and said the same thing in smaller type — the heading
+          carries its own weight, and the rail beside it already says which of
+          the four this is. */}
       <Head className="font-display text-[clamp(2.2rem,5.4vw,4rem)] font-700 leading-[0.94] tracking-[-0.02em]">
         {sheet.head.map((line, i) => (
           <span key={line} className="block">
@@ -267,7 +293,7 @@ function Rail({ active, onSelect }: { active: number; onSelect: (i: number) => v
 
 function ArmFrame() {
   return (
-    <div className="relative h-[340px] border border-rule bg-ink-0 sm:h-[440px] lg:h-[520px]">
+    <div className="relative h-[300px] border border-rule bg-ink-0 sm:h-[380px] md:h-[420px] lg:h-[520px]">
       <HeroArm />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-rule bg-ink-1/90 px-4 py-2 font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3">
         <span>THENAR-6</span>

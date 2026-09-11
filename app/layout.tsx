@@ -3,7 +3,7 @@ import { InstallShell } from "@/components/install";
 import { LocaleReady } from "@/components/locale-ready";
 import { Pulse } from "@/components/pulse";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
-import { DM_Mono, Hanken_Grotesk, Press_Start_2P } from "next/font/google";
+import { Archivo, DM_Mono, Hanken_Grotesk } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteNav } from "@/components/site-nav";
 import { Conditions } from "@/components/conditions";
@@ -15,11 +15,23 @@ import "./globals.css";
 /**
  * Three faces, each with one job.
  *
- * Hanken Grotesk carries display and body — a geometric grotesque with the
- * same neutral warmth the category reads as native. DM Mono takes every
- * measured value, label, address and hash; mono here is for measurement and
- * data, never for prose. Press Start 2P is the pixel voice, used only on the
- * wordmark and the payout figure, where the product is allowed to shout.
+ * Archivo carries display: the headlines and the wordmark. It is a grotesque
+ * drawn for signage, so it has weight and tight apertures where a neutral UI
+ * face has neither, and at 4rem it reads as something stamped on an instrument
+ * rather than set in a template. That is the whole reason it is here — the
+ * page previously ran its headlines in the same unopinionated face as its
+ * paragraphs, which is why the type had no voice at any size.
+ *
+ * Hanken Grotesk carries body. Rounder and warmer than Archivo, which is what
+ * makes the pairing read as two decisions rather than one face at two sizes.
+ *
+ * DM Mono takes every measured value, label, address and hash. Mono here is
+ * for measurement and data, never for prose and never as a costume.
+ *
+ * There was a fourth: Press Start 2P, an arcade face, setting the wordmark in
+ * the corner of every page. A protocol that settles real money and calls
+ * itself a measuring instrument does not have a video-game logo. It is gone,
+ * and the mark now sits beside its own name set in the display face.
  */
 const grotesk = Hanken_Grotesk({
   subsets: ["latin"],
@@ -35,10 +47,10 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
-const pixel = Press_Start_2P({
+const archivo = Archivo({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-pixel",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -85,7 +97,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${grotesk.variable} ${dmMono.variable} ${pixel.variable}`}
+      className={`${grotesk.variable} ${dmMono.variable} ${archivo.variable}`}
     >
       <head>
         {/* Before the first paint, or the default theme renders for a frame and

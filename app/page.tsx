@@ -27,7 +27,11 @@ export default function Home() {
           We settle the money.
         </h2>
 
-        <div className="flex flex-col gap-5 text-[16px] leading-relaxed text-scribe-2">
+        {/* 68ch. The column had no measure at all, so on a wide screen these
+            paragraphs ran to 82 characters a line — past the point where the
+            eye reliably finds the start of the next one, and the longest
+            unbroken reading on the page was the part making the argument. */}
+        <div className="flex max-w-[68ch] flex-col gap-5 text-[16px] leading-relaxed text-scribe-2">
           <p>
             The networks already doing this write one small record per
             trajectory — a data ID bound to a task and a wallet — and keep the

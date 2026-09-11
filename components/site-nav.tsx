@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { usePathname } from "next/navigation";
 import { useBlockNumber } from "wagmi";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ThenarWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
@@ -27,6 +28,38 @@ export function SiteNav() {
   const s = useSession();
   const { data: block } = useBlockNumber({ watch: true, query: { enabled: IS_DEPLOYED } });
 
+  /**
+   * Whether the sections actually run past the edge.
+   *
+   * The fade used to be switched off at `md`, on the assumption that by 768px
+   * they all fit. They do not: at 789px there were still 157px of sections past
+   * the edge and, with the fade gone, nothing saying so — "Leaderboard" was cut
+   * through the middle against a hard edge and "Foundry" was off the end
+   * entirely. The bar scrolled; nothing suggested it could.
+   *
+   * A breakpoint was the wrong instrument. The row overflows when its contents
+   * are wider than it is, and that depends on the wallet chip and the block
+   * number beside it as much as on the viewport — so it is measured rather than
+   * predicted, and the fade is on exactly when there is somewhere to scroll to.
+   *
+   * Declared above the station early-return below, because a hook after a
+   * conditional return is a hook that does not always run.
+   */
+  const scroller = useRef<HTMLElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const check = () => setOverflowing(el.scrollWidth > el.clientWidth + 1);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    // The links carry the width, so a font swap changing their measure has to
+    // re-check too — not only the bar being resized around them.
+    for (const child of Array.from(el.children)) ro.observe(child);
+    check();
+    return () => ro.disconnect();
+  }, [pathname]);
+
   if (pathname?.startsWith("/station/")) return null;
 
   const lowOnGas = s.connected && !s.wrongNetwork && s.balance < LOW_BALANCE;
@@ -40,11 +73,17 @@ export function SiteNav() {
           </Link>
 
           <nav
-            /* The scrollbar is hidden, so on a narrow screen the sections past
-               the fold had nothing saying they were there. The mask fades the
-               last few pixels, which is the only cue a horizontal scroll gets
-               once the bar itself is gone. */
-            className="flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)] md:[mask-image:none]"
+            ref={scroller}
+            /* The scrollbar is hidden, so the sections past the edge have
+               nothing saying they are there. The mask fades the last few pixels,
+               which is the only cue a horizontal scroll gets once the bar itself
+               is gone — on while there is somewhere to scroll to, off when the
+               row fits and a fade would only dim the last item for no reason. */
+            className={cn(
+              "flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              overflowing &&
+                "[mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)]",
+            )}
             aria-label="Sections"
           >
             {ROUTES.map((r) => {

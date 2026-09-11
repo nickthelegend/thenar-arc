@@ -47,10 +47,11 @@
   --color-probe: #6E86A6;
   --color-probe-dim: #0E1520;
 
-  --font-display: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  /* Display is its own face now. It used to be the body face at a larger size,
+     which is why headlines had no more voice than paragraphs did. */
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
-  --font-pixel: var(--font-pixel), ui-monospace, monospace;
 
   /* Hard corners. A radius above 2px belongs to a different world. */
   --radius-edge: 0px;
@@ -231,12 +232,14 @@
     color: var(--color-scribe-3);
   }
 
-  /* The pixel face, used only where the product shouts: the wordmark and the
-     payout. Never for anything a visitor has to read at length. */
-  .pixel {
-    font-family: var(--font-pixel);
-    letter-spacing: 0.02em;
-    line-height: 1.4;
+  /* The wordmark: the display face, cut tight. Uppercase at this size needs
+     negative tracking to stop reading as spaced-out letters rather than a
+     name, and it sits against a drawn mark whose strokes are all one weight. */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1;
   }
 }
 
