@@ -8,7 +8,15 @@ import { cn } from "@/lib/cn";
 import { fmtInt } from "@/lib/format";
 import { PULSE_KEY } from "@/components/pulse";
 
-type Health = { ok: boolean; checks: Record<string, { ok: boolean; detail: string }> };
+type Check = { ok: boolean; detail: string };
+type Health = {
+  ok: boolean;
+  live?: boolean;
+  checks: Record<string, Check>;
+  /** Historical findings, reported beside the live checks but never the reason
+   *  the endpoint returns a failing status. */
+  audit?: Record<string, Check>;
+};
 
 /**
  * The health endpoint, readable by a person.
@@ -47,7 +55,9 @@ export default function StatusPage() {
     return () => { live = false; clearInterval(id); };
   }, []);
 
-  const entries = h ? Object.entries(h.checks) : [];
+  // Both groups are shown. Splitting them in the API so a historical finding
+  // stops returning 503 would be worth nothing if the page then hid it.
+  const entries = h ? [...Object.entries(h.checks), ...Object.entries(h.audit ?? {})] : [];
   const passing = entries.filter(([, v]) => v.ok).length;
 
   return (

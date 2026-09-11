@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
 import { TasksProvider } from "@/components/tasks-provider";
 import { ModelStageProvider } from "@/components/model-stage";
 import { Palette } from "@/components/palette";
@@ -13,17 +13,42 @@ import { Tour } from "@/components/tour";
 import { wagmiConfig } from "@/lib/wagmi";
 import { appChain } from "@/lib/chain";
 
-// The modal is the one surface we do not draw ourselves, so it is pulled onto
-// the product's palette rather than left on RainbowKit's default purple.
-const theme = darkTheme({
-  accentColor: "#FF6A00",
-  accentColorForeground: "#000000",
-  borderRadius: "none",
-  fontStack: "system",
-  overlayBlur: "small",
-});
+/**
+ * The modal is the one surface we do not draw ourselves, so it is pulled onto
+ * the product's palette rather than left on RainbowKit's default purple.
+ *
+ * Both grounds, because the product has both. This was a single dark theme
+ * accented #FF6A00 — the orange the rest of the product has discarded — which
+ * meant the one screen a first-time operator has to get through to be paid was
+ * still wearing the old identity, on the wrong ground, after everything else
+ * had moved.
+ */
+const shared = { borderRadius: "none", fontStack: "system", overlayBlur: "small" } as const;
+const lightModal = lightTheme({ ...shared, accentColor: "#2B50E0", accentColorForeground: "#EFEFEE" });
+const darkModal = darkTheme({ ...shared, accentColor: "#7C97FF", accentColorForeground: "#0D0D0F" });
+
+/**
+ * Which ground the wallet modal should be drawn on.
+ *
+ * The theme lives on a data attribute written before first paint, so it is read
+ * from the DOM rather than from React state that does not exist yet, and it
+ * follows the toggle: opening the modal, switching the theme behind it and
+ * looking again should not show the other product's colours.
+ */
+function useModalTheme() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const read = () => setDark(document.documentElement.dataset.theme === "dark");
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => mo.disconnect();
+  }, []);
+  return dark ? darkModal : lightModal;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const modalTheme = useModalTheme();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -42,7 +67,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={theme} initialChain={appChain} modalSize="compact">
+        <RainbowKitProvider theme={modalTheme} initialChain={appChain} modalSize="compact">
           <TasksProvider>
           <ModelStageProvider>
             {children}

@@ -13,7 +13,12 @@ const client = createPublicClient({ chain: appChain, transport: http() });
 
 /** Everything that has to be true for a run to be recordable. */
 export async function GET() {
+  // Liveness and audit are answered separately, because they are different
+  // questions with different remedies. `checks` is "can this service do its job
+  // right now" — the signer, the database, the RPC, the contract. `audit` is
+  // "does the historical record hold up", which no restart can change.
   const checks: Record<string, { ok: boolean; detail: string }> = {};
+  const audit: Record<string, { ok: boolean; detail: string }> = {};
 
   // The key lives in the signer service, not here. Two things are worth
   // asserting and they are different: that signing is possible at all, and
@@ -160,23 +165,68 @@ export async function GET() {
       // protocol that pays for data is the more serious of the two, and the
       // one worth naming rather than reporting as a mismatch.
       const gap = onchain - stored;
-      checks.ledgerMatchesChain = {
-        ok: gap === 0,
+
+      // A gap is not automatically a loss.
+      //
+      // A station run writes its artefact and then records it, and its CID is
+      // derived from the trajectory hash — "axon:" plus the first sixteen hex
+      // of it. Three of the records on this contract were not written that way:
+      // their CIDs are "axon:relayed", "axon:prize-deployer" and
+      // "axon:prize-buyer", set by a relay and by the prize scripts, and no
+      // artefact ever existed for them to lose. Reporting those as retrievable
+      // data that has gone missing is a false alarm about the one property this
+      // protocol sells, so the two are counted apart. Only read the CIDs when
+      // there is something to explain — nine round trips do not belong on the
+      // fast path of a health check.
+      let unbacked = 0;
+      if (gap > 0) {
+        const ids = Array.from({ length: onchain }, (_, i) => BigInt(i));
+        const records = await Promise.all(ids.map((id) =>
+          client.readContract({ address: AXON_ADDRESS, abi: AXON_ABI, functionName: "getTrajectory", args: [id] })
+            .catch(() => null)));
+        unbacked = records.filter((r) => {
+          const rec = r as { cid?: string; trajHash?: string } | null;
+          if (!rec?.cid || !rec?.trajHash) return false;
+          return rec.cid !== `axon:${rec.trajHash.slice(2, 18)}`;
+        }).length;
+      }
+      // What must hold: every run that was recorded through the station has its
+      // artefact. Records written by another path were never station runs.
+      const missing = Math.max(0, gap - unbacked);
+
+      audit.ledgerMatchesChain = {
+        ok: missing === 0,
         detail:
           gap === 0
             ? `${stored} runs stored, ${onchain} on chain${other ? ` (plus ${other}, not shown)` : ""}`
             : gap > 0
-              ? `${gap} run${gap === 1 ? "" : "s"} paid on chain ${appChain.id} ` +
-                `${gap === 1 ? "has" : "have"} no stored trajectory — the payout is real and the ` +
-                `artefact behind it cannot be retrieved (${stored} stored, ${onchain} on chain)`
+              ? missing === 0
+                ? `${stored} station runs stored and all retrievable; ${unbacked} record` +
+                  `${unbacked === 1 ? "" : "s"} on chain ${appChain.id} ${unbacked === 1 ? "was" : "were"} ` +
+                  `written without an artefact (relay and prize scripts), so ${onchain} on chain is correct`
+                : `${missing} station run${missing === 1 ? "" : "s"} paid on chain ${appChain.id} ` +
+                  `${missing === 1 ? "has" : "have"} no stored trajectory — the payout is real and the ` +
+                  `artefact behind it cannot be retrieved (${stored} stored, ${onchain} on chain, ` +
+                  `${unbacked} written without one)`
               : `${-gap} more runs stored than the contract has accepted, which means the ledger ` +
                 `is claiming payouts the chain never made (${stored} stored, ${onchain} on chain)`,
       };
     } catch (e) {
-      checks.ledgerMatchesChain = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
+      audit.ledgerMatchesChain = { ok: false, detail: e instanceof Error ? e.message : "unreadable" };
     }
   }
 
-  const ok = Object.values(checks).every((c) => c.ok);
-  return NextResponse.json({ ok, checks }, { status: ok ? 200 : 503 });
+  // The status code answers the liveness question only. A historical ledger
+  // finding used to set 503, which said "this service cannot serve requests"
+  // about a service whose signer, database, RPC and contract were all fine —
+  // and, because no restart can change history, it said so permanently. Any
+  // uptime monitor pointed here was red for ever and the one signal that should
+  // mean "wake someone up" meant nothing. The finding is not hidden: it is
+  // reported in full, and `ok` still reflects both.
+  const live = Object.values(checks).every((c) => c.ok);
+  const clean = Object.values(audit).every((c) => c.ok);
+  return NextResponse.json(
+    { ok: live && clean, live, checks, audit },
+    { status: live ? 200 : 503 },
+  );
 }
