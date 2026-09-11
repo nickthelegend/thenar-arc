@@ -75,6 +75,46 @@ const ITEMS = [
   ["A22", "/task/1",           async (p) => [ (await p.evaluate(()=>document.body.innerText.trim().length)) > 200, "renders" ]],
   ["A26", "/handheld",         async (p) => [ (await p.evaluate(()=>document.body.innerText.trim().length)) > 60, "renders" ]],
   ["A27", "/offline",          async (p) => [ (await p.evaluate(()=>document.body.innerText.trim().length)) > 30, "renders" ]],
+  ["A30", "/licence/0",       async (p) => {
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        const rows = Array.from(document.querySelectorAll("dd")).map((d) => d.innerText);
+        return {
+          // The decoded payload, one row per field the receipt encodes.
+          decoded: rows.filter((x) => /[✓✗·]/.test(x)).length,
+          crosses: rows.filter((x) => x.includes("✗")).length,
+          // The real Attested event, not the view that answers for any policy.
+          signedOnChain: /block\s[\d,]+/.test(t) && /MESSAGE ID/i.test(t),
+          allMatch: /all \d+ match what the protocol holds/.test(t),
+          bytes: /320 bytes signed/.test(t),
+          // Producing a message is not delivering one, and the page must not blur them.
+          honest: /only the first happens here/.test(t),
+        };
+      });
+      const ok = r.decoded === 10 && r.crosses === 0 && r.signedOnChain &&
+                 r.allMatch && r.bytes && r.honest;
+      return [ok, JSON.stringify(r)];
+  }],
+  ["A29", "/l1",              async (p) => {
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          blocks: document.querySelectorAll("pre").length,
+          headings: Array.from(document.querySelectorAll("h2")).map((h) => h.innerText.trim()),
+          verdict: /32:\s*shown\s*\|\s*33:\s*shown\s*\|\s*36:\s*shown/.test(t),
+          // Figures that can only have come from the committed transcript, one
+          // per claim: the mint, the fee floor, and the delivered policy.
+          mint: /newcomer holds 25 THN/.test(t),
+          fee: /0\.000000021 THN/.test(t),
+          delivered: /the destination holds task 0n \| 2 trajectories \| fee 0\.5/.test(t),
+          // The page must say plainly that the chain is not reachable from here.
+          honest: /transcript, not a live panel/i.test(t),
+        };
+      });
+      const ok = r.blocks === 3 && r.headings.length === 3 && r.verdict &&
+                 r.mint && r.fee && r.delivered && r.honest;
+      return [ok, JSON.stringify(r)];
+  }],
   ["A28", "/no-such-page-xyz", async (p) => {
       const t = await p.evaluate(() => document.body.innerText);
       return [/not found|404/i.test(t) && !/stack|at Object|webpack/i.test(t), `notFound=${/not found|404/i.test(t)}`];

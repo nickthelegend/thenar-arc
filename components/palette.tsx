@@ -37,6 +37,7 @@ const PAGES: Item[] = [
   { id: "p-lead", label: "Operators", hint: "the standings", href: "/leaderboard", group: "Pages" },
   { id: "p-found", label: "Foundry", hint: "minted policies and cap tables", href: "/foundry", group: "Pages" },
   { id: "p-contracts", label: "Contracts", hint: "every deployed contract, read live", href: "/contracts", group: "Pages" },
+  { id: "p-l1", label: "The L1", hint: "three claims that need a chain of our own", href: "/l1", group: "Pages" },
   { id: "p-port", label: "Portfolio", hint: "your own runs", href: "/portfolio", group: "Pages" },
   { id: "p-status", label: "Status", hint: "what has to be true for a run to pay", href: "/status", group: "Pages" },
   { id: "p-spec", label: "Spec sheet", hint: "the arm, in numbers", href: "/spec", group: "Pages" },

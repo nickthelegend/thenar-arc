@@ -19,6 +19,7 @@ const ROUTES = [
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/foundry", label: "Foundry" },
   { href: "/contracts", label: "Contracts" },
+  { href: "/l1", label: "L1" },
 ];
 
 /** Enough of the native token to cover gas on a submit with headroom. */

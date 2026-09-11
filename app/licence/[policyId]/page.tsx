@@ -136,11 +136,7 @@ export default function LicencePage() {
         </ol>
       )}
 
-      {/* What the fee actually buys. A licence receipt that shows a cap table
-          and a payout and never points at the corpus is a receipt for nothing
-          the reader can hold. The bulk export is gated by CorpusAccess and the
-          gate is named rather than hidden behind a link that would 402. */}
-      <WarpAttestation policyId={policy.id} />
+      <WarpAttestation policy={policy} />
 
       <DimRule className="mt-10" note="What this licence delivers" />
       <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">

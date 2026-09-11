@@ -7,6 +7,7 @@ import { readContracts } from "wagmi/actions";
 import { formatEther } from "viem";
 import { AXON_ABI } from "./abi";
 import { AXON_ADDRESS, IS_DEPLOYED, scenarioName } from "./chain";
+import { DEPLOYED } from "./registry";
 import { parSecondsFor } from "./par";
 
 export type ChainTask = {
@@ -477,6 +478,78 @@ export function useCapTable(policyId: number | undefined) {
           payoutMon: Number(formatEther(payout[i])),
         }));
       },
+    },
+  });
+}
+
+/**
+ * The on-chain record that a policy was attested, if one exists.
+ *
+ * `payloadFor` says what a receipt *would* contain. It is a view, so it answers
+ * for every policy whether or not anybody ever signed one — which is useful and
+ * is not evidence. The evidence is the `Attested` event: a transaction that
+ * actually went through the Warp precompile and came back with a message id
+ * signed by Fuji's validators.
+ *
+ * One `getLogs` call, not the backwards window walk `useActivity` needs. That
+ * walk exists because the trajectory feed wants the newest N of a busy event
+ * and the endpoint caps a range; this wants every occurrence of a rare one, the
+ * policy id is indexed so the node does the filtering, and Fuji's public
+ * endpoint answers a million-block range for it in a single round trip. A
+ * window walk here would be forty requests to find nothing thirty-nine times.
+ */
+const LICENCE_RECEIPT_ADDRESS = DEPLOYED.find((d) => d.key === "licence")!.address;
+
+const ATTESTED_EVENT = {
+  type: "event",
+  name: "Attested",
+  inputs: [
+    { name: "policyId", type: "uint256", indexed: true },
+    { name: "messageID", type: "bytes32", indexed: true },
+    { name: "by", type: "address", indexed: true },
+  ],
+} as const;
+
+/** Comfortably wider than this deployment's whole history, and accepted in one call. */
+const ATTEST_LOOKBACK = 1_000_000n;
+
+export type Attestation = {
+  messageID: `0x${string}`;
+  by: `0x${string}`;
+  blockNumber: bigint;
+  txHash: `0x${string}`;
+};
+
+export function useAttestation(policyId: number | undefined) {
+  const client = usePublicClient();
+
+  return useQuery({
+    queryKey: ["attestation", policyId],
+    enabled: IS_DEPLOYED && policyId !== undefined,
+    // A signature already given does not change. Refetching it every few
+    // seconds would be a request per tick for an answer that is fixed.
+    staleTime: 60_000,
+    queryFn: async (): Promise<Attestation | null> => {
+      if (!client || policyId === undefined) return null;
+      const head = await client.getBlockNumber();
+      const logs = await client.getLogs({
+        address: LICENCE_RECEIPT_ADDRESS,
+        event: ATTESTED_EVENT,
+        args: { policyId: BigInt(policyId) },
+        fromBlock: head > ATTEST_LOOKBACK ? head - ATTEST_LOOKBACK : 0n,
+        toBlock: head,
+      });
+      if (!logs.length) return null;
+      // The first one is the one that matters: re-attesting produces a second
+      // signature over the same claim, and the receipt is dated by when the
+      // claim was first signed rather than by the last time somebody re-signed it.
+      const first = logs.reduce((a, b) => ((a.blockNumber ?? 0n) <= (b.blockNumber ?? 0n) ? a : b));
+      return {
+        messageID: first.args.messageID as `0x${string}`,
+        by: first.args.by as `0x${string}`,
+        blockNumber: first.blockNumber ?? 0n,
+        txHash: first.transactionHash as `0x${string}`,
+      };
     },
   });
 }
