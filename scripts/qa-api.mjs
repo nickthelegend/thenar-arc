@@ -43,7 +43,12 @@ const ITEMS = [
   ["B16", "/api/space/1",       200, nonEmpty],
   ["B17", "/api/corpus",        200, nonEmpty],
   ["B18a", "/api/dataset",              400, J((j) => [/taskId/i.test(j.error ?? ""), `refuses: ${j.error}`])],
-  ["B18b", "/api/dataset?taskId=1",     200, nonEmpty],
+  // Bulk corpus is gated by the CorpusAccess contract; 402 naming that contract
+  // is the correct answer without a subscriber, not a fault. The single-episode
+  // path is deliberately open, and that is the half that must return data.
+  ["B18b", "/api/dataset?taskId=1",     402, J((j) => [/subscription/i.test(j.error ?? "") && !!j.contract, `gated by ${j.contract}`])],
+  ["B18c", "/api/dataset?traj=0x77f0cc8cd166ce38679fee669324dc3b898ed308dbf7aee8752c96490941a7a2", 200,
+           J((j) => [JSON.stringify(j).length > 500, `open episode, ${JSON.stringify(j).length}B`])],
   ["B19a", "/api/dataset/summary",          400, J((j) => [/taskId/i.test(j.error ?? ""), `refuses: ${j.error}`])],
   ["B19b", "/api/dataset/summary?taskId=1", 200, nonEmpty],
   ["B20", "/api/archive",       200, nonEmpty],

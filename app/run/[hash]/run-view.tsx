@@ -375,11 +375,11 @@ export default function RunView() {
                aria-label={`Path the payload travelled${path.others.length ? `, with ${path.others.length} other accepted runs behind it` : ""}`}>
             {/* Every other accepted run on this task, underneath. */}
             {path.others.map((pts, i) => (
-              <polyline key={i} points={pts} fill="none" stroke="#6E86A6" strokeWidth="1" opacity={0.28} />
+              <polyline key={i} points={pts} fill="none" stroke="var(--color-probe)" strokeWidth="1" opacity={0.28} />
             ))}
-            <polyline points={path.full} fill="none" stroke="#3D3D3D" strokeWidth="1.5" />
-            <polyline points={path.trace} fill="none" stroke="#FF6A00" strokeWidth="2" />
-            <circle cx={path.head[0]} cy={path.head[1]} r="4" fill={path.grip < 14 ? "#FF6A00" : "#6E86A6"} />
+            <polyline points={path.full} fill="none" stroke="var(--color-rule-strong)" strokeWidth="1.5" />
+            <polyline points={path.trace} fill="none" stroke="var(--color-signal)" strokeWidth="2" />
+            <circle cx={path.head[0]} cy={path.head[1]} r="4" fill={path.grip < 14 ? "var(--color-signal)" : "var(--color-probe)"} />
           </svg>
           {path.others.length ? (
             <p className="max-w-[420px] text-[13px] leading-relaxed text-scribe-3">

@@ -485,18 +485,18 @@ export function ScoreDial({
       role="img"
       aria-label={`Score ${(score / 100).toFixed(2)} out of 100, ${paid ? "above" : "below"} the ${(floor / 100).toFixed(0)} pay threshold`}
     >
-      <path d={arc(0, 1, r)} fill="none" stroke="#262626" strokeWidth="6" strokeLinecap="butt" />
+      <path d={arc(0, 1, r)} fill="none" stroke="var(--color-rule)" strokeWidth="6" strokeLinecap="butt" />
       {frac > 0 ? (
         <path
           d={arc(0, frac, r)}
           fill="none"
-          stroke={paid ? "#FF6A00" : "#FF2D55"}
+          stroke={paid ? "var(--color-signal)" : "var(--color-reject)"}
           strokeWidth="6"
           strokeLinecap="butt"
         />
       ) : null}
       {/* The pay threshold, fixed on the face. */}
-      <line x1={fx} y1={fy} x2={ix} y2={iy} stroke="#8F8F8F" strokeWidth="1.5" />
+      <line x1={fx} y1={fy} x2={ix} y2={iy} stroke="var(--color-scribe-3)" strokeWidth="1.5" />
       <text
         x={c}
         y={c + 4}

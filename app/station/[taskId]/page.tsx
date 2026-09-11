@@ -361,7 +361,7 @@ export default function StationPage() {
             own answer instead of as a page that has stopped. */}
         <svg width="132" height="96" viewBox="0 0 132 96" role="img"
              aria-label={`Reading task ${taskId} from the chain`}>
-          <line x1="20" y1="88" x2="112" y2="88" stroke="#262626" strokeWidth="2" />
+          <line x1="20" y1="88" x2="112" y2="88" stroke="var(--color-rule)" strokeWidth="2" />
           {[
             { d: "M34 88 L34 62", delay: 0 },
             { d: "M34 62 L66 40", delay: 180 },
@@ -371,7 +371,7 @@ export default function StationPage() {
             <path
               key={seg.d}
               d={seg.d}
-              stroke="#FF6A00"
+              stroke="var(--color-signal)"
               strokeWidth="3"
               strokeLinecap="round"
               fill="none"
@@ -383,7 +383,7 @@ export default function StationPage() {
               }}
             />
           ))}
-          <circle cx="34" cy="88" r="4" fill="#3D3D3D" />
+          <circle cx="34" cy="88" r="4" fill="var(--color-rule-strong)" />
         </svg>
         <span className="font-mono text-[13px] text-scribe-3">
           Reading task #{taskId} from the chain…

@@ -9,7 +9,10 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/hub",
     display: "standalone",
     background_color: "#000000",
-    theme_color: "#FF6A00",
+    // The product's accent. This was #FF6A00 — the orange replaced in the
+    // redesign — so an installed app still opened with the old brand in its
+    // title bar and splash screen.
+    theme_color: "#2B50E0",
     // An SVG alone is not an installable icon: Android wants a 192 and a 512
     // PNG, and without a maskable variant it crops the mark into whatever
     // silhouette the launcher uses. Redrawn at each size by scripts/icons.mjs.

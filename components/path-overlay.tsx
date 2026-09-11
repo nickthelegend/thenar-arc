@@ -64,7 +64,7 @@ export function PathOverlay({ taskId, goal }: { taskId: number; goal: [number, n
         {frame ? (
           <>
             <circle cx={frame.to(goal)[0]} cy={frame.to(goal)[1]} r={frame.r}
-                    fill="none" stroke="#FF6A00" strokeWidth="1" />
+                    fill="none" stroke="var(--color-signal)" strokeWidth="1" />
             {paths!.map((p, i) => {
               const best = i === 0;
               const on = hover === p.trajHash;
@@ -73,7 +73,7 @@ export function PathOverlay({ taskId, goal }: { taskId: number; goal: [number, n
                   key={p.trajHash}
                   points={p.points.map((pt) => frame.to(pt).map((n) => n.toFixed(1)).join(",")).join(" ")}
                   fill="none"
-                  stroke={on ? "#FF9A3D" : best ? "#FF6A00" : "#6E86A6"}
+                  stroke={on ? "var(--color-signal-hi)" : best ? "var(--color-signal)" : "var(--color-probe)"}
                   strokeWidth={on ? 2.4 : best ? 1.8 : 1}
                   opacity={on ? 1 : best ? 0.95 : 0.34}
                 />

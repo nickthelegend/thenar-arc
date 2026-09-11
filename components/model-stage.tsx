@@ -183,7 +183,7 @@ export function ModelView({ url, className }: { url: string; className?: string 
         >
           <hemisphereLight args={["#9a9a9a", "#101010", 1.15]} />
           <directionalLight position={[2, 3, 2]} intensity={1.8} />
-          <directionalLight position={[-2, 1, -1.5]} intensity={0.5} color="#FF9A3D" />
+          <directionalLight position={[-2, 1, -1.5]} intensity={0.5} color="#FFB877" />
           <Suspense fallback={null}>
             <ModelMesh url={url} />
           </Suspense>

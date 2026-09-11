@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef } from "react";
+import { sceneColor } from "@/lib/theme-color";
 import { Canvas } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -138,7 +139,7 @@ function Plate() {
         <meshStandardMaterial color="#141414" roughness={0.84} metalness={0.06} />
       </mesh>
       <lineSegments geometry={grid}>
-        <lineBasicMaterial color="#3D3D3D" transparent opacity={0.5} />
+        <lineBasicMaterial color={sceneColor.ruleStrong()} transparent opacity={0.5} />
       </lineSegments>
     </group>
   );
@@ -154,7 +155,7 @@ function Trail({ points }: { points: Float32Array }) {
   return (
     <line>
       <primitive object={geom} attach="geometry" />
-      <lineBasicMaterial color="#FF6A00" transparent opacity={0.75} />
+      <lineBasicMaterial color={sceneColor.signal()} transparent opacity={0.75} />
     </line>
   );
 }
@@ -181,7 +182,7 @@ export function ReplayViewport({
     >
       <hemisphereLight args={["#8F8F8F", "#000000", 0.4]} />
       <directionalLight position={[0.9, 1.25, 0.6]} intensity={2.3} castShadow />
-      <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.45} color="#FF9A3D" />
+      <directionalLight position={[-0.8, 0.5, -0.7]} intensity={0.45} color="#FFB877" />
       <Suspense fallback={null}>
         {environmentUrl ? <Room url={environmentUrl} /> : null}
         <Plate />

@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { sceneColor } from "@/lib/theme-color";
 import { Html, useGLTF } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -262,7 +263,7 @@ function Arm({
         jaw?.traverse((o) => {
           const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
           if (!m || !("emissive" in m)) return;
-          m.emissive?.set(holding ? "#FF6A00" : "#000000");
+          m.emissive?.set(holding ? sceneColor.signal() : "#000000");
           m.emissiveIntensity = holding ? 0.55 : 0;
         });
       }
@@ -299,7 +300,7 @@ function ActiveRing() {
     <group position={[0, TABLE_Z + 0.0015, 0]}>
       <line>
         <primitive object={ring} attach="geometry" />
-        <lineBasicMaterial color="#FF6A00" transparent opacity={0.7} />
+        <lineBasicMaterial color={sceneColor.signal()} transparent opacity={0.7} />
       </line>
     </group>
   );
@@ -363,7 +364,7 @@ function SurfacePlate() {
         <meshStandardMaterial color="#141414" roughness={0.84} metalness={0.06} />
       </mesh>
       <lineSegments geometry={grid}>
-        <lineBasicMaterial color="#3D3D3D" transparent opacity={0.5} />
+        <lineBasicMaterial color={sceneColor.ruleStrong()} transparent opacity={0.5} />
       </lineSegments>
     </group>
   );
@@ -398,7 +399,7 @@ function GoalZone({ at, payload, seats = 1 }: {
     const r = Math.min(Math.max(d, 0.004), GOAL_R * 1.6);
     g.scale.setScalar(r / GOAL_R);
     g.visible = d < GOAL_R * 2.2;
-    m.color.set(d <= tol ? "#3DD68C" : "#FF2D55");
+    m.color.set(d <= tol ? sceneColor.go() : sceneColor.reject());
     m.opacity = d <= tol ? 0.95 : 0.5;
   });
 
@@ -450,16 +451,16 @@ function GoalZone({ at, payload, seats = 1 }: {
       ) : null}
       <line>
         <primitive object={ring} attach="geometry" />
-        <lineBasicMaterial color="#FF6A00" />
+        <lineBasicMaterial color={sceneColor.signal()} />
       </line>
       <lineSegments geometry={ticks}>
-        <lineBasicMaterial color="#FF6A00" />
+        <lineBasicMaterial color={sceneColor.signal()} />
       </lineSegments>
       {payload ? (
         <group ref={live}>
           <line>
             <primitive object={ring} attach="geometry" />
-            <lineBasicMaterial ref={mat} color="#3DD68C" transparent opacity={0.9} />
+            <lineBasicMaterial ref={mat} color={sceneColor.go()} transparent opacity={0.9} />
           </line>
         </group>
       ) : null}
@@ -518,12 +519,17 @@ function GhostTrail({ points }: { points: React.RefObject<Float32Array> }) {
     const col = geom.getAttribute("color") as THREE.BufferAttribute;
     const n = trailCount.current;
     const c = col.array as Float32Array;
+    // The accent, read from the stylesheet rather than written out as float
+    // components. These three numbers were 1.0/0.416/0.0 — the discarded brand
+    // orange, hardcoded past the point where any search for "#FF6A00" would
+    // find it, on the one line in the scene the smoothness term actually scores.
+    const trail = new THREE.Color(sceneColor.signal());
     for (let i = 0; i < n; i += 1) {
       const age = n > 1 ? i / (n - 1) : 1;       // 0 oldest, 1 newest
       const k = Math.max(0.06, Math.pow(age, 2.2));
-      c[i * 3] = 1.0 * k;                         // #FF6A00 scaled by age
-      c[i * 3 + 1] = 0.416 * k;
-      c[i * 3 + 2] = 0.0;
+      c[i * 3] = trail.r * k;
+      c[i * 3 + 1] = trail.g * k;
+      c[i * 3 + 2] = trail.b * k;
     }
     col.needsUpdate = true;
 
@@ -575,13 +581,13 @@ function ReachEnvelope({ visible, target }: {
     <group position={[0, TABLE_Z + 0.002, 0]}>
       <line>
         <primitive object={ring} attach="geometry" />
-        <lineBasicMaterial color="#FF2D55" transparent opacity={0.4} />
+        <lineBasicMaterial color={sceneColor.reject()} transparent opacity={0.4} />
       </line>
       {/* A brighter spur on the bearing being pushed against. */}
       <group ref={spur}>
         <mesh position={[REACH_MAX, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[REACH_MAX * 0.045, REACH_MAX * 0.075, 24]} />
-          <meshBasicMaterial color="#FF2D55" transparent opacity={0.95} side={THREE.DoubleSide} />
+          <meshBasicMaterial color={sceneColor.reject()} transparent opacity={0.95} side={THREE.DoubleSide} />
         </mesh>
       </group>
     </group>
@@ -979,7 +985,7 @@ function Rig({
       />
       <directionalLight
         position={[-0.8, 0.5, -0.7]}
-        color={lighting?.fill.color ?? "#FF9A3D"}
+        color={lighting?.fill.color ?? "#FFB877"}
         intensity={lighting?.fill.intensity ?? 0.45}
       />
 
@@ -1029,7 +1035,7 @@ function Rig({
           )}
           attach="geometry"
         />
-        <lineBasicMaterial color="#3D3D3D" />
+        <lineBasicMaterial color={sceneColor.ruleStrong()} />
       </line>
 
       {running ? (

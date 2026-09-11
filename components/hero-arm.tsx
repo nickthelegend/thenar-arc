@@ -156,7 +156,7 @@ function Rig({ paused }: { paused: boolean }) {
     <group position={[0, -0.22, 0]}>
       <hemisphereLight args={["#8F8F8F", "#000000", 0.46]} />
       <directionalLight position={[0.9, 1.3, 0.7]} intensity={2.4} castShadow />
-      <directionalLight position={[-0.9, 0.4, -0.7]} intensity={0.5} color="#FF9A3D" />
+      <directionalLight position={[-0.9, 0.4, -0.7]} intensity={0.5} color="#FFB877" />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[0.5, 64]} />

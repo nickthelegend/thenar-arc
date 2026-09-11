@@ -27,13 +27,13 @@ await page.goto("https://thenar.io/hub", { waitUntil: "domcontentloaded" });
 await page.waitForTimeout(9000);
 const hub = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " "));
 await page.goto("https://thenar.io/", { waitUntil: "domcontentloaded" });
-await page.waitForTimeout(6000);
+await page.waitForTimeout(9000);
 const root = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " "));
 await browser.close();
 
 const hubTasks = (hub.match(/TASKS\s+(\d+)/i) ?? [])[1];
-const rootTrajs = (root.match(/Trajectories recorded\s*(\d+)/i) ?? [])[1];
-const rootPols  = (root.match(/Policies minted\s*(\d+)/i) ?? [])[1];
+const rootTrajs = (root.match(/Trajectories\s+(\d+)/i) ?? [])[1];
+const rootPols  = (root.match(/Policies\s+(\d+)/i) ?? [])[1];
 say("C1", Number(tasks) === Number(hubTasks), `chain taskCount=${tasks} · /hub shows ${hubTasks}`);
 say("C2", Number(trajs) === Number(rootTrajs), `chain trajectoryCount=${trajs} · / shows ${rootTrajs}`);
 say("C3", Number(pols) === Number(rootPols), `chain policyCount=${pols} · / shows ${rootPols}`);
