@@ -56,16 +56,23 @@ export function ThenarMark({
  *
  * The name used to be set in an arcade face — eight-bit, one weight, in the
  * corner of every page. It made the mark beside it look like a sticker. The
- * mark is drawn to one stroke weight and survives at 16px; the lettering now
- * has to hold the same line, so it is the display face at its heaviest, cut
- * tight, with the tracking pulled in until the five letters read as one word
- * rather than five.
+ * mark is drawn to one stroke weight and survives at 16px; the lettering has
+ * to hold the same line, so it is the display face at its heaviest, cut tight.
+ *
+ * Sentence case with a signal full stop, which is the landing page's lockup.
+ * The two were drifting apart — the front door said "Thenar." and every screen
+ * behind it said "THENAR" — and a product with two wordmarks has two identities
+ * whatever else it gets right. The app keeps the drawn mark because a tab and a
+ * favicon need something that is not a word; the poster drops it because at
+ * that scale the word is the mark.
  */
 export function ThenarWordmark({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <ThenarMark className="size-[22px] shrink-0" />
-      <span className="wordmark text-[18px] uppercase text-scribe">Thenar</span>
+      <span className="wordmark text-[18px] text-scribe">
+        Thenar<span className="text-signal">.</span>
+      </span>
     </span>
   );
 }

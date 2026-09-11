@@ -311,7 +311,7 @@ export default function Home() {
         <div className="wrap">
           <div style={{ display: "flex", flexWrap: "wrap", gap: 30, alignItems: "flex-end", justifyContent: "space-between" }}>
             <div>
-              <h2 className="d rv" style={{ fontSize: "clamp(30px,4.6vw,66px)", maxWidth: "13ch" }}>
+              <h2 className="d rv" style={{ fontSize: "clamp(30px,4.4vw,62px)", maxWidth: "13ch" }}>
                 There is work open right now.
               </h2>
               <p className="meta meta-sm muted" style={{ marginTop: 18, textTransform: "none", letterSpacing: "0.02em" }}>
@@ -340,7 +340,7 @@ export default function Home() {
           className="d d-tight"
           style={{
             marginTop: "clamp(28px,5vh,64px)",
-            fontSize: "clamp(84px,19.5vw,300px)",
+            fontSize: "clamp(88px,20.5vw,304px)",
             transform: "translateY(0.19em)",
             textAlign: "center",
             userSelect: "none",

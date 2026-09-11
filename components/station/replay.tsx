@@ -177,7 +177,7 @@ export function ReplayViewport({
       camera={{ fov: 34, near: 0.02, far: 12, position: [0.92, 0.74, 0.9] }}
       onCreated={({ camera }) => camera.lookAt(0.06, 0.12, 0.02)}
       gl={{ antialias: true }}
-      style={{ background: "#000000" }}
+      style={{ background: "var(--color-ink-1)" }}
     >
       <hemisphereLight args={["#8F8F8F", "#000000", 0.4]} />
       <directionalLight position={[0.9, 1.25, 0.6]} intensity={2.3} castShadow />

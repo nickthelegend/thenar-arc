@@ -5,7 +5,7 @@
   "height_mm": 694.0,
   "parts": 21,
   "triangles": 8080,
-  "glb_bytes": 212576,
+  "glb_bytes": 212584,
   "links": [
     {
       "name": "Plinth",
@@ -111,7 +111,7 @@
       "key": "collar",
       "metallic": 0.7,
       "roughness": 0.34,
-      "color": "#FF6A00"
+      "color": "#2B50DF"
     },
     {
       "key": "pad",

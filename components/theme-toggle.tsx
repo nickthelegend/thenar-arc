@@ -4,13 +4,18 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Switch the instrument between the dark and the lamp.
+ * Switch the instrument between the lamp and the dark.
  *
- * Dark stays the default rather than following the operating system. This
- * product has had one look since it was built, people have seen it, and
- * silently rendering it inverted because of a system preference nobody set for
- * this site would be a surprise rather than a courtesy. The choice is
- * remembered once it is made.
+ * Paper is the default now and ink is the choice — the reverse of what this
+ * shipped with. The landing page commits to a light achromatic world, and a
+ * visitor who presses "Find a task" should not have the world invert
+ * underneath them; a product with two grounds has to pick the one its front
+ * door is painted in.
+ *
+ * It still does not follow the operating system. A system preference nobody
+ * set for this site is not a decision about this site, and silently rendering
+ * the whole instrument inverted on the strength of it would be a surprise
+ * rather than a courtesy. The choice is remembered once it is made.
  *
  * The attribute is written by a script in the document head as well as here.
  * Doing it only in React means the first paint is the default theme and the
@@ -26,7 +31,7 @@ export function ThemeToggle() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+      setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
     }, 0);
     return () => clearTimeout(t);
   }, []);
@@ -71,4 +76,4 @@ export function ThemeToggle() {
  * because a browser with storage disabled should get the default theme rather
  * than a blank page.
  */
-export const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("${THEME_KEY}");if(t==="light")document.documentElement.dataset.theme="light"}catch(e){}})()`;
+export const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("${THEME_KEY}");if(t==="dark")document.documentElement.dataset.theme="dark"}catch(e){}})()`;

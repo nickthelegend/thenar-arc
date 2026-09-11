@@ -1,5 +1,5 @@
 """
-AXON-6 — the arm the teleoperation station drives.
+THENAR-6 — the arm the teleoperation station drives.
 
 Six revolute joints plus a parallel-jaw gripper. Every dimension below is a
 named constant: change one and rerun this file, there is no CAD file to open.
@@ -8,7 +8,7 @@ viewport rotates the loaded model into three.js' Y-up world.
 
     python3 cad/arm.py
 
-Writes public/models/axon-6.glb (a named node hierarchy the viewport drives
+Writes public/models/thenar-6.glb (a named node hierarchy the viewport drives
 joint by joint) and cad/exports/*.stl (one solid per printable part).
 """
 
@@ -52,7 +52,13 @@ MATERIALS = {
     # uses for anything live.
     "shell":   {"color": [0.878, 0.882, 0.871, 1.0], "metallic": 0.04, "roughness": 0.48},
     "joint":   {"color": [0.086, 0.086, 0.086, 1.0], "metallic": 0.40, "roughness": 0.42},
-    "collar":  {"color": [1.000, 0.416, 0.000, 1.0], "metallic": 0.70, "roughness": 0.34},
+    # Anodised blue, the product's accent. This was [1.000, 0.416, 0.000] —
+    # #FF6A00, the brand orange this project carried before the redesign — so
+    # the most visible object in the whole product was still wearing the
+    # discarded palette, in three dimensions, on the surface operators stare at
+    # for an hour at a time. The accent belongs on the collars; it just has to
+    # be the accent the rest of the product actually uses.
+    "collar":  {"color": [0.169, 0.314, 0.878, 1.0], "metallic": 0.70, "roughness": 0.34},
     "pad":     {"color": [0.055, 0.055, 0.055, 1.0], "metallic": 0.00, "roughness": 0.90},
     "granite": {"color": [0.110, 0.110, 0.110, 1.0], "metallic": 0.08, "roughness": 0.76},
 }
@@ -145,7 +151,7 @@ def build() -> tuple[Node, dict[str, Mesh]]:
         parts[name] = mesh
         return mesh
 
-    root = Node("AXON-6")
+    root = Node("THENAR-6")
     root.add(Node("plinth", part("plinth", plinth()), "granite", (0, 0, -PLINTH_H)))
     root.add(Node("pedestal", part("pedestal", pedestal()), "shell"))
 
@@ -222,7 +228,7 @@ def main() -> None:
         )
         write_stl(mesh, name, os.path.join(exports, f"{name}.stl"))
 
-    glb = os.path.join(models, "axon-6.glb")
+    glb = os.path.join(models, "thenar-6.glb")
     write_glb(root, MATERIALS, glb)
 
     total_tris = sum(m.edge_report()["tris"] for m in parts.values())
@@ -230,7 +236,7 @@ def main() -> None:
     # The spec sheet in the app is generated from these same constants, so the
     # published numbers can never drift from the geometry that was exported.
     spec = {
-        "name": "AXON-6",
+        "name": "THENAR-6",
         "axes": 6,
         "reach_mm": round(L1 + L2 + WRIST_H + YOKE_H + FLANGE_H, 1),
         "height_mm": round(J1_Z + SHOULDER_H + 26 + L1 + L2 + WRIST_H + YOKE_H, 1),

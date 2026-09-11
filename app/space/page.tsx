@@ -71,13 +71,48 @@ export default function SpacePage() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+        /* A ruled list, not a card grid.
+           Two columns of bordered boxes is the shape this project's own design
+           rules refuse — cards as page structure — and it read as one here:
+           five rooms in a 2×3 arrangement with a hole in the corner, each
+           repeating its own frame, and the eye given no column to run down. The
+           hub already solved the same problem one route away, as a ruled table
+           you can scan. A room is a row. */
+        <ul className="mt-2">
           {open.map((t) => {
             const here = busy.get(t.id) ?? 0;
+            const left = t.slotsTotal - t.slotsFilled;
             return (
-              <li key={t.id} className="border border-rule p-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="label">Task {t.id}</span>
+              <li
+                key={t.id}
+                className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-baseline gap-x-5 gap-y-1 border-t border-rule py-4 sm:grid-cols-[3.5rem_minmax(0,1fr)_7rem_9rem_auto] sm:gap-x-7"
+              >
+                <span className="label">{t.id}</span>
+
+                <span className="col-start-2 text-[15px] leading-snug text-scribe">{t.name}</span>
+
+                <span className="col-start-2 row-start-2 font-mono text-[12px] tabular-nums text-scribe-3 sm:col-start-3 sm:row-start-1">
+                  {left} {left === 1 ? "slot" : "slots"} left
+                </span>
+
+                <span className="col-start-2 row-start-2 justify-self-end font-mono text-[12px] tabular-nums text-signal sm:col-start-4 sm:row-start-1 sm:justify-self-start">
+                  {fmtMon(t.rewardMon)} {CURRENCY}
+                </span>
+
+                {/* Occupancy is the one thing that changes while you look at
+                    it, so it is the one thing that gets the accent and a shape:
+                    a filled marker when somebody is in the room, a hairline
+                    ring when it is empty. Colour alone would not survive a
+                    monochrome print of this page. */}
+                <span className="col-start-3 row-start-1 flex items-center gap-2 justify-self-end sm:col-start-5">
+                  <span
+                    aria-hidden
+                    className={
+                      here > 0
+                        ? "size-1.5 shrink-0 bg-signal"
+                        : "size-1.5 shrink-0 border border-rule-strong"
+                    }
+                  />
                   <span
                     className={
                       here > 0
@@ -85,24 +120,15 @@ export default function SpacePage() {
                         : "font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3"
                     }
                   >
-                    {here > 0 ? `${here} here now` : "empty"}
+                    {here > 0 ? `${here} here` : "empty"}
                   </span>
-                </div>
-                <p className="mt-2 text-[15px] leading-snug text-scribe">{t.name}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 font-mono text-[12px] tabular-nums text-scribe-3">
-                  <span>{t.slotsTotal - t.slotsFilled} slots left</span>
-                  <span className="text-signal">{fmtMon(t.rewardMon)} {CURRENCY} per run</span>
-                </div>
-                <Link
-                  href={`/station/${t.id}`}
-                  className="mt-4 inline-block border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe"
-                >
-                  {t.slotsTotal - t.slotsFilled === 0
-                    ? "Watch"
-                    : here > 0
-                      ? "Join them"
-                      : "Open the room"}
-                </Link>
+                  <Link
+                    href={`/station/${t.id}`}
+                    className="ml-3 border border-rule-strong px-3.5 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe"
+                  >
+                    {left === 0 ? "Watch" : here > 0 ? "Join" : "Open"}
+                  </Link>
+                </span>
               </li>
             );
           })}

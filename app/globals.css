@@ -1,12 +1,18 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   AXON — orange on black.
+   THENAR — graphite on paper, with one blue.
 
-   Pure black ground, white ink, and one saturated orange that carries every
-   figure of value and every live state. The neutral steps are the same greys
-   the category's incumbent uses, so the surface reads native to it; the
-   accent is ours.
+   A cool achromatic ground, near-black ink, and a single saturated blue that
+   carries every figure of value and every live state. Depth is a hairline and
+   a value step: never a shadow, never a gradient, never a blur.
+
+   The ground is paper by default and ink when asked. That is the reverse of
+   what this project shipped for months, and it is deliberate: the landing page
+   commits to a light achromatic world, and a visitor who presses "Find a task"
+   should not have the world invert underneath them. The dark theme is the same
+   system read against the opposite ground, with the accent lifted so it still
+   separates from what it sits on.
 
    Colour means data. Controls take no colour — they get their state from rule
    weight, relief, and inversion. A coloured button would make colour mean two
@@ -14,38 +20,48 @@
    ========================================================================== */
 
 @theme {
-  /* Ground. Pure black, opened up in four steps. */
-  --color-ink-0: #000000;
-  --color-ink-1: #080808;
-  --color-ink-2: #121212;
-  --color-ink-3: #1C1C1C;
-  --color-ink-4: #272727;
+  /* Ground. Paper, opened up in five steps. */
+  --color-ink-0: #EFEFEE;
+  --color-ink-1: #E4E4E2;
+  --color-ink-2: #DAD9D7;
+  --color-ink-3: #CECDCA;
+  --color-ink-4: #C0BFBB;
 
   /* Rules. Depth is a hairline and a value step, never a shadow. */
-  --color-rule: #262626;
-  --color-rule-strong: #3D3D3D;
+  --color-rule: #D6D6D4;
+  --color-rule-strong: #B2B2AE;
 
-  /* Ink. */
-  --color-scribe: #FFFFFF;
-  --color-scribe-2: #E0E0E0;
-  --color-scribe-3: #8F8F8F;
+  /* Ink. The muted step is measured against the deepest panel it is ever set
+     on, not against the page: #6E6F76 reads 4.15:1 on the ground and #62636A
+     still only 4.24:1 on ink-2, and this step carries dimensions, file sizes
+     and prop names — labels, not ornament. #5A5B62 clears 4.5 on all three. */
+  --color-scribe: #0D0D0F;
+  --color-scribe-2: #43444A;
+  --color-scribe-3: #5A5B62;
 
-  /* Signal — the brand, and every figure of value. */
-  --color-signal: #FF6A00;
-  --color-signal-hi: #FF9A3D;
-  --color-signal-dim: #2B1200;
+  /* Signal — the brand, and every figure of value.
+     The poster's blue is #2F5BFF, and on a hero at 74px it is unimpeachable:
+     large text only owes 3:1. But this token also sets 12px AVAX figures on
+     the hub, the floor and the leaderboard, and there it measured 4.49:1 on
+     the page ground and less on a panel — under AA, on the number that tells
+     an operator what they earned. Four per cent darker clears 4.5 on the
+     ground, on the panel and on the deepest panel, and at poster size the two
+     are not tellable apart. One blue, and it is this one. */
+  --color-signal: #2B50E0;
+  --color-signal-hi: #1B3CB8;
+  --color-signal-dim: #E3E8FF;
 
-  /* The verdict pair. Kept away from the accent's hue so a reject can never be
-     mistaken for a payout: the mint sits cool, the reject sits pink-red. */
-  --color-go: #3DD68C;
-  --color-go-dim: #062315;
-  --color-reject: #FF2D55;
-  --color-reject-dim: #2B0611;
+  /* The verdict pair. An operator reading a run result must never have to tell
+     a reject from a payout by hue alone against the accent, so these sit well
+     away from the blue and are always paired with a shape change. */
+  --color-go: #0B6B41;
+  --color-go-dim: #DBEFE4;
+  --color-reject: #B60D33;
+  --color-reject-dim: #F8DEE4;
 
-  /* Probe — the reference edge a measurement is taken from. Deliberately cool
-     and quiet so it recedes behind the orange. */
-  --color-probe: #6E86A6;
-  --color-probe-dim: #0E1520;
+  /* Probe — the reference edge a measurement is taken from. Quiet on purpose. */
+  --color-probe: #3A5578;
+  --color-probe-dim: #E1E6ED;
 
   /* Display is its own face now. It used to be the body face at a larger size,
      which is why headlines had no more voice than paragraphs did. */
@@ -80,34 +96,34 @@
    recorded in different themes look like two different scenes.
    ========================================================================== */
 
-:root[data-theme="light"] {
-  --color-ink-0: #F5F4F1;
-  --color-ink-1: #EFEDE9;
-  --color-ink-2: #E7E4DF;
-  --color-ink-3: #DCD8D2;
-  --color-ink-4: #CEC9C1;
+:root[data-theme="dark"] {
+  --color-ink-0: #0D0D0F;
+  --color-ink-1: #141416;
+  --color-ink-2: #1C1C20;
+  --color-ink-3: #26262B;
+  --color-ink-4: #313137;
 
-  --color-rule: #D2CDC5;
-  --color-rule-strong: #ADA69C;
+  --color-rule: #2A2A2E;
+  --color-rule-strong: #45454C;
 
-  --color-scribe: #16130F;
-  --color-scribe-2: #35302A;
-  --color-scribe-3: #6B655D;
+  --color-scribe: #EFEFEE;
+  --color-scribe-2: #C3C4C8;
+  --color-scribe-3: #8A8B92;
 
-  /* Measured, not chosen by eye: #C4510B came out at 4.22:1 on the paper
-     ground, and this colour carries every figure of value on the site. This
-     one clears 4.5 on the ground, on the panel and on the deepest panel. */
-  --color-signal: #AD4407;
-  --color-signal-hi: #8F3604;
-  --color-signal-dim: #F6E3D2;
+  /* The lift. #2F5BFF against a near-black ground measures 2.6:1 — it reads as
+     a dark blue sitting on dark, not as emphasis. This is the same accent
+     carried to the other side of the ground. */
+  --color-signal: #7C97FF;
+  --color-signal-hi: #A9BCFF;
+  --color-signal-dim: #141B33;
 
-  --color-go: #0B6B41;
-  --color-go-dim: #DBEFE4;
-  --color-reject: #B60D33;
-  --color-reject-dim: #F8DEE4;
+  --color-go: #3DD68C;
+  --color-go-dim: #062315;
+  --color-reject: #FF4D6A;
+  --color-reject-dim: #2B0611;
 
-  --color-probe: #3A5578;
-  --color-probe-dim: #E1E6ED;
+  --color-probe: #8FA6C4;
+  --color-probe-dim: #121722;
 }
 
 @layer base {
@@ -117,12 +133,12 @@
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
     -webkit-text-size-adjust: 100%;
   }
 
-  html[data-theme="light"] {
-    color-scheme: light;
+  html[data-theme="dark"] {
+    color-scheme: dark;
   }
 
   body {
@@ -238,7 +254,8 @@
   .wordmark {
     font-family: var(--font-display);
     font-weight: 800;
-    letter-spacing: -0.01em;
+    /* The landing's tracking, so the two lockups are one lockup. */
+    letter-spacing: -0.035em;
     line-height: 1;
   }
 }

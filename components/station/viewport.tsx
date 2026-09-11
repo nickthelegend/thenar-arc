@@ -1172,7 +1172,7 @@ export function StationViewport(props: ViewportProps) {
       dpr={[1, 2]}
       camera={{ fov: 34, near: 0.02, far: 12 }}
       gl={{ antialias: true }}
-      style={{ background: "#000000", cursor: "crosshair" }}
+      style={{ background: "var(--color-ink-1)", cursor: "crosshair" }}
     >
       {/* Ghosts tick six times a second; Rig must not re-render with them,
           or the whole scene reconciles on every presence update. */}
