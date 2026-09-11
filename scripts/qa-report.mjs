@@ -41,9 +41,23 @@ const MEANS = {
   D3:"Bogus hash, no crash", D4:"404 in JSON, not text or HTML",
   D5:"No-match search says so", D6:"States no wallet, no slot used", D6b:"Station console clean",
   D7:"Service worker registered; /offline and /sw.js both 200",
+  // The driven run. Everything above navigates and reads; these operate the
+  // machine, which is the only way to reach the panels that exist after a run.
+  R1:"Run begins and the telemetry strip is live",
+  "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
+  "R4.0":"It reaches its own seat", "R5.0":"And is released there",
+  "R2.1":"Tool reaches the second payload", "R3.1":"Jaws close on it",
+  "R4.1":"It reaches its own seat", "R5.1":"And is released there",
+  R6:"Station measures the run itself, once the whole scene is placed",
+  R7:"The driven run is in tolerance",
+  R8:"What the submit will cost, stated before it is signed",
+  R9:"And the real transactions that figure is measured from",
+  R10:"The gas-limit finding is stated rather than buried",
+  R11:"The payout is still shown beside the cost",
+  R12:"No console error across the whole run",
 };
 const rows = [];
-for (const f of ["pages.txt","deep.txt","api.txt","post.txt","chain.txt","flows.txt"])
+for (const f of ["pages.txt","deep.txt","api.txt","post.txt","chain.txt","flows.txt","run.txt"])
   for (const line of read(f).split("\n")) {
     const m = line.match(/^(PASS|FAIL)\s+(\S+)\s+(.*)$/);
     if (m) rows.push({ status:m[1], id:m[2], detail:m[3].trim().replace(/\s+/g," ").slice(0,92) });

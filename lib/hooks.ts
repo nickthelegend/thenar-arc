@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useAccount, useConfig, useReadContract, usePublicClient } from "wagmi";
 import { readContracts } from "wagmi/actions";
-import { formatEther } from "viem";
+import { formatEther, toFunctionSelector } from "viem";
 import { AXON_ABI } from "./abi";
 import { AXON_ADDRESS, IS_DEPLOYED, scenarioName } from "./chain";
 import { DEPLOYED } from "./registry";
@@ -552,4 +552,167 @@ export function useAttestation(policyId: number | undefined) {
       };
     },
   });
+}
+
+/**
+ * What a submit costs, measured rather than estimated.
+ *
+ * The station has always told an operator what a run pays and never what it
+ * costs, and the two arrive together — one transaction records the trajectory
+ * and pays for it, so the gas comes out of the same movement as the reward.
+ * Until now the only place gas appeared was the receipt, after the operator had
+ * already committed to paying it.
+ *
+ * It cannot be estimated the usual way. `estimateContractGas` needs the
+ * verifier's signature over this exact trajectory, and that signature is
+ * produced inside the submit, after the operator has decided. So the figure
+ * here is not an estimate of this transaction; it is what the last handful of
+ * real ones actually burned, read off their receipts, priced at the gas price
+ * the chain is quoting right now.
+ *
+ * Split by which function was called, because they are not the same
+ * transaction. `submitTrajectoryWithPasskey` verifies a P-256 signature through
+ * a precompile before it does anything else, and quoting one path's gas for the
+ * other would be quoting a number for a transaction nobody sent.
+ */
+export type SubmitCost = {
+  /** Wei per gas the chain is quoting now. */
+  gasPriceWei: bigint;
+  /** Median gas charged, over the samples for this path. */
+  medianGas: number | null;
+  lowGas: number | null;
+  highGas: number | null;
+  /** How many real transactions that median stands on. */
+  samples: number;
+  /** Median gas at the current price, in the native token. */
+  costMon: number | null;
+  /**
+   * Whether every sample was charged at least half the gas limit its wallet
+   * set — which is what the receipts say, and what makes a generous limit
+   * expensive here rather than merely cautious.
+   */
+  chargedToTheLimit: boolean;
+};
+
+const PLAIN_SELECTOR = toFunctionSelector(
+  "submitTrajectory(uint256,bytes32,string,uint16,bytes)",
+).toLowerCase();
+const PASSKEY_SELECTOR = toFunctionSelector(
+  "submitTrajectoryWithPasskey(uint256,bytes32,string,uint16,bytes,bytes32,bytes32)",
+).toLowerCase();
+
+const COST_LOOKBACK = 200_000n;
+const COST_SAMPLES = 6;
+
+export function useSubmitCost(withPasskey: boolean) {
+  const client = usePublicClient();
+
+  const q = useQuery({
+    queryKey: ["submit-cost"],
+    enabled: IS_DEPLOYED,
+    // The gas price moves; the observed gas of a fixed code path does not.
+    // A minute is short enough that the price shown is the price charged and
+    // long enough that opening the snap does not re-scan the chain.
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!client) return null;
+      const [head, gasPriceWei] = await Promise.all([client.getBlockNumber(), client.getGasPrice()]);
+
+      const event = {
+        type: "event",
+        name: "TrajectoryAccepted",
+        inputs: [
+          { name: "trajectoryId", type: "uint256", indexed: true },
+          { name: "taskId", type: "uint256", indexed: true },
+          { name: "contributor", type: "address", indexed: true },
+          { name: "trajHash", type: "bytes32", indexed: false },
+          { name: "cid", type: "string", indexed: false },
+          { name: "score", type: "uint16", indexed: false },
+          { name: "paid", type: "uint256", indexed: false },
+        ],
+      } as const;
+
+      const logs = await client.getLogs({
+        address: AXON_ADDRESS,
+        event,
+        fromBlock: head > COST_LOOKBACK ? head - COST_LOOKBACK : 0n,
+        toBlock: head,
+      });
+
+      // Newest first, and only as many as are needed to have a median worth
+      // quoting. Each sample is two calls; twenty of them would be forty.
+      const recent = logs
+        .sort((a, b) => Number((b.blockNumber ?? 0n) - (a.blockNumber ?? 0n)))
+        .map((l) => l.transactionHash)
+        .filter((h, i, all): h is `0x${string}` => Boolean(h) && all.indexOf(h) === i)
+        .slice(0, COST_SAMPLES);
+
+      const measured = await Promise.all(
+        recent.map(async (hash) => {
+          try {
+            const [receipt, txn] = await Promise.all([
+              client.getTransactionReceipt({ hash }),
+              client.getTransaction({ hash }),
+            ]);
+            return {
+              gas: Number(receipt.gasUsed),
+              limit: Number(txn.gas),
+              selector: txn.input.slice(0, 10).toLowerCase(),
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      return {
+        gasPriceWei,
+        measured: measured.filter(Boolean) as { gas: number; limit: number; selector: string }[],
+      };
+    },
+  });
+
+  return useMemo((): SubmitCost | null => {
+    if (!q.data) return null;
+    const { gasPriceWei, measured } = q.data;
+    const want = withPasskey ? PASSKEY_SELECTOR : PLAIN_SELECTOR;
+
+    // Only this path's own samples. There is no falling back to the other
+    // path's: quoting one function's gas for another is quoting a number for a
+    // transaction nobody sent, and saying nothing is the honest answer when
+    // nothing has gone that way yet.
+    const pool = measured.filter((m) => m.selector === want);
+    if (!pool.length) {
+      return {
+        gasPriceWei, medianGas: null, lowGas: null, highGas: null,
+        samples: 0, costMon: null, chargedToTheLimit: false,
+      };
+    }
+
+    const gas = pool.map((m) => m.gas).sort((a, b) => a - b);
+    const medianGas = gas[Math.floor(gas.length / 2)];
+
+    /**
+     * Every sample charged at least half the limit its wallet set.
+     *
+     * Nine submits on this contract, and in every one the receipt's gasUsed is
+     * exactly max(what the call needed, half the gas limit). A re-estimate of
+     * one of them against its own parent block answers 394,668; it was charged
+     * 600,000, which is half of the 1,200,000 its wallet asked for. So a wallet
+     * that doubles an estimate for safety does not buy headroom here — it sets
+     * the price. Reported rather than corrected: fixing it means pinning a gas
+     * limit on the submit, and a limit pinned too tight fails a run for real.
+     */
+    const chargedToTheLimit = pool.every((m) => m.gas >= Math.floor(m.limit / 2));
+
+    return {
+      gasPriceWei,
+      medianGas,
+      lowGas: gas[0],
+      highGas: gas[gas.length - 1],
+      samples: gas.length,
+      costMon: Number(gasPriceWei * BigInt(medianGas)) / 1e18,
+      chargedToTheLimit,
+    };
+  }, [q.data, withPasskey]);
 }

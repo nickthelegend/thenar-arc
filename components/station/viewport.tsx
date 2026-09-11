@@ -680,6 +680,22 @@ function Rig({
   const activeIndex = useRef<number | null>(null);
   const outOfOrderRef = useRef(false);
   const held = useRef(false);
+  /**
+   * Which payloads the operator has actually picked up.
+   *
+   * A run ends when the scene settles, and a payload nobody has touched is
+   * sitting still at its start — so on a two-object bench the run ended the
+   * moment the first object was let go, scored the second where it had always
+   * been, and reported the whole thing out of tolerance. "Put the spoon and the
+   * mug into the crate" could not be completed at all: place the spoon, and
+   * seven hundred milliseconds later the measurement was taken with the mug
+   * untouched, 282 mm from its seat.
+   *
+   * The rule this restores is the one the code beside it already claimed —
+   * a scene is placed when all of it is. A one-object scene is unchanged,
+   * because the station already required that its single payload had been held.
+   */
+  const touched = useRef<boolean[]>([]);
   const keys = useRef<Record<string, boolean>>({});
   const acc = useRef(0);
   const elapsed = useRef(0);
@@ -843,6 +859,7 @@ function Rig({
       if (!rig.held.current && rig.grip.current <= GRIP_CLOSED && over && inHeight) {
         rig.held.current = true;
         rig.holds.current = nearest;
+        touched.current[nearest] = true;
       }
       if (rig.held.current && rig.grip.current > GRIP_CLOSED) {
         rig.held.current = false;
@@ -885,13 +902,20 @@ function Rig({
       const seat = seatFor(goal, i, list.length);
       return Math.hypot(p[0] - seat[0], p[1] - seat[1]) * 1000;
     });
-    const atRest = list.map((p, i) =>
-      !(held.current && i === activeIndex.current) && p[2] <= TABLE_Z + 1e-4);
+    // A payload in anybody's jaws is not at rest — including the second arm's,
+    // which this used to miss because it only knew about the first one's hold.
+    const inJaws = (i: number) => rigs.some((r) => r.held.current && r.holds.current === i);
+    const atRest = list.map((p, i) => !inJaws(i) && p[2] <= TABLE_Z + 1e-4);
     const placed = devs.map((d, i) => atRest[i] && d <= TOLERANCE_M * 1000);
 
     // Every payload has to be down before the run can be measured, and the
     // score is set by the worst of them: a scene is placed when all of it is.
-    const settled = atRest.every(Boolean) && !held.current;
+    // Down is not enough on its own — a payload nobody has lifted has been down
+    // the whole time — so the operator has to have had each of them in the jaws
+    // at least once. Ending early is still available, and still deliberate:
+    // that is what the End run button is.
+    const handled = list.every((_, i) => touched.current[i]);
+    const settled = handled && atRest.every(Boolean) && !rigs.some((r) => r.held.current);
     const deviationMm = Math.max(...devs);
 
     // Placing a later payload while an earlier one is still in hand or still

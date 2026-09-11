@@ -13,7 +13,7 @@ import { useSession } from "@/components/session";
 import { useSpace } from "@/lib/space";
 import { environmentForScenario, lightingFor } from "@/lib/environments";
 import { SKILL_LABEL } from "@/lib/skills";
-import { useRunsOnTask } from "@/lib/hooks";
+import { useRunsOnTask, useSubmitCost } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, GRIP_CLOSED_MM, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
@@ -24,7 +24,7 @@ import { soundOn, setSound } from "@/lib/click";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
 import { sceneForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
-import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { fmtGasCost, fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import type { Sample, Verdict } from "@/lib/types";
 
 const StationViewport = dynamic(
@@ -1020,6 +1020,21 @@ function MeasurementSnap({
             </p>
           )}
 
+          {/* What it costs to take the money.
+              A submit records the trajectory and pays for it in one
+              transaction, so the gas comes out of the same movement as the
+              reward — and until now the only place it appeared was the receipt,
+              after the operator had already agreed to pay it. Nobody was misled
+              exactly; they simply were not told, which is the same shape of
+              problem on a page whose whole argument is that a measurement you
+              cannot check is not a measurement.
+
+              Not an estimate. `estimateContractGas` needs the verifier's
+              signature over this exact trajectory and that does not exist until
+              the submit is under way, so this is what the last handful of real
+              submissions burned, priced at the gas the chain is quoting now. */}
+          {accepted && !done && !practice ? <SubmitCostLine withPasskey={Boolean(passkey?.on)} payoutMon={verdict.payoutMon} /> : null}
+
           {done && tx.txHash ? (
             <div className="flex flex-col gap-1.5 border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
               <span>
@@ -1163,6 +1178,70 @@ function Key({ keys, action }: { keys: string[]; action: string }) {
         ))}
       </dt>
       <dd className="text-[12px] text-scribe-3">{action}</dd>
+    </div>
+  );
+}
+
+/**
+ * The cost line under the payout.
+ *
+ * Deliberately quiet: it is a fact an operator should have, not a warning. It
+ * says how many real transactions the figure stands on, because a median over
+ * six is a different claim from a median over one, and the reader is entitled
+ * to know which they are being handed.
+ *
+ * When there is nothing to stand on it says nothing at all rather than
+ * inventing a number. A cost quoted from no observations is worse than an
+ * unanswered question.
+ */
+function SubmitCostLine({ withPasskey, payoutMon }: { withPasskey: boolean; payoutMon: number }) {
+  const cost = useSubmitCost(withPasskey);
+  if (!cost) return null;
+
+  // Nothing has gone down this path yet, so there is nothing to quote. Said
+  // rather than left blank: the panel's job is to answer "what will this cost",
+  // and "no run has been charged this way yet" is an answer.
+  if (cost.costMon === null || cost.medianGas === null) {
+    return (
+      <p className="border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
+        {withPasskey
+          ? "No run has been submitted through the passkey path yet, so there is nothing measured to quote."
+          : "No recent submit to measure a cost from."}
+      </p>
+    );
+  }
+
+  const net = payoutMon - cost.costMon;
+  const gwei = Number(cost.gasPriceWei) / 1e9;
+  const spread = cost.lowGas !== cost.highGas;
+
+  return (
+    <div className="flex flex-col gap-1 border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
+      <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span>
+          Gas on submit, about{" "}
+          <span className="tabular-nums text-scribe-2">{fmtGasCost(cost.costMon, CURRENCY)}</span>
+        </span>
+        <span>
+          net <span className="tabular-nums text-scribe-2">{fmtMon(net, 4)}</span> {CURRENCY}
+        </span>
+      </span>
+      <span>
+        {cost.medianGas.toLocaleString()} gas
+        {spread ? ` (${cost.lowGas!.toLocaleString()}–${cost.highGas!.toLocaleString()})` : ""}
+        {" across "}
+        {cost.samples} measured {cost.samples === 1 ? "submit" : "submits"}, at{" "}
+        {gwei < 0.001 ? `${Number(cost.gasPriceWei).toLocaleString()} wei` : `${gwei.toFixed(2)} gwei`}
+        {withPasskey ? " \u00b7 passkey path" : ""}
+      </span>
+      {/* Not a warning and not advice — a measured property of this chain that
+          changes what a run costs, and the operator is the one paying it. */}
+      {cost.chargedToTheLimit ? (
+        <span className="text-scribe-3">
+          Every one of those was charged at least half the gas limit its wallet
+          set, so the wallet&rsquo;s safety margin is part of the price.
+        </span>
+      ) : null}
     </div>
   );
 }
