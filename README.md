@@ -22,6 +22,7 @@ Built at Monad Blitz Hyderabad V3.
 | **PrizePool** | [`0x42912F9a437C8EcF2a90Cb18F49D8a54DDe3F84f`](https://testnet.snowtrace.io/address/0x42912F9a437C8EcF2a90Cb18F49D8a54DDe3F84f) — Sourcify `exact_match`. Funded pot for one task; contributors enter themselves and it splits by work the protocol recorded. |
 | **CorpusAccess** | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.snowtrace.io/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — Sourcify `exact_match`. Time-boxed read access to the corpus. Sells time, not rights. |
 | **PasskeyRegistry** | [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.snowtrace.io/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F) — Sourcify `exact_match` |
+| **Every contract, read live** | [`https://thenar.io/contracts`](https://thenar.io/contracts) — all eleven with balances, code size, the surface that uses each, and live readings from those with state |
 | **Hosting** | Vercel (frontend, custom domain) + Railway (API, Postgres, and a signer service holding the verifier key) |
 
 > **The directory is named `monad-blitz` and the git remote is `axon-monad`.**

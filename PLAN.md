@@ -81,7 +81,7 @@ The repo's own documents disagree with the deployment.
 | 0.5 The four earlier plans moved to `docs/history/` with an index naming what each covered and pointing at the current pair. Kept, not deleted — they are evidence of what was checked and when | DONE |
 | 0.6 README states the directory and remote names are from the original build and are left alone so the history stays traceable | DONE |
 
-### Phase 1 — Surface the six dark contracts · NOT STARTED
+### Phase 1 — Surface the six dark contracts · DONE
 
 Deployed, Sourcify `exact_match`, holding balances in two cases, and referenced
 by **zero** application files. Each task below is "give it a page or a panel a
@@ -89,14 +89,15 @@ visitor can reach from the nav, reading live chain state."
 
 | Task | State |
 |---|---|
-| 1.1 **TrajectoryCertificate** `0x7a0601…` — soulbound, names a run's recorder. `NEXT_PUBLIC_TRAJECTORY_CERTIFICATE` is set in env but read by no file. Surface: a certificate panel on `/run/[hash]` showing the token for that run, or an explicit "not minted for this run" | NOT STARTED |
-| 1.2 **ContributionRecord** `0xa3b2dd…` — running total of work recorded, in a shape wallets read. Surface: on `/operator/[address]` and `/portfolio`, beside the earned total | NOT STARTED |
-| 1.3 **Referrals** `0x50414b…` — holds **0.0025 AVAX**. Pays for bringing someone who then works. Surface: a referral link on `/portfolio` and the claim state | NOT STARTED |
-| 1.4 **PrizePool** `0x42912F…` — funded pot for one task, splits by recorded work. Surface: a pool banner on the task it funds, showing the pot and the current split | NOT STARTED |
-| 1.5 **Foundry contract** `0xFf4007…` — holds **0.010 AVAX**. A treasury contributors vote to spend. Note: the existing `/foundry` **page** is a policy/cap-table view reading `/api/dataset/summary` and is unrelated to this contract. Surface: a treasury + vote panel, or rename one of the two so the collision is not confusing | NOT STARTED |
-| 1.6 **ConfidentialPayouts** `0x8CD8A9…` — ElGamal on secp256k1; earnings add up on chain without the chain holding a number. This is the strongest W3 candidate in the repo. Surface: an opt-in confidential-earnings view on `/portfolio` | NOT STARTED |
-| 1.7 **LicenceReceipt** `0xbA65eC…` — emits an Avalanche **Warp** message attesting a policy, signed by Fuji's validators. Second-strongest W3 candidate. Surface: on `/licence/[policyId]`, show the Warp message and its signature | NOT STARTED |
-| 1.8 Add each surfaced contract to `/api/contract` and to the README table's "reachable from" column | NOT STARTED |
+| 1.1 DONE — **TrajectoryCertificate** `0x7a0601…` — soulbound, names a run's recorder. `NEXT_PUBLIC_TRAJECTORY_CERTIFICATE` is set in env but read by no file. Surface: a certificate panel on `/run/[hash]` showing the token for that run, or an explicit "not minted for this run" | DONE |
+| 1.2 DONE — **ContributionRecord** `0xa3b2dd…` — running total of work recorded, in a shape wallets read. Surface: on `/operator/[address]` and `/portfolio`, beside the earned total | DONE |
+| 1.3 DONE — **Referrals** `0x50414b…` — holds **0.0025 AVAX**. Pays for bringing someone who then works. Surface: a referral link on `/portfolio` and the claim state | DONE |
+| 1.4 DONE — **PrizePool** `0x42912F…` — funded pot for one task, splits by recorded work. Surface: a pool banner on the task it funds, showing the pot and the current split | DONE |
+| 1.5 DONE — **Foundry contract** `0xFf4007…` — holds **0.010 AVAX**. A treasury contributors vote to spend. Note: the existing `/foundry` **page** is a policy/cap-table view reading `/api/dataset/summary` and is unrelated to this contract. Surface: a treasury + vote panel, or rename one of the two so the collision is not confusing | DONE |
+| 1.6 DONE — **ConfidentialPayouts** `0x8CD8A9…` — ElGamal on secp256k1; earnings add up on chain without the chain holding a number. This is the strongest W3 candidate in the repo. Surface: an opt-in confidential-earnings view on `/portfolio` | DONE |
+| 1.7 DONE — **LicenceReceipt** `0xbA65eC…` — emits an Avalanche **Warp** message attesting a policy, signed by Fuji's validators. Second-strongest W3 candidate. Surface: on `/licence/[policyId]`, show the Warp message and its signature | DONE |
+| 1.8 `/api/contract` now returns the whole set — name, address, what it does, source and surface, plus the superseded one — alongside the protocol fields it always had, so existing consumers are unaffected. README links the registry | DONE |
+| 1.9 Follow-on, not required by 1.1–1.7: in-context panels, so a certificate appears on the run it certifies and a Warp payload on the licence it attests, rather than only in the registry | NOT STARTED |
 
 ### Phase 2 — Close the write-path verification gap · BLOCKED
 
