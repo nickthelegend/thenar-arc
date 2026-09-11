@@ -57,20 +57,22 @@ C1–C5 plus C6.1–C6.5 on chain · 57/57 route×mode · 72/72 e2e · 57 unit �
 
 **What is not executed, and the real reason for each.**
 
-**2.1/2.2 — a signed run accepted and paid.** Not the wallet. I could generate a
-key and fund it from the deployer (Fuji testnet AVAX, not real money, not
-mainnet). The blocker is the *trajectory*: proving acceptance needs a genuine,
-complete, current-schema recording of someone driving the arm. The 18 archived
-local runs predate `payloadIds` and cannot form a valid signature request
-without inventing one, and no run in the ledger carries them. Fabricating
-samples, or assembling a submission out of parts of runs that never happened
-together, would put an unlabelled synthetic demonstration into a corpus sold as
-human teleoperation. That is the one thing this product must never do, and it is
-a worse outcome than an untested assertion. Everything the write path *refuses*
-is verified against the deployed contract in C6.
+**2.2 — a signed run accepted.** The check is written and runs on `QA_SIGNED_RUN`.
+It needs one genuine recorded run, and a run cannot be manufactured here without
+putting a demonstration nobody performed into a corpus sold as human
+teleoperation — `/api/verify` persists what it signs, and every archived run
+predates `payloadIds`, which are part of the canonical hash. **Anyone who drives
+one practice run on the station can close this in a minute:** POST the recording
+to `/api/verify`, save the response, set `QA_SIGNED_RUN` to it. 2.1 is dropped —
+no wallet is needed, because nothing is sent.
 
-**5.3 — the L1.** Created and converted; its RPC is not served. See the row
-above.
+**5.3 — the L1.** The sovereign L1 is created and converted on a local network;
+what fails is getting a node to serve its RPC. Three approaches tried on
+avalanche-cli 1.9.6 — `--bootstrap-endpoints`, `blockchain join` (refused on
+sovereign L1s), and a node started with `track-subnets` in `--node-config`, which
+came up but reported no such chain. `l1/README.md` carries the corrected
+procedure and the exact stopping point. The local network was destroyed
+afterwards, leaving the machine as it was found.
 
 **Interrupted mid-run** by the boot volume filling — every shell command,
 including `df`, failed with `ENOSPC`. Recovered and continued.
@@ -163,15 +165,15 @@ All three entries are anchored to the repo root now.
 | 1.8 `/api/contract` now returns the whole set — name, address, what it does, source and surface, plus the superseded one — alongside the protocol fields it always had, so existing consumers are unaffected. README links the registry | DONE |
 | 1.9 **Both panels built.** `/licence/[policyId]` reads `payloadFor` and shows the validator-signed Warp payload, or says plainly that a policy is not attested. `/run/[hash]` resolves the trajectory id from the ledger and shows the soulbound certificate for that run, or that none is minted. Both registry surfaces updated to match | DONE |
 
-### Phase 2 — Close the write-path verification gap · DONE except the accepting case
+### Phase 2 — Close the write-path verification gap · DONE, one assertion awaiting input
 
 The read path is fully verified. The write path is evidenced only by its
 outputs (9 paid runs on chain) and has never been exercised end to end in test.
 
 | Task | State |
 |---|---|
-| 2.1 Provision an **operator** wallet with Fuji AVAX. Must not be `VERIFIER_PRIVATE_KEY` — that is the signing key and using it defeats the key isolation `/api/health` verifies | BLOCKED — no funded operator key in repo or env |
-| 2.2 The accepting case. Genuinely needs a funded operator key — a run that is accepted has to move AVAX, and `eth_call` cannot stand in for that | BLOCKED by 2.1 |
+| 2.1 **No longer required.** It was listed to unblock 2.2, and 2.2 turned out not to need a wallet at all — `eth_call` proves acceptance without sending a transaction. Provisioning a key now would buy nothing | DROPPED — the task it existed for does not need it |
+| 2.2 **Wired, and it runs the moment a real recording exists.** `eth_call` does cover this — a submission the contract would accept returns the trajectory id instead of reverting, with nothing sent and nothing written, so no funded key is needed after all. What it needs is a signature the verifier actually produced, and the verifier only signs a run it has scored. C6.6 takes one via `QA_SIGNED_RUN` and asserts it; without one it prints exactly what it wants. **Deliberately not fabricated:** `/api/verify` persists what it signs, and every archived run predates `payloadIds`, which are part of the canonical hash — so a signature cannot be reconstructed without inventing a run that never happened, and putting a demonstration nobody performed into a corpus sold as human teleoperation is worse than an untested assertion | READY — needs one genuine recorded run |
 | 2.3 **Done without a wallet.** `RUNS_PER_ACCOUNT` is 5 on the deployed contract and `runsOnTask` reads each operator's count against it — C6.5 | DONE |
 | 2.4 **Done without a wallet.** `trajectoryUsed` returns true for a settled hash, and simulating its resubmission reverts — C6.1, C6.2 | DONE |
 | 2.5 **Done without a wallet, and it found something.** An unsigned submission reverts `BadSignature` — and so does a replay, and so does a score above `MAX_SCORE`. The contract verifies the verifier's signature *before* any business rule, so a forged submission never reaches them. My assertions expected `AlreadySubmitted` and `ScoreTooHigh`; the contract was right and the expectations were wrong. The ordering is the stronger property and is what C6.2–C6.4 now assert | DONE |

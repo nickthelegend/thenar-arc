@@ -134,11 +134,36 @@ say("C5", avax >= 0, `sum(escrow) over ${tasks} tasks = ${avax.toFixed(6)} AVAX`
   const runs = Number(await callAt(A, encodeFunctionData({ abi: wAbi, functionName: "runsOnTask", args: [1n, "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815"] })));
   say("C6.5", cap > 0 && runs <= cap, `RUNS_PER_ACCOUNT ${cap}, seed funder has ${runs} on task 1`);
 
-  // C6.6 — the accepting case. This is the one thing eth_call cannot stand in
-  //        for, because a run that is accepted must actually move AVAX.
-  console.log("  ----  C6.6 a signed run is accepted and paid — needs a funded operator key, " +
-              "which does not exist in this repo. The verifier key must not be used: it signs scores, " +
-              "and spending it here would defeat the isolation /api/health checks.");
+  // C6.6 — the accepting case.
+  //
+  // eth_call proves this too, without sending anything: a submission the
+  // contract would accept returns the trajectory id instead of reverting. What
+  // it needs is a signature the verifier actually produced, and the verifier
+  // only signs a run it has scored — so this runs the moment a genuine
+  // recording is available and says precisely what it wants otherwise.
+  //
+  // It is not fabricated here on purpose. Assembling samples to satisfy the
+  // scorer would put a demonstration nobody performed into a corpus sold as
+  // human teleoperation, and /api/verify persists what it signs. An untested
+  // assertion is the better of those two outcomes.
+  const SIGNED = process.env.QA_SIGNED_RUN;   // path to a JSON file from /api/verify
+  if (SIGNED) {
+    const { readFileSync } = await import("node:fs");
+    const run = JSON.parse(readFileSync(SIGNED, "utf8"));
+    const data = encodeFunctionData({ abi: wAbi, functionName: "submitTrajectory",
+      args: [BigInt(run.taskId), run.trajHash, run.cid, Number(run.score), run.signature] });
+    const j = await rpcCall(data);
+    const accepted = typeof j?.result === "string" && j.result.length > 2 && !j.error;
+    say("C6.6", accepted,
+      accepted ? `a signed run is accepted; eth_call returns trajectory id ${BigInt(j.result)}`
+               : `refused: ${j?.error?.message ?? "no result"}`);
+  } else {
+    console.log("  ----  C6.6 a signed run is accepted and paid. Set QA_SIGNED_RUN to a JSON file " +
+                "from /api/verify — {taskId, trajHash, cid, score, signature} — and this asserts it " +
+                "by eth_call, with nothing sent and nothing written. No such recording exists here: " +
+                "every archived run predates payloadIds, which are part of the canonical hash, so one " +
+                "cannot be reconstructed without inventing a run that never happened.");
+  }
 }
 
 // Non-zero when anything failed, so CI can fail on it.
