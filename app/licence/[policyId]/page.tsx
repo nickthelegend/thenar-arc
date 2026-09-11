@@ -71,6 +71,17 @@ export default function LicencePage() {
         resolves if this deployment does not.
       </p>
 
+      {/* Said here because this is the page where someone is looking at a
+          licence fee and could reasonably assume they bought a model. A minted
+          policy is a cap table over the trajectories that would train one. No
+          trained policy exists — PRODUCT.md has always said so, and the
+          interface should say it where the money is. */}
+      <p className="mt-3 max-w-[64ch] text-[14px] leading-relaxed text-scribe-3">
+        A minted policy is the cap table over the trajectories that would train a
+        model, and the licence buys the corpus behind it. It is not a trained
+        model: nothing here autonomously attempts a task.
+      </p>
+
       <div className="mt-6 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
         <Cell label="From task" value={`#${policy.taskId}`} />
         <Cell label="Trajectories" value={fmtInt(policy.trajectories)} />

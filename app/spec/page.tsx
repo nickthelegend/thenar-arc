@@ -173,6 +173,25 @@ export default function SpecPage() {
           </li>
         ))}
       </ul>
+
+      {/* The first of those is the one a buyer of this corpus is entitled to put
+          a number on, so it has one. Saying "kinematic, not rigid-body" and
+          leaving it there asks the reader to guess how much fidelity that costs;
+          this says how the answer is obtained and where to read it per run. */}
+      <p className="mt-6 max-w-[70ch] text-[14px] leading-relaxed text-scribe-2">
+        The first of those is measured rather than left as a caveat. Every
+        recorded run is handed to{" "}
+        <span className="font-mono text-[13px] text-scribe">MuJoCo</span> as the
+        same release state and integrated to rest under rigid-body dynamics; the
+        distance between where the recording put the payload and where physics
+        would have is published on that run&rsquo;s own page. It scores nothing
+        and changes no payout — it exists so the gap is a figure rather than an
+        assumption.{" "}
+        <Link href="/run/0x77f0cc8cd166ce38679fee669324dc3b898ed308dbf7aee8752c96490941a7a2" className="text-signal hover:text-signal-hi">
+          See it on a run
+        </Link>
+        .
+      </p>
     </div>
   );
 }

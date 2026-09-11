@@ -55,6 +55,15 @@ export default function PoliciesPage() {
         Every entry here was rolled out by this server, on the same eight
         starts, in the station&rsquo;s own dynamics.
       </p>
+      {/* Two different things share the word "policy" on this product: a model
+          submitted to this market, and a policy minted on the contract. The
+          second is a cap table, and a reader who does not know that will assume
+          the protocol is selling trained models. */}
+      <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
+        A policy <em>minted on the contract</em> is a different object: a cap
+        table over the trajectories that would train a model, so a licence fee
+        splits to everyone who recorded them. Minting one trains nothing.
+      </p>
 
       {board ? (
         <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-rule py-3">

@@ -882,6 +882,18 @@ export default function StationPage() {
                 The server re-scores every run and signs the result; the contract
                 will not pay a score it did not sign. Below {fmtScore(ACCEPT_FLOOR)} a run pays nothing.
               </li>
+              {/* The operator is being scored by a kinematic simulator and is
+                  entitled to know it here, at the moment it applies to them,
+                  rather than only on the run page afterwards. The measurement
+                  itself is not run here: the engine is eight megabytes of
+                  WebAssembly and nobody should pay that to read a brief. */}
+              <li className="text-scribe-3">
+                This station solves inverse kinematics and grasps analytically —
+                there is no contact simulation. Every recorded run is afterwards
+                integrated under rigid-body dynamics and the difference is
+                published on its own page. It scores nothing and changes no
+                payout.
+              </li>
             </ul>
           </Section>
         </aside>
