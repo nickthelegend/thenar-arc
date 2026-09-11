@@ -153,3 +153,60 @@ it **and** a clean console and network tab for that item.
 | F5 | Responsive | 375px: no horizontal body scroll, no clipped labels |
 | F6 | WebGL budget | No lost contexts on any page |
 | F7 | No mocks | No stubbed data anywhere in the tested surface |
+
+---
+
+# Results
+
+Run against https://thenar.io. Every item executed; the plan re-run from the
+top after the fixes.
+
+**112 of 114 PASS. 1 permanently unrepairable (C6). 1 not verifiable in this
+environment (the timer half of A7's replay controls).**
+
+Automated totals at the end: **26/26 page statuses, 51/51 API statuses, 7/7
+write endpoints, 15/15 semantic content checks, 8/8 on-chain, 6/6 external
+integrations, 57 unit tests, 73 end-to-end assertions, 108 contract tests, gas
+snapshot unchanged.**
+
+## What failed, and what it took to fix
+
+| # | Failure | Root cause | Fix |
+|---|---|---|---|
+| F5 | A rule's note ran off the right edge at 375 px — "Ranked by placements, then grasps, then…" lost four words | The note was `shrink-0`, so it kept its full width and the rules took the remainder; past the viewport it overflowed rather than wrapping | `min-w-0 shrink text-center`. `min-w-0` is the load-bearing part: a flex child will not wrap below its content width without it. Fixes every page with a long note, not just `/policies` |
+| B45 | A task with only failed runs returned **404 "No trajectories recorded for that task"** | The export bailed on "no settled runs" before ever fetching the negatives — false twice over, since two trajectories were recorded, and it made the kept failures unreachable for exactly the tasks made entirely of them | Fetch the failures first; refuse only when there is nothing at all; say in the note when `data` is empty rather than missing |
+
+## Two things the automation could not catch
+
+The overflow assertion passed while the text was visibly cut: the emulated
+viewport reports an `innerWidth` that does not match what is drawn, so
+body-versus-window arithmetic said fine. **The screenshot caught it.** Worth
+recording because it is the second time this run that a green check and a
+wrong page agreed with each other.
+
+The other is `Cannot access 'v' before initialization` from the previous
+session, which compiled, typechecked and linted clean and was caught only by
+the one assertion that downloads a corpus.
+
+## C6 — the one that cannot be closed
+
+Three runs paid on chain have no stored trajectory. The samples were never
+recorded, so repair needs a keccak256 preimage. **Not marked PASS.** What is
+verified is that the system refuses to hide it: `/api/health` answers 503 while
+it holds, `/status` shows the check as FAIL with the count, the foundry shows
+"6 trajectories / 3 episodes", and the operator page names it per address.
+
+## Not verifiable in this environment
+
+| Item | Why |
+|---|---|
+| The timer half of A7's replay controls | The automation pane reports `visibilityState: "hidden"` and **zero requestAnimationFrame ticks per second**, so a clock-driven loop cannot run there. Frame stepping was verified exact (281 → 280 → 281, 14.0 s → 13.9 s), play/pause toggles, and the speed buttons render and respond |
+| Pixel confirmation of 3D on this pass | Same cause: react-three-fiber does not draw in a hidden document. The mechanism was verified instead — `/inventory` holds **14 canvases, 14 alive, 0 lost**, which is the WebGL-budget defect that was actually fixed. Earlier in this session, with the pane visible, the hero arm, the station scene and the inventory tiles were all confirmed rendering |
+| Wallet-signed submission through the UI | Needs a funded browser wallet; entering wallet credentials is not something I will do. The same path was proven without the browser: `/api/verify` scores, the contract accepts the verifier signature, and the run lands on Fuji |
+
+## Zero mocks
+
+No stubbed data, fallback fixtures or placeholder logic anywhere in the tested
+surface. Real Postgres, real Fuji contracts, real signed transactions, real
+Glacier and object-storage calls, and a real policy rolled out by the server
+rather than a reported number.
