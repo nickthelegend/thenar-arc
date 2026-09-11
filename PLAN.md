@@ -55,11 +55,22 @@ word appears in help text, so a grep reports success for a deploy that never ran
 C1–C5 plus C6.1–C6.5 on chain · 57/57 route×mode · 72/72 e2e · 57 unit ·
 108 contract · demo rehearsal 23.1s with zero console errors · detector clean.
 
-**One task in the whole plan is not executed:** 2.1/2.2, a signed run accepted
-and paid, which needs a funded operator wallet that does not exist in this
-repository. 5.3 is scoped with the measurement that justifies it but requires an
-Avalanche L1 deployed and validated, which is infrastructure rather than a
-change to this codebase.
+**What is not executed, and the real reason for each.**
+
+**2.1/2.2 — a signed run accepted and paid.** Not the wallet. I could generate a
+key and fund it from the deployer (Fuji testnet AVAX, not real money, not
+mainnet). The blocker is the *trajectory*: proving acceptance needs a genuine,
+complete, current-schema recording of someone driving the arm. The 18 archived
+local runs predate `payloadIds` and cannot form a valid signature request
+without inventing one, and no run in the ledger carries them. Fabricating
+samples, or assembling a submission out of parts of runs that never happened
+together, would put an unlabelled synthetic demonstration into a corpus sold as
+human teleoperation. That is the one thing this product must never do, and it is
+a worse outcome than an untested assertion. Everything the write path *refuses*
+is verified against the deployed contract in C6.
+
+**5.3 — the L1.** Created and converted; its RPC is not served. See the row
+above.
 
 **Interrupted mid-run** by the boot volume filling — every shell command,
 including `df`, failed with `ENOSPC`. Recovered and continued.
@@ -202,7 +213,7 @@ still needs a funded wallet.
 |---|---|
 | 5.1 **Measured, from six real settled receipts on Fuji: 460,466–600,000 gas per `submitTrajectory`, median 600,000.** Fuji's gas price today is 160 wei, so a run costs effectively nothing and the problem is invisible. Priced at a live network it inverts: 0.0006 AVAX at 1 gwei, **0.015 AVAX at 25 gwei, 0.030 at 50** — against a reward of 0.001 AVAX per run. At 25 gwei an operator pays fifteen times their earnings to be paid. This is the strongest evidence for `docs/AVALANCHE-50.md` items 1–2 and it should be on the record before anyone quotes the current cost as the real one | DONE |
 | 5.2 **Documented.** `submitTrajectoryFor(address contributor, …)` is permissionless — the verifier signature binds task, contributor, hash and score, so a relayer moves who pays and forges nothing. Cost to the relayer is the same 460k–600k gas measured in 5.1. Stated on `/contracts`. **Not surfaced as an option in the station, because no relayer service is running**: the path exists on chain and nothing calls it, and offering a button for a service that does not exist would be exactly the roadmap-as-capability this product refuses | PARTIAL |
-| 5.3 **Evaluated, not built.** 5.1 measured the case for them: at 25 gwei a run costs 0.015 AVAX to earn 0.001. An own L1 with the fee manager set to zero for the station contract removes the operator's cost entirely, and a custom gas token would make earnings and gas budget the same asset. Both need an Avalanche L1 deployed and validated, which is a multi-day infrastructure build and not a change to this repository. Recorded as the strongest remaining W3 work with the measurement that justifies it | NOT STARTED — scoped, with evidence |
+| 5.3 **Attempted for real, and it got most of the way.** The work was already scripted — `l1/genesis-with-headroom.json` carries chainId 88812 with the native minter, fee manager and warp precompiles admin'd to the deployer, `scripts/l1.mjs` proves the three claims by reading them back, and `.env.deployer` holds the matching key. So: avalanche-cli 1.9.6 installed, a 2-node local network brought up healthy, the subnet and blockchain created with real fees paid, and **`ConvertSubnetToL1Tx` succeeded — the subnet is a sovereign L1**. It stops at `initValidatorManager`, which reaches the L1's own RPC on port 9656 and is refused because the primary-network nodes do not track the new subnet. The remedy is `track-subnets` in `~/.avalanchego/config.json` plus a P2P port and a restart — system configuration outside this repository, and not something to do on a sleeping machine. `l1/README.md` now carries the corrected procedure: its old commands were written for an older CLI and no longer complete, `--bootstrap-endpoints` is required or the conversion fails, and the private key must be bare hex. The local network was stopped afterwards | PARTIAL — L1 created and converted, RPC not served |
 
 ### Phase 6 — Test and QA · DONE
 

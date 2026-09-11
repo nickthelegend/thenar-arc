@@ -9,15 +9,43 @@ own token and its own precompiles.
 
 ## Bringing it up
 
+Verified against **avalanche-cli 1.9.6** on 3 Sep 2026. The commands below differ
+from the ones this file used to carry, which were written for an older CLI and
+no longer complete.
+
 ```
 avalanche blockchain create thenar2 \
   --genesis l1/genesis-with-headroom.json --evm --vm-version v0.8.0 \
   --proof-of-authority --validator-manager-owner <deployer> \
   --evm-token THN --icm
-avalanche blockchain deploy thenar2 --local
+
+# --bootstrap-endpoints is required. Without it the conversion fails with
+# "conversion must include at least one validator", and --num-bootstrap-validators
+# on its own does not satisfy it: the endpoint of a running node must be named.
+avalanche blockchain deploy thenar2 --local \
+  --bootstrap-endpoints http://127.0.0.1:9650 --balance 1
+
+# The key must be bare hex. With an 0x prefix the CLI reports
+# "failed to load private key: invalid private key ending".
+avalanche contract initValidatorManager thenar2 --local \
+  --private-key $(grep DEPLOYER_PRIVATE_KEY ../.env.deployer | cut -d= -f2 | sed 's/^0x//')
+
 avalanche interchain relayer deploy --local --cchain --blockchains thenar2 \
   --key ewoq --cchain-funding-key ewoq --blockchain-funding-key ewoq
 ```
+
+**Known stopping point.** `initValidatorManager` reaches the L1's own RPC on
+port 9656 and is refused, because the primary-network nodes do not track the new
+subnet yet. The CLI prints the remedy after conversion: set the subnet ID it
+gives you as `track-subnets` in `~/.avalanchego/config.json`, expose the P2P
+port, set `public-ip`, and restart. Until a node serves that RPC, `scripts/l1.mjs`
+has nothing to talk to.
+
+Everything up to that point does work: the network comes up healthy, the subnet
+and blockchain are created with real fees, and `ConvertSubnetToL1Tx` succeeds —
+the subnet becomes a sovereign L1 with the genesis in this directory, which
+carries the native minter, the fee manager and the warp precompile with the
+deployer as admin.
 
 `blockchain describe thenar2` prints the RPC endpoint and the blockchain ID.
 Then:
