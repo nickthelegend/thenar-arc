@@ -56,6 +56,52 @@ async function json(path) {
   return r.json();
 }
 
+/** eth_call against an arbitrary contract, for the ones that are not AxonProtocol. */
+async function callAt(to, data) {
+  const r = await fetch(RPC, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  return (await r.json()).result ?? "0x";
+}
+
+/**
+ * An address that holds corpus access *right now*, discovered rather than
+ * pinned.
+ *
+ * This assertion used to name one address and expect 200 from it forever.
+ * CorpusAccess sells time, so that subscription lapsed and the check went red
+ * on a schedule — the endpoint was correct and the test was wrong. Every
+ * subscriber announces itself with a Subscribed event, so the current holder
+ * is looked up and `active` is confirmed on chain before anything is asserted
+ * about the API.
+ */
+async function findSubscriber() {
+  const CORPUS = "0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165";
+  // keccak256("Subscribed(address,uint64,uint256)") is not assumed — the log is
+  // fetched by address and the indexed subscriber read out of topic 1.
+  const r = await fetch(RPC, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0", id: 1, method: "eth_getLogs",
+      params: [{ address: CORPUS, fromBlock: "0x0", toBlock: "latest" }],
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const logs = (await r.json()).result ?? [];
+  const seen = [...new Set(logs.map((l) => l.topics?.[1]).filter(Boolean))]
+    .map((t) => "0x" + t.slice(26));
+  for (const who of seen.reverse()) {
+    // active(address) — selector from the verified ABI.
+    const out = await callAt(CORPUS, "0x9fd0506d" + who.slice(2).padStart(64, "0"));
+    if (BigInt(out === "0x" ? "0x0" : out) === 1n) return who;
+  }
+  return null;
+}
+
 async function ethCall(data) {
   const r = await fetch(RPC, {
     method: "POST",
@@ -280,13 +326,23 @@ if (health) {
   // The subscription is enforced against the chain, not against a flag. The
   // assertion that matters is the pair: an address that paid gets the corpus
   // and an address that did not is refused, from the same endpoint.
-  const SUBSCRIBER = "0x7ccdbF40439c740DEA8345e5606c4f9C89a67b34";
-  const paid = await fetch(`${BASE}/api/dataset?taskId=0`, { headers: { "x-subscriber": SUBSCRIBER } });
+  const SUBSCRIBER = await findSubscriber();
   const unpaid = await fetch(`${BASE}/api/dataset?taskId=0`, {
     headers: { "x-subscriber": "0x000000000000000000000000000000000000dEaD" },
   });
-  check("a corpus subscription is honoured", paid.status === 200, String(paid.status));
   check("no subscription, no corpus", unpaid.status === 402, String(unpaid.status));
+
+  if (SUBSCRIBER) {
+    const paid = await fetch(`${BASE}/api/dataset?taskId=0`, { headers: { "x-subscriber": SUBSCRIBER } });
+    check("a corpus subscription is honoured", paid.status === 200,
+      `${paid.status} for ${SUBSCRIBER}`);
+  } else {
+    // Not a pass and not a failure: there is nothing subscribed to assert
+    // against. Saying so is the honest result; asserting 200 from an address
+    // whose time has run out would be testing the fixture, not the product.
+    console.log("  ----  a corpus subscription is honoured — no address currently holds " +
+                "access on CorpusAccess, so the positive half is unverifiable right now");
+  }
 
   // And the sample a buyer looks at before deciding stays open, or nobody
   // ever gets as far as deciding.

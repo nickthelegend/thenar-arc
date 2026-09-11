@@ -155,6 +155,10 @@ still needs a funded wallet.
 
 | Task | State |
 |---|---|
+| 6.8 The e2e suite pinned one address and expected corpus access from it forever. CorpusAccess sells time, that subscription lapsed, and CI went red on a schedule while the endpoint was behaving correctly. The test now discovers a currently-active subscriber from the contract's own `Subscribed` logs, confirms `active` on chain, and reports the positive half as unverifiable when nobody holds access rather than failing | DONE |
+
+| Task | State |
+|---|---|
 | 6.1 Itemised plan and results, regenerated from runner output | DONE — `docs/TESTPLAN.md`, `docs/TEST-RESULTS.md` |
 | 6.2 Page, API, chain, flow and matrix runners | DONE — `scripts/qa-*.mjs` |
 | 6.3 87 items PASS / 0 FAIL / 1 UNTESTED, 57/57 route×mode clean | DONE |
