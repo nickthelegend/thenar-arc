@@ -1,7 +1,6 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ResizeOnVisible } from "@/components/station/resize-on-visible";
 import { sceneColor } from "@/lib/theme-color";
 import { Html, useGLTF } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1173,8 +1172,6 @@ export function StationViewport(props: ViewportProps) {
           </div>
         </div>
       ) : null}
-    <>
-    <ResizeOnVisible />
     <Canvas
       onCreated={onCreated}
       shadows="percentage"
@@ -1189,7 +1186,6 @@ export function StationViewport(props: ViewportProps) {
       <Ghosts ghosts={props.ghosts ?? []} />
       <XRControls />
     </Canvas>
-    </>
     {/* Only rendered at all where a headset answers. */}
     <EnterXR gl={renderer} className="absolute bottom-3 right-3 z-10" />
     </>
