@@ -35,9 +35,17 @@ word appears in help text, so a grep reports success for a deploy that never ran
 | Phase | Result |
 |---|---|
 | 0 — Ground truth in the docs | **DONE**, deployed |
-| 1 — Surface the dark contracts | **DONE** — live at `thenar.io/contracts`, and `/api/contract` returns all eleven |
-| 6.8 — corpus e2e no longer pinned to an expiring subscription | **DONE**, 72/72 green |
-| 2–5, 7, 8 | Not reached this run |
+| 1 — Surface the dark contracts | **DONE** — live at `thenar.io/contracts`; `/api/contract` returns all eleven |
+| 2 — Write-path verification | **BLOCKED** — no operator wallet exists. The only chain key in the repo is the verifier's (0.012 AVAX), and using it to submit runs would defeat the key isolation `/api/health` verifies |
+| 3 — Physics honesty | **DONE**, all three tasks |
+| 4 — What a minted policy is | 4.1 and 4.3 **DONE**; 4.2 (a licence delivering a downloadable artefact) not started |
+| 5 — First-run cost | 5.1 **DONE and measured**; 5.2 and 5.3 not started |
+| 6 — Test and QA | 6.1–6.3, 6.8 **DONE**; 6.4 open, 6.5 was blocked on Phase 1 and is now unblocked, 6.7 not started |
+| 7 — Infrastructure | 7.1–7.4 **DONE**; 7.5 (rehearse a restore) not started |
+| 8 — Presentation | 8.2 **DONE** (`/contracts`); 8.1 and 8.3 not started |
+
+Verified against production after the last deploy: 23/23 pages, 37/37 API,
+5/5 chain, 72/72 e2e, detector clean.
 
 **Interrupted mid-run** by the boot volume filling — every shell command,
 including `df`, failed with `ENOSPC`. Recovered and continued.
