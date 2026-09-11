@@ -135,6 +135,38 @@ export default function LicencePage() {
         </ol>
       )}
 
+      {/* What the fee actually buys. A licence receipt that shows a cap table
+          and a payout and never points at the corpus is a receipt for nothing
+          the reader can hold. The bulk export is gated by CorpusAccess and the
+          gate is named rather than hidden behind a link that would 402. */}
+      <DimRule className="mt-10" note="What this licence delivers" />
+      <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">
+        The corpus recorded against task #{policy.taskId} — {fmtInt(policy.trajectories)}{" "}
+        {policy.trajectories === 1 ? "trajectory" : "trajectories"} of joint states,
+        gripper state and object poses at 20 Hz, as newline-delimited JSON.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <a
+          href={`/api/dataset?taskId=${policy.taskId}`}
+          className="border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
+        >
+          Download the corpus
+        </a>
+        <a
+          href={`/api/dataset/summary?taskId=${policy.taskId}`}
+          className="border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe"
+        >
+          Inspect it first
+        </a>
+      </div>
+      <p className="mt-3 max-w-[64ch] font-mono text-[12px] leading-relaxed text-scribe-3">
+        The bulk download needs an active subscription on{" "}
+        <Link href="/contracts" className="text-signal hover:text-signal-hi">CorpusAccess</Link>{" "}
+        and answers 402 without one — it sells time, not rights. The summary is
+        open, and so is any single episode by hash, so a buyer can see what they
+        would be getting before paying for it.
+      </p>
+
       <p className="mt-8 font-mono text-[12px] text-scribe-3">
         <a href={addressUrl(AXON_ADDRESS)} target="_blank" rel="noreferrer" className="hover:text-probe">
           {appChain.name} · {shortHash(AXON_ADDRESS)} &rarr;

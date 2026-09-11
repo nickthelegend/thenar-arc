@@ -31,7 +31,11 @@ export const DEPLOYED: Deployed[] = [
     key: "axon",
     name: "AxonProtocolV2",
     address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
-    does: "Tasks, escrow, trajectories, policies and cap tables. Records a run and pays for it in one call.",
+    does:
+      "Tasks, escrow, trajectories, policies and cap tables. Records a run and pays for it in one call. " +
+      "submitTrajectoryFor is permissionless: anyone may pay the gas for someone else's run, because the " +
+      "verifier signature binds the task, the contributor, the hash and the score, so relaying moves who " +
+      "pays and forges nothing. No relayer service is running — the path exists on chain and nothing calls it.",
     source: "contracts/src/AxonProtocolV2.sol",
     surface: "/hub, /station, /task, /run, /leaderboard, /portfolio",
   },

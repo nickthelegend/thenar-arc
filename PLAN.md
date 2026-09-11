@@ -165,7 +165,7 @@ computed per run and shown only on the run page.
 | 3.2 `/spec` listed "kinematic, not rigid-body" as a caveat and left the reader to guess the cost. It now says how the answer is obtained and links a real run where the number is | DONE |
 | 3.3 **Decision: no, not under the station.** Swapping the simulator beneath runs already settled makes them incomparable with each other, and the corpus's value is that every run was measured the same way. If it ever changes it forks the corpus into pre- and post-physics generations and both must be labelled at the point of sale. Measuring the gap per run and publishing it is the position, not a step towards replacing the sim | DONE |
 
-### Phase 4 — Make a minted policy mean something · IN PROGRESS
+### Phase 4 — Make a minted policy mean something · DONE
 
 A minted policy is currently a cap table over trajectories. PRODUCT.md is honest
 that no trained policy exists. The gap between "cap table" and "model" is the
@@ -174,7 +174,7 @@ product's biggest conceptual liability.
 | Task | State |
 |---|---|
 | 4.1 Both pages now say it. On `/licence` because that is where someone is looking at a fee and could assume they bought a model; on `/policies` because the word already means a *submitted model* there, so one word meant two things on one product | DONE |
-| 4.2 Publish the exported corpus for a minted policy as a downloadable artefact so "licence" delivers something concrete | NOT STARTED |
+| 4.2 `/licence/[policyId]` now names what the fee buys and links it: the corpus for that task as newline-delimited JSON, plus an open summary to inspect first. The bulk download is gated by CorpusAccess and the gate is stated rather than hidden behind a link that would 402 | DONE |
 | 4.3 **Decision: no.** Nine trajectories across three tasks will not train anything that behaves, and a baseline that fails would be read as the corpus failing rather than as nine samples being nine samples. The honest position is the one PRODUCT.md already takes — no trained policy exists, and the interface says so | DONE |
 
 ### Phase 5 — First-run cost · IN PROGRESS
@@ -187,8 +187,8 @@ still needs a funded wallet.
 | Task | State |
 |---|---|
 | 5.1 **Measured, from six real settled receipts on Fuji: 460,466–600,000 gas per `submitTrajectory`, median 600,000.** Fuji's gas price today is 160 wei, so a run costs effectively nothing and the problem is invisible. Priced at a live network it inverts: 0.0006 AVAX at 1 gwei, **0.015 AVAX at 25 gwei, 0.030 at 50** — against a reward of 0.001 AVAX per run. At 25 gwei an operator pays fifteen times their earnings to be paid. This is the strongest evidence for `docs/AVALANCHE-50.md` items 1–2 and it should be on the record before anyone quotes the current cost as the real one | DONE |
-| 5.2 Relayed submission exists in V2 (`axon:relayed` appears on chain). Document who may relay, what it costs them, and surface it as an option in the station | NOT STARTED |
-| 5.3 Evaluate `docs/AVALANCHE-50.md` items 1–2 (own L1 + fee manager for zero-gas runs; custom gas token). These are the strongest W3 items in the repo and are currently unbuilt | NOT STARTED |
+| 5.2 **Documented.** `submitTrajectoryFor(address contributor, …)` is permissionless — the verifier signature binds task, contributor, hash and score, so a relayer moves who pays and forges nothing. Cost to the relayer is the same 460k–600k gas measured in 5.1. Stated on `/contracts`. **Not surfaced as an option in the station, because no relayer service is running**: the path exists on chain and nothing calls it, and offering a button for a service that does not exist would be exactly the roadmap-as-capability this product refuses | PARTIAL |
+| 5.3 **Evaluated, not built.** 5.1 measured the case for them: at 25 gwei a run costs 0.015 AVAX to earn 0.001. An own L1 with the fee manager set to zero for the station contract removes the operator's cost entirely, and a custom gas token would make earnings and gas budget the same asset. Both need an Avalanche L1 deployed and validated, which is a multi-day infrastructure build and not a change to this repository. Recorded as the strongest remaining W3 work with the measurement that justifies it | NOT STARTED — scoped, with evidence |
 
 ### Phase 6 — Test and QA · IN PROGRESS
 
@@ -214,7 +214,7 @@ still needs a funded wallet.
 | 7.2 `/api/health` separates liveness from historical audit; 200 when live | DONE |
 | 7.3 **Confirmed unrecoverable, and the first reason given for it was wrong.** v1 does have an escape hatch — a pull-payment `claim()` — which an earlier grep for withdraw/refund/sweep missed. It changes nothing: `claimable` is **0 for all 19 addresses** this deployment has ever paid or been funded by, so the whole 0.263081 AVAX is unfilled task escrow. Escrow refunds only arrived in V2. Stated on `/contracts` with that reasoning rather than the guess | DONE |
 | 7.4 `scripts/ship.mjs` — typecheck, build, Vercel **forced**, then Railway, refusing to continue unless Vercel reports `readyState: READY`. `--check` prints the plan without deploying. Both half-deploy failures this project has actually had are the reason it forces and the reason it does both | DONE |
-| 7.5 A daily snapshot **export** exists and works — `/api/snapshot/drill` returned `axon-2026-09-02.ndjson`, 22,847,130 bytes, with a sha256. There is no documented **restore**: no procedure, and nothing that has ever read a snapshot back. Write and rehearse one | NOT STARTED |
+| 7.5 **Rehearsed.** `scripts/restore.mjs --rehearse` exports the database, restores it into a scratch file and verifies the result against the snapshot's own manifest: 18 trajectories out, 18 back, 0 faults. Between it and the existing drill both halves are now covered — the drill checks every prop's sha256 against its actual bytes on the real 22.8 MB snapshot (`integrity: ok`, 104 trajectories, 3 props, `matchesLive: true`), and this proves the rows write back. The target defaults to a scratch path so a rehearsal cannot touch the live corpus by being run in the wrong directory | DONE |
 
 ### Phase 8 — Presentation · IN PROGRESS
 
