@@ -4,6 +4,7 @@ import "./landing.css";
 import { LandingMotion } from "@/components/landing/motion";
 import { CounterTravelStage } from "@/components/landing/stage";
 import { FieldSwap } from "@/components/landing/field";
+import { LiveReadings } from "@/components/landing/readings";
 import { armSpec as spec, elevation, traces } from "@/lib/landing-figures";
 import { TOLERANCE_MM, W_PLACEMENT, W_SMOOTHNESS, W_EFFICIENCY } from "@/lib/score";
 
@@ -154,6 +155,8 @@ export default function Home() {
           <WordLayer className="word-front" owns={(i) => i === FRONT_LETTER} />
         </div>
       </section>
+
+      <LiveReadings />
 
       {/* ---- inverted proof ------------------------------------------------ */}
       <section className="on-ink sec">

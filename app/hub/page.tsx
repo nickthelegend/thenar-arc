@@ -54,8 +54,18 @@ export default function HubPage() {
   const seeded = (tasks ?? []).filter((t) => isSeedFunded(t.funder)).length;
   const totalTasks = (tasks ?? []).length;
 
-  const openSlots = rows.reduce((n, t) => n + (t.slotsTotal - t.slotsFilled), 0);
-  const escrow = rows.reduce((n, t) => n + Number(formatEther(t.escrowWei)), 0);
+  // Over every task, not over the filtered rows.
+  //
+  // This strip sits above the filter chips, says "Live from the contract" and
+  // is read as a description of the board. Computed from `rows` it silently
+  // tracked whatever filter happened to be on — so the default view showed
+  // "Tasks 5" directly above a sentence reading "All 6 were posted from the
+  // address that deployed the protocol". Two numbers for the same quantity, a
+  // paragraph apart, and the chain says 6. The filtered count is not lost:
+  // the table below is the filtered view.
+  const allTasks = tasks ?? [];
+  const openSlots = allTasks.reduce((n, t) => n + (t.slotsTotal - t.slotsFilled), 0);
+  const escrow = allTasks.reduce((n, t) => n + Number(formatEther(t.escrowWei)), 0);
   const scenariosPresent = useMemo(
     () => SCENARIOS.filter((s) => (tasks ?? []).some((t) => t.scenario === s)),
     [tasks],
@@ -73,7 +83,7 @@ export default function HubPage() {
       <div className="flex flex-col gap-4">
         <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Open work</h1>
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
-          <Reading label="Tasks" value={isLoading ? "—" : fmtInt(rows.length)} />
+          <Reading label="Tasks" value={isLoading ? "—" : fmtInt(totalTasks)} />
           <Reading label="Unfilled slots" value={isLoading ? "—" : fmtInt(openSlots)} />
           <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit={CURRENCY} tone="signal" />
           <Reading label="Cap per operator" value="5" unit="runs / task" />

@@ -115,7 +115,12 @@ for (const [id, route, assert] of ITEMS) {
     // so network never goes idle and a networkidle wait times out on a page
     // that loaded correctly in 450ms.
     await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForTimeout(route.startsWith("/station") ? 6000 : 1800);
+    // The leaderboard aggregates from a client-side scan of event logs over many
+    // block ranges against a public RPC, so its first data lands around 14s.
+    // That is a real latency finding, not a reason to measure it too early.
+    await page.waitForTimeout(
+      route.startsWith("/station") ? 6000 : route === "/leaderboard" ? 16000 : 1800,
+    );
     // The 404 item is expected to be a 404 document; nothing else is.
     // A route that is meant not to exist is *expected* to 404, and a 404 is the
     // correct answer rather than a defect. Two requests carry that status on
