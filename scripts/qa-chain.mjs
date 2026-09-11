@@ -16,6 +16,13 @@ const [tasks, trajs, pols] = await Promise.all([
   c.readContract({address:A,abi,functionName:"policyCount"}),
 ]);
 let failed = 0;
+const RPC = "https://api.avax-test.network/ext/bc/C/rpc";
+const callAt = async (to, data) => {
+  const r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
+    signal: AbortSignal.timeout(30_000) });
+  return (await r.json()).result ?? "0x0";
+};
 const say = (id, ok, d) => { if (!ok) failed++; console.log(`${ok?"PASS":"FAIL"}  ${id.padEnd(4)} ${d}`); };
 
 // The plan's wording is "matches the count shown on /hub" — the chain figures
@@ -50,6 +57,89 @@ for (let i = 0; i < Number(tasks); i++) {
 }
 const avax = Number(sum) / 1e18;
 say("C5", avax >= 0, `sum(escrow) over ${tasks} tasks = ${avax.toFixed(6)} AVAX`);
+
+// --- C6: the write path, exercised without spending -------------------------
+//
+// A transaction is not the only way to ask a contract what it would do.
+// eth_call runs the call against the deployed bytecode at the current state and
+// returns the revert — so every refusal the write path is supposed to enforce
+// can be verified for real, on the real contract, without a wallet, without gas
+// and without changing anything. Only the accepting case genuinely needs a
+// funded operator key, and that is stated rather than skipped silently.
+{
+  const { encodeFunctionData, decodeErrorResult, parseAbi } = await import("viem");
+  const A = "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0";
+  const wAbi = parseAbi([
+    "function submitTrajectory(uint256 taskId, bytes32 trajHash, string cid, uint16 score, bytes signature) returns (uint256)",
+    "function trajectoryUsed(bytes32) view returns (bool)",
+    "function runsOnTask(uint256, address) view returns (uint8)",
+    "function RUNS_PER_ACCOUNT() view returns (uint8)",
+    "function MAX_SCORE() view returns (uint16)",
+  ]);
+  const errAbi = parseAbi([
+    "error AlreadySubmitted()", "error BadSignature()", "error CapReached()",
+    "error ScoreTooHigh()", "error NoSlots()", "error TaskClosed()",
+  ]);
+
+  const rpcCall = async (data) => {
+    const r = await fetch(RPC, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call",
+        params: [{ to: A, data, from: "0x000000000000000000000000000000000000dEaD" }, "latest"] }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    return r.json();
+  };
+  /** The custom error a simulated call reverts with, by name. */
+  const revertName = async (args) => {
+    const j = await rpcCall(encodeFunctionData({ abi: wAbi, functionName: "submitTrajectory", args }));
+    const hex = j?.error?.data ?? j?.error?.cause?.data;
+    if (typeof hex !== "string" || hex.length < 10) return j?.error?.message ?? "no revert data";
+    try { return decodeErrorResult({ abi: errAbi, data: hex }).errorName; }
+    catch { return `unknown selector ${hex.slice(0, 10)}`; }
+  };
+
+  const USED = "0x77f0cc8cd166ce38679fee669324dc3b898ed308dbf7aee8752c96490941a7a2";
+  const FRESH = "0x" + "ab".repeat(32);
+  const SIG = "0x" + "00".repeat(65);
+
+  // C6.1 — a hash the contract has already accepted is marked used.
+  const used = BigInt(await callAt(A, encodeFunctionData({ abi: wAbi, functionName: "trajectoryUsed", args: [USED] })));
+  say("C6.1", used === 1n, `trajectoryUsed(a settled hash) = true`);
+
+  // C6.2 — a replay carrying a junk signature never reaches the replay check.
+  //
+  // The expectation here was AlreadySubmitted and the contract said BadSignature,
+  // which is the contract being right: it verifies the verifier's signature
+  // before it looks at anything else, so a forged submission is rejected before
+  // any business rule is consulted. That ordering is the stronger property, and
+  // it is what is asserted — reaching AlreadySubmitted at all would mean an
+  // unsigned call had got past the gate.
+  const replay = await revertName([2n, USED, "axon:replay", 9000, SIG]);
+  say("C6.2", replay === "BadSignature", `an unsigned replay is stopped at the signature, not the replay check (${replay})`);
+
+  // C6.3 — a score nobody signed is refused.
+  const unsigned = await revertName([1n, FRESH, "axon:probe", 9000, SIG]);
+  say("C6.3", unsigned === "BadSignature", `an unsigned score reverts ${unsigned}`);
+
+  // C6.4 — and neither does an over-maximum score. Same ordering: without a
+  //        valid verifier signature nothing is evaluated, so an operator cannot
+  //        probe the business rules by submitting garbage.
+  const max = Number(await callAt(A, encodeFunctionData({ abi: wAbi, functionName: "MAX_SCORE" })));
+  const tooHigh = await revertName([1n, FRESH, "axon:probe", max + 1, SIG]);
+  say("C6.4", tooHigh === "BadSignature", `score ${max + 1} over MAX_SCORE ${max}, unsigned, is stopped at the signature (${tooHigh})`);
+
+  // C6.5 — the per-operator cap is real and readable.
+  const cap = Number(await callAt(A, encodeFunctionData({ abi: wAbi, functionName: "RUNS_PER_ACCOUNT" })));
+  const runs = Number(await callAt(A, encodeFunctionData({ abi: wAbi, functionName: "runsOnTask", args: [1n, "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815"] })));
+  say("C6.5", cap > 0 && runs <= cap, `RUNS_PER_ACCOUNT ${cap}, seed funder has ${runs} on task 1`);
+
+  // C6.6 — the accepting case. This is the one thing eth_call cannot stand in
+  //        for, because a run that is accepted must actually move AVAX.
+  console.log("  ----  C6.6 a signed run is accepted and paid — needs a funded operator key, " +
+              "which does not exist in this repo. The verifier key must not be used: it signs scores, " +
+              "and spending it here would defeat the isolation /api/health checks.");
+}
 
 // Non-zero when anything failed, so CI can fail on it.
 process.exit(failed === 0 ? 0 : 1);

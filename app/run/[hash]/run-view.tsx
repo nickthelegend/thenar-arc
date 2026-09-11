@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PhysicsCheck } from "@/components/physics-check";
+import { RunCertificate } from "@/components/run-certificate";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -338,6 +339,8 @@ export default function RunView() {
         cursor={cursor}
         onSeek={setCursor}
       />
+
+      <RunCertificate trajHash={data.trajHash} />
 
       <InCorpus taskId={data.taskId} trajHash={data.trajHash} />
 

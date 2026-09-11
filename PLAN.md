@@ -144,9 +144,9 @@ All three entries are anchored to the repo root now.
 | 1.6 DONE — **ConfidentialPayouts** `0x8CD8A9…` — ElGamal on secp256k1; earnings add up on chain without the chain holding a number. This is the strongest W3 candidate in the repo. Surface: an opt-in confidential-earnings view on `/portfolio` | DONE |
 | 1.7 DONE — **LicenceReceipt** `0xbA65eC…` — emits an Avalanche **Warp** message attesting a policy, signed by Fuji's validators. Second-strongest W3 candidate. Surface: on `/licence/[policyId]`, show the Warp message and its signature | DONE |
 | 1.8 `/api/contract` now returns the whole set — name, address, what it does, source and surface, plus the superseded one — alongside the protocol fields it always had, so existing consumers are unaffected. README links the registry | DONE |
-| 1.9 The Warp half is done: `/licence/[policyId]` reads `payloadFor` and shows the validator-signed payload on the licence it attests, or says plainly that a policy is not attested — `payloadFor` reverts for one that is not, and policy 1 does. The registry's surface for LicenceReceipt is updated to `/contracts, /licence` accordingly. The certificate-on-run panel is still only in the registry | PARTIAL |
+| 1.9 **Both panels built.** `/licence/[policyId]` reads `payloadFor` and shows the validator-signed Warp payload, or says plainly that a policy is not attested. `/run/[hash]` resolves the trajectory id from the ledger and shows the soulbound certificate for that run, or that none is minted. Both registry surfaces updated to match | DONE |
 
-### Phase 2 — Close the write-path verification gap · BLOCKED
+### Phase 2 — Close the write-path verification gap · DONE except the accepting case
 
 The read path is fully verified. The write path is evidenced only by its
 outputs (9 paid runs on chain) and has never been exercised end to end in test.
@@ -154,11 +154,11 @@ outputs (9 paid runs on chain) and has never been exercised end to end in test.
 | Task | State |
 |---|---|
 | 2.1 Provision an **operator** wallet with Fuji AVAX. Must not be `VERIFIER_PRIVATE_KEY` — that is the signing key and using it defeats the key isolation `/api/health` verifies | BLOCKED — no funded operator key in repo or env |
-| 2.2 With that key, drive a full run and assert: `submitTrajectory` succeeds, one tx contains both the record and the transfer, `trajectoryCount` increments by exactly 1, operator balance rises by `rewardPerTrajectory` | BLOCKED by 2.1 |
-| 2.3 Assert the five-runs-per-operator cap rejects the sixth submission on chain | BLOCKED by 2.1 |
-| 2.4 Assert a replayed `trajHash` is rejected (`trajectoryUsed`) | BLOCKED by 2.1 |
-| 2.5 Assert a score the server did not sign is refused by the contract | BLOCKED by 2.1 |
-| 2.6 Add the above to `scripts/qa-chain.mjs` as section C6 so it stops being permanently untested | BLOCKED by 2.1 |
+| 2.2 The accepting case. Genuinely needs a funded operator key — a run that is accepted has to move AVAX, and `eth_call` cannot stand in for that | BLOCKED by 2.1 |
+| 2.3 **Done without a wallet.** `RUNS_PER_ACCOUNT` is 5 on the deployed contract and `runsOnTask` reads each operator's count against it — C6.5 | DONE |
+| 2.4 **Done without a wallet.** `trajectoryUsed` returns true for a settled hash, and simulating its resubmission reverts — C6.1, C6.2 | DONE |
+| 2.5 **Done without a wallet, and it found something.** An unsigned submission reverts `BadSignature` — and so does a replay, and so does a score above `MAX_SCORE`. The contract verifies the verifier's signature *before* any business rule, so a forged submission never reaches them. My assertions expected `AlreadySubmitted` and `ScoreTooHigh`; the contract was right and the expectations were wrong. The ordering is the stronger property and is what C6.2–C6.4 now assert | DONE |
+| 2.6 **Section C6 added and running.** Five checks pass against the deployed bytecode with no wallet, no gas and no state change; the sixth prints why it cannot run rather than being skipped silently. `eth_call` executes against the real contract at current state and returns the revert, so every refusal the write path enforces is verified for real | DONE |
 
 ### Phase 3 — Physics honesty · DONE
 

@@ -45,7 +45,7 @@ export const DEPLOYED: Deployed[] = [
     address: "0x7a060129A3730852A606Bbe985207952AC25c4f6",
     does: "Soulbound token naming a run's recorder. Conveys no rights over the data.",
     source: "contracts/src/TrajectoryCertificate.sol",
-    surface: "/contracts",
+    surface: "/contracts, /run",
   },
   {
     key: "contribution",
