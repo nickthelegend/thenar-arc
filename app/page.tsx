@@ -3,7 +3,7 @@ import { DimRule } from "@/components/primitives";
 import { NetworkStats } from "@/components/network-stats";
 import { PropStrip } from "@/components/prop-strip";
 import { ActivityFeed } from "@/components/activity-feed";
-import { HeroSequence } from "@/components/hero-sequence";
+import { Hero } from "@/components/hero";
 import { LandingMotion } from "@/components/landing-motion";
 import { IconArm, IconDatum, IconTally, IconWallet } from "@/components/icons";
 import { TOLERANCE_MM } from "@/lib/score";
@@ -15,7 +15,7 @@ export default function Home() {
       <LandingMotion />
       {/* The thesis is the arm doing the work, next to the sentence that
           explains why anyone would. */}
-      <HeroSequence />
+      <Hero />
 
       <NetworkStats />
 
@@ -87,7 +87,7 @@ export default function Home() {
               n: "03",
               Icon: IconTally,
               h: "Get a score",
-              p: "Placement, path smoothness and time against par resolve to one number. The same trajectory always scores the same, because the payout is derived from it.",
+              p: "Placement carries 55%, path smoothness 25%, your time against par 20%. The same trajectory always scores the same, because the payout is derived from it.",
             },
             {
               n: "04",
@@ -118,12 +118,20 @@ export default function Home() {
           Pick a task, run it once, and watch the measurement land. If it passes,
           the AVAX is in your wallet before you have let go of the keyboard.
         </p>
-        <Link
-          href="/hub"
-          className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
-        >
-          Open the hub
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/hub"
+            className="border border-scribe bg-scribe px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi"
+          >
+            Open the hub
+          </Link>
+          <Link
+            href="/space"
+            className="border border-rule-strong px-5 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-scribe transition-colors hover:border-scribe"
+          >
+            Walk onto the floor
+          </Link>
+        </div>
       </section>
 
       {/* The claim on this page is that runs are paid on chain. This is that
@@ -132,6 +140,13 @@ export default function Home() {
       <div className="mt-5">
         <ActivityFeed limit={8} />
       </div>
+
+      <Link
+        href="/leaderboard"
+        className="mt-5 inline-block font-mono text-[13px] text-signal transition-colors hover:text-signal-hi"
+      >
+        See who has been paid &rarr;
+      </Link>
 
 
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-rule py-6 font-mono text-[12px] text-scribe-3">
