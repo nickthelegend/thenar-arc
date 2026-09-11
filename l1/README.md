@@ -34,18 +34,22 @@ avalanche interchain relayer deploy --local --cchain --blockchains thenar2 \
   --key ewoq --cchain-funding-key ewoq --blockchain-funding-key ewoq
 ```
 
-**Known stopping point.** `initValidatorManager` reaches the L1's own RPC on
-port 9656 and is refused, because the primary-network nodes do not track the new
-subnet yet. The CLI prints the remedy after conversion: set the subnet ID it
-gives you as `track-subnets` in `~/.avalanchego/config.json`, expose the P2P
-port, set `public-ip`, and restart. Until a node serves that RPC, `scripts/l1.mjs`
-has nothing to talk to.
+**The invocation that works** is `--use-local-machine` together with
+`--num-bootstrap-validators 1`. Those two cannot be combined with
+`--bootstrap-endpoints` — the CLI refuses both at once — and using
+`--bootstrap-endpoints` alone converts the subnet but leaves no node serving the
+L1's RPC, which is a dead end: `blockchain join` refuses sovereign L1s, and a
+node started with `track-subnets` in `--node-config` comes up reporting no such
+chain. With the working invocation the CLI deploys ICM, starts the relayer, and
+prints the RPC endpoint itself.
 
-Everything up to that point does work: the network comes up healthy, the subnet
-and blockchain are created with real fees, and `ConvertSubnetToL1Tx` succeeds —
-the subnet becomes a sovereign L1 with the genesis in this directory, which
-carries the native minter, the fee manager and the warp precompile with the
-deployer as admin.
+**One thing to do before `scripts/l1.mjs`:** the ewoq account holds nothing on
+the new L1, and claim 32 deploys its receiver there. Mint it some THN through
+the native minter at `0x0200000000000000000000000000000000000001` — the same
+facility claim 36 exercises — or the run fails on funds.
+
+Result of the last run is committed at `docs/l1-proof.txt`: all three claims
+shown, the policy delivered across chains ten seconds after minting.
 
 `blockchain describe thenar2` prints the RPC endpoint and the blockchain ID.
 Then:

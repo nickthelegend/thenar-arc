@@ -1,0 +1,27 @@
+
+36 — the chain issues its own gas token
+  deployer on the native minter: Admin
+  newcomer holds: 0 THN
+  mint: success -> newcomer holds 25 THN
+  minter's balance moved by: 0 THN besides gas
+
+33 — the operator sets what a run costs
+  deployer on the fee manager: Admin
+  base fee now: 1000000n wei — a 21,000-gas run costs 0.000000021 THN
+  minBaseFee already at 1000000n wei
+  base fee reached: 1000000n wei at block 373n
+  the same run now costs: 0.000000021 THN — 1x cheaper
+
+32 — a minted policy delivered to a second chain
+  source chain: 0x0a19dff4513d7c6dae8a199295fa48ec5c07b6b8cd4ca169cec4c930bb024060 
+  destination : 0x9a5ceb548a275dc25ca89fafb9609fed9e2952198c3dbf4971ac5f8148c47821
+  protocol on the source chain: 0x789a5fdac2b37fcd290fb2924382297a6ae65860
+  policy 0 minted: task 0n | 2 trajectories | fee 0.5
+  announcer: 0xb8a934dcb74d0e3d1df6bce0fac12cd8b18801ed 
+  registry : 0x52c84043cd9c865236f11d9fc9f56aa003c1f922
+  the destination knows policy 0 beforehand: false
+  announce(): success
+  delivered — the destination holds task 0n | 2 trajectories | fee 0.5
+  minted at 1788411260n received at 1788411270n
+
+32: shown  |  33: shown  |  36: shown
