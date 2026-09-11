@@ -126,3 +126,33 @@ data** — figures must trace to chain, DB, or a generated artifact.
 | E1 | No mocks/stubs in shipped code | No fixture/mock/placeholder data path reachable in production |
 | E2 | Console clean, all pages | Zero errors across every page in A |
 | E3 | Network clean, all pages | Zero self-inflicted 4xx/5xx across every page in A |
+
+
+---
+
+## Second pass — what was deepened
+
+The first execution of this plan asserted several pages only as "renders more
+than N characters", which is the vague should-work the plan itself forbids.
+Those items were rewritten to name the heading the page must carry and, where
+the page has a data source, a figure or row count that must agree with it —
+`scripts/qa-deep.mjs`. The archive is the reason that matters: it renders two
+groups, prior chains and superseded contracts, and a shallow check could not
+tell whether the second was being dropped. It is now asserted at 33/33 rows
+with both groups named.
+
+Added in the second pass:
+
+| # | Item | Correct means |
+|---|---|---|
+| B34 | `/api/migrate` unauthenticated | 401 `not authorised`. Not executed: a one-shot copy into the database that is already live |
+| B35a | `/api/hit` with `DNT: 1` | `{counted:false, reason:"signalled"}` |
+| B35b | `/api/hit` with `Sec-GPC: 1` | not counted |
+| B36 | `/api/notify` invalid subscription | 4xx JSON naming the field |
+| B37 | OpenAPI conformance | every advertised path answers; none 404s or 500s |
+| C7 | PasskeyRegistry | a real P-256 signature verifies; a tampered one does not |
+| D7 | Service worker | registered, `/offline` and `/sw.js` both 200 |
+
+Latency, measured rather than asserted: the standings appeared after ~14s
+because the activity scan issued forty sequential `getLogs` calls. Read in
+parallel batches it is ~3.7s for the same eight operators.
