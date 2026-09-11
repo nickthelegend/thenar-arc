@@ -94,7 +94,7 @@ export const DEPLOYED: Deployed[] = [
     address: "0xbA65eC5479C9E131d158Af1947452C989eF7D143",
     does: "Attests a policy as an Avalanche Warp message, signed by this subnet's validators.",
     source: "contracts/src/LicenceReceipt.sol",
-    surface: "/contracts",
+    surface: "/contracts, /licence",
     avalanche: "Warp — validator-signed interchain attestation. There is no equivalent on a generic EVM chain.",
   },
   {

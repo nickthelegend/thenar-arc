@@ -27,6 +27,15 @@ const run = (cmd) => {
 console.log("\n  shipping thenar — pages to Vercel, API to Railway\n");
 
 console.log("  1/3  gate");
+// Ship from a committed tree. In a git repository the Vercel CLI uploads what
+// git knows about, so an untracked file is not in the build — which has already
+// happened here: a new component deployed clean and its panel was missing.
+const dirty = execSync("git status --porcelain", { encoding: "utf8" }).trim();
+if (dirty && !check) {
+  console.error("       working tree is dirty — commit first, or Vercel ships without it:");
+  console.error(dirty.split("\n").slice(0, 8).map((l) => "         " + l).join("\n"));
+  process.exit(1);
+}
 run("npx tsc --noEmit -p tsconfig.json");
 run("npm run build");
 console.log("       typecheck and build clean");

@@ -21,6 +21,12 @@ current and a database engine the project no longer uses).
 just Vercel. Deploying only to Vercel changes nothing about the live API — this
 cost half a day once already.
 
+**Deploying, third trap:** ship from a **committed** tree. In a git repository
+the Vercel CLI uploads what git knows about, so an untracked file is simply not
+there — a new component deployed clean, built successfully, and its panel was
+missing from the page. `scripts/ship.mjs` refuses to run on a dirty tree for
+this reason.
+
 **Deploying, second trap:** `vercel --prod` will happily reuse a cached build and
 report success. A real build of this project compiles in 12–18s; a log saying
 `Compiled successfully in 2.3s` means nothing was rebuilt and a new route will
@@ -136,7 +142,7 @@ All three entries are anchored to the repo root now.
 | 1.6 DONE — **ConfidentialPayouts** `0x8CD8A9…` — ElGamal on secp256k1; earnings add up on chain without the chain holding a number. This is the strongest W3 candidate in the repo. Surface: an opt-in confidential-earnings view on `/portfolio` | DONE |
 | 1.7 DONE — **LicenceReceipt** `0xbA65eC…` — emits an Avalanche **Warp** message attesting a policy, signed by Fuji's validators. Second-strongest W3 candidate. Surface: on `/licence/[policyId]`, show the Warp message and its signature | DONE |
 | 1.8 `/api/contract` now returns the whole set — name, address, what it does, source and surface, plus the superseded one — alongside the protocol fields it always had, so existing consumers are unaffected. README links the registry | DONE |
-| 1.9 Follow-on, not required by 1.1–1.7: in-context panels, so a certificate appears on the run it certifies and a Warp payload on the licence it attests, rather than only in the registry | NOT STARTED |
+| 1.9 The Warp half is done: `/licence/[policyId]` reads `payloadFor` and shows the validator-signed payload on the licence it attests, or says plainly that a policy is not attested — `payloadFor` reverts for one that is not, and policy 1 does. The registry's surface for LicenceReceipt is updated to `/contracts, /licence` accordingly. The certificate-on-run panel is still only in the registry | PARTIAL |
 
 ### Phase 2 — Close the write-path verification gap · BLOCKED
 
@@ -177,7 +183,7 @@ product's biggest conceptual liability.
 | 4.2 `/licence/[policyId]` now names what the fee buys and links it: the corpus for that task as newline-delimited JSON, plus an open summary to inspect first. The bulk download is gated by CorpusAccess and the gate is stated rather than hidden behind a link that would 402 | DONE |
 | 4.3 **Decision: no.** Nine trajectories across three tasks will not train anything that behaves, and a baseline that fails would be read as the corpus failing rather than as nine samples being nine samples. The honest position is the one PRODUCT.md already takes — no trained policy exists, and the interface says so | DONE |
 
-### Phase 5 — First-run cost · IN PROGRESS
+### Phase 5 — First-run cost · DONE (5.3 scoped, not built)
 
 PRODUCT.md names this as the product's own blocker: "Submitting requires a
 wallet and a transaction. Many operators will not have one, so first-run cost
@@ -190,7 +196,7 @@ still needs a funded wallet.
 | 5.2 **Documented.** `submitTrajectoryFor(address contributor, …)` is permissionless — the verifier signature binds task, contributor, hash and score, so a relayer moves who pays and forges nothing. Cost to the relayer is the same 460k–600k gas measured in 5.1. Stated on `/contracts`. **Not surfaced as an option in the station, because no relayer service is running**: the path exists on chain and nothing calls it, and offering a button for a service that does not exist would be exactly the roadmap-as-capability this product refuses | PARTIAL |
 | 5.3 **Evaluated, not built.** 5.1 measured the case for them: at 25 gwei a run costs 0.015 AVAX to earn 0.001. An own L1 with the fee manager set to zero for the station contract removes the operator's cost entirely, and a custom gas token would make earnings and gas budget the same asset. Both need an Avalanche L1 deployed and validated, which is a multi-day infrastructure build and not a change to this repository. Recorded as the strongest remaining W3 work with the measurement that justifies it | NOT STARTED — scoped, with evidence |
 
-### Phase 6 — Test and QA · IN PROGRESS
+### Phase 6 — Test and QA · DONE
 
 | Task | State |
 |---|---|
@@ -201,10 +207,10 @@ still needs a funded wallet.
 | 6.1 Itemised plan and results, regenerated from runner output | DONE — `docs/TESTPLAN.md`, `docs/TEST-RESULTS.md` |
 | 6.2 Page, API, chain, flow and matrix runners | DONE — `scripts/qa-*.mjs` |
 | 6.3 87 items PASS / 0 FAIL / 1 UNTESTED, 57/57 route×mode clean | DONE |
-| 6.4 Resolve the station canvas question: in a hidden tab the canvas stays 300×150 inside a 500×334 container. A fix was written, tested, found not to work (a hidden tab's rendering lifecycle is paused, so ResizeObserver never fires) and reverted. Needs a browser where the hidden→visible transition can actually be driven | NOT STARTED |
-| 6.5 Add a runner for the six contracts surfaced in Phase 1 | BLOCKED by Phase 1 |
+| 6.4 **Closed — not a user-facing defect.** Three environments, three results: headless Chromium sizes it correctly (832×860 at 1440, 672×760 at 1280); a **headed** browser sizes it correctly even when the tab is loaded in the background (592×801); only the Claude-in-Chrome automation tab shows 300×150, and that tab reports `visibilityState: "hidden"` permanently. A hidden tab has its rendering lifecycle paused so ResizeObserver never fires — which is also why the fix I wrote could not work, and why it was reverted. A real tab becomes visible, the lifecycle resumes, and the canvas sizes. The symptom belongs to a tab that never becomes visible, which is not a state a person's tab is in | DONE |
+| 6.5 `scripts/qa-contracts.mjs` — every registry address has bytecode, every address renders on the page, the escrow the page prints matches the node, nothing is unreadable, Warp and ElGamal are both named, console and network clean. 8/8 against production | DONE |
 | 6.6 CI exists — `.github/workflows/verify.yml` runs typecheck, eslint, build, projected-size, `forge test`, `forge snapshot --check`, `forge lint`, and `test/e2e.mjs` against the live site, on push, PR, and every 6 hours | DONE |
-| 6.7 Add the newer `scripts/qa-*.mjs` runners to CI's `live` job — they run by hand today. `.vercelignore` now anchors `/scripts/`, so they stay out of the Vercel upload while remaining available to CI | NOT STARTED |
+| 6.7 All seven runners are in CI's `live` job. Six of them exited 0 regardless of result, so wiring them in would have given green builds over red runs; every one now exits non-zero on failure, proven both ways — 0 against production, 1 against a host that cannot answer | DONE |
 
 ### Phase 7 — Infrastructure · IN PROGRESS
 

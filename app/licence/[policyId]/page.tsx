@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DimRule } from "@/components/primitives";
+import { WarpAttestation } from "@/components/warp-attestation";
 import { usePolicies, useCapTable } from "@/lib/hooks";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { addressUrl, AXON_ADDRESS, CURRENCY, appChain } from "@/lib/chain";
@@ -139,6 +140,8 @@ export default function LicencePage() {
           and a payout and never points at the corpus is a receipt for nothing
           the reader can hold. The bulk export is gated by CorpusAccess and the
           gate is named rather than hidden behind a link that would 402. */}
+      <WarpAttestation policyId={policy.id} />
+
       <DimRule className="mt-10" note="What this licence delivers" />
       <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">
         The corpus recorded against task #{policy.taskId} — {fmtInt(policy.trajectories)}{" "}
