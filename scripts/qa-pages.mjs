@@ -271,6 +271,40 @@ const ITEMS = [
       });
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A41", "/corpus",          async (p) => {
+      // The gate answers 402 and pointed nowhere: CorpusAccess.subscribe was
+      // deployed, verified, read by /api/dataset, and callable from no page.
+      await p.waitForTimeout(5000);
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          here: /BULK ACCESS/i.test(t),
+          // Price and bounds read from the contract, not written into the page.
+          price: /0\.0010 AVAX a day/.test(t),
+          bounds: /1–365 days, enforced by the contract/.test(t),
+          // Seven days at that price, computed rather than stated.
+          total: /0\.0070 AVAX/.test(t),
+          // What it is and is not.
+          honest: /sells time, not rights/.test(t) && /readable one at a time by hash without paying/.test(t),
+        };
+      });
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
+  ["A42", "/run/0x376839a052f9270206fb1ab7f4cfe11ad4b66582f0ac4fc33bc89c064d591a32", async (p) => {
+      // Trajectory 1: recorded, unminted. Anyone may mint it and the contract
+      // sends the token to the recorded contributor, so there is nothing to
+      // gate — and it was reachable from nowhere.
+      await p.waitForTimeout(7000);
+      const t = await p.evaluate(() => document.body.innerText);
+      const r = {
+        panel: /CERTIFICATE/.test(t),
+        state: /not minted for this run/.test(t),
+        // The id is resolved from the ledger by matching the hash.
+        button: /mint token #1/i.test(t),
+        whose: /goes to whoever the protocol recorded as the contributor/i.test(t),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

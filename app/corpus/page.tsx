@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DimRule } from "@/components/primitives";
 import { fmtDate, fmtInt, fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import { CURRENCY } from "@/lib/chain";
+import { CorpusAccessPanel } from "@/components/corpus-access";
 import { useTaskCatalogue, type TaskWithScene } from "@/components/tasks-provider";
 import { cn } from "@/lib/cn";
 
@@ -117,6 +118,9 @@ export default function CorpusPage() {
         never signed. Each links to the run it came from, where the hash can be
         re-derived and checked against the chain.
       </p>
+
+      {/* The gate answers 402 and, until now, pointed nowhere. */}
+      <CorpusAccessPanel />
 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-rule py-3">
         <span className="flex items-baseline gap-2">

@@ -55,6 +55,8 @@ const MEANS = {
   A38:"Declared difficulty is checked against the ledger, and loses",
   A39:"Every write to the protocol, with its cost, each one named",
   A40:"A task's deadline, and who may take the escrow back",
+  A41:"The corpus gate can be paid, at the price the contract holds",
+  A42:"A run's certificate can be minted, to whoever recorded it",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",
