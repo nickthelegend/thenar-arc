@@ -19,7 +19,7 @@ exist. Fit = strengthens the pitch rather than cluttering it.
 
 ## What was built, 3 and 10 September 2026
 
-Twenty-three of these are shipped, verified against the live deployment and marked
+Twenty-five of these are shipped, verified against the live deployment and marked
 below. The order was not the ranking: building each one turned up the next, and
 five of the sixteen are not features at all but things the interface could not
 do that the contracts already could — the audit that found them is at the end.
@@ -117,9 +117,9 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 62 | Offline queue: a run recorded offline submits when the network returns | 63 |
 | 63 | Storage-blocked browsers degrade to session-only | 63 |
 | 64 | WebGL-unavailable fallback that still explains the product | 62 — **BUILT — names the task, says why, and points at what needs no GPU** |
-| 65 | Slow-RPC banner distinct from the offline banner | 62 |
+| 65 | Slow-RPC banner distinct from the offline banner | 62 — **BUILT — the bar watches every endpoint now, so a dead primary is not reported as a dead chain** |
 | 66 | Duplicate-tab detection on the station | 61 |
-| 67 | Clock-skew detection against block timestamps | 61 |
+| 67 | Clock-skew detection against block timestamps | 61 — **BUILT — measured against the latest block, named in minutes and in the right direction** |
 | 68 | Corpus export resumable for large tasks | 60 |
 | 69 | Prop upload size and triangle budget enforced with a stated reason | 60 |
 | 70 | Every 4xx on the site carries a way forward, not just a code | 60 |

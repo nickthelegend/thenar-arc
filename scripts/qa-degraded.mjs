@@ -100,6 +100,37 @@ const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=metal"] 
   await page.close();
 }
 
+/* ---- G5: a machine whose clock is wrong is told, in the right direction --- */
+{
+  const seen = [];
+  for (const skewMin of [0, 45, -20]) {
+    const page = await b.newPage({ viewport: { width: 1440, height: 900 } });
+    // The only way to see this banner is to be the machine it is about.
+    await page.addInitScript((mins) => {
+      const shift = mins * 60_000;
+      const RealDate = Date;
+      // @ts-expect-error replacing the global on purpose, for this page only
+      Date = class extends RealDate {
+        constructor(...a) { super(...(a.length ? a : [RealDate.now() + shift])); }
+        static now() { return RealDate.now() + shift; }
+      };
+    }, skewMin);
+    await page.goto(`${BASE}/hub`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForTimeout(9000);
+    seen.push(await page.evaluate(() => {
+      const m = document.body.innerText.match(/This machine.s clock is (\d+) minutes (ahead of|behind)/i);
+      return m ? { minutes: Number(m[1]), direction: m[2].startsWith("ahead") ? "ahead" : "behind" } : null;
+    }));
+    await page.close();
+  }
+  const [right, fast, slow] = seen;
+  check("G5",
+        right === null &&
+        fast?.direction === "ahead" && Math.abs(fast.minutes - 45) <= 1 &&
+        slow?.direction === "behind" && Math.abs(slow.minutes - 20) <= 1,
+        `a wrong clock is named and pointed the right way: ${JSON.stringify(seen)}`);
+}
+
 await b.close();
 
 /* ---- G4: the chain half survives losing its primary endpoint ------------- */
