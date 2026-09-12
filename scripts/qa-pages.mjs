@@ -214,6 +214,26 @@ const ITEMS = [
       };
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A38", "/hub",             async (p) => {
+      // Difficulty is a claim a funder typed. Every other claim here is checked
+      // against the ledger; this one never was, and it does not survive the
+      // check — task #4 is declared easier than #0 and has paid none of two.
+      await p.waitForTimeout(7000);
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          note: /Declared difficulty is not predicting anything/.test(t),
+          named: /Task #4 is declared easier than #0/.test(t),
+          // Counts, not only a rate: 0 of 2 and 0 of 200 are the same rate.
+          counts: /0\/2 paid/.test(t) && /2\/2 paid/.test(t),
+          // A task nobody has driven says so rather than showing a zero.
+          unworked: /no runs yet/.test(t),
+          // And the rate an operator is actually choosing between.
+          perMinute: /\/ min/.test(t),
+        };
+      });
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

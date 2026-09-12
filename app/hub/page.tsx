@@ -7,6 +7,8 @@ import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { ActivityFeed } from "@/components/activity-feed";
 import { Sitting } from "@/components/sitting";
+import { useMeasured, contradiction, type Measured } from "@/lib/measured";
+import { fmtPercent } from "@/lib/format";
 import { PropPreview } from "@/components/prop-picker";
 import { cn } from "@/lib/cn";
 import { SCENARIOS, CURRENCY, isSeedFunded } from "@/lib/chain";
@@ -79,6 +81,15 @@ export default function HubPage() {
     [tasks],
   );
 
+  /**
+   * What the record says about each task, against what its funder declared.
+   *
+   * Difficulty is a claim somebody typed when they posted. Every other claim on
+   * this site is checked against the ledger; this one never was.
+   */
+  const measured = useMeasured();
+  const clash = measured ? contradiction(tasks ?? [], measured) : null;
+
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-8">
       <div className="flex flex-col gap-4">
@@ -92,6 +103,18 @@ export default function HubPage() {
             Live from the contract on Avalanche Fuji
           </span>
         </div>
+
+        {clash ? (
+          <p className="max-w-[76ch] text-[13px] leading-relaxed text-scribe-3">
+            <span className="text-scribe-2">Declared difficulty is not predicting anything.</span>{" "}
+            Task #{clash.easier} is declared easier than #{clash.harder} and has paid{" "}
+            {fmtPercent(clash.easierRate, 0)} of the {clash.easierN} runs submitted to it,
+            against {fmtPercent(clash.harderRate, 0)} of {clash.harderN} on the harder one.
+            Those are small numbers and are shown as counts for that reason &mdash; but the
+            figure beside each difficulty below is what happened, and the bars are what
+            somebody typed.
+          </p>
+        ) : null}
 
         {/* What the operator just came out of. They leave the station to pick
             the next task, and the tally that answers "how did that stretch go"
@@ -236,7 +259,10 @@ export default function HubPage() {
                     </span>
                     </div>
                   </Td>
-                  <Td><Difficulty level={t.difficulty} /></Td>
+                  <Td>
+                    <Difficulty level={t.difficulty} />
+                    <MeasuredNote m={measured?.get(t.id)} loaded={Boolean(measured)} />
+                  </Td>
                   <Td><StageTrack stage={t.policyMinted ? "post" : t.open ? "pre" : "training"} /></Td>
                   <Td>
                     <div className="flex flex-col gap-1.5">
@@ -258,9 +284,18 @@ export default function HubPage() {
                     </span>
                   </Td>
                   <Td align="right">
-                    <span className="font-mono text-[15px] font-medium tabular-nums text-signal">
-                      {fmtMon(t.rewardMon)}
-                      <span className="ml-1 text-[12px] text-scribe-3">{CURRENCY}</span>
+                    <span className="flex flex-col items-end gap-0.5">
+                      <span className="font-mono text-[15px] font-medium tabular-nums text-signal">
+                        {fmtMon(t.rewardMon)}
+                        <span className="ml-1 text-[12px] text-scribe-3">{CURRENCY}</span>
+                      </span>
+                      {/* Per run is not comparable across tasks that take
+                          different lengths of time. Par is the task's own
+                          estimate of that, so this is the rate an operator is
+                          actually choosing between. */}
+                      <span className="font-mono text-[11px] tabular-nums text-scribe-3">
+                        {fmtMon((t.rewardMon * 60) / Math.max(1, t.parSeconds), 4)} / min
+                      </span>
                     </span>
                   </Td>
                   <Td align="right">
@@ -394,5 +429,34 @@ function Td({ children, className, align = "left" }: { children: React.ReactNode
     <td className={cn("py-3 pr-4 align-middle", align === "right" && "text-right", className)}>
       {align === "right" ? <div className="flex justify-end">{children}</div> : children}
     </td>
+  );
+}
+
+/**
+ * What the record says, under the difficulty somebody declared.
+ *
+ * Counts rather than only a rate: "0 of 2" and "0 of 200" are the same rate and
+ * are not the same statement, and at these sample sizes the count is most of
+ * the information. A task nobody has submitted a run on says so rather than
+ * showing a zero, because a rate over no attempts is unknown, not zero.
+ */
+function MeasuredNote({ m, loaded }: { m: Measured | undefined; loaded: boolean }) {
+  if (!loaded) return null;
+  // A task with no episodes at all has no row in the corpus, which is a
+  // different thing from an empty one — and both mean "nobody has driven it".
+  const submitted = m ? m.paid + m.failed : 0;
+  if (!m) {
+    return (
+      <span className="mt-1 block font-mono text-[11px] text-scribe-3">no runs yet</span>
+    );
+  }
+  return (
+    <span className="mt-1 block font-mono text-[11px] tabular-nums text-scribe-3">
+      {submitted === 0
+        ? m.unsubmitted > 0
+          ? `${m.unsubmitted} never sent`
+          : "no runs yet"
+        : `${m.paid}/${submitted} paid`}
+    </span>
   );
 }
