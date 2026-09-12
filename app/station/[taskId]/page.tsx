@@ -16,6 +16,8 @@ import { SKILL_LABEL } from "@/lib/skills";
 import { useRunsOnTask, useSubmitCost } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
+import { HumanGate } from "@/components/human-gate";
+import { ATS } from "@/lib/ats";
 import { ACCEPT_FLOOR, evaluate, GRIP_CLOSED_MM, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy, wouldHavePaid, wouldHavePaidSentence } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
@@ -801,6 +803,15 @@ export default function StationPage() {
                   </ol>
                 ) : null}
 
+                {/* Asked before the run, not after it: a paid run needs a live
+                    human behind the address, and finding that out once the arm
+                    has already placed the payload wastes the operator's run. */}
+                {!practice && s.connected && !s.wrongNetwork ? (
+                  <div className="mt-6">
+                    <HumanGate />
+                  </div>
+                ) : null}
+
                 <Button variant="primary" className="mt-6" onClick={start}>
                   {practice ? "Begin practice run" : "Begin run"}
                 </Button>
@@ -1128,10 +1139,41 @@ function MeasurementSnap({
             </p>
           ) : null}
 
+          {/* The payout is on Arc; the run's share of the corpus is issued on
+              Hedera by the same record call, and it can fail on its own. Said
+              either way, so a missing share is never mistaken for a pending one. */}
+          {done && (tx.sharesPending || tx.shares) ? (
+            <div className="flex flex-col gap-1 border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
+              {tx.sharesPending ? (
+                <span>Issuing this run&rsquo;s share of the corpus on Hedera&hellip;</span>
+              ) : tx.shares?.issued ? (
+                <span>
+                  {tx.shares.units ? `${tx.shares.units} THNRC` : "Corpus shares"} issued on Hedera ·{" "}
+                  <a
+                    href={`${ATS.hashscan}/transaction/${tx.shares.tx}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-probe hover:underline"
+                  >
+                    {shortHash(tx.shares.tx)}
+                  </a>
+                </span>
+              ) : tx.shares ? (
+                <span>No corpus shares for this run: {tx.shares.reason}</span>
+              ) : null}
+            </div>
+          ) : null}
+
           {tx.phase === "error" && tx.error ? (
             <p role="alert" className="border border-reject bg-reject-dim px-3 py-2 text-[13px] text-reject">
               {tx.error}
             </p>
+          ) : null}
+
+          {/* Before the first submit rather than after a refusal: a verified
+              operator sees a one-line badge, anyone else the Selfie Check. */}
+          {accepted && !done && !practice && s.connected && !s.wrongNetwork ? (
+            <HumanGate onVerified={tx.reset} />
           ) : null}
         </div>
 

@@ -11,6 +11,11 @@ import { CURRENCY, FAUCET_URL } from "@/lib/chain";
 export type SubmitPhase =
   | "idle" | "verifying" | "signing" | "pending" | "confirmed" | "error";
 
+/** What the run earned on Hedera, as /api/submitted reported it. */
+export type RunShares =
+  | { issued: true; tx: string; units?: string; already?: boolean }
+  | { issued: false; reason: string };
+
 export type SubmitState = {
   phase: SubmitPhase;
   txHash?: `0x${string}`;
@@ -21,6 +26,11 @@ export type SubmitState = {
   blockMs?: number;
   gasMon?: number;
   error?: string;
+  /** The verifier refused because no World ID proof stands behind this address. */
+  humanRequired?: boolean;
+  /** True between the payout confirming and the share issuance being reported. */
+  sharesPending?: boolean;
+  shares?: RunShares;
 };
 
 /** Turn any wallet or contract failure into a sentence an operator can act on. */
@@ -112,7 +122,15 @@ export function useSubmitRun() {
           body: JSON.stringify({ ...args, contributor: address }),
         });
         const v = await res.json();
-        if (!res.ok) throw new Error(v.error ?? "The verifier rejected this run.");
+        if (!res.ok) {
+          // No proof of a live human behind this address: nothing is scored
+          // or signed, and the station shows the World ID check instead.
+          if (v.humanRequired) {
+            setState({ phase: "error", error: v.error, humanRequired: true });
+            return;
+          }
+          throw new Error(v.error ?? "The verifier rejected this run.");
+        }
         if (!v.accepted) {
           setState({
             phase: "error",
@@ -164,16 +182,6 @@ export function useSubmitRun() {
         const gasMon = Number(receipt.gasUsed * receipt.effectiveGasPrice) / 1e18;
         const paidMon = (Number(v.rewardWei) * v.score) / 10_000 / 1e18;
 
-        // 3. Record the tx against the stored trajectory so the run is auditable.
-        fetch("/api/submitted", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ trajHash: v.trajHash, txHash }),
-        }).catch(() => {
-          // The chain is the record of truth; a failed bookkeeping write is not
-          // worth failing the operator's run over.
-        });
-
         setState({
           phase: "confirmed",
           txHash,
@@ -183,7 +191,30 @@ export function useSubmitRun() {
           paidMon,
           blockMs,
           gasMon,
+          sharesPending: true,
         });
+
+        // 3. Record the tx against the stored trajectory, which is also what
+        //    issues the run's share of the corpus on Hedera. The payout above is
+        //    already final either way, so a failure here is reported, not thrown.
+        try {
+          const recorded = await fetch("/api/submitted", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ trajHash: v.trajHash, txHash }),
+          });
+          const body = await recorded.json();
+          const shares: RunShares = recorded.ok && body.shares
+            ? body.shares
+            : { issued: false, reason: body.error ?? "the run could not be recorded" };
+          setState((s) => ({ ...s, sharesPending: false, shares }));
+        } catch (e) {
+          setState((s) => ({
+            ...s,
+            sharesPending: false,
+            shares: { issued: false, reason: e instanceof Error ? e.message : "the run could not be recorded" },
+          }));
+        }
       } catch (e) {
         setState({ phase: "error", error: explainTxError(e) });
       }
@@ -193,5 +224,3 @@ export function useSubmitRun() {
 
   return { ...state, submit, reset };
 }
-
-

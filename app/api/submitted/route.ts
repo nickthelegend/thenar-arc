@@ -1,9 +1,13 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
+import { getAddress } from "viem";
 
 import { chainClient } from "@/lib/rpc";
 import { AXON_ADDRESS, appChain } from "@/lib/chain";
-import { markSettled } from "@/lib/server/db";
+import { getTrajectory, markSettled } from "@/lib/server/db";
+import { queryOne } from "@/lib/server/sql";
+import { humanFor } from "@/lib/server/world-id";
+import { issueShares, refusal, sharesFor, TokenError } from "@/lib/server/ats";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,7 +59,46 @@ async function handlePOST(req: Request) {
   }
 
   await markSettled(trajHash, txHash);
-  return NextResponse.json({ ok: true, block: Number(receipt.blockNumber) });
+
+  // The run is paid on Arc; its share of the corpus is issued on Hedera.
+  const shares = await issueRunShares(trajHash.toLowerCase());
+  return NextResponse.json({ ok: true, block: Number(receipt.blockNumber), shares });
+}
+
+export type RunShares =
+  | { issued: true; tx: string; units?: string; already?: boolean }
+  | { issued: false; reason: string };
+
+/**
+ * Issue one settled run's shares to the human who drove it.
+ *
+ * Once per run however many times this route is called, found by the run's
+ * hash in the token log. A failure is reported rather than retried here: the
+ * payout already happened, and the response says the share did not.
+ */
+async function issueRunShares(trajHash: string): Promise<RunShares> {
+  const stored = await getTrajectory(trajHash);
+  if (!stored) return { issued: false, reason: "no stored trajectory for this hash" };
+  if (!(await humanFor(stored.contributor))) {
+    return { issued: false, reason: "the contributor has no World ID proof on file" };
+  }
+
+  const prior = await queryOne<{ tx: string }>(
+    `SELECT tx FROM token_event WHERE kind = 'issue' AND detail = ?`, [trajHash],
+  );
+  if (prior) return { issued: true, tx: prior.tx, already: true };
+
+  const units = sharesFor(stored.score);
+  try {
+    const tx = await issueShares(getAddress(stored.contributor), units, trajHash);
+    return { issued: true, tx, units: units.toString() };
+  } catch (e) {
+    const rule = refusal(e);
+    return {
+      issued: false,
+      reason: e instanceof TokenError ? e.message : rule ? `the security refused: ${rule}` : e instanceof Error ? e.message : "unknown",
+    };
+  }
 }
 
 export const POST = logged("/api/submitted", handlePOST);

@@ -344,6 +344,42 @@ export function migrate(): Promise<void> {
           error          TEXT,
           created_at     BIGINT NOT NULL
         );
+
+        -- A World ID proof that a live human stands behind an operator
+        -- address. The nullifier is the key because it is what World makes
+        -- unique per human per action: one person cannot verify two addresses,
+        -- and one address cannot borrow somebody else's face.
+        CREATE TABLE IF NOT EXISTS human (
+          nullifier   TEXT PRIMARY KEY,
+          address     TEXT NOT NULL UNIQUE,
+          credential  TEXT NOT NULL,
+          protocol    TEXT NOT NULL,
+          action      TEXT NOT NULL,
+          environment TEXT NOT NULL,
+          verified_at BIGINT NOT NULL
+        );
+
+        -- Every write this server made to the corpus security on Hedera: the
+        -- control-list entry that follows a human proof, the shares a paid run
+        -- earns, a dividend declared from sales. Keyed on the transaction, so
+        -- each line can be found on HashScan.
+        CREATE TABLE IF NOT EXISTS token_event (
+          tx         TEXT PRIMARY KEY,
+          kind       TEXT NOT NULL,
+          account    TEXT,
+          amount     TEXT,
+          detail     TEXT,
+          created_at BIGINT NOT NULL
+        );
+
+        -- Proof requests this server signed and has not yet seen answered.
+        -- World's verify endpoint checks a proof, not whether this server
+        -- asked for it, so the nonce is written down before it leaves.
+        CREATE TABLE IF NOT EXISTS world_nonce (
+          nonce      TEXT PRIMARY KEY,
+          address    TEXT NOT NULL,
+          expires_at BIGINT NOT NULL
+        );
       `);
 
       // CREATE TABLE IF NOT EXISTS does nothing to a table that already
@@ -525,6 +561,28 @@ export function migrate(): Promise<void> {
         transaction_id TEXT,
         error          TEXT,
         created_at     INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS human (
+        nullifier   TEXT PRIMARY KEY,
+        address     TEXT NOT NULL UNIQUE,
+        credential  TEXT NOT NULL,
+        protocol    TEXT NOT NULL,
+        action      TEXT NOT NULL,
+        environment TEXT NOT NULL,
+        verified_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS token_event (
+        tx         TEXT PRIMARY KEY,
+        kind       TEXT NOT NULL,
+        account    TEXT,
+        amount     TEXT,
+        detail     TEXT,
+        created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS world_nonce (
+        nonce      TEXT PRIMARY KEY,
+        address    TEXT NOT NULL,
+        expires_at INTEGER NOT NULL
       );
     `);
   })();
