@@ -82,9 +82,10 @@ export default function CorpusTokenPage() {
       <h1 className="font-display text-4xl font-600 leading-none">Corpus shares</h1>
       <p className="mt-3 max-w-[640px] text-[15px] leading-relaxed text-scribe-2">
         The recordings are owned by the people who made them. Thenar&rsquo;s corpus is an equity issued
-        through Hedera&rsquo;s Asset Tokenization Studio: only an address with a World ID proof of a live
-        human can hold it, every paid run issues its share, and corpus sales are paid out to holders as
-        dividends.
+        through Hedera&rsquo;s Asset Tokenization Studio. Holding it takes a place on its whitelist, and
+        Thenar adds an address only after a World ID proof of a live human &mdash; the one exception is the
+        issuer, which holds the unissued reserve. Every paid run issues its share, and corpus sales are
+        paid out to holders as dividends.
       </p>
 
       <section className="mt-8 border border-rule">
@@ -100,7 +101,7 @@ export default function CorpusTokenPage() {
             <Fact label="Name" value={`${s.name} (${s.symbol})`} />
             <Fact label="ISIN" value={s.isin} />
             <Fact label="Shares issued" value={s.totalSupply} />
-            <Fact label="Whitelisted humans" value={String(s.whitelistCount)} />
+            <Fact label="Whitelisted holders" value={String(s.whitelistCount)} />
             <Fact label="Dividends declared" value={String(s.dividends)} />
             <div className="flex flex-col gap-0.5">
               <dt className="label">On HashScan</dt>
