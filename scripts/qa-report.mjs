@@ -62,6 +62,9 @@ const MEANS = {
   A45:"What an address earned against what it paid in gas to earn it",
   A46:"The nav's active mark travels, and lands on the active item's own box",
   A47:"The tolerance drawn at the size it actually is, from the bench constants",
+  G1:"A browser with no WebGL is told so, and told what still works",
+  G2:"A run in progress is not thrown away without a word",
+  G3:"The ground crosses over on a theme change, and at no other time",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",
@@ -79,7 +82,7 @@ const MEANS = {
   R12:"No console error across the whole run",
 };
 const rows = [];
-for (const f of ["pages.txt","deep.txt","api.txt","post.txt","chain.txt","flows.txt","run.txt"])
+for (const f of ["pages.txt","deep.txt","api.txt","post.txt","chain.txt","flows.txt","run.txt","degraded.txt"])
   for (const line of read(f).split("\n")) {
     const m = line.match(/^(PASS|FAIL)\s+(\S+)\s+(.*)$/);
     if (m) rows.push({ status:m[1], id:m[2], detail:m[3].trim().replace(/\s+/g," ").slice(0,92) });

@@ -24,6 +24,9 @@ import { cn } from "@/lib/cn";
  */
 export const THEME_KEY = "thenar.theme";
 
+/** How long the ground takes to cross over. Matched in globals.css. */
+const GROUND_MS = 260;
+
 export function ThemeToggle() {
   // Null until mounted: the server has no way to know what was stored, and
   // rendering a guess would make the button's own state the thing that flashes.
@@ -38,7 +41,24 @@ export function ThemeToggle() {
 
   const set = (next: "dark" | "light") => {
     setTheme(next);
-    document.documentElement.dataset.theme = next;
+    /**
+     * Let the ground travel, for exactly as long as it takes.
+     *
+     * The instrument inverts on a single click — every surface, every rule,
+     * every figure at once — and a hard swap of that much area reads as a
+     * glitch rather than a decision. A short cross-fade of the two colours
+     * that actually carry the world says the same thing and says that it was
+     * deliberate.
+     *
+     * Switched on only for the press, and off again once it lands. A standing
+     * transition on `background-color` would also catch every hover, every
+     * focus ring and every panel that changes tone mid-interaction, and make
+     * the whole interface feel like it is lagging behind the pointer.
+     */
+    const root = document.documentElement;
+    root.dataset.themeShifting = "";
+    window.setTimeout(() => delete root.dataset.themeShifting, GROUND_MS);
+    root.dataset.theme = next;
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {

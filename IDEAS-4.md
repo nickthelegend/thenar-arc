@@ -19,7 +19,7 @@ exist. Fit = strengthens the pitch rather than cluttering it.
 
 ## What was built, 3 and 10 September 2026
 
-Nineteen of these are shipped, verified against the live deployment and marked
+Twenty-two of these are shipped, verified against the live deployment and marked
 below. The order was not the ranking: building each one turned up the next, and
 five of the sixteen are not features at all but things the interface could not
 do that the contracts already could — the audit that found them is at the end.
@@ -92,7 +92,7 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 42 | Loading states drawn as the instrument assembling, everywhere | 73 |
 | 43 | Number transitions use tabular figures so nothing jitters | 73 |
 | 44 | Focus rings drawn as dimension terminators, not browser default | 72 |
-| 45 | The theme toggle animates the ground rather than snapping | 72 |
+| 45 | The theme toggle animates the ground rather than snapping | 72 — **BUILT — scoped to the press, so it never lags the pointer** |
 | 46 | Reject state hatches rather than reddens, matching the tolerance band | 71 |
 | 47 | Hover on a leaderboard row ghosts that operator's best path | 71 |
 | 48 | The nav's active item is a drawn underline that slides | 70 — **BUILT — one underline that travels, measured against the active item's own box** |
@@ -113,10 +113,10 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 58 | Chain reorg handling on the feed | 65 |
 | 59 | RPC failover to a second endpoint | 65 |
 | 60 | Wallet-disconnect mid-run handled without losing the recording | 64 |
-| 61 | Browser-back during a run warns before discarding | 64 |
+| 61 | Browser-back during a run warns before discarding | 64 — **BUILT — on during a run, released once the draft store has the samples** |
 | 62 | Offline queue: a run recorded offline submits when the network returns | 63 |
 | 63 | Storage-blocked browsers degrade to session-only | 63 |
-| 64 | WebGL-unavailable fallback that still explains the product | 62 |
+| 64 | WebGL-unavailable fallback that still explains the product | 62 — **BUILT — names the task, says why, and points at what needs no GPU** |
 | 65 | Slow-RPC banner distinct from the offline banner | 62 |
 | 66 | Duplicate-tab detection on the station | 61 |
 | 67 | Clock-skew detection against block timestamps | 61 |

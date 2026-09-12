@@ -19,6 +19,7 @@ import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, GRIP_CLOSED_MM, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
 import { shortfalls, belowFloorBy, wouldHavePaid, wouldHavePaidSentence } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
+import { webglAvailable } from "@/lib/webgl";
 import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
 import { soundOn, setSound } from "@/lib/click";
 import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
@@ -256,11 +257,46 @@ export default function StationPage() {
 
   // This sitting's tally. Sessions here are long and repetitive, and the
   // interface only ever showed one run at a time.
+  /**
+   * Whether this browser can draw the station at all.
+   *
+   * Checked once, on the client, because the answer is a property of the
+   * machine and its settings rather than of the request. Null until then, so
+   * the viewport is not mounted on a guess and then torn down.
+   */
+  const [canDraw, setCanDraw] = useState<boolean | null>(null);
+  useEffect(() => setCanDraw(webglAvailable()), []);
+
   const [tally, setTally] = useState<Tally | null>(null);
   useEffect(() => {
     const t = setTimeout(() => setTally(readTally()), 0);
     return () => clearTimeout(t);
   }, []);
+
+  /**
+   * A run in progress is not saved anywhere yet.
+   *
+   * The draft store catches a measured run, which is what made leaving after a
+   * measurement survivable. It does not catch a run still being driven: the
+   * samples are in a ref in this component and closing the tab, hitting back
+   * or following a link takes them with it. Ninety seconds of somebody's work,
+   * gone with no prompt.
+   *
+   * The browser will only show its own wording here, which is fine — the point
+   * is the stop, not the sentence.
+   */
+  useEffect(() => {
+    if (phase !== "running") return;
+    const warn = (e: BeforeUnloadEvent) => {
+      // Both, deliberately. preventDefault is the specified way and Chrome
+      // still wants returnValue set; a handler that does only one of them is
+      // registered, runs, and stops nothing.
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [phase]);
 
   const countedMeasured = useRef<string | null>(null);
   useEffect(() => {
@@ -559,6 +595,9 @@ export default function StationPage() {
         </aside>
 
         <div className="relative order-1 h-[52dvh] lg:order-2 lg:h-auto lg:min-h-0">
+          {canDraw === false ? (
+            <NoViewport taskName={task.name} />
+          ) : canDraw === null ? null : (
           <StationViewport
             running={phase === "running"}
             goal={GOAL}
@@ -575,6 +614,7 @@ export default function StationPage() {
             lighting={lightingFor(room.id)}
             ghosts={ghosts}
           />
+          )}
 
           {tel && phase !== "brief" ? (
             <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-center gap-x-6 gap-y-1 border-t border-rule bg-ink-1/92 px-4 py-2 font-mono text-[12px] tabular-nums">
@@ -1262,6 +1302,52 @@ function SubmitCostLine({ withPasskey, payoutMon }: { withPasskey: boolean; payo
           set, so the wallet&rsquo;s safety margin is part of the price.
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The station, for a browser that cannot draw it.
+ *
+ * Without WebGL there is no arm, no datum and no recording, and pretending
+ * otherwise is not an option — this is the one page whose content genuinely
+ * cannot degrade. What can be done is to say so precisely, say what the task
+ * was, and point at the parts of the product that do not need a GPU, rather
+ * than throwing an exception into the route's error boundary and telling the
+ * visitor that something went wrong.
+ */
+function NoViewport({ taskName }: { taskName: string }) {
+  return (
+    <div className="flex h-full items-center justify-center border border-rule bg-ink-1 px-6 py-10">
+      <div className="max-w-[46ch] text-center">
+        <span className="label">No WebGL</span>
+        <h2 className="mt-1 font-display text-2xl font-600 leading-tight">
+          This browser cannot draw the station
+        </h2>
+        <p className="mt-3 text-[14px] leading-relaxed text-scribe-2">
+          Driving &ldquo;{taskName}&rdquo; needs a WebGL context, and this one
+          could not be created &mdash; usually an old driver, a GPU on the
+          browser&rsquo;s blocklist, a remote session with no acceleration, or an
+          extension switching it off. Nothing here is broken, and there is
+          nothing to retry.
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-scribe-3">
+          Everything that does not need a GPU still works: the runs other people
+          have recorded, the contracts they settled against, and what each one
+          paid.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <Link href="/corpus" className="border border-rule-strong px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe">
+            The corpus
+          </Link>
+          <Link href="/contracts" className="border border-rule-strong px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe">
+            The contracts
+          </Link>
+          <Link href="/hub" className="border border-rule-strong px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe">
+            Back to the hub
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
