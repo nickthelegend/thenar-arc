@@ -1,30 +1,36 @@
 import { defineChain } from "viem";
 
-export const avalancheFuji = defineChain({
-  id: 43113,
-  name: "Avalanche Fuji",
-  nativeCurrency: { name: "Avalanche", symbol: "AVAX", decimals: 18 },
-  rpcUrls: { default: { http: ["https://api.avax-test.network/ext/bc/C/rpc"] } },
+/**
+ * Arc testnet, Circle's L1, where USDC is the gas.
+ *
+ * One consequence runs through the whole product: the bounty a funder
+ * escrows, the payout an operator receives, the fee a licence costs and the
+ * gas spent submitting are all the same asset. There is no second currency to
+ * hold before you can earn the first.
+ *
+ * Native USDC here has 18 decimals. Its ERC-20 face at 0x3600…0000 reports 6
+ * for the same balance, and mixing the two is the one arithmetic mistake this
+ * chain makes easy — every amount in this app is native, 18 decimals.
+ */
+export const arcTestnet = defineChain({
+  id: 5042002,
+  name: "Arc Testnet",
+  nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
   blockExplorers: {
-    default: { name: "Snowtrace", url: "https://testnet.snowtrace.io" },
+    default: { name: "Arcscan", url: "https://testnet.arcscan.app" },
   },
   contracts: {
-    // Fuji carries Multicall3 at the canonical address. Declaring it is what
-    // lets a screen full of reads collapse into a single eth_call: without it
-    // every trajectory was a separate request, and the public RPC's rate cap
-    // silently dropped some of them on every poll. The block is the one the
-    // contract actually first appears at, found by bisecting eth_getCode —
-    // a number that is too high makes viem refuse to batch at all.
-    multicall3: {
-      address: "0xcA11bde05977b3631167028862bE2a173976CA11",
-      blockCreated: 7096959,
-    },
+    multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
   },
   testnet: true,
 });
 
+/** The ERC-20 face of native USDC, for anything that needs a token address. */
+export const USDC_ERC20 = "0x3600000000000000000000000000000000000000" as const;
+
 /** The one place the chain is named. Everything else reads it from here. */
-export const appChain = avalancheFuji;
+export const appChain = arcTestnet;
 
 /**
  * Where to ask, in the order to ask.
@@ -41,14 +47,14 @@ export const appChain = avalancheFuji;
  * widest log range it would accept before being written down.
  */
 export const RPC_ENDPOINTS = [
-  avalancheFuji.rpcUrls.default.http[0],
-  "https://avalanche-fuji-c-chain-rpc.publicnode.com",
-  "https://avalanche-fuji.drpc.org",
+  arcTestnet.rpcUrls.default.http[0],
+  "https://rpc.testnet.arc.io",
+  "https://rpc.drpc.testnet.arc.io",
 ] as const;
 
 /** Where an operator with no gas is sent. Chain-scoped for the same reason the
  *  explorer is: the app shipped pointing at another chain's faucet. */
-export const FAUCET_URL = "https://core.app/tools/testnet-faucet/?subnet=c&token=c";
+export const FAUCET_URL = "https://faucet.circle.com";
 
 /** The ticker shown beside every amount. Hardcoding it is how a UI ends up
  *  quoting one chain's currency while settling in another's. */
@@ -72,8 +78,7 @@ export const TRAJECTORY_CERTIFICATE =
  * episode quietly missing.
  */
 export const CORPUS_MANIFEST =
-  (process.env.NEXT_PUBLIC_CORPUS_MANIFEST
-    ?? "0x318e5faf04c9db5d844aaa93850e71406012dd62") as `0x${string}`;
+  (process.env.NEXT_PUBLIC_CORPUS_MANIFEST ?? "") as `0x${string}`;
 
 export const AXON_ADDRESS = (process.env.NEXT_PUBLIC_AXON_ADDRESS ?? "") as `0x${string}`;
 
@@ -82,7 +87,7 @@ export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);
 /** The registry that binds a secp256r1 key to an address. Public, so the client
  *  can read it without the server. */
 export const PASSKEY_ADDRESS =
-  (process.env.NEXT_PUBLIC_PASSKEY_REGISTRY ?? "0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F") as `0x${string}`;
+  (process.env.NEXT_PUBLIC_PASSKEY_REGISTRY ?? "") as `0x${string}`;
 
 export const PASSKEY_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(PASSKEY_ADDRESS);
 
@@ -100,6 +105,13 @@ export const addressUrl = (a: string) => `${appChain.blockExplorers.default.url}
  * happen and the contributors were really paid.
  */
 export const PRIOR_CHAINS = [
+  {
+    id: 43113,
+    name: "Avalanche Fuji",
+    rpc: "https://api.avax-test.network/ext/bc/C/rpc",
+    explorer: "https://testnet.snowtrace.io",
+    currency: "AVAX",
+  },
   {
     id: 10143,
     name: "Monad Testnet",
@@ -122,6 +134,12 @@ export const PRIOR_CHAINS = [
  * So they are archived rather than dropped, exactly as the move off Monad was.
  */
 export const PRIOR_CONTRACTS = [
+  {
+    address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
+    chainId: 43113,
+    label: "AxonProtocolV2 on Avalanche Fuji",
+    why: "The deployment Thenar ran on before Arc, where the bounty, the payout and the gas are one USDC balance.",
+  },
   {
     address: "0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3",
     chainId: 43113,

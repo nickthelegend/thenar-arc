@@ -49,10 +49,17 @@ const nextConfig: NextConfig = {
        * against each other.
        */
       "connect-src 'self' " +
-        "https://api.avax-test.network " +
-        "https://avalanche-fuji-c-chain-rpc.publicnode.com " +
-        "https://avalanche-fuji.drpc.org " +
-        "https://glacier-api.avax.network " +
+        // Arc testnet, in the same order as RPC_ENDPOINTS in lib/chain.ts, with
+        // the canonical host first. A host missing from this line is a host the
+        // browser refuses, and the failover that was meant to survive an outage
+        // fails on every page load instead.
+        "https://rpc.testnet.arc.network " +
+        "https://rpc.testnet.arc.io " +
+        "https://rpc.drpc.testnet.arc.io " +
+        // Hedera, for the corpus paywall: x402 settles through Blocky402 and a
+        // payer's balance is read from the mirror node before signing.
+        "https://api.testnet.blocky402.com " +
+        "https://testnet.mirrornode.hedera.com " +
         "wss://relay.walletconnect.com https://explorer-api.walletconnect.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
