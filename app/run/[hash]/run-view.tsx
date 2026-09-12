@@ -14,6 +14,7 @@ import { InCorpus } from "@/components/in-corpus";
 import { TOLERANCE_MM } from "@/lib/score";
 import { classifyFailure } from "@/lib/failure";
 import { wouldHavePaid, wouldHavePaidSentence } from "@/lib/shortfall";
+import { classifyRead } from "@/lib/store-failure";
 import { ACCEPT_FLOOR } from "@/lib/score";
 import { deviationFromSamples } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
@@ -61,14 +62,25 @@ export default function RunView() {
   const { byId } = useTaskCatalogue();
   const frame = useRef<ReplaySample | null>(null);
 
-  const { data, isLoading, isError } = useQuery({
+  /**
+   * Two failures that are not the same failure. See lib/store-failure.ts for
+   * why the status alone cannot tell them apart.
+   */
+  const { data, isLoading, error } = useQuery({
     queryKey: ["run", hash],
+    retry: false,
     queryFn: async (): Promise<RunDoc> => {
-      const r = await fetch(`/api/trajectory/${hash}`);
-      if (!r.ok) throw new Error((await r.json()).error ?? "not found");
+      let r: Response;
+      try {
+        r = await fetch(`/api/trajectory/${hash}`);
+      } catch {
+        throw new Error("unreachable");
+      }
+      if (!r.ok) throw new Error(classifyRead(r.status, await r.json().catch(() => null)));
       return r.json();
     },
   });
+  const unreachable = error instanceof Error && error.message === "unreachable";
 
   /**
    * The other runs on this task, faintly, behind this one.
@@ -270,7 +282,30 @@ export default function RunView() {
     return <div className="mx-auto max-w-[900px] px-5 py-16"><span className="label">Resolving {shortHash(hash)}…</span></div>;
   }
 
-  if (isError || !data) {
+  if (unreachable) {
+    return (
+      <div className="mx-auto max-w-lg px-5 py-24 text-center">
+        <h1 className="font-display text-3xl">The recording store did not answer</h1>
+        <p className="mt-2 max-w-[52ch] text-scribe-2">
+          We cannot say whether {shortHash(hash)} is on file, because the store
+          that holds the samples is unreachable. This is a statement about us,
+          not about the run.
+        </p>
+        <p className="mt-3 max-w-[52ch] font-mono text-[13px] leading-relaxed text-scribe-3">
+          Everything settled on chain is unaffected and still readable:{" "}
+          <Link href="/contracts" className="text-signal hover:text-signal-hi">/contracts</Link>{" "}
+          reads the protocol directly, and{" "}
+          <Link href="/leaderboard" className="text-signal hover:text-signal-hi">/leaderboard</Link>{" "}
+          is built from the ledger's own events.
+        </p>
+        <Link href="/hub" className="mt-6 inline-block border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em]">
+          Back to the hub
+        </Link>
+      </div>
+    );
+  }
+
+  if (!data) {
     return (
       <div className="mx-auto max-w-md px-5 py-24 text-center">
         <h1 className="font-display text-3xl">No trajectory with that hash</h1>
