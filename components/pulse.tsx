@@ -21,6 +21,15 @@ export const PULSE_KEY = "thenar.count-me-out";
  * because a request that is never made is the only opt-out that cannot be
  * ignored by the thing being opted out of.
  */
+/**
+ * Whether the counter has already refused once this session.
+ *
+ * Module scope rather than state: it is a fact about the endpoint, not about
+ * any one mount, and remounting the component on a navigation must not forget
+ * it — forgetting is the behaviour being removed.
+ */
+let dead = false;
+
 export function Pulse() {
   const path = usePathname();
   const last = useRef<string | null>(null);
@@ -40,6 +49,14 @@ export function Pulse() {
       if (nav.doNotTrack === "1" || nav.globalPrivacyControl === true) return;
     }
 
+    // Already tried once and been refused. An anonymous page count is the
+    // least important request this site makes, and one that cannot succeed
+    // should not be reissued on every navigation for the rest of the session:
+    // while the counter was unreachable it put a failed request on every page,
+    // which is enough to make a monitor call the whole site broken over a
+    // number nobody reads.
+    if (dead) return;
+
     // keepalive so a click that navigates away does not cancel the count, and
     // a failure is silently dropped — a missed count is not worth an error.
     const t = setTimeout(() => {
@@ -48,7 +65,9 @@ export function Pulse() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ path }),
         keepalive: true,
-      }).catch(() => {});
+      })
+        .then((r) => { if (!r.ok) dead = true; })
+        .catch(() => { dead = true; });
     }, 0);
     return () => clearTimeout(t);
   }, [path]);
