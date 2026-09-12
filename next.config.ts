@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Off on this machine: the dev cache's writes and compactions ran for a
+    // minute at a time on a nearly full disk and stalled every request behind them.
+    turbopackFileSystemCacheForDev: false,
+  },
   // Both are native or WebAssembly and must not be bundled: better-sqlite3 is
   // a compiled addon, and mujoco ships an eight-megabyte .wasm its own loader
   // resolves beside itself.

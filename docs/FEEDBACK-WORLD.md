@@ -105,6 +105,40 @@ sentence in the docs would settle it.
 - An agent with no human behind it is not refused, just not favoured. That
   default made AgentKit easy to add in front of something that already charged.
 
+## Selfie Check — integration notes, not yet proven end to end
+
+A second World integration was started in the same repository: gating the route
+that records a contribution behind a World ID Selfie Check. It is blocked on the
+relying-party signing key, so no proof has been verified end to end yet. This is
+what was learned getting that far, with IDKit 4.2.x.
+
+- **`rp_context` needs a key the portal shows once.** Every IDKit 4.2 request
+  requires `rp_context`, which comes from
+  `signRequest({ signingKeyHex, action, ttl })` in `@worldcoin/idkit-core/signing`.
+  The Developer Portal displays that signing key exactly once. This app's key was
+  not on the machine doing the integration, and the portal gave no sign that a key
+  existed or when it was last rotated. The docs do not say up front that a lost
+  key means rotating it. The flow stops there until the key is retrieved or
+  rotated.
+- **The precheck cannot tell you whether an action exists.**
+  `POST developer.world.org/api/v1/precheck/{app_id}` with `{ action }` was the only
+  way found to see `enable_face_check` before writing code. It returned `true` both
+  for a registered action and for one that had never been created.
+- **`/api/v4/verify/{rp_id}` checks the proof and nothing around it.** It does not
+  confirm that your server issued the nonce, and it does not check the signal.
+  Thenar keeps its own nonces (a `world_nonce` table) and compares
+  `responses[0].signal_hash` with `hashSignal(address)`. That helper is in
+  `@worldcoin/idkit-core/hashing`, which the integration page does not mention.
+- **Selfie Check is a preview behind a legacy flag.** It is
+  `selfieCheckLegacy({ signal })` with `allow_legacy_proofs: true`, v3 proofs
+  only, and its type comment says to contact World to have it enabled.
+- **The IDKit type declarations were the most reliable reference.**
+  `docs.world.org/llms.txt` timed out twice.
+- **A proof alone should not bind an address.** The nullifier is one per human
+  per action, so anyone could spend their own face on someone else's address and
+  lock the real owner out. Thenar also requires a wallet signature over the nonce
+  before it binds a human to an address. The docs should warn about this.
+
 ## Developer Portal navigation
 
 Not yet exercised at the time of writing. To be completed by the person who
