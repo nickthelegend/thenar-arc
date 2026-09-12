@@ -302,6 +302,35 @@ export function migrate(): Promise<void> {
           added_at   BIGINT NOT NULL,
           PRIMARY KEY (task_id, member)
         );
+
+        -- How many free pulls each World ID-backed human has had from an
+        -- endpoint, and which AgentKit challenges have already been answered.
+        -- Kept here rather than in memory: a free trial that resets whenever
+        -- the process restarts is not a trial with a limit.
+        CREATE TABLE IF NOT EXISTS agentkit_usage (
+          endpoint   TEXT NOT NULL,
+          human_id   TEXT NOT NULL,
+          uses       INTEGER NOT NULL,
+          PRIMARY KEY (endpoint, human_id)
+        );
+        CREATE TABLE IF NOT EXISTS agentkit_nonce (
+          nonce      TEXT PRIMARY KEY,
+          created_at BIGINT NOT NULL
+        );
+
+        -- Every corpus an agent took, and on what terms: an x402 payment
+        -- settled on Hedera (id is its transaction id), or an AgentKit free
+        -- pull (id is the challenge nonce it signed).
+        CREATE TABLE IF NOT EXISTS corpus_sale (
+          id         TEXT PRIMARY KEY,
+          task_id    INTEGER NOT NULL,
+          method     TEXT NOT NULL,
+          buyer      TEXT,
+          network    TEXT NOT NULL,
+          amount     TEXT,
+          asset      TEXT,
+          created_at BIGINT NOT NULL
+        );
       `);
 
       // CREATE TABLE IF NOT EXISTS does nothing to a table that already
@@ -454,6 +483,27 @@ export function migrate(): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS idx_policy_rank
         ON policy_submission(placed DESC, grasped DESC, median_mm ASC);
+
+      CREATE TABLE IF NOT EXISTS agentkit_usage (
+        endpoint   TEXT NOT NULL,
+        human_id   TEXT NOT NULL,
+        uses       INTEGER NOT NULL,
+        PRIMARY KEY (endpoint, human_id)
+      );
+      CREATE TABLE IF NOT EXISTS agentkit_nonce (
+        nonce      TEXT PRIMARY KEY,
+        created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS corpus_sale (
+        id         TEXT PRIMARY KEY,
+        task_id    INTEGER NOT NULL,
+        method     TEXT NOT NULL,
+        buyer      TEXT,
+        network    TEXT NOT NULL,
+        amount     TEXT,
+        asset      TEXT,
+        created_at INTEGER NOT NULL
+      );
     `);
   })();
   return ready;
