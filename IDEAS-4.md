@@ -17,6 +17,18 @@ exist. Fit = strengthens the pitch rather than cluttering it.
 
 ---
 
+## What was built, 3 September 2026
+
+Sixteen of these are shipped, verified against the live deployment and marked
+below. The order was not the ranking: building each one turned up the next, and
+five of the sixteen are not features at all but things the interface could not
+do that the contracts already could — the audit that found them is at the end.
+
+Two are marked and stay unbuilt for the reason the list itself gives: #1 and #2
+need a judge to reach an L1 that runs on 127.0.0.1.
+
+---
+
 ## Tier 1 — build these (95+)
 
 Two corrections made before building, under this list's own scoring rule: #1 and
@@ -28,14 +40,14 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 |---|---|---|---|
 | 1 | **Zero-gas run on the L1, shown side by side.** The station offers Fuji or the L1. On the L1 the fee manager puts the operator's cost at zero and the page prints both numbers. | ~~125~~ **60** | Impact is real; feasibility is not. The L1 runs on 127.0.0.1 — a judge opening thenar.io cannot reach it, and hosting a validated L1 is not a change to this repository. Demoted on the honesty rule this list is scored by |
 | 2 | **Pay the operator in the gas token they spend.** On the L1, `submitTrajectory` pays THN, which is also the gas. | ~~120~~ **60** | Same wall as #1, and for the same reason |
-| 3 | **The L1 proof, on the site.** `/l1` renders `docs/l1-proof.txt` as three checkable claims with the chain IDs and block numbers. | 120 | Turns a local script into something a judge can read without a terminal |
-| 4 | **Cross-chain policy receipt in the product.** The ICM delivery that claim 32 proves, surfaced on `/licence` as "announced to chain X at block N". | 115 | The Warp/ICM story stops being a contract nobody sees |
-| 5 | **First-run cost, stated on the station.** 460,466–600,000 gas measured; print what this run will cost before it is submitted. | 110 | Honesty as a feature, and it sets up the L1 answer |
-| 6 | **Run-to-run improvement.** An operator's five runs on a task, scored against each other, with the delta named. | 110 | The repetition loop finally has a narrative |
-| 7 | **Session summary.** On leaving the station: runs, accepted, earned, best score, time. | 105 | Every operator sees it; costs nothing to compute |
-| 8 | **Empty-corpus buyer view.** `/corpus` when a task has no trainable episodes says so and why, rather than rendering zeros. | 105 | The unglamorous finish that separates done from demoed |
-| 9 | **Task authoring preflight.** `/post` shows the escrow, the per-run reward and the total before signing. | 100 | Funders are half the market and the flow is currently blind |
-| 10 | **Failure taxonomy on the run page.** Which of the four failure modes this run hit, named. | 100 | Turns a low score into a lesson |
+| 3 | **The L1 proof, on the site.** `/l1` renders `docs/l1-proof.txt` as three checkable claims with the chain IDs and block numbers. | 120 | Turns a local script into something a judge can read without a terminal — **BUILT — /l1, three claims with the figures read off that chain** |
+| 4 | **Cross-chain policy receipt in the product.** The ICM delivery that claim 32 proves, surfaced on `/licence` as "announced to chain X at block N". | 115 | The Warp/ICM story stops being a contract nobody sees — **BUILT — the Warp payload decoded and cross-checked field by field on /licence** |
+| 5 | **First-run cost, stated on the station.** 460,466–600,000 gas measured; print what this run will cost before it is submitted. | 110 | Honesty as a feature, and it sets up the L1 answer — **BUILT — measured gas, and the finding that the charge tracks the wallet's own limit** |
+| 6 | **Run-to-run improvement.** An operator's five runs on a task, scored against each other, with the delta named. | 110 | The repetition loop finally has a narrative — **BUILT — /operator and /portfolio, oldest attempt first, deltas named** |
+| 7 | **Session summary.** On leaving the station: runs, accepted, earned, best score, time. | 105 | Every operator sees it; costs nothing to compute — **BUILT — the sitting now survives leaving the station, and carries a best** |
+| 8 | **Empty-corpus buyer view.** `/corpus` when a task has no trainable episodes says so and why, rather than rendering zeros. | 105 | The unglamorous finish that separates done from demoed — **BUILT — /corpus says which of the three reasons it is empty for** |
+| 9 | **Task authoring preflight.** `/post` shows the escrow, the per-run reward and the total before signing. | 100 | Funders are half the market and the flow is currently blind — **BUILT — what the escrow draws, what happens to the rest, and a deadline that gets it back** |
+| 10 | **Failure taxonomy on the run page.** Which of the four failure modes this run hit, named. | 100 | Turns a low score into a lesson — **BUILT — named on the run page, with the sample it happened on** |
 
 ## Tier 2 — build if the top ten land (80–94)
 
@@ -43,21 +55,21 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 |---|---|---|
 | 11 | Personal best marker in the viewport, ghosted against the current run | 94 |
 | 12 | Operator streak: consecutive accepted runs, on the profile | 92 |
-| 13 | "What would have paid" — the score needed to clear the floor, on a rejected run | 92 |
+| 13 | "What would have paid" — the score needed to clear the floor, on a rejected run | 92 — **BUILT — solved backwards into the units an operator drives in** |
 | 14 | Corpus diff: what a licence buys today versus last week | 90 |
-| 15 | Task difficulty calibrated from real pass rates rather than declared | 90 |
+| 15 | Task difficulty calibrated from real pass rates rather than declared | 90 — **BUILT — declared difficulty checked against the ledger on /hub, and it loses** |
 | 16 | Live slot pressure: how fast a task is filling, on the hub | 88 |
-| 17 | Reward-per-minute, computed from par and payout, on every task row | 88 |
+| 17 | Reward-per-minute, computed from par and payout, on every task row | 88 — **BUILT — per minute of par, on every task row** |
 | 18 | Warp message decoder on `/licence` — payload rendered as fields | 86 |
-| 19 | Contract call log: every write this deployment has made, with its cost | 86 |
+| 19 | Contract call log: every write this deployment has made, with its cost | 86 — **BUILT — every write to the protocol on /contracts, with its cost** |
 | 20 | Operator's own gas spend against earnings, on the portfolio | 85 |
 | 21 | Prop provenance: which runs used which uploaded prop | 84 |
 | 22 | Referral link with its claim state, on the portfolio | 84 |
-| 23 | Foundry treasury vote UI, on `/contracts` | 83 |
+| 23 | Foundry treasury vote UI, on `/contracts` | 83 — **BUILT — the treasury's proposals, tally, vote and execute, on /foundry** |
 | 24 | Prize pool entry from the task it funds | 83 |
-| 25 | Trajectory certificate mint, from the run page | 82 |
-| 26 | Corpus subscription purchase flow | 82 |
-| 27 | Task expiry and escrow refund, surfaced | 81 |
+| 25 | Trajectory certificate mint, from the run page | 82 — **BUILT — mintable from the run page, to whoever recorded it** |
+| 26 | Corpus subscription purchase flow | 82 — **BUILT — the corpus gate can be paid, on /corpus** |
+| 27 | Task expiry and escrow refund, surfaced | 81 — **BUILT — deadlines on /post, and the funder's reclaim on the task page** |
 | 28 | Per-scenario pass rates on `/spec` | 80 |
 | 29 | Score distribution histogram per task | 80 |
 | 30 | The datum circle drawn to scale on the task page | 80 |
@@ -131,3 +143,34 @@ poster variant of the landing
 of invented operators, any "AI-powered" label on the kinematic scorer, and any
 number on the interface that does not come from chain, the database, or a
 generated artefact.
+
+---
+
+## The audit that was worth more than the list
+
+Five of the sixteen were not on it. They came from one question asked late:
+which write functions do the deployed contracts have that no page in this
+interface can call? The answer was eight, and five of them mattered.
+
+| Contract | Function | What it meant |
+|---|---|---|
+| `CorpusAccess` | `subscribe` | `/api/dataset` has answered 402 since the gate shipped and there was nowhere to pay. The revenue path ended in a status code |
+| `AxonProtocolV2` | `createTaskUntil`, `closeTask` | Every task posted through this interface was the kind whose escrow can never come back. The contract has had the other kind all along |
+| `TrajectoryCertificate` | `mint` | The run page has said "not minted for this run" since it was written, with no way to mint it |
+| `ContributionRecord` | `sync` | Callable by anyone for anyone precisely so an absent operator's record is not left understated — and callable from nowhere. One address was 189.00 points behind |
+| `Foundry` | `propose`, `vote`, `execute` | A proposal passed 165.00 to nil, closed, and sat unexecuted. The decision was made and nothing could carry it out |
+
+The three that remain unreachable are correctly so: `ConfidentialPayouts.accrue`
+and `CorpusManifest.commit` are restricted to the adder and the verifier, and
+`ConfidentialPayouts.registerKey` belongs to a research path with no surface yet.
+
+The same shape produced the largest single find of the day. `lib/abi.ts` was
+generated from `AxonProtocol.sol` — version one — while the deployed contract is
+`AxonProtocolV2`. Everything kept working, because the app's list is a strict
+subset. What it cost was the two fields v2 added to a Task: a tuple decoded
+against nine components reads the first nine and drops the rest, so the
+interface could not see `expiresAt` or `closed`, and offered a Run button on a
+task whose funder had already taken the escrow back.
+
+Every generated file — the ABI, the read interfaces, the selector map — now
+comes from the deployed contract's own artifact, by one script.
