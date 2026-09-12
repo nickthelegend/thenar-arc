@@ -55,6 +55,13 @@ export default function PostTaskPage() {
 
   const [payloadId, setPayloadId] = useState("toothpaste");
   const [targetId, setTargetId] = useState("drawer");
+  /**
+   * How long before the funder may take back what was never paid out.
+   *
+   * Zero is the contract's own "never", which is what this form has always
+   * created. It stays available and it is no longer the only option.
+   */
+  const [days, setDays] = useState(0);
   const [slots, setSlots] = useState("10");
   const [reward, setReward] = useState("0.004");
   const [scenario, setScenario] = useState(1);
@@ -194,6 +201,42 @@ export default function PostTaskPage() {
           </Field>
         </div>
 
+        {/* The one protection a funder has.
+            The contract's createTaskUntil takes a deadline and closeTask
+            returns the unspent escrow after it; without one, escrow enters and
+            can only leave as a payout, so a task nobody finishes keeps the
+            remainder for good. This form only ever called createTask, so every
+            task posted through it was the unrecoverable kind — and nothing on
+            the page said so. */}
+        <Field
+          label="Deadline"
+          hint="After this you can close the task and take back whatever was never paid out. Leave it empty and the escrow can never come back."
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            {DEADLINES.map((d) => (
+              <button
+                key={d.days}
+                type="button"
+                onClick={() => setDays(days === d.days ? 0 : d.days)}
+                aria-pressed={days === d.days}
+                className={cn(
+                  "border px-2.5 py-1 font-mono text-[12px] transition-colors",
+                  days === d.days
+                    ? "border-signal bg-signal-dim text-signal-hi"
+                    : "border-rule text-scribe-3 hover:border-rule-strong hover:text-scribe-2",
+                )}
+              >
+                {d.label}
+              </button>
+            ))}
+            <span className="font-mono text-[12px] text-scribe-3">
+              {days > 0
+                ? `closes ${new Date(Date.now() + days * 86_400_000).toLocaleDateString()} — you can reclaim after that`
+                : "no deadline — the escrow can never be returned"}
+            </span>
+          </div>
+        </Field>
+
         {tasks.length > 0 ? (
           <Field
             label="Start from"
@@ -272,7 +315,7 @@ export default function PostTaskPage() {
       {/* What the escrow will actually draw, what happens to the rest, and what
           the transaction placing it costs. The block above priced the escrow to
           four decimals and left all three unanswered. */}
-      <PostPreflight slots={validSlots ? slotsN : 0} rewardMon={validReward ? rewardN : 0} />
+      <PostPreflight slots={validSlots ? slotsN : 0} rewardMon={validReward ? rewardN : 0} days={days} />
 
       {s.connected && !s.wrongNetwork && total > 0 && !affordable ? (
         <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">
@@ -299,11 +342,25 @@ export default function PostTaskPage() {
           onClick={async () => {
             if (!s.connected) return s.connect();
             if (s.wrongNetwork) return s.switchToChain();
-            const r = await tx.run(
-              "createTask",
-              [name.trim(), slotsN, parseEther(reward), scenario, difficulty],
-              parseEther(String(total)),
-            );
+            // Two entry points, one for each kind of task the contract can
+            // hold. createTaskUntil is not a variant of createTask with an
+            // extra argument — a task with expiresAt 0 can never be closed —
+            // so which one is called is the funder's decision, not a detail.
+            const r =
+              days > 0
+                ? await tx.run(
+                    "createTaskUntil",
+                    [
+                      name.trim(), slotsN, parseEther(reward), scenario, difficulty,
+                      BigInt(Math.floor(Date.now() / 1000) + days * 86_400),
+                    ],
+                    parseEther(String(total)),
+                  )
+                : await tx.run(
+                    "createTask",
+                    [name.trim(), slotsN, parseEther(reward), scenario, difficulty],
+                    parseEther(String(total)),
+                  );
             if (r) router.push("/hub");
           }}
         >
@@ -352,3 +409,10 @@ function Field({ label, hint, children }: { label: string; hint: string; childre
 function Err({ children }: { children: React.ReactNode }) {
   return <span className="text-[12px] text-reject">{children}</span>;
 }
+
+/** Deadlines a funder is likely to want, in whole days. */
+const DEADLINES = [
+  { days: 7, label: "7 days" },
+  { days: 30, label: "30 days" },
+  { days: 90, label: "90 days" },
+] as const;

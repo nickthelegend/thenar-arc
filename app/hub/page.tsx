@@ -67,7 +67,17 @@ export default function HubPage() {
   // paragraph apart, and the chain says 6. The filtered count is not lost:
   // the table below is the filtered view.
   const allTasks = tasks ?? [];
-  const openSlots = allTasks.reduce((n, t) => n + (t.slotsTotal - t.slotsFilled), 0);
+  /**
+   * Slots a run driven now could actually fill.
+   *
+   * This counted every unfilled slot on every task, including four on a task
+   * whose funder has already closed it and taken the escrow back. They cannot
+   * be filled by anybody, ever, and the figure sits under a heading that reads
+   * as available work.
+   */
+  const openSlots = allTasks
+    .filter((t) => t.open)
+    .reduce((n, t) => n + (t.slotsTotal - t.slotsFilled), 0);
   const escrow = allTasks.reduce((n, t) => n + Number(formatEther(t.escrowWei)), 0);
   const scenariosPresent = useMemo(
     () => SCENARIOS.filter((s) => (tasks ?? []).some((t) => t.scenario === s)),
@@ -271,6 +281,21 @@ export default function HubPage() {
                         {fmtInt(t.slotsTotal - t.slotsFilled)} left
                         <span className="text-scribe-3"> / {fmtInt(t.slotsTotal)}</span>
                       </span>
+                      {/* A deadline is a property of the offer, not a detail:
+                          after it the funder may take the escrow back, and a
+                          run driven the day after pays nothing. */}
+                      {t.expiresAt !== null ? (
+                        <span className={cn(
+                          "font-mono text-[11px] tabular-nums",
+                          t.closed || t.expired ? "text-reject" : "text-scribe-3",
+                        )}>
+                          {t.closed
+                            ? "escrow returned to the funder"
+                            : t.expired
+                              ? "deadline passed"
+                              : `until ${new Date(t.expiresAt).toLocaleDateString()}`}
+                        </span>
+                      ) : null}
                     </div>
                   </Td>
                   <Td align="right">
@@ -308,7 +333,7 @@ export default function HubPage() {
                       </Link>
                     ) : (
                       <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-3">
-                        Filled
+                        {closedBecause(t)}
                       </span>
                     )}
                   </Td>
@@ -362,7 +387,11 @@ export default function HubPage() {
                     >
                       Run
                     </Link>
-                  ) : null}
+                  ) : (
+                    <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-scribe-3">
+                      {closedBecause(t)}
+                    </span>
+                  )}
                 </div>
               </li>
             ))}
@@ -459,4 +488,20 @@ function MeasuredNote({ m, loaded }: { m: Measured | undefined; loaded: boolean 
         : `${m.paid}/${submitted} paid`}
     </span>
   );
+}
+
+/**
+ * Why a task cannot be run, in the order the reasons actually bite.
+ *
+ * "Filled" was the only answer the hub had, and it was wrong for three of the
+ * four ways a task stops taking runs. A closed one has had its escrow taken
+ * back by its funder; an expired one will be; a minted one has become a policy.
+ * An operator who drives any of them has done the work before the contract
+ * refuses to pay, which is the one outcome this interface exists to prevent.
+ */
+function closedBecause(t: TaskWithScene): string {
+  if (t.closed) return "Escrow returned";
+  if (t.expired) return "Expired";
+  if (t.policyMinted) return "Minted";
+  return "Filled";
 }

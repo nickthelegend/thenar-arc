@@ -14,6 +14,7 @@ import { SKILL_LABEL } from "@/lib/skills";
 import { taskStats } from "@/lib/task-stats";
 import { PathOverlay } from "@/components/path-overlay";
 import { FunderHistory } from "@/components/funder-history";
+import { TaskEscrow } from "@/components/task-escrow";
 import { txUrl, addressUrl, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -95,6 +96,8 @@ export default function TaskView() {
 
       <div className="mt-4"><SlotTally filled={task.slotsFilled} total={task.slotsTotal} /></div>
 
+      <TaskEscrow task={task} />
+
       {task.open ? (
         <Link
           href={`/station/${task.id}`}
@@ -104,7 +107,13 @@ export default function TaskView() {
         </Link>
       ) : (
         <p className="mt-6 border border-rule px-4 py-3 text-[14px] text-scribe-2">
-          Every slot is filled. {task.policyMinted ? "Its policy has been minted." : "It is ready for its policy to be minted in the Foundry."}
+          {task.closed
+            ? "Closed by its funder after the deadline. It takes no more runs."
+            : task.expired
+              ? "Past its deadline. It takes no more runs, whether or not its funder has closed it."
+              : task.policyMinted
+                ? "Every slot is filled. Its policy has been minted."
+                : "Every slot is filled. It is ready for its policy to be minted in the Foundry."}
         </p>
       )}
 

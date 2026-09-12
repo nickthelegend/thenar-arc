@@ -23,6 +23,28 @@ export type ChainTask = {
   difficulty: number;
   policyMinted: boolean;
   parSeconds: number;
+  /**
+   * Unix milliseconds after which the funder may reclaim what is left, or null
+   * where the task carries no deadline at all.
+   *
+   * Zero on chain means never, which is version one's behaviour and is what
+   * this interface's own Post button still creates — so a task made here can
+   * never return its escrow. Carried as null rather than 0 because "no
+   * deadline" and "expired in 1970" are not the same task.
+   */
+  expiresAt: number | null;
+  /** The funder has closed it and taken the unspent escrow back. */
+  closed: boolean;
+  /** Past its deadline, whether or not anybody has closed it yet. */
+  expired: boolean;
+  /**
+   * Whether a run driven now can be paid.
+   *
+   * Slots alone was the test, which is why a closed task with no escrow still
+   * offered a Run button: the interface was decoding a version-one Task and
+   * could not see `closed` at all. An operator would have driven it and been
+   * refused at the contract, after the work.
+   */
   open: boolean;
 };
 
@@ -36,9 +58,13 @@ type RawTask = {
   scenario: number;
   difficulty: number;
   policyMinted: boolean;
+  expiresAt: bigint;
+  closed: boolean;
 };
 
 function shape(raw: RawTask, id: number): ChainTask {
+  const expiresAt = Number(raw.expiresAt) > 0 ? Number(raw.expiresAt) * 1000 : null;
+  const expired = expiresAt !== null && Date.now() >= expiresAt;
   return {
     id,
     name: raw.name,
@@ -52,7 +78,14 @@ function shape(raw: RawTask, id: number): ChainTask {
     difficulty: Number(raw.difficulty),
     policyMinted: raw.policyMinted,
     parSeconds: parSecondsFor(Number(raw.difficulty)),
-    open: Number(raw.slotsFilled) < Number(raw.slotsTotal) && !raw.policyMinted,
+    expiresAt,
+    closed: Boolean(raw.closed),
+    expired,
+    open:
+      Number(raw.slotsFilled) < Number(raw.slotsTotal) &&
+      !raw.policyMinted &&
+      !raw.closed &&
+      !expired,
   };
 }
 
@@ -75,7 +108,7 @@ export function useTasks() {
     query: {
       enabled: IS_DEPLOYED,
       refetchInterval: pollUnlessBroken(6_000),
-      select: (data) => (data as RawTask[]).map(shape),
+      select: (data) => (data as readonly RawTask[]).map(shape),
     },
   });
 }
@@ -635,6 +668,13 @@ const CALLS = {
   createTask: {
     event: TASK_CREATED_EVENT,
     signature: "createTask(string,uint32,uint128,uint8,uint8)",
+  },
+  // Not a variant of the one above with an extra argument: a task created
+  // without a deadline can never be closed, so its escrow can never return.
+  // Different function, different gas, and a different offer.
+  createTaskUntil: {
+    event: TASK_CREATED_EVENT,
+    signature: "createTaskUntil(string,uint32,uint128,uint8,uint8,uint64)",
   },
 } as const;
 

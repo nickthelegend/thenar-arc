@@ -162,8 +162,11 @@ const ITEMS = [
           // The deployment's own record, not an illustration.
           ceiling: /9 accepted runs on this deployment averaged 91\.\d\d/.test(t),
           drawn: /would draw about 0\.0364 AVAX of the 0\.0400 escrowed/.test(t),
-          // The single most consequential fact about posting here.
-          noRefund: /There is no refund path/.test(t),
+          // With no deadline set — this form's default and, until now, its only
+          // behaviour — the escrow can never come back, and the page says which
+          // call is responsible and what to do about it.
+          noRefund: /With no deadline, what is not drawn stays in the contract for good/.test(t)
+                    && /Set a deadline above if you want it back/.test(t),
           // And no gas number invented for a call nobody has made.
           gasHonest: /no task has yet been created through the call this button makes/.test(t),
         };
@@ -226,13 +229,29 @@ const ITEMS = [
           named: /Task #4 is declared easier than #0/.test(t),
           // Counts, not only a rate: 0 of 2 and 0 of 200 are the same rate.
           counts: /0\/2 paid/.test(t) && /2\/2 paid/.test(t),
-          // A task nobody has driven says so rather than showing a zero.
-          unworked: /no runs yet/.test(t),
+          // A closed task is not offered as work. It used to be: the interface
+          // decoded a nine-field Task against an eleven-field contract, so it
+          // could not see `closed` and put a Run button on a task whose escrow
+          // had already gone back to its funder.
+          closedHidden: !/Lapsed calibration sweep/.test(t),
           // And the rate an operator is actually choosing between.
           perMinute: /\/ min/.test(t),
         };
       });
-      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+      // And with the filter off it is listed, saying why rather than "Filled".
+      await p.getByRole("button", { name: "Every task", exact: true }).click();
+      await p.waitForTimeout(1200);
+      const every = await p.evaluate(() => document.body.innerText);
+      const r2 = {
+        listed: /Lapsed calibration sweep/.test(every),
+        // Uppercased by CSS, and innerText carries the transform.
+        why: /escrow returned/i.test(every),
+        deadline: /until \d/.test(every),
+      };
+      return [
+        Object.values(r).every(Boolean) && Object.values(r2).every(Boolean),
+        JSON.stringify({ ...r, ...r2 }),
+      ];
   }],
   ["A39", "/contracts",       async (p) => {
       // Every write this contract has taken, from Avalanche's index, named

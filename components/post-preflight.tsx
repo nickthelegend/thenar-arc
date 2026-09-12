@@ -26,8 +26,15 @@ import { fmtGasCost, fmtMon, fmtScore } from "@/lib/format";
  * And what the transaction itself costs, measured off the six real postings
  * this contract has, at the price the chain is quoting now.
  */
-export function PostPreflight({ slots, rewardMon }: { slots: number; rewardMon: number }) {
-  const cost = useObservedCost("createTask");
+export function PostPreflight({
+  slots, rewardMon, days,
+}: {
+  slots: number;
+  rewardMon: number;
+  /** Days until the funder may reclaim, or zero for a task that never expires. */
+  days: number;
+}) {
+  const cost = useObservedCost(days > 0 ? "createTaskUntil" : "createTask");
   const { data: accepted } = useAcceptedScores();
 
   const escrow = slots * rewardMon;
@@ -62,26 +69,57 @@ export function PostPreflight({ slots, rewardMon }: { slots: number; rewardMon: 
         </li>
 
         <li>
-          <span className="text-scribe">What is not drawn stays in the contract.</span>{" "}
-          There is no refund path. Escrow enters through{" "}
-          <code className="font-mono text-[12px] text-scribe">createTask</code> and{" "}
-          <code className="font-mono text-[12px] text-scribe">fundTask</code>, and
-          leaves only as a payout to an operator &mdash; so a task nobody finishes
-          keeps its remainder for good, and so does the{" "}
-          {left !== null ? (
+          {days > 0 ? (
             <>
-              roughly{" "}
-              <span className="font-mono tabular-nums text-scribe">
-                {fmtMon(left, 4)} {CURRENCY}
+              <span className="text-scribe">
+                What is not drawn comes back to you after the deadline.
               </span>{" "}
-              of scoring shortfall above
+              A task with a deadline can be closed by its funder once it passes,
+              and{" "}
+              <code className="font-mono text-[12px] text-scribe">closeTask</code>{" "}
+              returns whatever was never paid out &mdash; including the{" "}
+              {left !== null ? (
+                <>
+                  roughly{" "}
+                  <span className="font-mono tabular-nums text-scribe">
+                    {fmtMon(left, 4)} {CURRENCY}
+                  </span>{" "}
+                  of scoring shortfall above
+                </>
+              ) : (
+                "difference between the ceiling and what runs actually score"
+              )}
+              . Only you, only after the deadline, and only once.
             </>
           ) : (
-            "difference between the ceiling and what runs actually score"
-          )}
-          . Read the contract at{" "}
-          <Link href="/contracts" className="text-signal hover:text-signal-hi">/contracts</Link>{" "}
-          before you decide that is acceptable.
+            <>
+              <span className="text-reject">
+                With no deadline, what is not drawn stays in the contract for good.
+              </span>{" "}
+              Escrow enters through{" "}
+              <code className="font-mono text-[12px] text-scribe">createTask</code>{" "}
+              and{" "}
+              <code className="font-mono text-[12px] text-scribe">fundTask</code>,
+              and the only other way out is{" "}
+              <code className="font-mono text-[12px] text-scribe">closeTask</code>,
+              which a task without a deadline can never reach. So a task nobody
+              finishes keeps its remainder, and so does the{" "}
+              {left !== null ? (
+                <>
+                  roughly{" "}
+                  <span className="font-mono tabular-nums text-scribe">
+                    {fmtMon(left, 4)} {CURRENCY}
+                  </span>{" "}
+                  of scoring shortfall above
+                </>
+              ) : (
+                "difference between the ceiling and what runs actually score"
+              )}
+              . Set a deadline above if you want it back.
+            </>
+          )}{" "}
+          Read the contract at{" "}
+          <Link href="/contracts" className="text-signal hover:text-signal-hi">/contracts</Link>.
         </li>
 
         {/* Nothing has gone through this entry point yet.
@@ -96,10 +134,10 @@ export function PostPreflight({ slots, rewardMon }: { slots: number; rewardMon: 
           <li>
             <span className="text-scribe">Posting it costs gas too</span>, and
             there is no measured figure for it: no task has yet been created
-            through the call this button makes. The six here were posted with{" "}
+            through the call this button makes with these settings. The six here
+            were all posted with{" "}
             <code className="font-mono text-[12px] text-scribe">createTaskUntil</code>,
-            the same contract&rsquo;s deadline-carrying entry point, and their gas
-            is not this call&rsquo;s.
+            and one function&rsquo;s gas is not another&rsquo;s.
           </li>
         ) : null}
 
