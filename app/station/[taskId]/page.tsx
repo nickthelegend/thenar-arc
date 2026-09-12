@@ -269,7 +269,7 @@ export default function StationPage() {
     const key = `${runId}:${verdict.score}`;
     if (countedMeasured.current === key) return;
     countedMeasured.current = key;
-    setTally(noteMeasured(verdict.score));
+    setTally(noteMeasured(verdict.score, task?.id));
   }, [phase, verdict, runId]);
 
   const countedPaid = useRef<string | null>(null);
@@ -821,6 +821,10 @@ export default function StationPage() {
                 <Row label="Runs measured" value={String(tally.measured)} />
                 <Row label="Paid" value={String(tally.paid)} />
                 <Row label="Mean score" value={fmtScore(Math.round(meanScore(tally)))} />
+                {/* The mean says how the sitting is going; the best says what
+                    this operator managed on this bench today, and it is the one
+                    they are actually chasing between runs. */}
+                <Row label="Best score" value={tally.best ? fmtScore(tally.best) : "—"} tone={tally.best ? "signal" : undefined} />
                 <Row label="Earned" value={`${fmtMon(tally.earned, 4)} ${CURRENCY}`} tone="signal" />
                 <Row label="At the bench" value={`${minutes(tally).toFixed(0)} min`} />
               </div>

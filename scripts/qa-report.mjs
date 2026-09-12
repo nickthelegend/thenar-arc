@@ -58,6 +58,9 @@ const MEANS = {
   R9:"And the real transactions that figure is measured from",
   R10:"The gas-limit finding is stated rather than buried",
   R11:"The payout is still shown beside the cost",
+  R13:"The sitting names a best score, not only a mean",
+  R14:"And survives leaving the station, which is when it is wanted",
+  R15:"And links back to the task it was worked on",
   R12:"No console error across the whole run",
 };
 const rows = [];

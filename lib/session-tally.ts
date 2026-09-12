@@ -25,18 +25,28 @@ export type Tally = {
   scoreSum: number;
   /** AVAX actually received, from confirmed receipts. */
   earned: number;
+  /** The best score measured this sitting, on the contract's 0..10000 scale.
+   *  A mean tells an operator how the sitting is going; a best tells them what
+   *  they are capable of on this bench today, which is the one they chase. */
+  best: number;
+  /** The last task worked, so a sitting can be picked back up from anywhere. */
+  taskId?: number;
   /** When this sitting started. */
   since: number;
 };
 
-const empty = (): Tally => ({ measured: 0, paid: 0, scoreSum: 0, earned: 0, since: Date.now() });
+const empty = (): Tally => ({ measured: 0, paid: 0, scoreSum: 0, earned: 0, best: 0, since: Date.now() });
 
 export function readTally(): Tally {
   try {
     const raw = sessionStorage.getItem(KEY);
     if (!raw) return empty();
     const t = JSON.parse(raw) as Tally;
-    return typeof t.measured === "number" ? t : empty();
+    if (typeof t.measured !== "number") return empty();
+    // A sitting started before this field existed is still a sitting. Defaulted
+    // rather than discarded: throwing away an operator's tally to add a column
+    // to it would be the worst possible trade.
+    return { ...t, best: typeof t.best === "number" ? t.best : 0 };
   } catch {
     return empty();
   }
@@ -48,9 +58,15 @@ function write(t: Tally) {
 
 /** A run was measured. Counted whether or not it is ever submitted, because
  *  the work happened either way. */
-export function noteMeasured(score: number): Tally {
+export function noteMeasured(score: number, taskId?: number): Tally {
   const t = readTally();
-  const next = { ...t, measured: t.measured + 1, scoreSum: t.scoreSum + score };
+  const next = {
+    ...t,
+    measured: t.measured + 1,
+    scoreSum: t.scoreSum + score,
+    best: Math.max(t.best, score),
+    taskId: taskId ?? t.taskId,
+  };
   write(next);
   return next;
 }
@@ -65,3 +81,14 @@ export function notePaid(avax: number): Tally {
 
 export const meanScore = (t: Tally) => (t.measured ? t.scoreSum / t.measured : 0);
 export const minutes = (t: Tally) => Math.max(0, (Date.now() - t.since) / 60_000);
+
+/**
+ * Wipe the sitting.
+ *
+ * There is one place this is right — the operator asking for it — so it is
+ * exported rather than called on navigation. A tally that reset itself when
+ * somebody looked at the hub would lose the thing it exists to keep.
+ */
+export function clearTally() {
+  try { sessionStorage.removeItem(KEY); } catch { /* nothing to lose */ }
+}

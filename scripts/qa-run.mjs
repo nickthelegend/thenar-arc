@@ -198,6 +198,39 @@ try {
     check("R11", snap.payable, "payout still shown beside it");
   }
 
+  // The sitting: what this stretch at the bench came to, and whether it
+  // survives leaving the station — which is the moment an operator wants it.
+  const sitting = await page.evaluate(() => {
+    const t = document.body.innerText;
+    const i = t.search(/THIS SITTING/i);
+    const block = i < 0 ? "" : t.slice(i, i + 300);
+    return {
+      here: i >= 0,
+      best: (block.match(/BEST SCORE\s*\n?\s*([\d.]+)/) || [])[1] ?? null,
+      measured: (block.match(/RUNS MEASURED\s*\n?\s*(\d+)/) || [])[1] ?? null,
+    };
+  });
+  check("R13", sitting.here && sitting.best !== null,
+        `sitting shows a best score: ${sitting.best ?? "absent"} over ${sitting.measured ?? "?"} measured`);
+
+  await page.goto(`${BASE}/hub`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForTimeout(2500);
+  const carried = await page.evaluate(() => {
+    const t = document.body.innerText;
+    const i = t.search(/THIS SITTING/i);
+    const block = i < 0 ? "" : t.slice(i, i + 400);
+    return {
+      here: i >= 0,
+      best: (block.match(/BEST\s*\n?\s*([\d.]+)/) || [])[1] ?? null,
+      measured: (block.match(/MEASURED\s*\n?\s*(\d+)/) || [])[1] ?? null,
+      // Uppercased by CSS, and innerText carries the transform.
+      backTo: /back to #\d/i.test(block),
+    };
+  });
+  check("R14", carried.here && carried.best === sitting.best && carried.measured === sitting.measured,
+        `sitting survives leaving the station: best ${carried.best ?? "absent"}, ${carried.measured ?? "?"} measured`);
+  check("R15", carried.backTo, "and links back to the task it was worked on");
+
   check("R12", consoleErrors.length === 0, consoleErrors.length ? `console: ${consoleErrors[0]}` : "no console errors through the whole run");
 } finally {
   await browser.close();

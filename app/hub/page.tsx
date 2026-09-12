@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { ActivityFeed } from "@/components/activity-feed";
+import { Sitting } from "@/components/sitting";
 import { PropPreview } from "@/components/prop-picker";
 import { cn } from "@/lib/cn";
 import { SCENARIOS, CURRENCY, isSeedFunded } from "@/lib/chain";
@@ -91,6 +92,11 @@ export default function HubPage() {
             Live from the contract on Avalanche Fuji
           </span>
         </div>
+
+        {/* What the operator just came out of. They leave the station to pick
+            the next task, and the tally that answers "how did that stretch go"
+            was thrown away at exactly that moment. */}
+        <Sitting />
 
         {totalTasks > 0 && seeded === totalTasks ? (
           <p className="max-w-[76ch] text-[13px] leading-relaxed text-scribe-3">
