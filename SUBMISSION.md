@@ -36,7 +36,7 @@ operator's balance rose by exactly the payout net of gas. The Solidity did not
 change to get there; native value on Arc is USDC.
 
 **Circle infrastructure used.** Arc Testnet (5042002) for every contract and
-run; USDC as native gas and value; Arcscan for per-address call history in the
+run, all ten contracts source-verified on Sourcify (`exact_match`); USDC as native gas and value; Arcscan for per-address call history in the
 app; the Circle faucet for funding. Also confirmed on Arc: the P-256 precompile
 at `0x0100` that passkey submission uses.
 
@@ -63,10 +63,11 @@ out of reach.
 | Requirement | Evidence |
 | --- | --- |
 | Built for a previous hackathon | Monad Blitz Hyderabad V3, 3rd place |
-| Substantive new work, new Hedera services | x402 paywall, Hedera accounts, settlement ledger — none of it existed before `e4f131d` |
+| Substantive new work, new Hedera services | x402 paywall settled by Blocky402, Hedera accounts, and a Consensus Service sales log — none of it existed before `e4f131d` |
 | README separating before and after, with commits | README, "What existed before ETHOnline, and what is new" |
 | Live x402-gated service on Hedera testnet, settled through Blocky402 | `GET /api/agent/corpus`; `accepts[0].extra.feePayer` is Blocky402's `0.0.7162784` |
-| An agent completing a real paid request end to end | Two settlements: `0.0.7162784@1789279979.058986056` and `0.0.7162784@1789281472.024056054`, each 0.5 HBAR agent → treasury |
+| An agent completing a real paid request end to end | Three settlements, each 0.5 HBAR agent → treasury: `0.0.7162784@1789279979.058986056`, `0.0.7162784@1789281472.024056054`, `0.0.7162784@1789282116.389653271` |
+| Extra points: verifiable audit trail | Every pull is posted to Consensus Service topic `0.0.10519262` with the sha256 of the served file; the agent checks its copy against the mirror node (message #1 matches) |
 | README covering setup, architecture, and the payment flow | README, "Run it", "Architecture", "The payment flow, step by step" |
 | Demo video, five minutes or less | Script below |
 
@@ -98,9 +99,11 @@ are paid and on chain and still labelled unusable."
 **2:15–3:45 — An agent buys the corpus.** Run
 `node scripts/agent-buy.mjs http://localhost:3222 1`. Walk the log: AgentKit
 detected, signed, retried, still 402 (AgentBook says no human), then paid; status
-200; settled, with the Hedera transaction id. Open Hashscan: 0.5 HBAR from the
-agent's account to the treasury, fee paid by Blocky402. Open `/agents`: the
-terms, the lookup, the sale with its proof link.
+200; settled, with the Hedera transaction id; then the audit line — the sales
+topic's newest message logs the same sha256 as the file the agent received.
+Open Hashscan: 0.5 HBAR from the agent's account to the treasury, fee paid by
+Blocky402. Open `/agents`: the terms, the sales topic, the lookup, and the sale
+with its settlement and log links.
 
 **3:45–4:30 — World: the free path.** After registering the agent in AgentBook
 with the Sandbox App, run the buyer again: "settled nothing: AgentKit granted

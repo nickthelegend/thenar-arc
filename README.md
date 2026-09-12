@@ -17,6 +17,7 @@ before this event and what was built during it are separated
 | --- | --- |
 | **Runs and payouts** | Arc Testnet, chain 5042002. Bounties, payouts and gas are all USDC. |
 | **Agent payments** | Hedera testnet, x402 `exact` scheme in HBAR, settled by the [Blocky402](https://api.testnet.blocky402.com/supported) facilitator |
+| **Sales log** | A Hedera Consensus Service topic only the seller can post to; every pull is logged with the sha256 of the file served |
 | **Agent identity** | World AgentKit; AgentBook on World Chain (480) decides who gets free pulls |
 | **Repo** | https://github.com/nickthelegend/thenar-arc |
 | **Submission notes** | [SUBMISSION.md](SUBMISSION.md) · World feedback: [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md) |
@@ -48,6 +49,7 @@ flowchart LR
   subgraph HEDERA["Hedera testnet"]
     B402["Blocky402<br/>verify · settle · pays fee"]
     TREASURY["Treasury 0.0.10518776"]
+    TOPIC["Sales topic 0.0.10519262<br/>Consensus Service"]
   end
 
   subgraph WORLD["World Chain"]
@@ -61,6 +63,8 @@ flowchart LR
   CORPUS -- "lookupHuman" --> BOOK
   CORPUS -- "verify, then settle<br/>after the file is ready" --> B402
   B402 -- "HBAR transfer" --> TREASURY
+  CORPUS -- "each sale, with the sha256<br/>of the file served" --> TOPIC
+  AGENT -. "checks its own hash<br/>on the mirror node" .-> TOPIC
   CORPUS --> DB
   PAGES --> DB
   PAGES -. "reads" .-> AXON
@@ -76,7 +80,10 @@ The contracts, unchanged Solidity from the Avalanche build, redeployed on Arc
 ([`contracts/script/DeployArc.s.sol`](contracts/script/DeployArc.s.sol),
 [`DeployArcExtras.s.sol`](contracts/script/DeployArcExtras.s.sol)). The value
 they escrow and pay is the chain's native value, which on Arc is USDC, so none
-of them needed a token interface to become dollar-denominated.
+of them needed a token interface to become dollar-denominated. All ten are
+source-verified on Sourcify with `exact_match`, so the deployed bytecode is this
+repository's Solidity (for example
+[AxonProtocolV2](https://sourcify.dev/server/v2/contract/5042002/0x6D6D6D0ee86C654b69646223049D6812c0218B2f)).
 
 | Contract | Address | Does |
 | --- | --- | --- |
@@ -120,8 +127,12 @@ labelled rather than hidden.
 | Paid pull, task 1 | [`0.0.7162784@1789279979.058986056`](https://hashscan.io/testnet/transaction/0.0.7162784-1789279979-058986056) | `SUCCESS`: agent −0.5 HBAR, treasury +0.5 HBAR, fee paid by Blocky402 (`0.0.7162784`) |
 | Paid pull, task 2 | [`0.0.7162784@1789281472.024056054`](https://hashscan.io/testnet/transaction/0.0.7162784-1789281472-024056054) | `SUCCESS`: agent −0.5 HBAR, treasury +0.5 HBAR, fee paid by Blocky402 |
 
-Both are also rows in `corpus_sale` and on the `/agents` page, each linked to
-its Hashscan transaction.
+| Sales topic | [`0.0.10519262`](https://hashscan.io/testnet/topic/0.0.10519262) | Consensus Service; only the treasury's key can post to it. Created in `0.0.9842030@1789282023.896089542`. |
+| Paid pull, task 1, logged | [`0.0.7162784@1789282116.389653271`](https://hashscan.io/testnet/transaction/0.0.7162784-1789282116-389653271) | `SUCCESS`: agent −0.5 HBAR, treasury +0.5 HBAR. Logged as [message #1](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10519262/messages/1), posted by the treasury, with sha256 `2539ff76…d4008b61`. The agent hashed the three-episode file it received and read the same digest from the mirror node. |
+
+All three pulls are rows in `corpus_sale` and on the `/agents` page, each linked
+to its Hashscan transaction. The first two came before the sales topic existed
+and are shown as unlogged rather than backfilled.
 
 ### World
 
@@ -160,6 +171,13 @@ its Hashscan transaction.
 6. **Settle.** Blocky402's `/settle` submits the transfer. The response carries
    `PAYMENT-RESPONSE` with the Hedera transaction id, which the server records in
    `corpus_sale`.
+7. **Log.** The server hashes the exact bytes it is returning, posts the sale
+   and that sha256 to the sales topic with the treasury's key, and returns the
+   digest and the message's sequence number in `x-thenar-sha256` and
+   `x-thenar-audit`. The buyer hashes what it received and reads the message
+   from Hedera's mirror node, not from this server. If the post fails, the file
+   is still served — the payment has already settled — and the gap is recorded
+   with its reason.
 
 One key does both jobs: `AGENT_PRIVATE_KEY` signs the AgentKit challenge and is
 the key of Hedera account `0.0.10518775`, created with that key's EVM address as
@@ -198,7 +216,8 @@ submission, ElGamal payouts, the archive of earlier chains.
   because Arc has neither; `scripts/arc-run.mjs`, which solves the arm's joints
   from the payload so a scripted run is a coherent one.
 - *Hedera* — the x402 paywall on `/api/agent/corpus` settled by Blocky402, the
-  agent and treasury accounts, the buyer agent, the `corpus_sale` ledger,
+  agent and treasury accounts, the buyer agent, the `corpus_sale` ledger, the
+  Consensus Service sales log carrying the sha256 of every file served,
   `/api/agent/sales`, and the `/agents` page.
 - *World* — AgentKit on the same route with AgentBook deciding free pulls,
   database-backed usage and nonce storage, `/api/agent/status`, and the
@@ -272,9 +291,9 @@ AXON_ADDRESS=<AxonProtocolV2 from the step above> \
   bounties and payouts.
 - **Not hosted.** thenar.io's old backend is gone. This deployment runs locally
   against the live testnets.
-- **Contract source is not yet verified on Arcscan.** Submissions to Arcscan's
-  Blockscout verifier were rate-limited; the Solidity in `contracts/src` is what
-  was deployed, compiled by the scripts above.
+- **Arcscan does not show the verified source.** All ten contracts are
+  `exact_match` on Sourcify for chain 5042002, but every submission to Arcscan's
+  own Blockscout verifier was refused as rate-limited.
 - **LicenceReceipt is not deployed on Arc.** It attests a policy through
   Avalanche's Warp precompile, which Arc does not have.
 
