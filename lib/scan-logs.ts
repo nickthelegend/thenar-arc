@@ -20,6 +20,11 @@
  * it and ask again for both halves. The range is a property of the deployment's
  * history and the splitting is a property of whoever is answering, which is the
  * only division that survives changing either.
+ *
+ * The halves are asked for one after the other. They used to go out together,
+ * which on Arc turned one refusal into a burst of hundreds of requests from
+ * every open tab; the public endpoint answered with "rate limit exceeded" for
+ * the whole machine, and every read that followed failed with it.
  */
 
 export type LogRange = { fromBlock: bigint; toBlock: bigint };
@@ -44,10 +49,60 @@ export async function scanLogs<T>(
     if (span <= FLOOR) throw err;
 
     const mid = fromBlock + span / 2n;
-    const [a, b] = await Promise.all([
-      scanLogs(fetchRange, { fromBlock, toBlock: mid }),
-      scanLogs(fetchRange, { fromBlock: mid + 1n, toBlock }),
-    ]);
+    const a = await scanLogs(fetchRange, { fromBlock, toBlock: mid });
+    const b = await scanLogs(fetchRange, { fromBlock: mid + 1n, toBlock });
     return [...a, ...b];
+  }
+}
+
+/** How far one request is asked to reach when walking a long history. Arc's
+ *  public endpoints answer ten thousand blocks; the walk is sequential either way. */
+const CHUNK = 10_000n;
+
+type Cached = { through: bigint; logs: unknown[] };
+const cache = new Map<string, Cached>();
+const walking = new Map<string, Promise<unknown[]>>();
+
+/**
+ * Every log for `key` from `fromBlock` to `toBlock`, reading each block once.
+ *
+ * The first call walks the history in chunks, one request at a time. Later
+ * calls ask only for the blocks after the last one read and append them, so a
+ * feed that refreshes every few seconds costs one small request a refresh
+ * instead of a scan of everything since deployment. Arc finalises a block when
+ * it is included, so a log once read does not need reading again.
+ *
+ * Concurrent callers for the same key share one walk. A walk that fails caches
+ * nothing, and the next call starts again from the last block that was read.
+ */
+export async function readLogsSince<T>(
+  key: string,
+  fetchRange: (range: LogRange) => Promise<T[]>,
+  fromBlock: bigint,
+  toBlock: bigint,
+): Promise<T[]> {
+  const running = walking.get(key);
+  if (running) return running as Promise<T[]>;
+
+  const hit = cache.get(key);
+  const start = hit ? hit.through + 1n : fromBlock;
+  if (start > toBlock) return (hit?.logs ?? []) as T[];
+
+  const walk = (async () => {
+    const found: T[] = [];
+    for (let from = start; from <= toBlock; from += CHUNK) {
+      const to = from + CHUNK - 1n < toBlock ? from + CHUNK - 1n : toBlock;
+      found.push(...(await scanLogs(fetchRange, { fromBlock: from, toBlock: to })));
+    }
+    const logs = [...((hit?.logs ?? []) as T[]), ...found];
+    cache.set(key, { through: toBlock, logs });
+    return logs;
+  })();
+
+  walking.set(key, walk);
+  try {
+    return await walk;
+  } finally {
+    walking.delete(key);
   }
 }

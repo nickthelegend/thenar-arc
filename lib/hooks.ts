@@ -6,10 +6,10 @@ import { useAccount, useConfig, useReadContract, usePublicClient } from "wagmi";
 import { readContracts } from "wagmi/actions";
 import { formatEther, toFunctionSelector } from "viem";
 import { AXON_ABI } from "./abi";
-import { AXON_ADDRESS, IS_DEPLOYED, scenarioName } from "./chain";
+import { AXON_ADDRESS, AXON_DEPLOY_BLOCK, IS_DEPLOYED, scenarioName } from "./chain";
 import { DEPLOYED } from "./registry";
 import { parSecondsFor } from "./par";
-import { scanLogs } from "./scan-logs";
+import { readLogsSince } from "./scan-logs";
 
 export type ChainTask = {
   id: number;
@@ -277,7 +277,9 @@ export function useActivity(limit = 40) {
   return useQuery({
     queryKey: ["activity", limit],
     enabled: IS_DEPLOYED,
-    refetchInterval: 5_000,
+    // A run takes a minute to drive; a feed a few seconds behind it is not
+    // stale, and every tab polling a public endpoint is a tab it can throttle.
+    refetchInterval: 15_000,
     queryFn: async (): Promise<FeedEntry[]> => {
       if (!client) return [];
 
@@ -285,27 +287,19 @@ export function useActivity(limit = 40) {
       const found: FeedEntry[] = [];
 
       /**
-       * One call over the whole history, not a walk back from the head.
+       * The whole history, anchored to the deployment, read once.
        *
-       * This used to read forty windows of two thousand blocks — eighty
-       * thousand in all — on the assumption that the public endpoint would
-       * refuse a wider range. It does not: the primary endpoint answers a
-       * million-block `getLogs` in a single round trip (see RPC_ENDPOINTS in
-       * lib/chain.ts), which is how the mean-score read here already works.
+       * Anchored to the block the contract was deployed in, so nothing ages out
+       * of a window measured back from the head — the failure that emptied the
+       * feed on Fuji a week after its runs were recorded.
        *
-       * The assumption was not merely inefficient, it was a time bomb. A window
-       * measured back from the head only contains the history while the history
-       * is recent. On Fuji, where this was found, eighty thousand blocks was
-       * under two days, and every run on that deployment passed out of the
-       * window a week after it was recorded. The standings, the feed and
-       * everything derived from them went quietly empty
-       * — not with an error, with a legitimate-looking nothing.
-       *
-       * A range anchored to the deployment rather than to the clock cannot do
-       * that. The result is sliced to `limit` after ordering, which is what the
-       * early exit was really for.
+       * Read once and then only extended. This used to ask for a million blocks
+       * every five seconds from every open tab and split the refusals in
+       * parallel, which got this machine throttled by Arc's public endpoint; the
+       * feed then said "No runs recorded yet" over five paid runs. The logs
+       * already read are kept, and each refresh asks only for the blocks since.
+       * The result is sliced to `limit` after ordering.
        */
-      const LOOKBACK = 1_000_000n;
       const event = {
         type: "event",
         name: "TrajectoryAccepted",
@@ -321,9 +315,11 @@ export function useActivity(limit = 40) {
       } as const;
 
       type EventLog = Awaited<ReturnType<typeof client.getLogs<typeof event>>>[number];
-      const logs = await scanLogs(
+      const logs = await readLogsSince<EventLog>(
+        `activity:${AXON_ADDRESS}`,
         (r) => client.getLogs({ address: AXON_ADDRESS, event, ...r }),
-        { fromBlock: head > LOOKBACK ? head - LOOKBACK : 0n, toBlock: head },
+        AXON_DEPLOY_BLOCK,
+        head,
       );
       const hits: { log: EventLog }[] = logs.map((log) => ({ log }));
 
@@ -586,7 +582,6 @@ const CALLS = {
 
 export type CallKind = keyof typeof CALLS;
 
-const COST_LOOKBACK = 200_000n;
 const COST_SAMPLES = 6;
 
 export function useObservedCost(kind: CallKind) {
@@ -604,9 +599,11 @@ export function useObservedCost(kind: CallKind) {
       if (!client) return null;
       const [head, gasPriceWei] = await Promise.all([client.getBlockNumber(), client.getGasPrice()]);
 
-      const logs = await scanLogs(
+      const logs = await readLogsSince(
+        `cost:${kind}:${AXON_ADDRESS}`,
         (r) => client.getLogs({ address: AXON_ADDRESS, event: call.event, ...r }),
-        { fromBlock: head > COST_LOOKBACK ? head - COST_LOOKBACK : 0n, toBlock: head },
+        AXON_DEPLOY_BLOCK,
+        head,
       );
 
       // Newest first, and only as many as are needed to have a median worth
@@ -712,11 +709,12 @@ export function useAcceptedScores() {
     queryFn: async (): Promise<{ n: number; meanScore: number } | null> => {
       if (!client) return null;
       const head = await client.getBlockNumber();
-      // Wider than the cost scan on purpose: a median gas figure wants recent
-      // transactions, and a mean score wants all of them.
-      const logs = await scanLogs(
+      // Every accepted run since deployment: a mean score wants all of them.
+      const logs = await readLogsSince(
+        `scores:${AXON_ADDRESS}`,
         (r) => client.getLogs({ address: AXON_ADDRESS, event: ACCEPTED_EVENT, ...r }),
-        { fromBlock: head > 1_000_000n ? head - 1_000_000n : 0n, toBlock: head },
+        AXON_DEPLOY_BLOCK,
+        head,
       );
       if (!logs.length) return { n: 0, meanScore: 0 };
       const scores = logs.map((l) => Number(l.args.score ?? 0));

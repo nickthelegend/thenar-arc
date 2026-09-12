@@ -46,10 +46,20 @@ export const appChain = arcTestnet;
  * Measured rather than assumed: each was probed for chain id, head, and the
  * widest log range it would accept before being written down.
  */
+/**
+ * Arc's RPCs, in the order reads try them.
+ *
+ * Blockdaemon and QuickNode first. Arc's own two endpoints throttle per IP, and
+ * once a machine is throttled every read fails with "rate limit exceeded", which
+ * the feed rendered as a network with no runs. drpc is not on the list: its free
+ * plan refuses log queries outright. arc.network stays the chain's default URL,
+ * the one wallets are given when they add the network.
+ */
 export const RPC_ENDPOINTS = [
+  "https://rpc.blockdaemon.testnet.arc.io",
+  "https://rpc.quicknode.testnet.arc.io",
   arcTestnet.rpcUrls.default.http[0],
   "https://rpc.testnet.arc.io",
-  "https://rpc.drpc.testnet.arc.io",
 ] as const;
 
 /** Where an operator with no gas is sent. Chain-scoped for the same reason the
@@ -83,6 +93,16 @@ export const CORPUS_MANIFEST =
 export const AXON_ADDRESS = (process.env.NEXT_PUBLIC_AXON_ADDRESS ?? "") as `0x${string}`;
 
 export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);
+
+/**
+ * The block AxonProtocolV2 was deployed in on Arc Testnet.
+ *
+ * Log reads start here rather than at a distance back from the head: a window
+ * measured from the head drops runs out of view as the chain grows, and a range
+ * reaching back before the contract existed only costs requests. Changes with
+ * NEXT_PUBLIC_AXON_ADDRESS.
+ */
+export const AXON_DEPLOY_BLOCK = 61_851_064n;
 
 /** The registry that binds a secp256r1 key to an address. Public, so the client
  *  can read it without the server. */

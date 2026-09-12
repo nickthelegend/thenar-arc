@@ -63,9 +63,10 @@ const nextConfig: NextConfig = {
         // the canonical host first. A host missing from this line is a host the
         // browser refuses, and the failover that was meant to survive an outage
         // fails on every page load instead.
+        "https://rpc.blockdaemon.testnet.arc.io " +
+        "https://rpc.quicknode.testnet.arc.io " +
         "https://rpc.testnet.arc.network " +
         "https://rpc.testnet.arc.io " +
-        "https://rpc.drpc.testnet.arc.io " +
         // Hedera, for the corpus paywall: x402 settles through Blocky402 and a
         // payer's balance is read from the mirror node before signing.
         "https://api.testnet.blocky402.com " +
