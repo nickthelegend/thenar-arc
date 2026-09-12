@@ -6,7 +6,8 @@ recording against the goal and signs; one transaction on Arc records the
 trajectory and pays the operator from escrowed USDC, with gas from the same
 balance. An AI agent that wants a task's corpus asks for it over HTTP, is
 answered `402`, and either pays on Hedera through x402 or shows through World
-AgentKit that a verified human stands behind it.
+AgentKit that a verified human stands behind it. A lab funds the bounties from a
+Privy wallet whose policy lets it spend on nothing else.
 
 A **Continuity** project for ETHOnline 2026. Thenar was built at Monad Blitz
 Hyderabad V3 (3rd place) and ran on Avalanche Fuji afterwards. What existed
@@ -19,6 +20,7 @@ before this event and what was built during it are separated
 | **Agent payments** | Hedera testnet, x402 `exact` scheme in HBAR, settled by the [Blocky402](https://api.testnet.blocky402.com/supported) facilitator |
 | **Sales log** | A Hedera Consensus Service topic only the seller can post to; every pull is logged with the sha256 of the file served |
 | **Agent identity** | World AgentKit; AgentBook on World Chain (480) decides who gets free pulls |
+| **Wallets** | Privy: operators sign in with an email and get an embedded wallet on Arc; a lab's budget is a Privy server wallet whose policy only lets it fund bounties |
 | **Repo** | https://github.com/nickthelegend/thenar-arc |
 | **Submission notes** | [SUBMISSION.md](SUBMISSION.md) · World feedback: [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md) |
 
@@ -38,6 +40,7 @@ flowchart LR
     SUBMITTED["/api/submitted<br/>reads the receipt back"]
     CORPUS["/api/agent/corpus<br/>x402 + AgentKit"]
     PAGES["/agents, /corpus, /hub"]
+    LAB["/lab, /api/lab<br/>the lab's budget"]
     DB[("SQLite or Postgres<br/>trajectory · agentkit_usage<br/>agentkit_nonce · corpus_sale")]
   end
 
@@ -56,6 +59,11 @@ flowchart LR
     BOOK["AgentBook"]
   end
 
+  subgraph PRIVY["Privy"]
+    LOGIN["Sign-in and<br/>embedded wallets"]
+    LABW["Lab budget wallet<br/>policy: AxonProtocolV2 only, at most 1 USDC"]
+  end
+
   OP -- "samples" --> VERIFY --> DB
   OP -- "submitTrajectory: records the run,<br/>pays the operator, gas in USDC" --> AXON
   OP -- "tx hash" --> SUBMITTED -- "getTransactionReceipt" --> AXON
@@ -68,6 +76,9 @@ flowchart LR
   CORPUS --> DB
   PAGES --> DB
   PAGES -. "reads" .-> AXON
+  OP -- "email sign-in" --> LOGIN
+  LAB -- "eth_signTransaction" --> LABW
+  LAB -- "broadcasts the signed bounty" --> AXON
 ```
 
 ---
@@ -133,6 +144,19 @@ labelled rather than hidden.
 All three pulls are rows in `corpus_sale` and on the `/agents` page, each linked
 to its Hashscan transaction. The first two came before the sales topic existed
 and are shown as unlogged rather than backfilled.
+
+### Privy
+
+| What | Id | Detail |
+| --- | --- | --- |
+| Lab policy | `sf7wzkldy5364a56jol16spa` | Two ALLOW rules, for `eth_sendTransaction` and `eth_signTransaction`: `to` is AxonProtocolV2, `chain_id` is 5042002, `value` is at most 1 USDC. A wallet with a policy is refused anything no rule allows. |
+| Lab wallet | [`0x7b4d4a77…0E44E51a`](https://testnet.arcscan.app/address/0x7b4d4a773fCA1E20D2361411B34655210E44E51a) | Privy server wallet `t3f4kq36uzu0zieqd5i425p0`, created with the policy attached; its key exists only inside Privy. Topped up with 1.5 USDC from the deployer in [`0x56ccbaba…`](https://testnet.arcscan.app/tx/0x56ccbababc924e9b84c9c788994a33f559f86cad23634c7d5fe55f4cf91ab56c). |
+| A bounty from the budget | [`0x7a7c387f…f6d9291c`](https://testnet.arcscan.app/tx/0x7a7c387f00110499e4e2c4d6665bb120ecbe7db716012d8a35338797f6d9291c) | From the lab wallet to AxonProtocolV2, 0.4 USDC, success in block 61860451: task #5, two runs at 0.2 USDC. Signed by Privy under the policy. |
+| Spending it elsewhere | none | Asked to sign a 0.01 USDC transfer to the deployer, Privy answered `400 policy_violation` ("RPC request denied due to policy violation") and signed nothing. |
+
+Privy will not broadcast on Arc for this app (`App is not authorized to transact
+on chain eip155:5042002`), so the app broadcasts what Privy signs. The policy
+still applies, because Privy enforces it when it signs.
 
 ### World
 
@@ -219,6 +243,8 @@ submission, ElGamal payouts, the archive of earlier chains.
   agent and treasury accounts, the buyer agent, the `corpus_sale` ledger, the
   Consensus Service sales log carrying the sha256 of every file served,
   `/api/agent/sales`, and the `/agents` page.
+- *Privy* — sign-in and embedded wallets in place of RainbowKit, the lab's
+  budget wallet and its policy, `/lab`, `/api/lab` and `scripts/privy-lab.mjs`.
 - *World* — AgentKit on the same route with AgentBook deciding free pulls,
   database-backed usage and nonce storage, `/api/agent/status`, and the
   integration feedback.
@@ -258,6 +284,14 @@ An agent buying task 1's corpus:
 node scripts/agent-buy.mjs http://localhost:3222 1
 ```
 
+A lab's budget in a Privy wallet, and a bounty posted from it. It needs
+`PRIVY_APP_ID` and `PRIVY_APP_SECRET`, and creates the policy and the wallet the
+first time:
+
+```bash
+node scripts/privy-lab.mjs
+```
+
 To let that agent earn free pulls, register its wallet in AgentBook with World
 App, then run the buyer again:
 
@@ -280,6 +314,14 @@ AXON_ADDRESS=<AxonProtocolV2 from the step above> \
 ## Stated plainly: what is not proven
 
 - **Testnets only.** Arc mainnet is not live, so none of this is on it.
+- **Privy sign-in has not been exercised in a browser.** The provider and the
+  embedded-wallet setup typecheck and the lab's server wallet works end to end,
+  but the dev server stalled under memory pressure before the sign-in modal
+  could be opened.
+- **Privy does not broadcast on Arc for this app.** The lab wallet's
+  transactions are signed by Privy and broadcast by this app.
+- **Privy lists no Continuity track.** Thenar existed before the event; whether
+  its Privy work is eligible for Privy's prizes is for ETHGlobal and Privy to say.
 - **No run here was driven by a person.** All five Arc runs came from
   `scripts/arc-run.mjs`. The station works in the browser, but no human run has
   been submitted to this Arc deployment yet.
