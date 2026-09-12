@@ -108,9 +108,17 @@ sentence in the docs would settle it.
 ## Selfie Check — integration notes, not yet proven end to end
 
 A second World integration was started in the same repository: gating the route
-that records a contribution behind a World ID Selfie Check. It is blocked on the
-relying-party signing key, so no proof has been verified end to end yet. This is
-what was learned getting that far, with IDKit 4.2.x.
+that records a contribution behind a World ID Selfie Check. No proof has been
+verified end to end yet. The first World app's relying-party signing key had
+been lost, so a fresh app was created, and the Developer Portal precheck reported
+face check enabled on it straight away. That app's signing key derives to the
+portal's signer address, and a request IDKit signs with it recovers to that
+address. What remains is the
+phone step: a Selfie Check in World App,
+World's `/api/v4/verify` accepting the proof, and the holder being admitted to
+the corpus security's whitelist on Hedera. The action allows one verification
+per human, so that is done once. This is what was learned getting that far,
+with IDKit 4.2.x.
 
 - **`rp_context` needs a key the portal shows once.** Every IDKit 4.2 request
   requires `rp_context`, which comes from
@@ -118,8 +126,18 @@ what was learned getting that far, with IDKit 4.2.x.
   The Developer Portal displays that signing key exactly once. This app's key was
   not on the machine doing the integration, and the portal gave no sign that a key
   existed or when it was last rotated. The docs do not say up front that a lost
-  key means rotating it. The flow stops there until the key is retrieved or
-  rotated.
+  key means rotating it. Here the way out was a new app rather than recovering
+  the old key.
+- **Which signature `rp_context` carries is not documented, and the helper that
+  rebuilds its message fails silently.** `signRequest` in
+  `@worldcoin/idkit-core/signing` returns `{ sig, nonce, createdAt, expiresAt }`,
+  with the nonce as a 66-character hex string. `sig` is an EIP-191 signature over
+  `computeRpSignatureMessage(nonceBytes, createdAt, expiresAt, action)` and
+  recovers to the portal's signer address — but only if the nonce is converted
+  to bytes first. Given the hex string `signRequest` returned,
+  `computeRpSignatureMessage` neither throws nor warns; it returns a plausible
+  81-byte message that verifies against nothing. Two attempts in this repository
+  reached different answers before that was found.
 - **The precheck cannot tell you whether an action exists.**
   `POST developer.world.org/api/v1/precheck/{app_id}` with `{ action }` was the only
   way found to see `enable_face_check` before writing code. It returned `true` both

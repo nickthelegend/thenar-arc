@@ -145,6 +145,37 @@ All three pulls are rows in `corpus_sale` and on the `/agents` page, each linked
 to its Hashscan transaction. The first two came before the sales topic existed
 and are shown as unlogged rather than backfilled.
 
+### Hedera: the corpus as a security, through the Asset Tokenization Studio
+
+| What | Id | Detail |
+| --- | --- | --- |
+| Security | [`0.0.10520394`](https://hashscan.io/testnet/contract/0.0.10520394) | "Thenar Robot Corpus", THNRC, ISIN USTHNRCRP019, EVM `0xDbf28C5C8cb5FA8960Bf413E6353B33066F20Fb7`. Equity with a common dividend right. |
+| Issuance | [`0x983b1e62…61fbcb3`](https://hashscan.io/testnet/transaction/0x983b1e62e8d32b59fe148e3676806d3c5252a0dfd5fab0e7d5a73de1161fbcb3) | `Factory.deployEquity` on the ATS factory `0.0.9213391` (resolver `0.0.9212226`). SUCCESS. |
+| Configuration | [`0x3ba258ab…63082bfe`](https://hashscan.io/testnet/transaction/0x3ba258ab0d021ddd3c16a71bd7de91859fc03ba31d5fb2d7ae488a0663082bfe) | Whitelist control list on, so only listed addresses can hold; issuer added to it. SUCCESS. |
+
+Read back from Hedera's mirror node: `name()` is "Thenar Robot Corpus",
+`symbol()` is "THNRC", and both transactions report SUCCESS. The issuer is
+testnet operator `0.0.9842030`, which holds the admin, issuer, control-list and
+corporate-actions roles.
+
+Lifecycle, run with `scripts/ats-lifecycle.mjs` on the live security:
+
+| Operation | Transaction | Result |
+| --- | --- | --- |
+| Compliance check | none (simulated) | Issuing a share to the agent wallet, which is not on the whitelist, is refused by the security with `AccountIsBlocked`; the same issue to the issuer passes. |
+| Issuance | [`0x9085a810…b8c6291c`](https://hashscan.io/testnet/transaction/0x9085a8101bca4cc72e471b48acd9e2e3a294a3af27a27b0f42a82bbcb8c6291c) | `issueByPartition`: 1,000 shares of treasury reserve to the issuer. SUCCESS. |
+| Distribution | [`0x8f0f9034…3cb04cb1`](https://hashscan.io/testnet/transaction/0x8f0f9034af3d4539b9f0aebac279ffc7073b454a64dc0a7b0d7657d43cb04cb1) | `setDividend`: dividend #1, 0.05 per share according to the script. SUCCESS. |
+
+Afterwards `totalSupply()` reads 1,000 and the issuer's `balanceOf` reads 1,000;
+the security has 0 decimals.
+
+The security's contract, a `ResolverProxy` from
+`@hashgraph/asset-tokenization-contracts` 8.0.0, is source-verified with an
+`exact_match` on
+[Sourcify](https://repo.sourcify.dev/296/0xDbf28C5C8cb5FA8960Bf413E6353B33066F20Fb7),
+which HashScan's verification uses. Its runtime bytecode matches. There is no
+creation match, because the ATS factory created it inside `deployEquity`.
+
 ### Privy
 
 | What | Id | Detail |
@@ -243,6 +274,12 @@ submission, ElGamal payouts, the archive of earlier chains.
   agent and treasury accounts, the buyer agent, the `corpus_sale` ledger, the
   Consensus Service sales log carrying the sha256 of every file served,
   `/api/agent/sales`, and the `/agents` page.
+- *Hedera tokenization* — the corpus issued as a security through the Asset
+  Tokenization Studio (`scripts/ats-deploy.mjs`, `scripts/ats-lifecycle.mjs`,
+  `/corpus-token`). Shares for paid runs are in progress.
+- *World Selfie Check* — a human proof required before a run is signed
+  (`/api/world/*`, `components/human-gate.tsx`). It is built and its World app
+  is configured; no proof has been verified end to end yet.
 - *Privy* — sign-in and embedded wallets in place of RainbowKit, the lab's
   budget wallet and its policy, `/lab`, `/api/lab` and `scripts/privy-lab.mjs`.
 - *World* — AgentKit on the same route with AgentBook deciding free pulls,
@@ -322,6 +359,13 @@ AXON_ADDRESS=<AxonProtocolV2 from the step above> \
   transactions are signed by Privy and broadcast by this app.
 - **Privy lists no Continuity track.** Thenar existed before the event; whether
   its Privy work is eligible for Privy's prizes is for ETHGlobal and Privy to say.
+- **The Selfie Check gate has not verified a proof yet.** It is built, and a World
+  app with Selfie Check enabled is configured, but no proof has gone through end
+  to end.
+- **Shares per paid run are not proven.** The security exists and is configured;
+  issuing shares from a settled run is still in progress.
+- **Hedera's ATS factory and resolver are not source-verified.** They are
+  Hedera's deployments, not Thenar's; the security Thenar deployed is verified.
 - **No run here was driven by a person.** All five Arc runs came from
   `scripts/arc-run.mjs`. The station works in the browser, but no human run has
   been submitted to this Arc deployment yet.

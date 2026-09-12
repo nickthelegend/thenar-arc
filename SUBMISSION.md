@@ -2,132 +2,130 @@
 
 Deadline: **Sunday 13 September 2026, 12:00 pm EDT.**
 
-A Continuity project. ETHOnline counts every track from one partner as a single
-partner prize, and a project can take at most three partners, so this enters:
+## What is entered
 
-| Partner | Tracks | Why it fits |
+The entry is narrowed to two tracks:
+
+| Partner | Track | What Thenar shows |
 | --- | --- | --- |
-| Hedera | Continuity, and AI & Agentic Payments | A live x402-gated service settled by Blocky402, an agent that has paid it three times, and a Consensus Service log of every sale |
-| World | AgentKit Continuity | AgentKit decides which agents pay for the corpus; AgentBook is resolved on every challenge |
-| Privy | Best B2B financial product, and Best financial flow | Operators sign in with Privy, and a lab's budget is a Privy wallet whose policy only lets it fund bounties |
+| Hedera | Tokenization of Anything | The corpus is a security issued through the Asset Tokenization Studio, "Thenar Robot Corpus" (THNRC), whose holders are controlled by a whitelist |
+| World | Selfie Check | A run is signed and paid only for a contributor who has passed a World ID Selfie Check, so one person cannot farm bounties from many wallets |
 
-Arc is where runs are recorded and paid, in USDC. It is infrastructure here, not
-a prize entry.
+Privy is the wallet infrastructure, not a prize entry: operators sign in with
+Privy, and a lab's budget is a Privy wallet that policy limits to funding
+bounties. Arc is where runs are recorded and paid, in USDC.
 
-**Eligibility risk, stated plainly:** Privy's page lists no Continuity track, and
-Thenar existed before the event. Whether its Privy work can be judged for
-Privy's prizes is for ETHGlobal and Privy to decide; ask in the partner channel
-before relying on it.
+**Eligibility — read this before submitting.** Thenar existed before ETHOnline
+(Monad Blitz Hyderabad V3). ETHOnline's rules, as read at the start of the event,
+let a pre-existing project win partner prizes only through a partner's
+Continuity track, and neither Tokenization of Anything nor Selfie Check is one.
+The same work also fits both partners' Continuity tracks, and every track from
+one partner counts as a single partner prize, so select those as well:
 
-The README has the architecture, every link, and a section on what is not
-proven. This file maps each track's requirements to the evidence and holds the
-video script.
+- **Hedera Continuity:** the ATS issuance, the x402 paywall settled by Blocky402
+  and the Consensus Service sales log are all Hedera services added after
+  `e4f131d`.
+- **World AgentKit Continuity:** AgentKit and AgentBook decide which agents pay
+  for the corpus.
+
+Confirm with ETHGlobal whether the non-Continuity tracks are open to this project
+before relying on them.
 
 ---
 
-## Hedera — Continuity, and AI & Agentic Payments
+## Hedera — Tokenization of Anything
 
 | Requirement | Evidence |
 | --- | --- |
-| Built for a previous hackathon | Monad Blitz Hyderabad V3, 3rd place |
-| Substantive new work, new Hedera services | x402 paywall settled by Blocky402, Hedera accounts, and a Consensus Service sales log — none of it existed before `e4f131d` |
-| README separating before and after, with commits | README, "What existed before ETHOnline, and what is new" |
-| Live x402-gated service on Hedera testnet, settled through Blocky402 | `GET /api/agent/corpus`; `accepts[0].extra.feePayer` is Blocky402's `0.0.7162784` |
-| An agent completing a real paid request end to end | Three settlements, each 0.5 HBAR agent → treasury: `0.0.7162784@1789279979.058986056`, `0.0.7162784@1789281472.024056054`, `0.0.7162784@1789282116.389653271` |
-| Extra points: verifiable audit trail | Every pull is posted to Consensus Service topic `0.0.10519262` with the sha256 of the served file; the agent checks its copy against the mirror node (message #1 matches) |
-| README covering setup, architecture, and the payment flow | README, "Run it", "Architecture", "The payment flow, step by step" |
+| Use the Asset Tokenization Studio to issue or manage a tokenised asset | Issued through the ATS factory with `Factory.deployEquity` (factory `0.0.9213391`, resolver `0.0.9212226`): "Thenar Robot Corpus", THNRC, ISIN USTHNRCRP019, with a common dividend right. `scripts/ats-deploy.mjs` |
+| Deploy and demonstrate on Hedera testnet | Security [`0.0.10520394`](https://hashscan.io/testnet/contract/0.0.10520394) (`0xDbf28C5C8cb5FA8960Bf413E6353B33066F20Fb7`). Issuance [`0x983b1e62…61fbcb3`](https://hashscan.io/testnet/transaction/0x983b1e62e8d32b59fe148e3676806d3c5252a0dfd5fab0e7d5a73de1161fbcb3): SUCCESS |
+| Configuration | Whitelist control list on (`isWhiteList=true`): only listed addresses can hold. Issuer added to it in [`0x3ba258ab…63082bfe`](https://hashscan.io/testnet/transaction/0x3ba258ab0d021ddd3c16a71bd7de91859fc03ba31d5fb2d7ae488a0663082bfe): SUCCESS |
+| At least one lifecycle operation | Run with `scripts/ats-lifecycle.mjs` on the live security. **Compliance:** issuing a share to the agent wallet `0x9a6C…63aA`, which is not on the whitelist, is refused by the security with `AccountIsBlocked` (a simulated call; nothing was sent), and the same issue to the issuer passes. **Issuance:** `issueByPartition`, 1,000 shares of treasury reserve to the issuer, [`0x9085a810…b8c6291c`](https://hashscan.io/testnet/transaction/0x9085a8101bca4cc72e471b48acd9e2e3a294a3af27a27b0f42a82bbcb8c6291c): SUCCESS. **Distribution:** `setDividend`, dividend #1 at 0.05 per share according to the script, [`0x8f0f9034…3cb04cb1`](https://hashscan.io/testnet/transaction/0x8f0f9034af3d4539b9f0aebac279ffc7073b454a64dc0a7b0d7657d43cb04cb1): SUCCESS. Afterwards `totalSupply()` is 1,000 and the issuer holds 1,000. |
+| Public repo; contracts verified on HashScan where applicable | This repository. The contract Thenar deployed — the security's `ResolverProxy`, from `@hashgraph/asset-tokenization-contracts` 8.0.0, solc 0.8.28 — is source-verified with an `exact_match` on Sourcify, which HashScan's verification uses ([repo.sourcify.dev](https://repo.sourcify.dev/296/0xDbf28C5C8cb5FA8960Bf413E6353B33066F20Fb7)). The runtime bytecode matches; there is no creation match because the factory created the contract inside `deployEquity`. The ATS factory and resolver are Hedera's own deployments and show no match. `scripts/ats-verify.mjs` reproduces the verification. |
 | Demo video, five minutes or less | Script below |
 
----
+Checked against Hedera's mirror node rather than taken on trust: the contract
+exists at that EVM address, `name()` returns "Thenar Robot Corpus" and
+`symbol()` returns "THNRC", and both transactions report SUCCESS. The issuer is
+testnet operator `0.0.9842030`, which holds the admin, issuer, control-list and
+corporate-actions roles.
 
-## World — AgentKit Continuity
-
-| Requirement | Evidence |
-| --- | --- |
-| Uses AgentKit in a meaningful way | It is the difference between an agent paying and not: `createAgentkitHooks` in `free-trial` mode in front of the paid corpus route, `createAgentkitClient` in the buyer |
-| Shows a working app | `/agents` page; `scripts/agent-buy.mjs` against the live route |
-| Registers or resolves agents through AgentBook | Every AgentKit challenge is resolved with `lookupHuman` on World Chain; `/api/agent/status` exposes the same lookup |
-| Tested with the World ID Sandbox App | To do: register `0x9a6C46E7115CfB5FF5a2265E5a1B955038cb63aA`, then rerun the buyer and show a free pull |
-| Feedback document | [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md) — integration sections written; Developer Portal and Sandbox App sections to be filled in after registering |
+In progress in the app, not yet proven: holders are added to the whitelist only
+after a Selfie Check, and a paid run issues shares to its contributor
+(`lib/server/ats.ts`, `/api/submitted`, `/corpus-token`).
 
 ---
 
-## Privy — Best B2B financial product
+## World — Selfie Check
 
 | Requirement | Evidence |
 | --- | --- |
-| Privy as a core part of the product | Operators sign in through Privy (email makes an embedded wallet on Arc); a lab's data budget is a Privy wallet |
-| Create or use at least one Privy wallet | Server wallet `t3f4kq36uzu0zieqd5i425p0` (`0x7b4d4a773fCA1E20D2361411B34655210E44E51a`), created with its policy attached |
-| A business or organisation use case | A robotics lab paying for demonstrations without anyone holding the key that pays |
-| A functional B2B workflow | Treasury operation: posting a bounty from the lab budget — `/lab`, `/api/lab`, `scripts/privy-lab.mjs`. Task #5 was funded this way. |
-| At least one Privy control | Policy `sf7wzkldy5364a56jol16spa`: `to` must be AxonProtocolV2, `chain_id` 5042002, `value` ≤ 1 USDC. Asked to send 0.01 USDC elsewhere, Privy answered `policy_violation` and signed nothing. |
-| Working demo and source | `/lab`; this repository |
+| Uses Selfie Check, or a compatible World ID credential flow, in a meaningful way | `/api/verify` refuses to sign a run without a World ID Selfie Check proof for the contributor (`lib/server/world-id.ts`, `/api/world/*`, `components/human-gate.tsx`) |
+| Treats it as a risk, eligibility, fairness or abuse-prevention signal | Abuse prevention: a nullifier is one per human per action, and a wallet signature over the server's nonce binds it to one address, so one person cannot collect bounties from many wallets |
+| Feedback document | [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md), "Selfie Check — integration notes" |
+| Shows a working app | **Not yet proven end to end.** A new World app, "thenar", is configured, and the Developer Portal precheck reports face check enabled for the `thenar-contribute` action. The app's signing key derives to the portal's signer address, and a request IDKit signs with it recovers to that address. Still to do, once: a Selfie Check in World App, World's `/api/v4/verify` accepting the proof, and the Hedera whitelist admission. |
 
-## Privy — Best financial flow
+---
 
-| Requirement | Evidence |
-| --- | --- |
-| Privy as a core part, and a Privy wallet | As above |
-| One functional financial flow using a generally available Privy feature | 0.4 USDC moved from the Privy wallet into escrow on Arc, in a transaction signed with Privy's `eth_signTransaction` under a policy: [`0x7a7c387f…`](https://testnet.arcscan.app/tx/0x7a7c387f00110499e4e2c4d6665bb120ecbe7db716012d8a35338797f6d9291c) |
-| Working demo and source | `/lab`; this repository |
+## Also in the repository, not entered
 
-Not yet demonstrated: an operator's Privy embedded wallet receiving a payout.
-The sign-in is wired, but it has not been exercised in a browser.
+These are working and linked from the README. They support the Continuity
+entries above.
+
+- **Hedera x402 and World AgentKit:** an agent pays 0.5 HBAR per corpus through
+  Blocky402, three settlements so far, each logged to Consensus Service topic
+  `0.0.10519262` with the sha256 of the file served. AgentBook decides free pulls.
+- **Privy:** a lab wallet under a policy funded task #5 on Arc
+  ([`0x7a7c387f…`](https://testnet.arcscan.app/tx/0x7a7c387f00110499e4e2c4d6665bb120ecbe7db716012d8a35338797f6d9291c))
+  and was refused a transfer anywhere else with `policy_violation`.
+- **Arc:** runs recorded and paid in USDC; all ten contracts `exact_match` on
+  Sourcify.
 
 ---
 
 ## Video script (under five minutes)
 
 Record with the dev server on `http://localhost:3222`, a terminal beside it, and
-Arcscan and Hashscan in tabs.
+HashScan in a tab.
 
 **0:00–0:30 — What it is.** "Thenar pays people to record robot-arm
-demonstrations and sells the result as training data. Labs fund it from a Privy
-wallet, runs are paid in USDC on Arc, and agents buy the data over HTTP on
-Hedera." Show `/hub`.
+demonstrations and sells the result as training data. On Hedera the corpus is a
+security; on World, only a verified human can be paid for a run."
 
-**0:30–1:40 — Privy: a lab's budget that can only fund bounties.** Open `/lab`.
-Point at the policy, read back from Privy: AxonProtocolV2 only, Arc only, at most
-one USDC. Post a bounty of 2 runs at 0.1 USDC: signed by Privy, settled on Arc,
-new task, Arcscan link. Raise the runs until the escrow is over one USDC and post
-again: refused by Privy. Then "Send 0.01 USDC" to any address: refused, nothing
-signed.
+**0:30–2:00 — Hedera: the corpus as a security.** Open the security on HashScan:
+name, symbol, the issuance through the ATS factory, the whitelist. Run
+`node scripts/ats-lifecycle.mjs state`, then
+`node scripts/ats-lifecycle.mjs compliance 0x9a6C46E7115CfB5FF5a2265E5a1B955038cb63aA`:
+the unlisted agent wallet is refused with `AccountIsBlocked`. The reserve and the
+dividend are already on chain, so open their transactions rather than issuing again. Open each transaction on
+HashScan. Show `/corpus-token` if it is ready.
 
-**1:40–2:10 — Privy sign-in.** Click Connect, sign in with an email, and show the
-embedded wallet address in the nav. If sign-in does not work on the day, skip
-this and say so.
+**2:00–3:30 — World: one human, one set of paid runs.** At the station, try to
+submit without a proof and show the refusal. Pass the Selfie Check in World App
+or the Sandbox App, then submit: signed, and paid on Arc. If no proof has gone
+through by recording time, say so and show the refusal path and the feedback
+document.
 
-**2:10–3:30 — Hedera: an agent buys the corpus.** Run
-`node scripts/agent-buy.mjs http://localhost:3222 1`. Walk the log: AgentKit
-detected, signed, retried, still 402 (AgentBook says no human), then paid; status
-200; settled, with the Hedera transaction id; then the audit line — the sales
-topic's newest message logs the same sha256 as the file the agent received. Open
-Hashscan: 0.5 HBAR from the agent's account to the treasury, fee paid by
-Blocky402. Open `/agents`: the terms, the sales topic, the sale with its
-settlement and log links.
+**3:30–4:20 — Privy underneath.** Sign in with an email and show the embedded
+wallet. Open `/lab`: post a bounty from the Privy wallet, then ask it to send
+USDC elsewhere and show Privy's refusal.
 
-**3:30–4:20 — World: the free path.** After registering the agent in AgentBook
-with the Sandbox App, run the buyer again: "settled nothing: AgentKit granted
-this pull". Show `/agents` → "Is a human behind this agent?" answering
-human-backed. If registration has not happened, say so and show the lookup
-answering "not in AgentBook".
-
-**4:20–5:00 — What is new.** `git log --oneline e4f131d..HEAD`. One sentence
-each: Privy, Hedera, World. End on the "not proven" list.
+**4:20–5:00 — What is new.** `git log --oneline e4f131d..HEAD`, then the "not
+proven" list.
 
 ---
 
 ## Before submitting
 
-- [ ] Register the project as a Continuity project on ETHGlobal and disclose the
-      pre-existing work (link the README section).
-- [ ] Select Hedera (Continuity and AI & Agentic Payments), World (AgentKit
-      Continuity) and Privy (both tracks). Each partner counts once.
-- [ ] Ask in Privy's partner channel whether a Continuity project is eligible.
-- [ ] Register the agent wallet in AgentBook with World App or the Sandbox App,
-      rerun `scripts/agent-buy.mjs`, and confirm a free pull.
+- [ ] Register as a Continuity project on ETHGlobal and disclose the pre-existing
+      work (link the README section).
+- [ ] Select Hedera (Tokenization of Anything, and Continuity) and World (Selfie
+      Check, and AgentKit Continuity).
+- [ ] Confirm with ETHGlobal whether the non-Continuity tracks are open to a
+      Continuity project.
+- [ ] Pass one Selfie Check proof end to end with the new World app, and add the
+      evidence above.
 - [ ] Fill in the Developer Portal and Sandbox App sections of
-      `docs/FEEDBACK-WORLD.md`, and submit it where World's track asks.
-- [ ] Open `/lab` and sign in once with Privy in a browser before recording.
+      `docs/FEEDBACK-WORLD.md`.
 - [ ] Record the video from the script above and add its link to the README.
 - [ ] Push the final commit and submit before 12:00 pm EDT.
