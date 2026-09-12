@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { DimRule } from "@/components/primitives";
-import { fmtDate, fmtInt, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
-import { useTaskCatalogue } from "@/components/tasks-provider";
+import { fmtDate, fmtInt, fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { CURRENCY } from "@/lib/chain";
+import { useTaskCatalogue, type TaskWithScene } from "@/components/tasks-provider";
 import { cn } from "@/lib/cn";
 
 /**
@@ -70,6 +71,33 @@ export default function CorpusPage() {
       .catch(() => { if (live) setAnswer({ key: `${outcome}:${taskId}`, data: null }); });
     return () => { live = false; };
   }, [outcome, taskId]);
+
+  /**
+   * What the chosen task holds under every outcome, fetched only when the
+   * chosen filter came back empty.
+   *
+   * An empty list is the buyer's most consequential screen and it said the
+   * least: four zeros and one sentence that fitted every possible reason. There
+   * is a large difference between "nobody has driven this task" and "two people
+   * have and neither cleared the floor", and only the second is a reason to
+   * come back later. The distinction is one request away and was never made.
+   */
+  const [why, setWhy] = useState<{ key: string; episodes: Episode[] } | null>(null);
+  const empty = Boolean(data) && data!.episodes.length === 0;
+
+  useEffect(() => {
+    if (!empty) return;
+    // Already the unfiltered question, so its own answer is the explanation.
+    if (outcome === "all") { setWhy({ key, episodes: [] }); return; }
+    let live = true;
+    const q = new URLSearchParams({ outcome: "all" });
+    if (taskId !== "all") q.set("taskId", String(taskId));
+    fetch(`/api/corpus?${q}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { episodes: Episode[] }) => { if (live) setWhy({ key, episodes: d.episodes }); })
+      .catch(() => { if (live) setWhy({ key, episodes: [] }); });
+    return () => { live = false; };
+  }, [empty, outcome, taskId, key]);
 
   const totals = useMemo(() => {
     const e = data?.episodes ?? [];
@@ -148,10 +176,14 @@ export default function CorpusPage() {
           {Array.from({ length: 6 }, (_, i) => <li key={i} className="hatch h-9" />)}
         </ul>
       ) : data.episodes.length === 0 ? (
-        <p className="mt-4 max-w-[62ch] font-mono text-[13px] text-scribe-3">
-          Nothing recorded under that filter yet. Every episode here is a real
-          run somebody drove, so an empty list means nobody has driven one.
-        </p>
+        <EmptyCorpus
+          outcome={outcome}
+          task={taskId === "all" ? undefined : tasks?.find((t) => t.id === taskId)}
+          taskId={taskId}
+          floor={data.floor}
+          all={why?.key === key ? why.episodes : null}
+          onShowEverything={() => setOutcome("all")}
+        />
       ) : (
         <ol className="mt-2">
           {data.episodes.map((e) => (
@@ -196,5 +228,104 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Why there is nothing here, and what would change it.
+ *
+ * Written for the person deciding whether to pay for this corpus. "Nothing yet"
+ * is true of an unworked task, a task everybody failed, and a task whose runs
+ * were driven but never signed, and those are three different answers to
+ * "should I come back". So it counts what the task actually holds and says
+ * which one it is.
+ *
+ * Nothing here is inferred. The breakdown is the same endpoint asked without
+ * the outcome filter, and the slots and the rate are the catalogue's, read from
+ * the contract like everywhere else.
+ */
+function EmptyCorpus({
+  outcome, task, taskId, floor, all, onShowEverything,
+}: {
+  outcome: (typeof OUTCOMES)[number]["key"];
+  task: TaskWithScene | undefined;
+  taskId: number | "all";
+  floor: number;
+  all: Episode[] | null;
+  onShowEverything: () => void;
+}) {
+  const where = taskId === "all" ? "in the corpus" : `on task #${taskId}`;
+
+  // Still asking. Said rather than shown as a blank, because a buyer staring at
+  // an empty list wants to know whether it is empty or still arriving.
+  if (outcome !== "all" && all === null) {
+    return (
+      <p className="mt-4 max-w-[64ch] font-mono text-[13px] text-scribe-3">
+        Nothing under that filter. Checking what{" "}
+        {taskId === "all" ? "the corpus" : `task #${taskId}`} holds&hellip;
+      </p>
+    );
+  }
+
+  const counts = {
+    paid: (all ?? []).filter((e) => e.outcome === "paid").length,
+    failed: (all ?? []).filter((e) => e.outcome === "failed").length,
+    unsubmitted: (all ?? []).filter((e) => e.outcome === "unsubmitted").length,
+  };
+  const total = counts.paid + counts.failed + counts.unsubmitted;
+
+  return (
+    <div className="mt-4 max-w-[64ch]">
+      {total === 0 ? (
+        <>
+          <p className="text-[14px] leading-relaxed text-scribe-2">
+            {taskId === "all"
+              ? "Nothing has been driven yet, anywhere in the corpus."
+              : `Nobody has driven task #${taskId} yet.`}{" "}
+            Every episode here is a run a person actually recorded, so an empty
+            list is a statement about the work rather than about the index.
+          </p>
+          {task ? (
+            <p className="mt-2 text-[13px] leading-relaxed text-scribe-3">
+              Task #{task.id} has {fmtInt(Math.max(0, task.slotsTotal - task.slotsFilled))}{" "}
+              {task.slotsTotal - task.slotsFilled === 1 ? "slot" : "slots"} unfilled at{" "}
+              {fmtMon(task.rewardMon)} {CURRENCY} a run.{" "}
+              <Link href={`/station/${task.id}`} className="text-signal hover:text-signal-hi">
+                Drive it &rarr;
+              </Link>
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <p className="text-[14px] leading-relaxed text-scribe-2">
+            {fmtInt(total)} {total === 1 ? "recording" : "recordings"} {where}, and{" "}
+            {outcome === "paid"
+              ? total === 1
+                ? `it did not clear the ${fmtScore(floor)} a run has to reach to be paid`
+                : `not one of them cleared the ${fmtScore(floor)} a run has to reach to be paid`
+              : outcome === "failed"
+                ? total === 1
+                  ? `it cleared that floor`
+                  : `every one of them cleared that floor`
+                : total === 1
+                  ? `its operator signed and sent it`
+                  : `every operator signed and sent theirs`}
+            {" — so there is nothing under this filter."}
+          </p>
+          <p className="mt-2 font-mono text-[12px] text-scribe-3">
+            {counts.paid} paid &middot; {counts.failed} below the floor &middot;{" "}
+            {counts.unsubmitted} never sent
+          </p>
+          <button
+            type="button"
+            onClick={onShowEverything}
+            className="mt-3 border border-rule-strong px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-scribe transition-colors hover:border-scribe"
+          >
+            Show everything {taskId === "all" ? "" : `on #${taskId}`}
+          </button>
+        </>
+      )}
+    </div>
   );
 }

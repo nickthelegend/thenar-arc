@@ -128,6 +128,28 @@ const ITEMS = [
                  r.allMatch && r.bytes && r.honest;
       return [ok, JSON.stringify(r)];
   }],
+  ["A33", "/corpus",          async (p) => {
+      // The buyer's most consequential screen is the empty one, and there are
+      // three different reasons it can be empty. Task 5 has never been driven;
+      // task 4 has two recordings and neither cleared the floor. Both are read
+      // from the same endpoint the list uses.
+      const chip = async (label) => {
+        await p.getByRole("button", { name: label, exact: true }).click();
+        await p.waitForTimeout(2500);
+        return p.evaluate(() => document.body.innerText);
+      };
+      await p.waitForTimeout(2500);
+      const unworked = await chip("#5");
+      const noneCleared = (await chip("#4"), await chip("Paid"));
+      const r = {
+        unworked: /Nobody has driven task #5 yet\./i.test(unworked),
+        slots: /slots unfilled at [\d.]+ AVAX a run/i.test(unworked),
+        counted: /2 recordings on task #4/i.test(noneCleared),
+        floor: /not one of them cleared the 40\.00 a run has to reach to be paid/i.test(noneCleared),
+        breakdown: /0 paid · 2 below the floor · 0 never sent/.test(noneCleared),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

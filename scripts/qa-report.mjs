@@ -47,6 +47,7 @@ const MEANS = {
   A30:"Warp payload decoded and agreeing with the protocol, field by field",
   A31:"Repeated runs on one task, differenced oldest first",
   A32:"One run is not a progression and is not shown as one",
+  A33:"An empty corpus says which of the three reasons it is empty for",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",
