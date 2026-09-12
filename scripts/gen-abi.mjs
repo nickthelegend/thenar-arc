@@ -14,7 +14,7 @@ const WANT = {
   ContributionRecord: ["balanceOf", "pending", "totalSupply", "decimals", "symbol", "name", "sync"],
   Referrals: ["bounty", "remaining", "paidOut", "referrerOf", "referredBy", "MAX_PER_REFERRER", "MIN_NEWCOMER_WEIGHT"],
   PrizePool: ["taskId", "closesAt", "entrantCount", "totalWeight", "settled", "weightOf", "projected", "entrants"],
-  Foundry: ["proposalCount", "getProposal", "VOTING_PERIOD", "MIN_WEIGHT_TO_PROPOSE", "cost"],
+  Foundry: ["proposalCount", "getProposal", "VOTING_PERIOD", "MIN_WEIGHT_TO_PROPOSE", "cost", "propose", "vote", "execute", "voted"],
   ConfidentialPayouts: ["totalOf", "keyOf", "entries"],
   LicenceReceipt: ["payloadFor", "sourceChain", "FORMAT"],
   // The only way to buy the thing the corpus gate sells. Deployed, verified,

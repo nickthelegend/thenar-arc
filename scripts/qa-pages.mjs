@@ -320,6 +320,28 @@ const ITEMS = [
       };
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A44", "/foundry",         async (p) => {
+      // The treasury the contributors decide how to spend: deployed, funded
+      // with 0.01 AVAX, and reachable from no page — so proposal 0 passed
+      // 16,500 to nil, closed, and has sat unexecuted ever since.
+      await p.waitForTimeout(8000);
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          here: /TREASURY/.test(t),
+          funded: /Treasury\s*\n?\s*0\.0100 AVAX/.test(t),
+          floor: /To propose\s*\n?\s*40\.00/.test(t),
+          proposal: /Put the bowl on the rack/.test(t),
+          tally: /165\.00 for · 0\.00 against/.test(t),
+          // The decision was made and never carried out.
+          waiting: /passed, waiting to be executed/.test(t),
+          // No vote button on a closed ballot: that is an offer to send a
+          // transaction the contract would revert.
+          noVote: !/vote for/i.test(t),
+        };
+      });
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

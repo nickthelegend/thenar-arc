@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
+import { Treasury } from "@/components/treasury";
 import { useSession } from "@/components/session";
 import { useCapTable, usePolicies, type ChainPolicy } from "@/lib/hooks";
 import { useThenarWrite } from "@/lib/write";
@@ -41,6 +42,12 @@ export default function FoundryPage() {
           </ul>
         </>
       ) : null}
+
+      {/* The treasury the contributors decide how to spend.
+          Deployed, funded, and reachable from no page — so proposal 0 passed
+          16,500 to nil, closed, and has sat unexecuted ever since. */}
+      <DimRule className="mt-10" note="Treasury" />
+      <Treasury />
 
       <DimRule className="mt-10" note="Minted policies" />
 
