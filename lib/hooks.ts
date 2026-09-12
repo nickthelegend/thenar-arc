@@ -555,25 +555,25 @@ export function useAttestation(policyId: number | undefined) {
 }
 
 /**
- * What a submit costs, measured rather than estimated.
+ * What a call costs, measured rather than estimated.
  *
  * The station has always told an operator what a run pays and never what it
  * costs, and the two arrive together — one transaction records the trajectory
- * and pays for it, so the gas comes out of the same movement as the reward.
- * Until now the only place gas appeared was the receipt, after the operator had
- * already committed to paying it.
+ * and pays for it. The same hole was on the funder's side: /post priced the
+ * escrow to four decimals and said nothing about the transaction that places
+ * it. In both cases gas only appeared afterwards, when there was nothing left
+ * to decide.
  *
- * It cannot be estimated the usual way. `estimateContractGas` needs the
- * verifier's signature over this exact trajectory, and that signature is
- * produced inside the submit, after the operator has decided. So the figure
- * here is not an estimate of this transaction; it is what the last handful of
- * real ones actually burned, read off their receipts, priced at the gas price
- * the chain is quoting right now.
+ * It cannot be estimated the usual way. `estimateContractGas` for a submit
+ * needs the verifier's signature over that exact trajectory, which does not
+ * exist until the submit is under way. So the figure here is not an estimate of
+ * this transaction; it is what the last handful of real ones actually burned,
+ * read off their receipts, priced at the gas the chain is quoting right now.
  *
- * Split by which function was called, because they are not the same
+ * Keyed by which function was called, because they are not the same
  * transaction. `submitTrajectoryWithPasskey` verifies a P-256 signature through
- * a precompile before it does anything else, and quoting one path's gas for the
- * other would be quoting a number for a transaction nobody sent.
+ * a precompile before it does anything else, and quoting one path's gas for
+ * another would be quoting a number for a transaction nobody sent.
  */
 export type SubmitCost = {
   /** Wei per gas the chain is quoting now. */
@@ -594,47 +594,73 @@ export type SubmitCost = {
   chargedToTheLimit: boolean;
 };
 
-const PLAIN_SELECTOR = toFunctionSelector(
-  "submitTrajectory(uint256,bytes32,string,uint16,bytes)",
-).toLowerCase();
-const PASSKEY_SELECTOR = toFunctionSelector(
-  "submitTrajectoryWithPasskey(uint256,bytes32,string,uint16,bytes,bytes32,bytes32)",
-).toLowerCase();
+/** The calls whose cost anything asks about, and the event that finds them. */
+const ACCEPTED_EVENT = {
+  type: "event",
+  name: "TrajectoryAccepted",
+  inputs: [
+    { name: "trajectoryId", type: "uint256", indexed: true },
+    { name: "taskId", type: "uint256", indexed: true },
+    { name: "contributor", type: "address", indexed: true },
+    { name: "trajHash", type: "bytes32", indexed: false },
+    { name: "cid", type: "string", indexed: false },
+    { name: "score", type: "uint16", indexed: false },
+    { name: "paid", type: "uint256", indexed: false },
+  ],
+} as const;
+
+const TASK_CREATED_EVENT = {
+  type: "event",
+  name: "TaskCreated",
+  inputs: [
+    { name: "taskId", type: "uint256", indexed: true },
+    { name: "funder", type: "address", indexed: true },
+    { name: "name", type: "string", indexed: false },
+    { name: "slots", type: "uint32", indexed: false },
+    { name: "reward", type: "uint128", indexed: false },
+    { name: "scenario", type: "uint8", indexed: false },
+    { name: "difficulty", type: "uint8", indexed: false },
+  ],
+} as const;
+
+const CALLS = {
+  submit: {
+    event: ACCEPTED_EVENT,
+    signature: "submitTrajectory(uint256,bytes32,string,uint16,bytes)",
+  },
+  submitWithPasskey: {
+    event: ACCEPTED_EVENT,
+    signature: "submitTrajectoryWithPasskey(uint256,bytes32,string,uint16,bytes,bytes32,bytes32)",
+  },
+  createTask: {
+    event: TASK_CREATED_EVENT,
+    signature: "createTask(string,uint32,uint128,uint8,uint8)",
+  },
+} as const;
+
+export type CallKind = keyof typeof CALLS;
 
 const COST_LOOKBACK = 200_000n;
 const COST_SAMPLES = 6;
 
-export function useSubmitCost(withPasskey: boolean) {
+export function useObservedCost(kind: CallKind) {
   const client = usePublicClient();
+  const call = CALLS[kind];
 
   const q = useQuery({
-    queryKey: ["submit-cost"],
+    queryKey: ["observed-cost", kind],
     enabled: IS_DEPLOYED,
     // The gas price moves; the observed gas of a fixed code path does not.
     // A minute is short enough that the price shown is the price charged and
-    // long enough that opening the snap does not re-scan the chain.
+    // long enough that opening a panel does not re-scan the chain.
     staleTime: 60_000,
     queryFn: async () => {
       if (!client) return null;
       const [head, gasPriceWei] = await Promise.all([client.getBlockNumber(), client.getGasPrice()]);
 
-      const event = {
-        type: "event",
-        name: "TrajectoryAccepted",
-        inputs: [
-          { name: "trajectoryId", type: "uint256", indexed: true },
-          { name: "taskId", type: "uint256", indexed: true },
-          { name: "contributor", type: "address", indexed: true },
-          { name: "trajHash", type: "bytes32", indexed: false },
-          { name: "cid", type: "string", indexed: false },
-          { name: "score", type: "uint16", indexed: false },
-          { name: "paid", type: "uint256", indexed: false },
-        ],
-      } as const;
-
       const logs = await client.getLogs({
         address: AXON_ADDRESS,
-        event,
+        event: call.event,
         fromBlock: head > COST_LOOKBACK ? head - COST_LOOKBACK : 0n,
         toBlock: head,
       });
@@ -675,10 +701,10 @@ export function useSubmitCost(withPasskey: boolean) {
   return useMemo((): SubmitCost | null => {
     if (!q.data) return null;
     const { gasPriceWei, measured } = q.data;
-    const want = withPasskey ? PASSKEY_SELECTOR : PLAIN_SELECTOR;
+    const want = toFunctionSelector(call.signature).toLowerCase();
 
-    // Only this path's own samples. There is no falling back to the other
-    // path's: quoting one function's gas for another is quoting a number for a
+    // Only this call's own samples. There is no falling back to another's:
+    // quoting one function's gas for a different one is quoting a number for a
     // transaction nobody sent, and saying nothing is the honest answer when
     // nothing has gone that way yet.
     const pool = measured.filter((m) => m.selector === want);
@@ -695,13 +721,14 @@ export function useSubmitCost(withPasskey: boolean) {
     /**
      * Every sample charged at least half the limit its wallet set.
      *
-     * Nine submits on this contract, and in every one the receipt's gasUsed is
-     * exactly max(what the call needed, half the gas limit). A re-estimate of
-     * one of them against its own parent block answers 394,668; it was charged
-     * 600,000, which is half of the 1,200,000 its wallet asked for. So a wallet
-     * that doubles an estimate for safety does not buy headroom here — it sets
-     * the price. Reported rather than corrected: fixing it means pinning a gas
-     * limit on the submit, and a limit pinned too tight fails a run for real.
+     * Fifteen transactions on this contract — nine submits and six task
+     * postings — and in every one the receipt's gasUsed is exactly max(what the
+     * call needed, half the gas limit). A re-estimate of one submit against its
+     * own parent block answers 394,668; it was charged 600,000, half of the
+     * 1,200,000 its wallet asked for. So a wallet that doubles an estimate for
+     * safety does not buy headroom here — it sets the price. Reported rather
+     * than corrected: fixing it means pinning a gas limit, and a limit pinned
+     * too tight fails a real transaction.
      */
     const chargedToTheLimit = pool.every((m) => m.gas >= Math.floor(m.limit / 2));
 
@@ -714,5 +741,44 @@ export function useSubmitCost(withPasskey: boolean) {
       costMon: Number(gasPriceWei * BigInt(medianGas)) / 1e18,
       chargedToTheLimit,
     };
-  }, [q.data, withPasskey]);
+  }, [q.data, call.signature]);
+}
+
+/** The station's own question, in the station's own terms. */
+export function useSubmitCost(withPasskey: boolean) {
+  return useObservedCost(withPasskey ? "submitWithPasskey" : "submit");
+}
+
+/**
+ * How every accepted run on this deployment actually scored.
+ *
+ * A funder escrows slots times reward and the contract pays reward scaled by
+ * the run's score, so the escrow is a ceiling rather than a price. What it will
+ * really draw depends on how well people drive, and this deployment has an
+ * answer to that — it is on the chain. Read here so /post can quote it instead
+ * of leaving a funder to assume every run pays in full.
+ */
+export function useAcceptedScores() {
+  const client = usePublicClient();
+
+  return useQuery({
+    queryKey: ["accepted-scores"],
+    enabled: IS_DEPLOYED,
+    staleTime: 60_000,
+    queryFn: async (): Promise<{ n: number; meanScore: number } | null> => {
+      if (!client) return null;
+      const head = await client.getBlockNumber();
+      const logs = await client.getLogs({
+        address: AXON_ADDRESS,
+        event: ACCEPTED_EVENT,
+        // Wider than the cost scan on purpose: a median gas figure wants recent
+        // transactions, and a mean score wants all of them.
+        fromBlock: head > 1_000_000n ? head - 1_000_000n : 0n,
+        toBlock: head,
+      });
+      if (!logs.length) return { n: 0, meanScore: 0 };
+      const scores = logs.map((l) => Number(l.args.score ?? 0));
+      return { n: scores.length, meanScore: scores.reduce((a, b) => a + b, 0) / scores.length };
+    },
+  });
 }

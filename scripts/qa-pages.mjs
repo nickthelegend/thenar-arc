@@ -150,6 +150,26 @@ const ITEMS = [
       };
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A34", "/post",            async (p) => {
+      // A funder is about to commit money. The escrow figure was the smallest
+      // of the three things they needed; these are the other two, read off the
+      // chain rather than worked as an example.
+      await p.waitForTimeout(9000);
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          here: /BEFORE YOU SIGN/i.test(t),
+          // The deployment's own record, not an illustration.
+          ceiling: /9 accepted runs on this deployment averaged 91\.\d\d/.test(t),
+          drawn: /would draw about 0\.0364 AVAX of the 0\.0400 escrowed/.test(t),
+          // The single most consequential fact about posting here.
+          noRefund: /There is no refund path/.test(t),
+          // And no gas number invented for a call nobody has made.
+          gasHonest: /no task has yet been created through the call this button makes/.test(t),
+        };
+      });
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

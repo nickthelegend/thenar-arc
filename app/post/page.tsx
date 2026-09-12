@@ -10,6 +10,7 @@ import { useThenarWrite } from "@/lib/write";
 import { txUrl, CURRENCY } from "@/lib/chain";
 import { parSecondsFor } from "@/lib/par";
 import { cn } from "@/lib/cn";
+import { PostPreflight } from "@/components/post-preflight";
 import { fmtMon, fmtSeconds, shortHash } from "@/lib/format";
 import { PropPicker } from "@/components/prop-picker";
 import { RoomPicker } from "@/components/room-picker";
@@ -267,6 +268,11 @@ export default function PostTaskPage() {
           </span>
         </div>
       </div>
+
+      {/* What the escrow will actually draw, what happens to the rest, and what
+          the transaction placing it costs. The block above priced the escrow to
+          four decimals and left all three unanswered. */}
+      <PostPreflight slots={validSlots ? slotsN : 0} rewardMon={validReward ? rewardN : 0} />
 
       {s.connected && !s.wrongNetwork && total > 0 && !affordable ? (
         <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">
