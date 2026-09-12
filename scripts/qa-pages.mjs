@@ -305,6 +305,21 @@ const ITEMS = [
       };
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A43", "/operator/0x391a51f85e738188274df07c3dd9099dd6f2d42b", async (p) => {
+      // ContributionRecord.sync is callable by anyone for anyone by design —
+      // so the record of an operator who never comes back is not left
+      // understated — and was callable from nowhere in this interface. This
+      // address is 189.00 points of recorded work behind its own token.
+      await p.waitForTimeout(5000);
+      const t = await p.evaluate(() => document.body.innerText);
+      const r = {
+        panel: /CONTRIBUTION RECORD/i.test(t),
+        behind: /18,900 behind/.test(t),
+        button: /sync 189\.00 points of work/i.test(t),
+        why: /anyone may call it for anyone/i.test(t),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

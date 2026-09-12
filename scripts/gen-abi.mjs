@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 const WANT = {
   TrajectoryCertificate: ["minted", "ownerOf", "tokenURI", "balanceOf", "name", "symbol", "mint"],
-  ContributionRecord: ["balanceOf", "pending", "totalSupply", "decimals", "symbol", "name"],
+  ContributionRecord: ["balanceOf", "pending", "totalSupply", "decimals", "symbol", "name", "sync"],
   Referrals: ["bounty", "remaining", "paidOut", "referrerOf", "referredBy", "MAX_PER_REFERRER", "MIN_NEWCOMER_WEIGHT"],
   PrizePool: ["taskId", "closesAt", "entrantCount", "totalWeight", "settled", "weightOf", "projected", "entrants"],
   Foundry: ["proposalCount", "getProposal", "VOTING_PERIOD", "MIN_WEIGHT_TO_PROPOSE", "cost"],

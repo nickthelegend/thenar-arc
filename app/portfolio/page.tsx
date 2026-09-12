@@ -6,6 +6,7 @@ import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useMyRuns, useStats } from "@/lib/hooks";
 import { Progression } from "@/components/progression";
+import { RecordSync } from "@/components/record-sync";
 import { progressionByTask, type ScoredRun } from "@/lib/progression";
 import { TOLERANCE_MM } from "@/lib/score";
 import { addressUrl, CURRENCY, txUrl } from "@/lib/chain";
@@ -65,6 +66,8 @@ export default function PortfolioPage() {
         <Reading label="Mean score" value={stats?.runs ? fmtScore(stats.meanScore) : "—"} />
         <Reading label="Best score" value={best ? fmtScore(best) : "—"} />
       </div>
+
+      {s.address ? <RecordSync address={s.address} /> : null}
 
       {/* Whether running a task again helped. Read from the chain here rather
           than from the ledger, so the deltas are score only — the chain has

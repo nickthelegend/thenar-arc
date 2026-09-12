@@ -11,6 +11,7 @@ import { fmtInt, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { badgesFor, ACCEPTED_MEANS } from "@/lib/badges";
 import { Progression } from "@/components/progression";
+import { RecordSync } from "@/components/record-sync";
 import { progressionByTask, type ScoredRun } from "@/lib/progression";
 
 type Run = {
@@ -138,6 +139,11 @@ export default function OperatorPage() {
         <Reading label="Reverted" value={calls === null ? "—" : fmtInt(reverted)} tone={reverted ? "reject" : undefined} />
         <Reading label="Gas paid" value={calls === null ? "—" : gas.toFixed(9)} unit={CURRENCY} />
       </div>
+
+      {/* The token that counts this address's work, and how far behind it is.
+          sync is callable by anyone for anyone by design, and was callable from
+          nowhere. */}
+      <RecordSync address={address as `0x${string}`} />
 
       <DimRule className="mt-8" note="What the record says" />
       <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
