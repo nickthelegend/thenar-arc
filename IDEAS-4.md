@@ -17,9 +17,9 @@ exist. Fit = strengthens the pitch rather than cluttering it.
 
 ---
 
-## What was built, 3 September 2026
+## What was built, 3 and 10 September 2026
 
-Sixteen of these are shipped, verified against the live deployment and marked
+Nineteen of these are shipped, verified against the live deployment and marked
 below. The order was not the ranking: building each one turned up the next, and
 five of the sixteen are not features at all but things the interface could not
 do that the contracts already could — the audit that found them is at the end.
@@ -62,7 +62,7 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 17 | Reward-per-minute, computed from par and payout, on every task row | 88 — **BUILT — per minute of par, on every task row** |
 | 18 | Warp message decoder on `/licence` — payload rendered as fields | 86 |
 | 19 | Contract call log: every write this deployment has made, with its cost | 86 — **BUILT — every write to the protocol on /contracts, with its cost** |
-| 20 | Operator's own gas spend against earnings, on the portfolio | 85 |
+| 20 | Operator's own gas spend against earnings, on the portfolio | 85 — **BUILT — earnings against gas on /operator; this address earned 1,247,525× what it paid** |
 | 21 | Prop provenance: which runs used which uploaded prop | 84 |
 | 22 | Referral link with its claim state, on the portfolio | 84 |
 | 23 | Foundry treasury vote UI, on `/contracts` | 83 — **BUILT — the treasury's proposals, tally, vote and execute, on /foundry** |
@@ -72,7 +72,7 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 27 | Task expiry and escrow refund, surfaced | 81 — **BUILT — deadlines on /post, and the funder's reclaim on the task page** |
 | 28 | Per-scenario pass rates on `/spec` | 80 |
 | 29 | Score distribution histogram per task | 80 |
-| 30 | The datum circle drawn to scale on the task page | 80 |
+| 30 | The datum circle drawn to scale on the task page | 80 — **BUILT — the ring, the band and the payload at one scale, from lib/bench.ts** |
 
 ## Tier 3 — design and motion (70–79)
 
@@ -95,7 +95,7 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 45 | The theme toggle animates the ground rather than snapping | 72 |
 | 46 | Reject state hatches rather than reddens, matching the tolerance band | 71 |
 | 47 | Hover on a leaderboard row ghosts that operator's best path | 71 |
-| 48 | The nav's active item is a drawn underline that slides | 70 |
+| 48 | The nav's active item is a drawn underline that slides | 70 — **BUILT — one underline that travels, measured against the active item's own box** |
 | 49 | Print stylesheet for the run page, as a certificate | 70 |
 | 50 | Reduced-motion variants for every one of the above | 70 |
 

@@ -1,6 +1,7 @@
 # Thenar — build plan
 
-Rewritten 3 Sep 2026, extended the same day with Phase 9. Every figure below was read from the live deployment,
+Rewritten 3 Sep 2026, extended the same day with Phase 9, and again on 10 Sep
+with Phase 10. Every figure below was read from the live deployment,
 Avalanche Fuji, or the source tree on the day of writing — not carried forward
 from the previous plan, which had drifted (it named a superseded contract as
 current and a database engine the project no longer uses).
@@ -278,6 +279,25 @@ reach. Every one was simulated against the live contract before it shipped.
 **Still unreachable, correctly:** `ConfidentialPayouts.accrue` and
 `CorpusManifest.commit` are restricted to the adder and the verifier;
 `ConfidentialPayouts.registerKey` belongs to a research path with no surface.
+
+### Phase 10 — The week after · 10 Sep 2026
+
+Three regressions that arrived by themselves, and the outage that is not mine
+to fix.
+
+| Task | State |
+|---|---|
+| 10.1 **The Railway backend is gone.** `web-production-2d1d0.up.railway.app` answers "Application not found" and the project is no longer in the Railway account, so every `/api/*` on thenar.io 404s at the edge. The Postgres behind it held the corpus. Pages served by Vercel are unaffected and still render from chain | **BLOCKED — needs the owner** |
+| 10.2 **The standings had gone empty.** `useActivity` walked back 80,000 blocks, which on Fuji is under two days; every run is now 207,760 blocks old, so the leaderboard and the feed returned a legitimate-looking nothing. One million-block `getLogs` in a single call, anchored to the deployment rather than to the clock. Verified on production: eight addresses | DONE |
+| 10.3 **The two engines had drifted.** `annotation` and `policy_submission` were created in the Postgres branch of `migrate()` and not the SQLite one, so `/api/policy` and the annotation routes 500'd against every SQLite database. A test compares the branches' tables both ways | DONE |
+| 10.4 An empty corpus is a summary, not a missing resource. `/api/dataset/summary` answered 404 — a status its own OpenAPI does not describe — putting a console error on every page previewing a policy over a task with no stored runs, and hiding the "what the licence buys" panel entirely | DONE |
+| 10.5 A run page said "nothing on file" when the truth was "we could not ask". Our 404 and the platform's 404 are told apart by whose body it is, tested against the exact envelope thenar.io returned all week | DONE |
+| 10.6 Ideas #20, #30 and #48: earnings against gas on `/operator`, the tolerance drawn at the size it actually is, and a nav underline that travels | DONE |
+
+**What the outage costs the test suite.** Seven page checks assert figures that
+lived in the deleted database — A31, A33, A35, A36, A37, A38 and A42. They are
+not weakened to pass against whatever is left; they stay red, and they are the
+measure of what a restore would have to bring back.
 
 ---
 
