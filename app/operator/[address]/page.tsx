@@ -10,6 +10,8 @@ import { addressUrl, txUrlOn, appChain, CURRENCY, AXON_ADDRESS } from "@/lib/cha
 import { fmtInt, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { badgesFor, ACCEPTED_MEANS } from "@/lib/badges";
+import { Progression } from "@/components/progression";
+import { progressionByTask, type ScoredRun } from "@/lib/progression";
 
 type Run = {
   traj_hash: string; task_id: number; score: number;
@@ -102,6 +104,18 @@ export default function OperatorPage() {
   const mean = accepted.length ? accepted.reduce((n, r) => n + r.score, 0) / accepted.length : 0;
   const gas = (calls ?? []).reduce((n, c) => n + c.feeAvax, 0);
   const badges = badgesFor(accepted);
+  const scored: ScoredRun[] = accepted.map((r) => ({
+    score: r.score,
+    deviationMm: r.deviation_mm,
+    durationS: r.duration_s,
+    at: r.created_at,
+    trajHash: r.traj_hash,
+    taskId: r.task_id,
+  }));
+  // Whether there is a progression at all, rather than whether there are runs.
+  // A section header over a component that renders nothing is a section that
+  // says an operator repeated a task when they did not.
+  const repeats = progressionByTask(scored);
   const reverted = (calls ?? []).filter((c) => !c.succeeded).length;
 
   return (
@@ -164,6 +178,25 @@ export default function OperatorPage() {
           </li>
         ))}
       </ul>
+
+      {/* Whether running it again helped.
+          The contract caps a contributor at five runs on a task because
+          repetition is the point, and every surface still showed those runs as
+          a flat list — a best, a mean, and a row each. The one number a repeat
+          operator wants, whether this one beat the last one, was left to be
+          worked out by eye. */}
+      {repeats.length ? (
+        <>
+          <DimRule className="mt-8" note="Run to run" />
+          <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
+            Only tasks driven more than once, oldest attempt first. The delta is
+            against the run before it, not against the best &mdash; a decline is
+            shown as plainly as a gain, because the operator it matters to is
+            the one it is happening to.
+          </p>
+          <Progression runs={scored} className="mt-4" />
+        </>
+      ) : null}
 
       <DimRule className="mt-8" note="Accepted runs" />
       {runs === null ? (

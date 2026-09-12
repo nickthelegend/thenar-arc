@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useMyRuns, useStats } from "@/lib/hooks";
+import { Progression } from "@/components/progression";
+import { progressionByTask, type ScoredRun } from "@/lib/progression";
 import { TOLERANCE_MM } from "@/lib/score";
 import { addressUrl, CURRENCY, txUrl } from "@/lib/chain";
 import { cn } from "@/lib/cn";
@@ -37,6 +39,10 @@ export default function PortfolioPage() {
 
   const totalPaid = (runs ?? []).reduce((n, r) => n + r.paidMon, 0);
   const best = runs?.length ? Math.max(...runs.map((r) => r.score)) : 0;
+  const scored: ScoredRun[] = (runs ?? []).map((r) => ({
+    score: r.score, at: r.at, trajHash: r.trajHash, taskId: r.taskId,
+  }));
+  const mine = progressionByTask(scored);
 
   return (
     <div className="mx-auto max-w-[1100px] px-5 py-8">
@@ -59,6 +65,17 @@ export default function PortfolioPage() {
         <Reading label="Mean score" value={stats?.runs ? fmtScore(stats.meanScore) : "—"} />
         <Reading label="Best score" value={best ? fmtScore(best) : "—"} />
       </div>
+
+      {/* Whether running a task again helped. Read from the chain here rather
+          than from the ledger, so the deltas are score only — the chain has
+          never held a deviation, and inventing a millimetre to fill the
+          sentence would be the wrong kind of complete. */}
+      {mine.length ? (
+        <>
+          <DimRule className="mt-8" note="Run to run" />
+          <Progression runs={scored} className="mt-4" />
+        </>
+      ) : null}
 
       <DimRule className="mt-8" note="Run history" />
 

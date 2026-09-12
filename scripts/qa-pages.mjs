@@ -75,6 +75,39 @@ const ITEMS = [
   ["A22", "/task/1",           async (p) => [ (await p.evaluate(()=>document.body.innerText.trim().length)) > 200, "renders" ]],
   ["A26", "/handheld",         async (p) => [ (await p.evaluate(()=>document.body.innerText.trim().length)) > 60, "renders" ]],
   ["A27", "/offline",          async (p) => [ (await p.evaluate(()=>document.body.innerText.trim().length)) > 30, "renders" ]],
+  ["A31", "/operator/0x391a51f85e738188274df07c3dd9099dd6f2d42b", async (p) => {
+      // The one address on this deployment that has driven the same task twice.
+      // The figures below are its own — 93.40 then 95.60 on task 1 — so this
+      // fails if the differencing, the ordering, or the source data changes.
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          section: /RUN TO RUN/i.test(t),
+          sentence: /2 runs, 93\.40 to 95\.60 — up 2\.20/.test(t),
+          // Oldest first, so the delta is an improvement rather than a decline.
+          delta: /\+2\.20/.test(t),
+          // Exactly one run is marked best, and it is the later one. Counted
+          // inside the section only — "BEST SCORE" in the readings above it is
+          // a different label about the whole record.
+          // "Accepted runs" is also a reading at the top of the page, so the
+          // section ends at the next one after it starts, not at the first one.
+          bests: (() => {
+            const from = t.search(/RUN TO RUN/i);
+            const rest = t.slice(from);
+            const to = rest.search(/ACCEPTED RUNS/i);
+            return ((to > 0 ? rest.slice(0, to) : rest).match(/\bBEST\b/g) || []).length;
+          })(),
+          bestOnLast: /95\.60\s*\n\s*\+2\.20/.test(t),
+        };
+      });
+      return [r.section && r.sentence && r.delta && r.bests === 1 && r.bestOnLast, JSON.stringify(r)];
+  }],
+  ["A32", "/operator/0xd2503e970298d74eec363a8e547172ab9efecfe4", async (p) => {
+      // One run, on one task. There is no progression, and a header over an
+      // empty panel would claim a repeat that never happened.
+      const t = await p.evaluate(() => document.body.innerText);
+      return [!/RUN TO RUN/i.test(t) && t.trim().length > 200, `section=${/RUN TO RUN/i.test(t)}`];
+  }],
   ["A30", "/licence/0",       async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

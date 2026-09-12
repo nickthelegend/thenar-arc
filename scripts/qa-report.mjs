@@ -43,6 +43,10 @@ const MEANS = {
   D7:"Service worker registered; /offline and /sw.js both 200",
   // The driven run. Everything above navigates and reads; these operate the
   // machine, which is the only way to reach the panels that exist after a run.
+  A29:"L1 claims render with the figures read off that chain",
+  A30:"Warp payload decoded and agreeing with the protocol, field by field",
+  A31:"Repeated runs on one task, differenced oldest first",
+  A32:"One run is not a progression and is not shown as one",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",
