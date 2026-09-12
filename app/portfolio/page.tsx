@@ -7,6 +7,7 @@ import { useSession } from "@/components/session";
 import { useMyRuns, useStats } from "@/lib/hooks";
 import { Progression } from "@/components/progression";
 import { RecordSync } from "@/components/record-sync";
+import { Referral } from "@/components/referral";
 import { progressionByTask, type ScoredRun } from "@/lib/progression";
 import { TOLERANCE_MM } from "@/lib/score";
 import { addressUrl, CURRENCY, txUrl } from "@/lib/chain";
@@ -68,6 +69,11 @@ export default function PortfolioPage() {
       </div>
 
       {s.address ? <RecordSync address={s.address} /> : null}
+
+      {/* Deployed, funded and paying since the beginning, and reachable from
+          nowhere: nobody could see whether they had been credited, and the
+          newcomer who has to make the call had no way to make it. */}
+      <Referral />
 
       {/* Whether running a task again helped. Read from the chain here rather
           than from the ledger, so the deltas are score only — the chain has

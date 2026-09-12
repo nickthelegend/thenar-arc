@@ -19,7 +19,7 @@ exist. Fit = strengthens the pitch rather than cluttering it.
 
 ## What was built, 3 and 10 September 2026
 
-Twenty-five of these are shipped, verified against the live deployment and marked
+Twenty-six of these are shipped, verified against the live deployment and marked
 below. The order was not the ranking: building each one turned up the next, and
 five of the sixteen are not features at all but things the interface could not
 do that the contracts already could — the audit that found them is at the end.
@@ -64,7 +64,7 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 19 | Contract call log: every write this deployment has made, with its cost | 86 — **BUILT — every write to the protocol on /contracts, with its cost** |
 | 20 | Operator's own gas spend against earnings, on the portfolio | 85 — **BUILT — earnings against gas on /operator; this address earned 1,247,525× what it paid** |
 | 21 | Prop provenance: which runs used which uploaded prop | 84 |
-| 22 | Referral link with its claim state, on the portfolio | 84 |
+| 22 | Referral link with its claim state, on the portfolio | 84 — **BUILT — link, cap, pot and the claim, on /portfolio; the claim is the newcomer's to make** |
 | 23 | Foundry treasury vote UI, on `/contracts` | 83 — **BUILT — the treasury's proposals, tally, vote and execute, on /foundry** |
 | 24 | Prize pool entry from the task it funds | 83 |
 | 25 | Trajectory certificate mint, from the run page | 82 — **BUILT — mintable from the run page, to whoever recorded it** |
