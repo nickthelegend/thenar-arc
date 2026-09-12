@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createPublicClient, http, formatEther } from "viem";
+import { formatEther } from "viem";
+import { chainClient } from "@/lib/rpc";
 import { appChain, addressUrl, AXON_ADDRESS, CURRENCY, txUrl } from "@/lib/chain";
 import { DEPLOYED, SUPERSEDED, type Deployed } from "@/lib/registry";
 import {
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /** Balance and code size, for every entry, straight from the node. */
 async function presence(rows: Deployed[]) {

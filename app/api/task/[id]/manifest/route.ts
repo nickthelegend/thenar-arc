@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
+
+import { chainClient } from "@/lib/rpc";
 import { logged } from "@/lib/server/log";
 import { trajectoriesForTask } from "@/lib/server/db";
 import { rootOf, proofFor } from "@/lib/merkle";
@@ -8,7 +9,7 @@ import { appChain, CORPUS_MANIFEST } from "@/lib/chain";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 const ABI = [
   {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http, formatEther } from "viem";
+import { formatEther } from "viem";
+import { chainClient } from "@/lib/rpc";
 import { logged } from "@/lib/server/log";
 import { trajectoriesForTask, attemptsForTask, failedTrajectories } from "@/lib/server/db";
 import { ACCEPT_FLOOR, TOLERANCE_MM } from "@/lib/score";
@@ -13,7 +14,7 @@ import { AXON_ABI } from "@/lib/abi";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /**
  * The datasheet for a task's corpus.

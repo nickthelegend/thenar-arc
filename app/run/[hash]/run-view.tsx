@@ -296,7 +296,7 @@ export default function RunView() {
           <Link href="/contracts" className="text-signal hover:text-signal-hi">/contracts</Link>{" "}
           reads the protocol directly, and{" "}
           <Link href="/leaderboard" className="text-signal hover:text-signal-hi">/leaderboard</Link>{" "}
-          is built from the ledger's own events.
+          is built from the ledger&rsquo;s own events.
         </p>
         <Link href="/hub" className="mt-6 inline-block border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em]">
           Back to the hub

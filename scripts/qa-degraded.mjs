@@ -10,6 +10,9 @@
  *   node scripts/qa-degraded.mjs [baseUrl]
  */
 import { chromium } from "playwright";
+import { createPublicClient, fallback, http, parseAbiItem } from "viem";
+import { avalancheFuji } from "viem/chains";
+import { scanLogs } from "../lib/scan-logs.ts";
 
 const BASE = process.argv[2] ?? "https://thenar.io";
 
@@ -98,6 +101,45 @@ const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=metal"] 
 }
 
 await b.close();
+
+/* ---- G4: the chain half survives losing its primary endpoint ------------- */
+{
+  // Not a browser check. The failover is a property of the transport, and the
+  // interesting case is the one that cannot be produced by loading a page:
+  // the endpoint this app reads history from being gone.
+  const AXON = "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0";
+  const accepted = parseAbiItem(
+    "event TrajectoryAccepted(uint256 indexed trajectoryId, uint256 indexed taskId, address indexed contributor, bytes32 trajHash, string cid, uint16 score, uint256 paid)",
+  );
+  const read = async (urls) => {
+    const c = createPublicClient({
+      chain: avalancheFuji,
+      transport: fallback(
+        urls.map((u) => http(u, { retryCount: 1, retryDelay: 200, timeout: 15000 })),
+        { rank: false },
+      ),
+    });
+    const head = await c.getBlockNumber();
+    const logs = await scanLogs(
+      (r) => c.getLogs({ address: AXON, event: accepted, ...r }),
+      { fromBlock: head - 1_000_000n, toBlock: head },
+    );
+    return logs.length;
+  };
+
+  const healthy = await read([
+    "https://api.avax-test.network/ext/bc/C/rpc",
+    "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+  ]);
+  // The secondary refuses the million-block range the primary answers, so this
+  // also proves the narrowing in lib/scan-logs.ts: same count, more requests.
+  const degraded = await read([
+    "https://this-endpoint-does-not-exist.thenar.invalid/rpc",
+    "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+  ]);
+  check("G4", healthy > 0 && degraded === healthy,
+        `losing the primary costs latency, not history: ${healthy} runs found, ${degraded} with it gone`);
+}
 
 const passed = results.filter((r) => r.ok).length;
 console.log(`\n${passed}/${results.length} pass`);

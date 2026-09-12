@@ -19,7 +19,7 @@ exist. Fit = strengthens the pitch rather than cluttering it.
 
 ## What was built, 3 and 10 September 2026
 
-Twenty-two of these are shipped, verified against the live deployment and marked
+Twenty-three of these are shipped, verified against the live deployment and marked
 below. The order was not the ranking: building each one turned up the next, and
 five of the sixteen are not features at all but things the interface could not
 do that the contracts already could — the audit that found them is at the end.
@@ -111,7 +111,7 @@ item**, and it is the one that carries the L1 story to somebody with a browser.
 | 56 | Health check for the relayer, when the L1 is live | 66 |
 | 57 | Snapshot restore wired into CI as a nightly drill | 66 |
 | 58 | Chain reorg handling on the feed | 65 |
-| 59 | RPC failover to a second endpoint | 65 |
+| 59 | RPC failover to a second endpoint | 65 — **BUILT — three measured endpoints in order, and a scan that narrows to whichever answers** |
 | 60 | Wallet-disconnect mid-run handled without losing the recording | 64 |
 | 61 | Browser-back during a run warns before discarding | 64 — **BUILT — on during a run, released once the draft store has the samples** |
 | 62 | Offline queue: a run recorded offline submits when the network returns | 63 |

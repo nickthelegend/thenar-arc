@@ -265,7 +265,12 @@ export default function StationPage() {
    * the viewport is not mounted on a guess and then torn down.
    */
   const [canDraw, setCanDraw] = useState<boolean | null>(null);
-  useEffect(() => setCanDraw(webglAvailable()), []);
+  useEffect(() => {
+    // Deferred for the same reason the tally below is: a synchronous setState
+    // from an effect renders again before the current render has painted.
+    const t = setTimeout(() => setCanDraw(webglAvailable()), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const [tally, setTally] = useState<Tally | null>(null);
   useEffect(() => {
@@ -306,7 +311,7 @@ export default function StationPage() {
     if (countedMeasured.current === key) return;
     countedMeasured.current = key;
     setTally(noteMeasured(verdict.score, task?.id));
-  }, [phase, verdict, runId]);
+  }, [phase, verdict, runId, task?.id]);
 
   const countedPaid = useRef<string | null>(null);
   useEffect(() => {

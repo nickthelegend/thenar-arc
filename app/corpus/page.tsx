@@ -88,9 +88,15 @@ export default function CorpusPage() {
 
   useEffect(() => {
     if (!empty) return;
-    // Already the unfiltered question, so its own answer is the explanation.
-    if (outcome === "all") { setWhy({ key, episodes: [] }); return; }
     let live = true;
+    // Already the unfiltered question, so its own answer is the explanation.
+    // Deferred rather than set here: writing state synchronously from an effect
+    // makes React render again before it has painted the render it is in, which
+    // is the rule the locale, XR and palette paths in this codebase all follow.
+    if (outcome === "all") {
+      const t = setTimeout(() => { if (live) setWhy({ key, episodes: [] }); }, 0);
+      return () => { live = false; clearTimeout(t); };
+    }
     const q = new URLSearchParams({ outcome: "all" });
     if (taskId !== "all") q.set("taskId", String(taskId));
     fetch(`/api/corpus?${q}`)

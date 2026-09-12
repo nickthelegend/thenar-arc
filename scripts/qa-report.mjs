@@ -65,6 +65,7 @@ const MEANS = {
   G1:"A browser with no WebGL is told so, and told what still works",
   G2:"A run in progress is not thrown away without a word",
   G3:"The ground crosses over on a theme change, and at no other time",
+  G4:"Losing the primary RPC costs latency, not history",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",

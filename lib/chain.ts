@@ -26,6 +26,26 @@ export const avalancheFuji = defineChain({
 /** The one place the chain is named. Everything else reads it from here. */
 export const appChain = avalancheFuji;
 
+/**
+ * Where to ask, in the order to ask.
+ *
+ * Not interchangeable, and the order is the point. The first answers a
+ * million-block `getLogs` in one call, which is how this app reads its own
+ * history; the others refuse anything much above fifty thousand and ten
+ * thousand blocks respectively. They are here so that a rate limit or an outage
+ * on the first costs latency instead of every figure on the site, and
+ * lib/scan-logs.ts is what makes a narrower endpoint a slower answer rather
+ * than a wrong one.
+ *
+ * Measured rather than assumed: each was probed for chain id, head, and the
+ * widest log range it would accept before being written down.
+ */
+export const RPC_ENDPOINTS = [
+  avalancheFuji.rpcUrls.default.http[0],
+  "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+  "https://avalanche-fuji.drpc.org",
+] as const;
+
 /** Where an operator with no gas is sent. Chain-scoped for the same reason the
  *  explorer is: the app shipped pointing at another chain's faucet. */
 export const FAUCET_URL = "https://core.app/tools/testnet-faucet/?subnet=c&token=c";

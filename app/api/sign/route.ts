@@ -1,6 +1,7 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
+
+import { chainClient } from "@/lib/rpc";
 import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { validateSamples, validatePayloadIds, verifyAndSign, VerifyError } from "@/lib/server/verifier";
@@ -11,7 +12,7 @@ import { keccak256, toHex } from "viem";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /**
  * The only place the verifier key is used.

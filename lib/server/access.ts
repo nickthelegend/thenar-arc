@@ -1,6 +1,7 @@
 import "server-only";
-import { createPublicClient, http, parseAbi } from "viem";
-import { CORPUS_ACCESS, appChain } from "@/lib/chain";
+import { parseAbi } from "viem";
+import { chainClient } from "../rpc";
+import { CORPUS_ACCESS } from "@/lib/chain";
 
 /**
  * Whether an address may pull the corpus right now.
@@ -21,7 +22,7 @@ const abi = parseAbi([
   "function pricePerDay() view returns (uint256)",
 ]);
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 export type Access =
   | { gated: false; reason: string }

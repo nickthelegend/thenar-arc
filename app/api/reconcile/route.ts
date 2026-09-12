@@ -1,7 +1,8 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
-import { createPublicClient, http, keccak256, toHex } from "viem";
-import { AXON_ADDRESS, appChain, KNOWN_CHAINS } from "@/lib/chain";
+import { keccak256, toHex } from "viem";
+import { chainClient } from "@/lib/rpc";
+import { AXON_ADDRESS, KNOWN_CHAINS } from "@/lib/chain";
 import {
   unsettledWithTx, markSettled, clearTx,
   unresolvedChain, setChainId, countByChain, query, run,
@@ -12,7 +13,7 @@ import type { Sample } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /** A receipt lookup against an arbitrary chain, by URL rather than by config,
  *  because the prior chains are no longer part of the app's wagmi setup. */

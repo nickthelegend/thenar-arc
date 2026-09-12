@@ -9,6 +9,7 @@ import { AXON_ABI } from "./abi";
 import { AXON_ADDRESS, IS_DEPLOYED, scenarioName } from "./chain";
 import { DEPLOYED } from "./registry";
 import { parSecondsFor } from "./par";
+import { scanLogs } from "./scan-logs";
 
 export type ChainTask = {
   id: number;
@@ -320,12 +321,10 @@ export function useActivity(limit = 40) {
       } as const;
 
       type EventLog = Awaited<ReturnType<typeof client.getLogs<typeof event>>>[number];
-      const logs = await client.getLogs({
-        address: AXON_ADDRESS,
-        event,
-        fromBlock: head > LOOKBACK ? head - LOOKBACK : 0n,
-        toBlock: head,
-      });
+      const logs = await scanLogs(
+        (r) => client.getLogs({ address: AXON_ADDRESS, event, ...r }),
+        { fromBlock: head > LOOKBACK ? head - LOOKBACK : 0n, toBlock: head },
+      );
       const hits: { log: EventLog }[] = logs.map((log) => ({ log }));
 
       // Ordered explicitly rather than by the order the requests happened to
@@ -544,13 +543,15 @@ export function useAttestation(policyId: number | undefined) {
     queryFn: async (): Promise<Attestation | null> => {
       if (!client || policyId === undefined) return null;
       const head = await client.getBlockNumber();
-      const logs = await client.getLogs({
-        address: LICENCE_RECEIPT_ADDRESS,
-        event: ATTESTED_EVENT,
-        args: { policyId: BigInt(policyId) },
-        fromBlock: head > ATTEST_LOOKBACK ? head - ATTEST_LOOKBACK : 0n,
-        toBlock: head,
-      });
+      const logs = await scanLogs(
+        (r) => client.getLogs({
+          address: LICENCE_RECEIPT_ADDRESS,
+          event: ATTESTED_EVENT,
+          args: { policyId: BigInt(policyId) },
+          ...r,
+        }),
+        { fromBlock: head > ATTEST_LOOKBACK ? head - ATTEST_LOOKBACK : 0n, toBlock: head },
+      );
       if (!logs.length) return null;
       // The first one is the one that matters: re-attesting produces a second
       // signature over the same claim, and the receipt is dated by when the
@@ -677,12 +678,10 @@ export function useObservedCost(kind: CallKind) {
       if (!client) return null;
       const [head, gasPriceWei] = await Promise.all([client.getBlockNumber(), client.getGasPrice()]);
 
-      const logs = await client.getLogs({
-        address: AXON_ADDRESS,
-        event: call.event,
-        fromBlock: head > COST_LOOKBACK ? head - COST_LOOKBACK : 0n,
-        toBlock: head,
-      });
+      const logs = await scanLogs(
+        (r) => client.getLogs({ address: AXON_ADDRESS, event: call.event, ...r }),
+        { fromBlock: head > COST_LOOKBACK ? head - COST_LOOKBACK : 0n, toBlock: head },
+      );
 
       // Newest first, and only as many as are needed to have a median worth
       // quoting. Each sample is two calls; twenty of them would be forty.
@@ -787,14 +786,12 @@ export function useAcceptedScores() {
     queryFn: async (): Promise<{ n: number; meanScore: number } | null> => {
       if (!client) return null;
       const head = await client.getBlockNumber();
-      const logs = await client.getLogs({
-        address: AXON_ADDRESS,
-        event: ACCEPTED_EVENT,
-        // Wider than the cost scan on purpose: a median gas figure wants recent
-        // transactions, and a mean score wants all of them.
-        fromBlock: head > 1_000_000n ? head - 1_000_000n : 0n,
-        toBlock: head,
-      });
+      // Wider than the cost scan on purpose: a median gas figure wants recent
+      // transactions, and a mean score wants all of them.
+      const logs = await scanLogs(
+        (r) => client.getLogs({ address: AXON_ADDRESS, event: ACCEPTED_EVENT, ...r }),
+        { fromBlock: head > 1_000_000n ? head - 1_000_000n : 0n, toBlock: head },
+      );
       if (!logs.length) return { n: 0, meanScore: 0 };
       const scores = logs.map((l) => Number(l.args.score ?? 0));
       return { n: scores.length, meanScore: scores.reduce((a, b) => a + b, 0) / scores.length };

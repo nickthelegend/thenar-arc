@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http, hashDomain } from "viem";
+import { hashDomain } from "viem";
+import { chainClient } from "@/lib/rpc";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 import { countTrajectories, countByChain, ENGINE } from "@/lib/server/db";
@@ -9,7 +10,7 @@ import { runDomain } from "@/lib/server/verifier";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /** Everything that has to be true for a run to be recordable. */
 export async function GET() {

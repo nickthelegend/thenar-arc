@@ -1,13 +1,14 @@
 import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
-import { AXON_ADDRESS, appChain } from "@/lib/chain";
+
+import { chainClient } from "@/lib/rpc";
+import { AXON_ADDRESS } from "@/lib/chain";
 import { markSettled } from "@/lib/server/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /**
  * Record the transaction that settled a run.

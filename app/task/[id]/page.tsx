@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { createPublicClient, http } from "viem";
-import { appChain } from "@/lib/chain";
+
+import { chainClient } from "@/lib/rpc";
+
 import { AXON_ADDRESS } from "@/lib/chain";
 import TaskView from "./task-view";
 
@@ -20,7 +21,7 @@ import TaskView from "./task-view";
  * which is a worse failure than the one being fixed. Certain absence is a 404;
  * an unanswered question is not.
  */
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /** The count moves only when somebody funds a task. A minute of staleness is
  *  cheaper than an RPC round trip on every task page view. */

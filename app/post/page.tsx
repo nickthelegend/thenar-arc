@@ -62,6 +62,18 @@ export default function PostTaskPage() {
    * created. It stays available and it is no longer the only option.
    */
   const [days, setDays] = useState(0);
+  /** The deadline as a date, resolved on the client where the clock is. */
+  const [closesOn, setClosesOn] = useState<string | null>(null);
+  useEffect(() => {
+    const t = setTimeout(
+      () =>
+        setClosesOn(
+          days > 0 ? new Date(Date.now() + days * 86_400_000).toLocaleDateString() : null,
+        ),
+      0,
+    );
+    return () => clearTimeout(t);
+  }, [days]);
   const [slots, setSlots] = useState("10");
   const [reward, setReward] = useState("0.004");
   const [scenario, setScenario] = useState(1);
@@ -229,9 +241,14 @@ export default function PostTaskPage() {
                 {d.label}
               </button>
             ))}
+            {/* The date is computed after mount, not during render: reading
+                the clock while rendering makes the server's markup and the
+                browser's first paint disagree, and the disagreement is a date. */}
             <span className="font-mono text-[12px] text-scribe-3">
               {days > 0
-                ? `closes ${new Date(Date.now() + days * 86_400_000).toLocaleDateString()} — you can reclaim after that`
+                ? closesOn
+                  ? `closes ${closesOn} — you can reclaim after that`
+                  : `closes in ${days} days — you can reclaim after that`
                 : "no deadline — the escrow can never be returned"}
             </span>
           </div>

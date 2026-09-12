@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http, verifyMessage } from "viem";
+import { verifyMessage } from "viem";
+import { chainClient } from "@/lib/rpc";
 import { logged } from "@/lib/server/log";
 import { query, run } from "@/lib/server/db";
 import { AXON_ABI } from "@/lib/abi";
-import { AXON_ADDRESS, appChain } from "@/lib/chain";
+import { AXON_ADDRESS } from "@/lib/chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 const MAX_TEAM = 12;
 const ROLES = new Set(["funder", "operator", "reviewer", "sponsor"]);
 
-const client = createPublicClient({ chain: appChain, transport: http() });
+const client = chainClient();
 
 /**
  * Who is working on a task, besides whoever funded it.
