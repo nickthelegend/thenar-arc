@@ -57,10 +57,37 @@ export async function recordSale(s: CorpusSale): Promise<void> {
   );
 }
 
-export async function recentSales(limit = 50): Promise<CorpusSale[]> {
-  return query<CorpusSale>(
-    `SELECT id, task_id, method, buyer, network, amount, asset, created_at
-       FROM corpus_sale ORDER BY created_at DESC LIMIT ?`,
+export type SaleAudit = { topicId: string; sequence: number; transaction: string };
+
+/**
+ * The digest of what a sale served, and where on Hedera it was logged.
+ *
+ * Written even when the log could not be posted, with the reason, so a sale
+ * missing from the topic is visibly missing rather than quietly so.
+ */
+export async function recordAudit(
+  saleId: string, sha256: string, audit: SaleAudit | null, error: string | null,
+): Promise<void> {
+  await run(
+    `INSERT INTO corpus_sale_audit (sale_id, sha256, topic_id, topic_seq, transaction_id, error, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (sale_id) DO NOTHING`,
+    [saleId, sha256, audit?.topicId ?? null, audit?.sequence ?? null, audit?.transaction ?? null, error, Date.now()],
+  );
+}
+
+export type ListedSale = CorpusSale & {
+  sha256: string | null;
+  topic_id: string | null;
+  topic_seq: number | null;
+  audit_error: string | null;
+};
+
+export async function recentSales(limit = 50): Promise<ListedSale[]> {
+  return query<ListedSale>(
+    `SELECT s.id, s.task_id, s.method, s.buyer, s.network, s.amount, s.asset, s.created_at,
+            a.sha256, a.topic_id, a.topic_seq, a.error AS audit_error
+       FROM corpus_sale s LEFT JOIN corpus_sale_audit a ON a.sale_id = s.id
+      ORDER BY s.created_at DESC LIMIT ?`,
     [limit],
   );
 }

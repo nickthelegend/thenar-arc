@@ -331,6 +331,19 @@ export function migrate(): Promise<void> {
           asset      TEXT,
           created_at BIGINT NOT NULL
         );
+
+        -- The sha256 of what each sale served, and the Hedera Consensus
+        -- Service message that logged it. A row with an error and no topic is
+        -- a sale the log is missing, kept so the gap is visible.
+        CREATE TABLE IF NOT EXISTS corpus_sale_audit (
+          sale_id        TEXT PRIMARY KEY,
+          sha256         TEXT NOT NULL,
+          topic_id       TEXT,
+          topic_seq      BIGINT,
+          transaction_id TEXT,
+          error          TEXT,
+          created_at     BIGINT NOT NULL
+        );
       `);
 
       // CREATE TABLE IF NOT EXISTS does nothing to a table that already
@@ -503,6 +516,15 @@ export function migrate(): Promise<void> {
         amount     TEXT,
         asset      TEXT,
         created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS corpus_sale_audit (
+        sale_id        TEXT PRIMARY KEY,
+        sha256         TEXT NOT NULL,
+        topic_id       TEXT,
+        topic_seq      INTEGER,
+        transaction_id TEXT,
+        error          TEXT,
+        created_at     INTEGER NOT NULL
       );
     `);
   })();

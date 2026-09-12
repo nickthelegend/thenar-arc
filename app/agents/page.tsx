@@ -11,14 +11,20 @@ import { AGENT_CORPUS, agentCorpusPrice } from "@/lib/agent-corpus";
  * one is for the program that fetches it: the terms it is offered in a 402,
  * whether World's AgentBook says a human stands behind it, and the ledger of
  * what agents have actually taken — each paid pull linked to the Hedera
- * transaction that settled it, somewhere this server does not control.
+ * transaction that settled it, and each pull linked to the message on the sales
+ * topic that logged the hash of what it received.
  */
 
+type Audit =
+  | { topic: string; sequence: number; sha256: string | null; message: string }
+  | { error: string | null; sha256: string }
+  | null;
 type Sale = {
   id: string; task_id: number; method: "x402" | "agentkit"; buyer: string | null;
-  network: string; amount: string | null; asset: string | null; created_at: number; proof: string | null;
+  network: string; amount: string | null; asset: string | null; created_at: number;
+  proof: string | null; audit: Audit;
 };
-type Sales = { terms: { payTo: string | null }; count: number; sales: Sale[] };
+type Sales = { terms: { payTo: string | null; salesTopic: string | null }; count: number; sales: Sale[] };
 type Status =
   | { address: string; registered: boolean; humanId: string | null; freePulls: { used: number; of: number } | null; register: string }
   | { error: string };
@@ -57,7 +63,7 @@ export default function AgentsPage() {
     }
   }
 
-  const payTo = sales && "terms" in sales ? sales.terms.payTo : null;
+  const terms = sales && "terms" in sales ? sales.terms : null;
 
   return (
     <div className="mx-auto max-w-[900px] px-5 py-8">
@@ -90,12 +96,28 @@ export default function AgentsPage() {
 
         <dt className="font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3">Paid to</dt>
         <dd>
-          {payTo ? (
-            <a href={`${AGENT_CORPUS.hashscan}/account/${payTo}`} target="_blank" rel="noreferrer" className="font-mono text-[13px] text-signal hover:text-signal-hi">
-              {payTo} &rarr;
+          {terms?.payTo ? (
+            <a href={`${AGENT_CORPUS.hashscan}/account/${terms.payTo}`} target="_blank" rel="noreferrer" className="font-mono text-[13px] text-signal hover:text-signal-hi">
+              {terms.payTo} &rarr;
             </a>
           ) : (
             <span className="text-scribe-3">{sales ? "no treasury configured" : "reading…"}</span>
+          )}
+        </dd>
+
+        <dt className="font-mono text-[12px] uppercase tracking-[0.12em] text-scribe-3">Sales log</dt>
+        <dd className="text-scribe-2">
+          {terms?.salesTopic ? (
+            <>
+              <a href={`${AGENT_CORPUS.hashscan}/topic/${terms.salesTopic}`} target="_blank" rel="noreferrer" className="font-mono text-[13px] text-signal hover:text-signal-hi">
+                {terms.salesTopic}
+              </a>
+              {" "}— a Consensus Service topic only the treasury can post to. Every pull is logged there with
+              the sha256 of the file served, so a buyer can check its copy against a record this server
+              cannot rewrite.
+            </>
+          ) : (
+            <span className="text-scribe-3">{sales ? "no sales topic configured" : "reading…"}</span>
           )}
         </dd>
 
@@ -166,14 +188,15 @@ export default function AgentsPage() {
         </p>
       ) : (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[13px]">
+          <table className="w-full min-w-[760px] text-left text-[13px]">
             <thead>
               <tr className="font-mono text-[11px] uppercase tracking-[0.12em] text-scribe-3">
                 <th className="py-2 pr-4 font-normal">When</th>
                 <th className="py-2 pr-4 font-normal">Task</th>
                 <th className="py-2 pr-4 font-normal">Terms</th>
                 <th className="py-2 pr-4 font-normal">Buyer</th>
-                <th className="py-2 font-normal">Proof</th>
+                <th className="py-2 pr-4 font-normal">Settlement</th>
+                <th className="py-2 font-normal">Logged</th>
               </tr>
             </thead>
             <tbody>
@@ -189,13 +212,24 @@ export default function AgentsPage() {
                     )}
                   </td>
                   <td className="py-2 pr-4 font-mono text-scribe-2">{s.buyer ? short(s.buyer) : "—"}</td>
-                  <td className="py-2">
+                  <td className="py-2 pr-4">
                     {s.proof ? (
                       <a href={s.proof} target="_blank" rel="noreferrer" className="font-mono text-signal hover:text-signal-hi">
                         {short(s.id)} &rarr;
                       </a>
                     ) : (
                       <span className="text-scribe-3">nothing moved</span>
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {s.audit && "topic" in s.audit ? (
+                      <a href={s.audit.message} target="_blank" rel="noreferrer" title={s.audit.sha256 ?? undefined} className="font-mono text-signal hover:text-signal-hi">
+                        #{s.audit.sequence} &rarr;
+                      </a>
+                    ) : s.audit ? (
+                      <span className="text-reject" title={s.audit.error ?? undefined}>not logged</span>
+                    ) : (
+                      <span className="text-scribe-3">before the log</span>
                     )}
                   </td>
                 </tr>
@@ -208,7 +242,8 @@ export default function AgentsPage() {
       <DimRule className="mt-10" note="Run the buyer" />
       <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">
         The agent in the repository signs AgentKit&apos;s challenge with its wallet and, when that does not
-        earn a free pull, pays from a Hedera account created with the same key.
+        earn a free pull, pays from a Hedera account created with the same key. Then it hashes what it
+        received and checks the sales topic on Hedera&apos;s mirror node for the same hash.
       </p>
       <pre className="mt-3 overflow-x-auto border border-scribe-3 px-3 py-2 font-mono text-[12px] text-scribe">
         node scripts/agent-buy.mjs http://localhost:3222 1

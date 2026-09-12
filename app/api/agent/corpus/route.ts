@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { HTTPFacilitatorClient, decodePaymentRequiredHeader, decodePaymentResponseHeader } from "@x402/core/http";
 import { withX402FromHTTPServer, x402HTTPResourceServer, x402ResourceServer } from "@x402/next";
@@ -6,7 +7,8 @@ import { agentkitResourceServerExtension, createAgentkitHooks, declareAgentkitEx
 import { createAgentBookVerifier, parseAgentkitHeader } from "@worldcoin/agentkit-core";
 import { logged } from "@/lib/server/log";
 import { taskCorpus } from "@/lib/server/corpus-export";
-import { agentKitStorage, recordSale } from "@/lib/server/agent-sales";
+import { agentKitStorage, recordAudit, recordSale, type CorpusSale } from "@/lib/server/agent-sales";
+import { publishSale } from "@/lib/server/hedera-audit";
 import { AGENT_CORPUS } from "@/lib/agent-corpus";
 
 export const runtime = "nodejs";
@@ -24,7 +26,8 @@ export const dynamic = "force-dynamic";
  *
  * Settlement happens only after the export below returns a success, so an
  * agent that pays for a task with nothing recorded is told 404 and charged
- * nothing.
+ * nothing. Every pull that succeeds is recorded, hashed, and logged to a
+ * Hedera Consensus Service topic with that hash.
  */
 
 type Handler = (req: NextRequest) => Promise<NextResponse>;
@@ -57,21 +60,7 @@ async function corpus(req: NextRequest): Promise<NextResponse> {
   if (taskId === null) {
     return NextResponse.json({ error: "taskId must be a non-negative integer" }, { status: 400 });
   }
-  const res = await taskCorpus(taskId);
-
-  // Reaching this handler without a payment header means AgentKit granted the
-  // pull. Recorded here, where the task is known; a paid pull is recorded after
-  // settlement, where the transaction is.
-  const agent = req.headers.get("agentkit");
-  if (res.ok && agent && !req.headers.get("payment-signature")) {
-    const p = parseAgentkitHeader(agent);
-    await recordSale({
-      id: `agentkit:${p.nonce}`, task_id: taskId, method: "agentkit",
-      buyer: p.address.toLowerCase(), network: p.chainId,
-      amount: null, asset: null, created_at: Date.now(),
-    });
-  }
-  return res;
+  return taskCorpus(taskId);
 }
 
 function build(treasury: string): Handler {
@@ -114,6 +103,38 @@ function build(treasury: string): Handler {
   return paywalled;
 }
 
+/**
+ * The terms a successful response was served on, read from what granted it.
+ *
+ * A settlement receipt means it was paid. A success with no payment on this
+ * protected route can only have been granted by AgentKit, so the agentkit
+ * header says who took it.
+ */
+function saleOf(req: Request, res: Response, taskId: number): CorpusSale | null {
+  const receipt = res.headers.get("PAYMENT-RESPONSE");
+  if (receipt) {
+    const settled = decodePaymentResponseHeader(receipt);
+    if (!settled.success || !settled.transaction) return null;
+    return {
+      id: settled.transaction, task_id: taskId, method: "x402",
+      buyer: settled.payer ?? null, network: settled.network,
+      amount: AGENT_CORPUS.amount, asset: AGENT_CORPUS.asset, created_at: Date.now(),
+    };
+  }
+  const agent = req.headers.get("agentkit");
+  if (agent && !req.headers.get("payment-signature")) {
+    const p = parseAgentkitHeader(agent);
+    return {
+      id: `agentkit:${p.nonce}`, task_id: taskId, method: "agentkit",
+      buyer: p.address.toLowerCase(), network: p.chainId,
+      amount: null, asset: null, created_at: Date.now(),
+    };
+  }
+  return null;
+}
+
+const headerSafe = (s: string) => s.replace(/[^\x20-\x7e]/g, "?").slice(0, 200);
+
 async function handleGET(req: Request) {
   const treasury = process.env.HEDERA_TREASURY_ID;
   if (!treasury || !/^0\.0\.\d+$/.test(treasury)) {
@@ -138,19 +159,30 @@ async function handleGET(req: Request) {
     }
   }
 
-  const receipt = res.ok ? res.headers.get("PAYMENT-RESPONSE") : null;
-  if (receipt) {
-    const settled = decodePaymentResponseHeader(receipt);
-    const taskId = taskIdOf(req.url);
-    if (settled.success && settled.transaction && taskId !== null) {
-      await recordSale({
-        id: settled.transaction, task_id: taskId, method: "x402",
-        buyer: settled.payer ?? null, network: settled.network,
-        amount: AGENT_CORPUS.amount, asset: AGENT_CORPUS.asset, created_at: Date.now(),
-      });
-    }
+  const taskId = taskIdOf(req.url);
+  const sale = res.ok && taskId !== null ? saleOf(req, res, taskId) : null;
+  if (!sale) return res;
+  await recordSale(sale);
+
+  // The file as served, byte for byte, so the digest is of what the buyer holds.
+  const body = Buffer.from(await res.arrayBuffer());
+  const sha256 = createHash("sha256").update(body).digest("hex");
+  const headers = new Headers(res.headers);
+  headers.set("x-thenar-sha256", sha256);
+
+  // The payment has already settled by now. If the log cannot be written, the
+  // buyer still gets what it paid for, and the gap is recorded and said.
+  try {
+    const audit = await publishSale(sale, sha256);
+    await recordAudit(sale.id, sha256, audit, audit ? null : "no sales topic is configured");
+    headers.set("x-thenar-audit", audit ? `${audit.topicId}#${audit.sequence}` : "unrecorded: no sales topic is configured");
+  } catch (e) {
+    const reason = e instanceof Error ? e.message.split("\n")[0] : "unknown error";
+    await recordAudit(sale.id, sha256, null, reason);
+    headers.set("x-thenar-audit", headerSafe(`unrecorded: ${reason}`));
   }
-  return res;
+
+  return new NextResponse(body, { status: res.status, headers });
 }
 
 export const GET = logged(AGENT_CORPUS.path, handleGET);

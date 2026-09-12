@@ -1,5 +1,5 @@
 /**
- * The two Hedera accounts the corpus paywall needs, created once.
+ * The Hedera side of the corpus paywall, created once: two accounts and a topic.
  *
  * The buyer is the agent's own key. AGENT_PRIVATE_KEY is the secp256k1 key
  * whose address signs AgentKit challenges for World Chain; an ECDSA Hedera
@@ -10,13 +10,19 @@
  *
  * The seller is a fresh account that holds nothing but what the corpus earns.
  *
- * Funded from an existing testnet operator. Safe to re-run: an account already
+ * The topic is the sales log: a Consensus Service topic only the treasury's key
+ * can post to, so every message on it is the seller's own statement of what it
+ * served, in an order nobody can rewrite afterwards.
+ *
+ * Funded from an existing testnet operator. Safe to re-run: anything already
  * recorded in .env.local is reported, not created twice.
  *
  *   HEDERA_OPERATOR_ENV=/path/to/.env node scripts/hedera-setup.mjs
  */
 import { readFileSync, appendFileSync } from "node:fs";
-import { AccountBalanceQuery, AccountCreateTransaction, Client, Hbar, PrivateKey } from "@hashgraph/sdk";
+import {
+  AccountBalanceQuery, AccountCreateTransaction, Client, Hbar, PrivateKey, TopicCreateTransaction,
+} from "@hashgraph/sdk";
 
 const parse = (file) =>
   Object.fromEntries(
@@ -47,9 +53,9 @@ async function create(key, hbar) {
   return { id: receipt.accountId.toString(), tx: tx.transactionId.toString() };
 }
 
-// Recorded one at a time, straight after each receipt: if the second creation
-// fails, a re-run must not try to create the first again under an alias that
-// is already taken.
+// Recorded one at a time, straight after each receipt: if a later step fails,
+// a re-run must not try to create an earlier one again under an alias that is
+// already taken.
 let agentId = local.HEDERA_AGENT_ID;
 if (!agentId) {
   const key = ecdsa(local.AGENT_PRIVATE_KEY);
@@ -62,14 +68,33 @@ if (!agentId) {
 }
 
 let treasuryId = local.HEDERA_TREASURY_ID;
+let treasuryKey = local.HEDERA_TREASURY_KEY ? ecdsa(local.HEDERA_TREASURY_KEY) : null;
 if (!treasuryId) {
   const key = PrivateKey.generateECDSA();
   const t = await create(key, 1);
   appendFileSync(".env.local", `HEDERA_TREASURY_ID=${t.id}\nHEDERA_TREASURY_KEY=0x${key.toStringRaw()}\n`);
   treasuryId = t.id;
+  treasuryKey = key;
   console.log(`treasury ${t.id}  tx ${t.tx}`);
 } else {
   console.log(`treasury ${treasuryId}  already recorded`);
+}
+
+let topicId = local.HEDERA_SALES_TOPIC_ID;
+if (!topicId) {
+  if (!treasuryKey) {
+    throw new Error("HEDERA_TREASURY_KEY is missing from .env.local, and the sales topic's submit key is the treasury's");
+  }
+  const tx = await new TopicCreateTransaction()
+    .setTopicMemo("Thenar corpus sales: one message per pull, with the sha256 of the file served")
+    .setSubmitKey(treasuryKey.publicKey)
+    .execute(client);
+  const receipt = await tx.getReceipt(client);
+  topicId = receipt.topicId.toString();
+  appendFileSync(".env.local", `HEDERA_SALES_TOPIC_ID=${topicId}\n`);
+  console.log(`topic    ${topicId}  tx ${tx.transactionId.toString()}`);
+} else {
+  console.log(`topic    ${topicId}  already recorded`);
 }
 
 for (const [label, id] of [["agent", agentId], ["treasury", treasuryId]]) {
