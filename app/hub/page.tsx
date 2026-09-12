@@ -11,7 +11,7 @@ import { useMeasured, contradiction, type Measured } from "@/lib/measured";
 import { fmtPercent } from "@/lib/format";
 import { PropPreview } from "@/components/prop-picker";
 import { cn } from "@/lib/cn";
-import { SCENARIOS, CURRENCY, isSeedFunded } from "@/lib/chain";
+import { SCENARIOS, CURRENCY, isSeedFunded, appChain } from "@/lib/chain";
 import { fmtInt, fmtMon, fmtSeconds } from "@/lib/format";
 import { useTaskCatalogue, type TaskWithScene } from "@/components/tasks-provider";
 import { SKILLS, SKILL_LABEL } from "@/lib/skills";
@@ -110,7 +110,7 @@ export default function HubPage() {
           <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit={CURRENCY} tone="signal" />
           <Reading label="Cap per operator" value="5" unit="runs / task" />
           <span className="font-mono text-[12px] text-scribe-3 sm:ml-auto">
-            Live from the contract on Avalanche Fuji
+            Live from the contract on {appChain.name}
           </span>
         </div>
 
@@ -188,7 +188,7 @@ export default function HubPage() {
         <div className="mt-6 border border-reject bg-reject-dim px-6 py-10 text-center">
           <p className="text-[15px] text-reject">Could not read the task registry.</p>
           <p className="mx-auto mt-1 max-w-[52ch] text-[14px] text-scribe-2">
-            {error instanceof Error ? error.message : "The Avalanche RPC did not answer."}
+            {error instanceof Error ? error.message : `The ${appChain.name} RPC did not answer.`}
           </p>
           <button
             onClick={() => refetch()}

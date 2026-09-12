@@ -108,7 +108,7 @@ function spec() {
       "/api/task/{id}/notes": { get: { summary: "Signed operator notes for a task.", parameters: [taskId], responses: { "200": ok("Notes, each with the signature that proves its author.") } } },
       "/api/task/{id}/team": { get: { summary: "Who has contributed to this task.", parameters: [taskId], responses: { "200": ok("Contributors.") } } },
       "/api/task/{id}/history": {
-        get: { summary: "A funder's protocol calls, from Avalanche's own index.", parameters: [taskId, { name: "funder", in: "query", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("funder must be an address.") } },
+        get: { summary: "A funder's protocol calls, from Arcscan's index.", parameters: [taskId, { name: "funder", in: "query", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("funder must be an address.") } },
       },
       "/api/trajectory/{hash}": { get: { summary: "One stored trajectory, with its samples and the hash re-derived.", parameters: [hash], responses: { "200": ok("The trajectory."), "404": ok("No trajectory with that hash.") } } },
       "/api/trajectory/{hash}/similar": { get: { summary: "The paid runs closest to this one, by path distance.", parameters: [hash], responses: { "200": ok("Neighbours, nearest first."), "400": ok("Malformed hash."), "404": ok("Unknown hash.") } } },
@@ -130,7 +130,7 @@ function spec() {
         },
       },
       "/api/dataset/summary": { get: { summary: "What a corpus contains, without downloading it.", parameters: [{ name: "taskId", in: "query", required: true, schema: { type: "integer", minimum: 0 } }], responses: { "200": ok("Summary."), "400": ok("Missing taskId.") } } },
-      "/api/glacier/{address}": { get: { summary: "One address's protocol calls, from Avalanche's index.", parameters: [{ name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("Not an address.") } } },
+      "/api/calls/{address}": { get: { summary: "One address's protocol calls, from Arcscan's index.", parameters: [{ name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("Not an address.") } } },
       "/api/props": { get: { summary: "Models funders have uploaded.", responses: { "200": ok("Props.") } } },
       "/api/space": { get: { summary: "Open rooms and who is in them.", responses: { "200": ok("Rooms.") } } },
       "/api/snapshot": { get: { summary: "The most recent corpus snapshot written to object storage.", responses: { "200": ok("Snapshot metadata.") } } },

@@ -118,22 +118,20 @@ export const SCENARIO_LABEL: Record<string, string> = {
 /**
  * A gas figure at a price the chain is genuinely quoting.
  *
- * Fuji's base fee sits at ten wei when nothing is happening, so a submit that
- * burns six hundred thousand gas costs about ninety-six billionths of a token.
- * `fmtMon` at three decimals renders that as 0.000, which is a zero where there
- * is a real cost — and a product that prints a zero for a number it charged is
- * doing the thing it exists to argue against.
+ * A call that costs less than a thousandth of a token renders through `fmtMon`
+ * at three decimals as 0.000, which is a zero where there is a real cost — and
+ * a product that prints a zero for a number it charged is doing the thing it
+ * exists to argue against.
  *
- * So below a thousandth of a token it switches to nAVAX, the unit Avalanche
- * uses for exactly this range and the one a faucet and an explorer both speak.
+ * So below a thousandth of a token it counts in billionths, with an n before
+ * the symbol.
  */
 export const fmtGasCost = (mon: number, symbol: string) => {
   if (mon === 0) return `0 ${symbol}`;
   if (mon < 0.001) {
-    // Fuji's base fee bottoms out at ten wei, which puts a submit at a tenth of
-    // one nano-token — so two decimals is not detail, it is the whole figure.
-    // Below one, keep three digits; above ten, none, because 96 nAVAX and
-    // 96.00 nAVAX say the same thing and one of them is harder to read.
+    // Under one billionth the decimals are the whole figure, so keep three;
+    // under ten, two; above that, none, because 96 and 96.00 say the same
+    // thing and one of them is harder to read.
     const nano = mon * 1e9;
     const dp = nano < 1 ? 3 : nano < 10 ? 2 : 0;
     return `${nano.toLocaleString(locale(), { maximumFractionDigits: dp })} n${symbol}`;

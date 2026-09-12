@@ -3,7 +3,7 @@
 import { useReadContracts } from "wagmi";
 import { formatEther } from "viem";
 import { AXON_ABI } from "@/lib/abi";
-import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY } from "@/lib/chain";
+import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY, appChain } from "@/lib/chain";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 
@@ -40,7 +40,7 @@ export function NetworkStats() {
         rel="noreferrer"
         className="font-mono text-[12px] text-scribe-3 transition-colors hover:text-probe"
       >
-        AxonProtocol · {shortHash(AXON_ADDRESS)} · verified on Avalanche Fuji →
+        AxonProtocol · {shortHash(AXON_ADDRESS)} · verified on {appChain.name} →
       </a>
     </div>
   );

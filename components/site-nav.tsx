@@ -8,18 +8,18 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ThenarWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
-import { addressUrl, IS_DEPLOYED, CURRENCY, FAUCET_URL } from "@/lib/chain";
+import { addressUrl, IS_DEPLOYED, CURRENCY, FAUCET_URL, appChain } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
 
 const ROUTES = [
   { href: "/hub", label: "Hub" },
+  { href: "/agents", label: "Agents" },
   { href: "/space", label: "Floor" },
   { href: "/inventory", label: "Inventory" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/foundry", label: "Foundry" },
   { href: "/contracts", label: "Contracts" },
-  { href: "/l1", label: "L1" },
 ];
 
 /** Enough of the native token to cover gas on a submit with headroom. */
@@ -158,7 +158,7 @@ export function SiteNav() {
 
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
             <span className="hidden items-baseline gap-2 font-mono text-[12px] text-scribe-3 xl:flex">
-              Avalanche Fuji
+              {appChain.name}
               {block ? (
                 <span className="text-scribe-2 tabular-nums" title="Latest block">
                   #{block.toString()}
@@ -212,13 +212,13 @@ export function SiteNav() {
 
       {s.wrongNetwork ? (
         <Banner tone="reject">
-          Your wallet is on the wrong network. Thenar settles on Avalanche Fuji.
+          Your wallet is on the wrong network. Thenar settles on {appChain.name}.
           <button
             onClick={s.switchToChain}
             disabled={s.switching}
             className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-reject hover:text-ink-0 disabled:opacity-60"
           >
-            {s.switching ? "Switching…" : "Switch to Avalanche"}
+            {s.switching ? "Switching…" : `Switch to ${appChain.name}`}
           </button>
         </Banner>
       ) : null}

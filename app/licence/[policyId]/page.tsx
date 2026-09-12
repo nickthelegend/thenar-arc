@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DimRule } from "@/components/primitives";
-import { WarpAttestation } from "@/components/warp-attestation";
 import { usePolicies, useCapTable } from "@/lib/hooks";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { addressUrl, AXON_ADDRESS, CURRENCY, appChain } from "@/lib/chain";
@@ -135,8 +134,6 @@ export default function LicencePage() {
           ))}
         </ol>
       )}
-
-      <WarpAttestation policy={policy} />
 
       <DimRule className="mt-10" note="What this licence delivers" />
       <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">

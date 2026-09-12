@@ -220,7 +220,7 @@ export default function TaskView() {
               <li key={r.traj_hash} className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-rule py-2.5 font-mono text-[12px]">
                 {/* Internal, because the operator page shows this address's
                     whole history — runs from the ledger and every call from
-                    Avalanche's index, including the reverted ones. */}
+                    Arcscan's index, including the reverted ones. */}
                 <Link href={`/operator/${r.contributor}`} className="text-scribe-2 hover:text-probe">
                   {shortHash(r.contributor)}
                 </Link>

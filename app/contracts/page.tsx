@@ -6,7 +6,7 @@ import { appChain, addressUrl, AXON_ADDRESS, CURRENCY, txUrl } from "@/lib/chain
 import { DEPLOYED, SUPERSEDED, type Deployed } from "@/lib/registry";
 import {
   CONTRIBUTION_RECORD_ABI, REFERRALS_ABI, PRIZE_POOL_ABI,
-  FOUNDRY_ABI, LICENCE_RECEIPT_ABI,
+  FOUNDRY_ABI,
 } from "@/lib/registry-abi";
 import { DimRule } from "@/components/primitives";
 import { settlementsFor, type Settlement } from "@/lib/glacier";
@@ -15,7 +15,7 @@ import { fmtGasCost } from "@/lib/format";
 export const metadata: Metadata = {
   title: "Contracts — Thenar",
   description:
-    "Every contract this protocol has deployed on Avalanche Fuji, its address, what it does, and the surface that uses it. Read live from chain.",
+    `Every contract this protocol has deployed on ${appChain.name}, its address, what it does, and the surface that uses it. Read live from chain.`,
 };
 
 // Read at request time. A registry that caches is a registry that can be wrong.
@@ -106,16 +106,6 @@ async function readings(): Promise<Record<string, [string, string][]>> {
         ["Weight to propose", String(minWeight)],
       ];
     }),
-    safe("licence", async () => {
-      const [format, source] = await Promise.all([
-        client.readContract({ address: at("licence"), abi: LICENCE_RECEIPT_ABI, functionName: "FORMAT" }),
-        client.readContract({ address: at("licence"), abi: LICENCE_RECEIPT_ABI, functionName: "sourceChain" }),
-      ]);
-      return [
-        ["Warp payload format", String(format)],
-        ["Source chain", String(source)],
-      ];
-    }),
   ]);
   return out;
 }
@@ -161,10 +151,10 @@ export default async function ContractsPage() {
 
             <p className="mt-2 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">{r.does}</p>
 
-            {r.avalanche ? (
+            {r.arc ? (
               <p className="mt-2 max-w-[74ch] border-l-2 border-signal pl-3 text-[13px] leading-relaxed text-scribe-2">
-                <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-signal">Avalanche</span>{" "}
-                {r.avalanche}
+                <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-signal">Arc</span>{" "}
+                {r.arc}
               </p>
             ) : null}
 
@@ -196,7 +186,7 @@ export default async function ContractsPage() {
 
       <DimRule className="mt-10" note="Every write, and what it cost" />
       <p className="mt-3 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">
-        Every transaction sent to the protocol contract, from Avalanche&rsquo;s own
+        Every transaction sent to the protocol contract, from Arcscan&rsquo;s
         index rather than from anything we store &mdash; including the ones that
         reverted, which a ledger of accepted runs by definition cannot show.
         The method is resolved from the selector against the deployed
@@ -274,7 +264,7 @@ async function CallLog() {
   if (failed) {
     return (
       <p className="mt-4 font-mono text-[13px] text-scribe-3">
-        Avalanche&rsquo;s index did not answer. Everything above is read straight
+        Arcscan did not answer. Everything above is read straight
         from the node and is unaffected.
       </p>
     );
@@ -287,7 +277,7 @@ async function CallLog() {
     );
   }
 
-  const spent = calls.reduce((n, c) => n + c.feeAvax, 0);
+  const spent = calls.reduce((n, c) => n + c.fee, 0);
   const reverted = calls.filter((c) => !c.succeeded).length;
   const gas = calls.reduce((n, c) => n + c.gasUsed, 0);
 
@@ -314,7 +304,7 @@ async function CallLog() {
               {c.gasUsed.toLocaleString("en-GB")} gas
             </span>
             <span className="hidden text-right font-mono text-[12px] tabular-nums text-scribe-2 sm:block">
-              {fmtGasCost(c.feeAvax, CURRENCY)}
+              {fmtGasCost(c.fee, CURRENCY)}
             </span>
             <a
               href={txUrl(c.txHash)}

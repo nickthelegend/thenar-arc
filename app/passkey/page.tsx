@@ -115,7 +115,7 @@ export default function PasskeyPage() {
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Passkey</h1>
       <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-scribe-2">
         A passkey signs on secp256r1 &mdash; the curve a Secure Enclave and a
-        hardware key use, and not the one Ethereum uses. Avalanche carries the
+        hardware key use, and not the one Ethereum uses. Arc carries the
         P-256 precompile at <span className="font-mono text-scribe">0x0100</span>,
         so a signature from that curve can be checked on chain directly. This binds
         a key your browser generates to your address, and proves a signature against

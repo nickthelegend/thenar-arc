@@ -2,7 +2,7 @@ import { logged } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 
 import { chainClient } from "@/lib/rpc";
-import { AXON_ADDRESS } from "@/lib/chain";
+import { AXON_ADDRESS, appChain } from "@/lib/chain";
 import { markSettled } from "@/lib/server/db";
 
 export const runtime = "nodejs";
@@ -39,7 +39,7 @@ async function handlePOST(req: Request) {
     receipt = await client.getTransactionReceipt({ hash: txHash as `0x${string}` });
   } catch {
     return NextResponse.json(
-      { error: "no such transaction on Avalanche Fuji" },
+      { error: `no such transaction on ${appChain.name}` },
       { status: 409 },
     );
   }

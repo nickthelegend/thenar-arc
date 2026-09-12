@@ -26,9 +26,9 @@ const AXON =
   (readFileSync(".env.local", "utf8").match(/^NEXT_PUBLIC_AXON_ADDRESS=(.*)$/m) ?? [])[1];
 
 const chain = {
-  id: 43113, name: "Avalanche Fuji",
-  nativeCurrency: { name: "AVAX", symbol: "AVAX", decimals: 18 },
-  rpcUrls: { default: { http: ["https://api.avax-test.network/ext/bc/C/rpc"] } },
+  id: 5042002, name: "Arc Testnet",
+  nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
 };
 const abi = parseAbi([
   "function taskCount() view returns (uint256)",
@@ -103,16 +103,16 @@ const el = h("div", {
     stat("a", "Tasks funded", String(tasks)),
     stat("b", "Runs paid", String(runs)),
     stat("c", "Policies", String(policies)),
-    stat("d", "Escrow", `${Number(formatEther(escrow)).toFixed(3)} AVAX`, SIGNAL),
+    stat("d", "Escrow", `${Number(formatEther(escrow)).toFixed(3)} ${chain.nativeCurrency.symbol}`, SIGNAL),
   ]),
 
   h("div", {
     key: "foot",
     style: { display: "flex", fontSize: 16, color: SCRIBE, letterSpacing: 0.5 },
-  }, `Avalanche Fuji · ${AXON} · read from the contract on ${asOf}`),
+  }, `${chain.name} · ${AXON} · read from the contract on ${asOf}`),
 ]);
 
 const res = new ImageResponse(el, { width: 1200, height: 630 });
 const buf = Buffer.from(await res.arrayBuffer());
 writeFileSync("public/og.png", buf);
-console.log(`public/og.png — ${buf.length} bytes · ${tasks} tasks, ${runs} runs, ${policies} policies, ${formatEther(escrow)} AVAX escrow, as of ${asOf}`);
+console.log(`public/og.png — ${buf.length} bytes · ${tasks} tasks, ${runs} runs, ${policies} policies, ${formatEther(escrow)} ${chain.nativeCurrency.symbol} escrow, as of ${asOf}`);

@@ -28,10 +28,10 @@ type Proposal = {
  * What it governs is one thing — which task gets funded next — because a
  * treasury that can only do one thing cannot be voted into doing another.
  *
- * All of which was deployed, funded with 0.01 AVAX, and reachable from no page.
- * Proposal 0 passed 16,500 to nil, closed, and has sat unexecuted since —
- * a decision made by the people entitled to make it and never carried out,
- * because nothing in this interface could call `execute`.
+ * All of which was deployed, funded, and reachable from no page. On the
+ * previous deployment, proposal 0 passed 16,500 to nil, closed, and sat
+ * unexecuted — a decision made by the people entitled to make it and never
+ * carried out, because nothing in this interface could call `execute`.
  *
  * The three actions appear exactly where the contract would accept them. A vote
  * button on a closed ballot or an execute on a live one is an offer to send a

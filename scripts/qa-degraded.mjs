@@ -11,10 +11,17 @@
  */
 import { chromium } from "playwright";
 import { createPublicClient, fallback, http, parseAbiItem } from "viem";
-import { avalancheFuji } from "viem/chains";
+import { defineChain } from "viem";
 import { scanLogs } from "../lib/scan-logs.ts";
 
-const BASE = process.argv[2] ?? "https://thenar.io";
+const arcTestnet = defineChain({
+  id: 5042002,
+  name: "Arc Testnet",
+  nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
+});
+
+const BASE = process.argv[2] ?? "http://127.0.0.1:3111";
 
 const results = [];
 const check = (id, ok, detail) => {
@@ -138,13 +145,13 @@ await b.close();
   // Not a browser check. The failover is a property of the transport, and the
   // interesting case is the one that cannot be produced by loading a page:
   // the endpoint this app reads history from being gone.
-  const AXON = "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0";
+  const AXON = "0x6D6D6D0ee86C654b69646223049D6812c0218B2f";
   const accepted = parseAbiItem(
     "event TrajectoryAccepted(uint256 indexed trajectoryId, uint256 indexed taskId, address indexed contributor, bytes32 trajHash, string cid, uint16 score, uint256 paid)",
   );
   const read = async (urls) => {
     const c = createPublicClient({
-      chain: avalancheFuji,
+      chain: arcTestnet,
       transport: fallback(
         urls.map((u) => http(u, { retryCount: 1, retryDelay: 200, timeout: 15000 })),
         { rank: false },
@@ -159,14 +166,14 @@ await b.close();
   };
 
   const healthy = await read([
-    "https://api.avax-test.network/ext/bc/C/rpc",
-    "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+    "https://rpc.testnet.arc.network",
+    "https://rpc.testnet.arc.io",
   ]);
   // The secondary refuses the million-block range the primary answers, so this
   // also proves the narrowing in lib/scan-logs.ts: same count, more requests.
   const degraded = await read([
     "https://this-endpoint-does-not-exist.thenar.invalid/rpc",
-    "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+    "https://rpc.testnet.arc.io",
   ]);
   check("G4", healthy > 0 && degraded === healthy,
         `losing the primary costs latency, not history: ${healthy} runs found, ${degraded} with it gone`);

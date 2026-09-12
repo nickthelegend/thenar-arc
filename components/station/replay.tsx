@@ -10,7 +10,7 @@ import { GOAL_R, PAYLOAD_R, PAYLOAD_H, TABLE_HALF } from "@/components/station/v
 /**
  * A recorded run, played back in the scene it was recorded in.
  *
- * The ledger could already tell you a run scored 0.83 and paid 0.004 AVAX. It
+ * The ledger could already tell you a run scored 0.83 and was paid for it. It
  * could not show you the run. Every sample carries the six joint angles, the jaw
  * opening and the payload pose, so the arm can be posed from the recording
  * rather than re-simulated — what you are watching is the trajectory the

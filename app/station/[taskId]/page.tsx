@@ -22,7 +22,7 @@ import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
 import { webglAvailable } from "@/lib/webgl";
 import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
 import { soundOn, setSound } from "@/lib/click";
-import { txUrl, CURRENCY, FAUCET_URL } from "@/lib/chain";
+import { txUrl, CURRENCY, FAUCET_URL, appChain } from "@/lib/chain";
 import { sceneForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
 import { fmtGasCost, fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -459,9 +459,10 @@ export default function StationPage() {
   // Practice is forced when there is nothing to pay for, and chosen when a
   // first-time operator would rather not spend a slot learning the controls.
   const practice = !task.open || capped || chosePractice || policyOn;
-  // Measured on this chain: a submit reserves roughly 0.03 AVAX against the gas
-  // limit regardless of what it spends, and the chain rejects the transaction
-  // outright below that. Warn before the wallet does.
+  // A submit reserves its gas limit at the offered fee regardless of what it
+  // spends, and the chain rejects the transaction outright when the balance
+  // cannot cover that. The floor was set from a measurement on Avalanche Fuji,
+  // where that reserve came to roughly 0.03 AVAX. Warn before the wallet does.
   const RESERVE_FLOOR = 0.05;
   const thinOnGas = s.connected && !s.wrongNetwork && s.balance < RESERVE_FLOOR;
 
@@ -593,7 +594,7 @@ export default function StationPage() {
           <Section title="Settlement">
             <p className="text-[13px] leading-relaxed text-scribe-2">
               One transaction records the trajectory hash, its task, your address
-              and the verified score — and transfers the AVAX. There is no separate
+              and the verified score — and transfers the {CURRENCY}. There is no separate
               signing step.
             </p>
           </Section>
@@ -962,7 +963,7 @@ function MeasurementSnap({
   /** The chain will not pay this one, and said so before it started. */
   practice: boolean;
   passkey?: { on: boolean; set: (v: boolean) => void };
-  /** This task's rate, so a lost point can be priced in AVAX. */
+  /** This task's rate, so a lost point can be priced. */
   rewardMon: number;
   /** Par for this task, so a rejected run can be told what time would have paid. */
   parSeconds: number;
@@ -982,7 +983,7 @@ function MeasurementSnap({
     : tx.phase === "signing" ? "Confirm in your wallet…"
     : tx.phase === "pending" ? "Waiting for the block…"
     : practice ? "Practice run — nothing to submit"
-    : s.wrongNetwork ? "Switch to Avalanche Fuji"
+    : s.wrongNetwork ? `Switch to ${appChain.name}`
     : !s.connected ? "Connect a wallet to get paid"
     : "Submit and get paid";
 

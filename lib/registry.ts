@@ -22,27 +22,41 @@ export type Deployed = {
   source: string;
   /** Where a visitor meets it, or "/contracts only" if nowhere else yet. */
   surface: string;
-  /** Set when the contract is a deliberate use of something Avalanche-specific. */
-  avalanche?: string;
+  /** Set when the contract leans on something Arc gives it that a generic chain would not. */
+  arc?: string;
 };
 
+/**
+ * Every Thenar contract on Arc testnet.
+ *
+ * All of them are the Avalanche build's source, unchanged. The ones that hold
+ * or move value do it in the chain's native value, and on Arc the native value
+ * is USDC — so every bounty, payout, fee, pot and treasury below is dollars
+ * without a line of Solidity having learned a token interface.
+ *
+ * LicenceReceipt is not here. It attests a policy through Avalanche's Warp
+ * precompile, which Arc does not have, and a registry row for a contract whose
+ * one function cannot succeed would be the aspirational answer this list exists
+ * to avoid.
+ */
 export const DEPLOYED: Deployed[] = [
   {
     key: "axon",
     name: "AxonProtocolV2",
-    address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
+    address: "0x6D6D6D0ee86C654b69646223049D6812c0218B2f",
     does:
-      "Tasks, escrow, trajectories, policies and cap tables. Records a run and pays for it in one call. " +
+      "Tasks, escrow, trajectories, policies and cap tables. Records a run and pays for it in one call, in USDC. " +
       "submitTrajectoryFor is permissionless: anyone may pay the gas for someone else's run, because the " +
       "verifier signature binds the task, the contributor, the hash and the score, so relaying moves who " +
-      "pays and forges nothing. No relayer service is running — the path exists on chain and nothing calls it.",
+      "pays and forges nothing.",
     source: "contracts/src/AxonProtocolV2.sol",
     surface: "/hub, /station, /task, /run, /leaderboard, /portfolio",
+    arc: "USDC is the gas. The bounty a funder escrows, the payout an operator earns and the fee to submit are one balance.",
   },
   {
     key: "certificate",
     name: "TrajectoryCertificate",
-    address: "0x7a060129A3730852A606Bbe985207952AC25c4f6",
+    address: "0x9dAc88a501F908FFaF41F4e0c6071c1F8B6B9B7B",
     does: "Soulbound token naming a run's recorder. Conveys no rights over the data.",
     source: "contracts/src/TrajectoryCertificate.sol",
     surface: "/contracts, /run",
@@ -50,65 +64,55 @@ export const DEPLOYED: Deployed[] = [
   {
     key: "contribution",
     name: "ContributionRecord",
-    address: "0xa3b2dd739be34D13ca51a92ADDD0Ce2022E23247",
+    address: "0x940a9A5CB219D5061748AD10b1Dd38f82C825523",
     does: "A running total of work recorded, in a shape wallets already read. Cannot be transferred, sold or redeemed.",
     source: "contracts/src/ContributionRecord.sol",
-    surface: "/contracts",
+    surface: "/contracts, /operator, /portfolio",
   },
   {
     key: "referrals",
     name: "Referrals",
-    address: "0x50414b04e39434Fc66527Fc7c816d835C766AC32",
-    does: "Pays for bringing someone who then does the work, not for signing up.",
+    address: "0x4688D98Ca5813CA9c4702AcBbfED28B88dF9971d",
+    does: "Pays two cents of USDC for bringing someone who then does the work, not for signing up.",
     source: "contracts/src/Referrals.sol",
-    surface: "/contracts",
+    surface: "/portfolio, /contracts",
   },
   {
     key: "prize",
     name: "PrizePool",
-    address: "0x42912F9a437C8EcF2a90Cb18F49D8a54DDe3F84f",
-    does: "A funded pot for one task. Contributors enter themselves and it splits by work the protocol recorded.",
+    address: "0x39C7983E14ad17FA24399d8394E36EFcBd6d8b13",
+    does: "A funded pot for task 1. Contributors enter themselves and it splits by work the protocol recorded.",
     source: "contracts/src/PrizePool.sol",
     surface: "/contracts",
   },
   {
     key: "foundry",
     name: "Foundry",
-    address: "0xFf4007B14d3bb18a409EF9eF1ac6DD21e601783E",
-    does: "A treasury the protocol's contributors vote to spend on new tasks, weighted by work recorded.",
+    address: "0x3c6eAaeEb14743944b6AC37aBBfAd6aD735a6846",
+    does: "A USDC treasury the protocol's contributors vote to spend on new tasks, weighted by work recorded.",
     source: "contracts/src/Foundry.sol",
-    surface: "/contracts",
+    surface: "/foundry, /contracts",
   },
   {
     key: "confidential",
     name: "ConfidentialPayouts",
-    address: "0x8CD8A9211CE32184a89F9ab9DC26224D08B775c2",
+    address: "0x023769421D2501E7F9cF06c1F677d85C1C393003",
     does: "ElGamal on secp256k1. Earnings add up on chain without the chain holding the number.",
     source: "contracts/src/ConfidentialPayouts.sol",
     surface: "/contracts",
-    avalanche: "Homomorphic addition on chain, the primitive behind Avalanche's encrypted ERC work.",
-  },
-  {
-    key: "licence",
-    name: "LicenceReceipt",
-    address: "0xbA65eC5479C9E131d158Af1947452C989eF7D143",
-    does: "Attests a policy as an Avalanche Warp message, signed by this subnet's validators.",
-    source: "contracts/src/LicenceReceipt.sol",
-    surface: "/contracts, /licence",
-    avalanche: "Warp — validator-signed interchain attestation. There is no equivalent on a generic EVM chain.",
   },
   {
     key: "corpusAccess",
     name: "CorpusAccess",
-    address: "0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165",
-    does: "Time-boxed read access to the corpus. Sells time, not rights.",
+    address: "0x14588B2b26c3af1D0dDabc386fCe659d662B7Bc8",
+    does: "Time-boxed read access to the corpus, a cent of USDC a day. Sells time, not rights.",
     source: "contracts/src/CorpusAccess.sol",
-    surface: "/api/dataset (402 gate)",
+    surface: "/corpus, /api/dataset",
   },
   {
     key: "corpusManifest",
     name: "CorpusManifest",
-    address: "0x318e5faf04c9db5d844aaa93850e71406012dd62",
+    address: "0x956f1Bf0dd1CE3Af862388E643e708c4C37148f8",
     does: "The published shape of the corpus a licence buys.",
     source: "contracts/src/CorpusManifest.sol",
     surface: "/corpus",
@@ -116,25 +120,22 @@ export const DEPLOYED: Deployed[] = [
   {
     key: "passkey",
     name: "PasskeyRegistry",
-    address: "0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F",
+    address: "0xecbbC9d43eF7C4E4Df00BC02757b8FC3E3b7615e",
     does: "Binds a secp256r1 public key to an address and verifies signatures through the P-256 precompile at 0x0100.",
     source: "contracts/src/PasskeyRegistry.sol",
     surface: "/passkey",
-    avalanche: "RIP-7212 P-256 precompile, so a passkey's own curve is verified by the chain itself.",
+    arc: "The P-256 precompile answers on Arc: a real RIP-7212 vector verifies, a tampered one does not.",
   },
 ];
 
-/** Superseded, and kept only so its runs stay explicable. */
+/** Deployments this protocol ran on before Arc, kept so their runs stay explicable. */
 export const SUPERSEDED: Deployed[] = [
   {
-    key: "axon-v1",
-    name: "AxonProtocol v1",
-    address: "0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3",
-    does:
-      "The first deployment. Its runs are in the archive. It has a pull-payment claim(), " +
-      "but claimable is zero for every address this deployment has ever paid or been funded by — " +
-      "the balance it holds is unfilled task escrow, and refunds only arrived in V2, so it is stuck.",
-    source: "contracts/src/AxonProtocol.sol",
+    key: "axon-fuji",
+    name: "AxonProtocolV2 on Avalanche Fuji",
+    address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
+    does: "The deployment Thenar ran on before moving to Arc. Its runs are real, paid in AVAX, and verifiable on Snowtrace.",
+    source: "contracts/src/AxonProtocolV2.sol",
     surface: "/archive",
   },
 ];

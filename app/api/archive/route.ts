@@ -23,7 +23,7 @@ export async function GET() {
   const contracts = (
     await Promise.all(
       PRIOR_CONTRACTS
-        .filter((c) => c.chainId === appChain.id)
+        .filter((c) => (c.chainId as number) === appChain.id)
         .map(async (c) => ({
           address: c.address, chainId: c.chainId, label: c.label, why: c.why,
           runs: await trajectoriesOnContract(c.address),

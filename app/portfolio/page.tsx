@@ -155,14 +155,14 @@ export default function PortfolioPage() {
 
 type Settlement = {
   txHash: string; method: string; succeeded: boolean;
-  at: number; blockNumber: number; gasUsed: number; feeAvax: number;
+  at: number; blockNumber: number; gasUsed: number; fee: number;
 };
 
 /**
- * The same address, read from Avalanche's own index rather than from us.
+ * The same address, read from Arcscan's index rather than from us.
  *
  * Everything above arrives through this deployment: our RPC calls, our
- * database's transaction hashes. This asks Glacier instead, so it still answers
+ * database's transaction hashes. This asks Arcscan instead, so it still answers
  * if our server is gone — and it shows the calls that reverted, which a ledger
  * of accepted runs by definition cannot.
  */
@@ -173,7 +173,7 @@ function Settlements({ address }: { address?: string | null }) {
   useEffect(() => {
     if (!address) return;
     let live = true;
-    fetch(`/api/glacier/${address}`)
+    fetch(`/api/calls/${address}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((d: { settlements: Settlement[] }) => { if (live) setRows(d.settlements); })
       .catch(() => { if (live) setFailed(true); });
@@ -185,7 +185,7 @@ function Settlements({ address }: { address?: string | null }) {
       <>
         <DimRule className="mt-10" note="On-chain activity" />
         <p className="mt-4 text-[14px] text-scribe-3">
-          Avalanche&rsquo;s index would not answer just now. The run history above is
+          Arcscan would not answer just now. The run history above is
           read from the contract directly and is unaffected.
         </p>
       </>
@@ -196,7 +196,7 @@ function Settlements({ address }: { address?: string | null }) {
     <>
       <DimRule className="mt-10" note="On-chain activity" />
       <p className="mt-4 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
-        Every call this address has made to the protocol, as Avalanche&rsquo;s own
+        Every call this address has made to the protocol, as Arcscan&rsquo;s
         indexer recorded it &mdash; including the ones that reverted. This list does
         not pass through our database, so it still resolves if this deployment does not.
       </p>
@@ -206,20 +206,18 @@ function Settlements({ address }: { address?: string | null }) {
           <span className="flex items-baseline gap-2">
             <span className="label">Gas paid, all calls</span>
             <span className="font-mono text-[15px] tabular-nums text-scribe-2">
-              {rows.reduce((n, r) => n + r.feeAvax, 0).toFixed(9)}
+              {rows.reduce((n, r) => n + r.fee, 0).toFixed(9)}
               <span className="ml-1 text-[12px] text-scribe-3">{CURRENCY}</span>
             </span>
           </span>
           <span className="flex items-baseline gap-2">
             <span className="label">Mean per call</span>
             <span className="font-mono text-[15px] tabular-nums text-scribe-3">
-              {(rows.reduce((n, r) => n + r.feeAvax, 0) / rows.length).toFixed(9)}
+              {(rows.reduce((n, r) => n + r.fee, 0) / rows.length).toFixed(9)}
             </span>
           </span>
           <span className="max-w-[46ch] text-[13px] leading-relaxed text-scribe-3">
-            Fuji settles at 160 wei a gas unit, so recording a run costs about
-            0.000000065 {CURRENCY} against the {CURRENCY} it pays. The cost of
-            submitting is not what stands between an operator and their first run.
+            Gas is paid in {CURRENCY}, from the same balance a run pays into.
           </span>
         </div>
       ) : null}
@@ -241,7 +239,7 @@ function Settlements({ address }: { address?: string | null }) {
             >
               <span className="truncate font-mono text-[13px] text-scribe">{r.method}</span>
               <span className="hidden font-mono text-[12px] tabular-nums text-scribe-3 sm:block">
-                {r.feeAvax.toFixed(9)}
+                {r.fee.toFixed(9)}
               </span>
               <span
                 className={cn(

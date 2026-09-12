@@ -16,10 +16,10 @@ const REFERRALS = DEPLOYED.find((d) => d.key === "referrals")!.address;
 /**
  * Who brought you here, and who you brought.
  *
- * The Referrals contract has been deployed, funded and paying since the
- * beginning — half a milli-AVAX out, one claim honoured — and it appeared in
- * this interface as a row on the contract registry. Nobody could see whether
- * they had been credited, nobody could get a link to give somebody, and the
+ * The Referrals contract was deployed, funded and paying before this panel
+ * existed, and it appeared in this interface only as a row on the contract
+ * registry. Nobody could see whether they had been credited, nobody could get
+ * a link to give somebody, and the
  * newcomer who had to make the call had no way to make it.
  *
  * The claim is made by the newcomer, never by the referrer, and the contract is

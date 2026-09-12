@@ -144,7 +144,7 @@ async function handleGET(_req: Request, ctx: { params: Promise<{ id: string }> }
         "Each episode's hash is on chain with the payout that settled it. The " +
         "root above commits to the whole set; a single episode proves into it " +
         "with the proof from /api/task/{id}/manifest.",
-      reward_per_trajectory_avax: task ? formatEther(task.rewardPerTrajectory) : null,
+      reward_per_trajectory_usdc: task ? formatEther(task.rewardPerTrajectory) : null,
     },
     limitations: {
       size: "Small. This is a demonstration deployment, not a production corpus.",

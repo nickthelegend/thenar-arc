@@ -7,7 +7,7 @@ import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useThenarWrite } from "@/lib/write";
-import { txUrl, CURRENCY } from "@/lib/chain";
+import { txUrl, CURRENCY, appChain } from "@/lib/chain";
 import { parSecondsFor } from "@/lib/par";
 import { cn } from "@/lib/cn";
 import { PostPreflight } from "@/components/post-preflight";
@@ -114,7 +114,7 @@ export default function PostTaskPage() {
     <div className="mx-auto max-w-[720px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Post a task</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        A task is a funded bounty. The AVAX you escrow is what operators are paid
+        A task is a funded bounty. The {CURRENCY} you escrow is what operators are paid
         from, one accepted run at a time, and whatever is left stays yours in the
         contract.
       </p>
@@ -209,7 +209,7 @@ export default function PostTaskPage() {
               />
               <span className="text-[12px] text-scribe-3">{CURRENCY}</span>
             </div>
-            {!validReward ? <Err>A positive amount in AVAX.</Err> : null}
+            {!validReward ? <Err>A positive amount in {CURRENCY}.</Err> : null}
           </Field>
         </div>
 
@@ -385,7 +385,7 @@ export default function PostTaskPage() {
             : tx.phase === "pending" ? "Posting…"
             : !formValid ? "Finish the definition"
             : !s.connected ? "Connect a wallet"
-            : s.wrongNetwork ? "Switch to Avalanche"
+            : s.wrongNetwork ? `Switch to ${appChain.name}`
             : !affordable ? "Escrow exceeds your balance"
             : "Escrow and post"}
         </Button>

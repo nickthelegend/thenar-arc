@@ -20,9 +20,10 @@ const nextConfig: NextConfig = {
   /**
    * Headers a browser should get whatever else happens.
    *
-   * The app loads WebGL, fonts and models from itself and talks to exactly two
-   * origins it does not own: the Avalanche RPC and Glacier. Naming them means a
-   * script injected into a page cannot quietly ship data somewhere else.
+   * The app loads WebGL, fonts and models from itself and talks only to the
+   * origins named in connect-src below: Arc's RPC endpoints, Blocky402 and the
+   * Hedera mirror node for the corpus paywall, and WalletConnect. Naming them
+   * means a script injected into a page cannot quietly ship data somewhere else.
    * `unsafe-eval` is required by the WASM/three toolchain and `unsafe-inline`
    * by Next's own inline bootstrap, so the policy is honest about what it does
    * and does not buy rather than pretending to be stricter than it is.

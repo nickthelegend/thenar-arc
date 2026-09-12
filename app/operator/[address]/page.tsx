@@ -20,7 +20,7 @@ type Run = {
   tx_hash: string | null;
 };
 type Settlement = {
-  txHash: string; method: string; succeeded: boolean; at: number; feeAvax: number;
+  txHash: string; method: string; succeeded: boolean; at: number; fee: number;
 };
 
 /**
@@ -30,7 +30,7 @@ type Settlement = {
  * wallet connected. Neither lets you look up a contributor — which is what a
  * buyer does when deciding whether a corpus is worth paying for, and what a
  * contributor does when they want a link to their own work. Both halves are
- * public: the runs from the ledger, the calls from Avalanche's index.
+ * public: the runs from the ledger, the calls from Arcscan's index.
  */
 export default function OperatorPage() {
   const { address } = useParams<{ address: string }>();
@@ -55,11 +55,11 @@ export default function OperatorPage() {
   /**
    * What the chain says this address earned, against what it paid to earn it.
    *
-   * The page already read the gas from Avalanche's index and never put an
-   * earnings figure beside it, which leaves the more interesting number
-   * unstated: on this chain a submit costs about a two-millionth of what it
-   * pays. That ratio is the argument for settling a sub-cent payout on chain
-   * at all, and it was sitting in two figures nobody had subtracted.
+   * The page already read the gas from the explorer's index and never put an
+   * earnings figure beside it, which left the more interesting number
+   * unstated: what a submit costs against what it pays. That ratio is the
+   * argument for settling a small payout on chain at all, and it was sitting
+   * in two figures nobody had subtracted.
    */
   const { data: chainStats } = useReadContract({
     address: AXON_ADDRESS,
@@ -100,7 +100,7 @@ export default function OperatorPage() {
       })
       .catch(() => { if (live) setRuns([]); });
 
-    fetch(`/api/glacier/${address}`)
+    fetch(`/api/calls/${address}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((d: { settlements: Settlement[] }) => { if (live) setCalls(d.settlements); })
       .catch(() => { if (live) setCalls([]); });
@@ -129,7 +129,7 @@ export default function OperatorPage() {
     paidOnChain === null || runs === null ? 0 : Math.max(0, paidOnChain - accepted.length);
   const best = accepted.length ? Math.max(...accepted.map((r) => r.score)) : 0;
   const mean = accepted.length ? accepted.reduce((n, r) => n + r.score, 0) / accepted.length : 0;
-  const gas = (calls ?? []).reduce((n, c) => n + c.feeAvax, 0);
+  const gas = (calls ?? []).reduce((n, c) => n + c.fee, 0);
   const earned = chainStats ? Number(formatEther((chainStats as readonly bigint[])[1])) : null;
   const badges = badgesFor(accepted);
   const scored: ScoredRun[] = accepted.map((r) => ({
@@ -290,7 +290,7 @@ export default function OperatorPage() {
         </ol>
       )}
 
-      <DimRule className="mt-10" note="Every call, from Avalanche's index" />
+      <DimRule className="mt-10" note="Every call, from Arcscan's index" />
       <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
         Including the ones that reverted, which a ledger of accepted runs by
         definition cannot show.

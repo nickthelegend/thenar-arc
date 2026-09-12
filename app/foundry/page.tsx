@@ -98,7 +98,7 @@ function MintRow({
           value={fee}
           onChange={(e) => setFee(e.target.value)}
           inputMode="decimal"
-          aria-label="Licence fee in AVAX"
+          aria-label={`Licence fee in ${CURRENCY}`}
           className={cn(
             "w-[92px] border bg-ink-2 px-2 py-1 text-right font-mono text-[13px] tabular-nums text-signal focus:outline-none",
             bad ? "border-reject" : "border-rule focus:border-rule-strong",

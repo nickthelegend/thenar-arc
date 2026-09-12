@@ -176,7 +176,7 @@ export const txUrlOn = (chainId: number, hash: string) =>
  * look like organic demand. Read off the chain, not asserted: compare a task's
  * funder to this and say so.
  */
-export const SEED_FUNDER = "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815".toLowerCase();
+export const SEED_FUNDER = "0x59904c9309e9389505695225fCBcBE1aF0d5EDe5".toLowerCase();
 
 export const isSeedFunded = (funder: string) => funder.toLowerCase() === SEED_FUNDER;
 

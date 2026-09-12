@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * What has happened around a task, from Avalanche's own index.
+ * What has happened around a task, from Arcscan's index.
  *
  * The funder is passed in rather than looked up: the contract already told the
  * page who it is, and re-reading it here would be a second RPC call to learn
@@ -28,7 +28,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return NextResponse.json({ taskId, funder, history: await funderHistory(funder) });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Avalanche's index is unreachable." },
+      { error: e instanceof Error ? e.message : "Arcscan is unreachable." },
       { status: 502 },
     );
   }

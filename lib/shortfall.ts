@@ -10,7 +10,7 @@ import {
  * A score is a single number and an operator cannot act on it. Every term is
  * already computed with the weight it carries, so the loss can be attributed
  * exactly: how many points each part gave up against a perfect run, what that
- * cost in AVAX at this task's rate, and the one sentence that says what to do
+ * cost at this task's rate, and the one sentence that says what to do
  * differently. Nothing here is estimated — it is the same arithmetic the
  * contract was asked to pay against, read backwards.
  */

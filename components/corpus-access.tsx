@@ -7,7 +7,7 @@ import { useSession } from "@/components/session";
 import { useThenarWrite } from "@/lib/write";
 import { CORPUS_ACCESS_ABI } from "@/lib/registry-abi";
 import { DEPLOYED } from "@/lib/registry";
-import { CURRENCY, txUrl } from "@/lib/chain";
+import { CURRENCY, txUrl, appChain } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
 
 const ACCESS = DEPLOYED.find((d) => d.key === "corpusAccess")!.address;
@@ -112,7 +112,7 @@ export function CorpusAccessPanel() {
         {tx.phase === "signing" ? "Confirm in wallet…"
           : tx.phase === "pending" ? "Subscribing…"
           : !s.connected ? "Connect a wallet"
-          : s.wrongNetwork ? "Switch to Avalanche"
+          : s.wrongNetwork ? `Switch to ${appChain.name}`
           : !affordable ? "More than this wallet holds"
           : secondsLeft > 0 ? `Extend by ${days} ${days === 1 ? "day" : "days"}`
           : `Subscribe for ${days} ${days === 1 ? "day" : "days"}`}

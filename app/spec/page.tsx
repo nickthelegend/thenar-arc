@@ -140,7 +140,7 @@ export default function SpecPage() {
 
       <DimRule className="mt-14" note="Signing without a seed phrase" />
       <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        Avalanche carries the P-256 precompile at 0x0100, so a signature from the
+        Arc carries the P-256 precompile at 0x0100, so a signature from the
         curve a passkey uses can be checked on chain directly. The registry binds
         one to an address, and a run can be authorised with it.{" "}
         <Link href="/passkey" className="text-signal hover:text-signal-hi">Register a passkey &rarr;</Link>

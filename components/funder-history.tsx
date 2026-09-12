@@ -5,14 +5,14 @@ import { DimRule } from "@/components/primitives";
 import { txUrlOn, appChain } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 
-type Call = { txHash: string; method: string; succeeded: boolean; at: number; feeAvax: number };
+type Call = { txHash: string; method: string; succeeded: boolean; at: number; fee: number };
 
 /**
  * What this task's funder has actually done on the protocol.
  *
  * The contract says what a task is; it does not say what happened to it. Who
  * created it, whether it was topped up, whether a policy was minted — that is a
- * sequence of calls, and Avalanche's index already holds them, including the
+ * sequence of calls, and Arcscan's index already holds them, including the
  * ones that reverted.
  *
  * Framed as the funder's activity rather than the task's, because the indexer
@@ -37,7 +37,7 @@ export function FunderHistory({ taskId, funder }: { taskId: number; funder: stri
       <>
         <DimRule className="mt-10" note="Funder activity" />
         <p className="mt-3 text-[14px] text-scribe-3">
-          Avalanche&rsquo;s index would not answer just now. Everything above is read
+          Arcscan would not answer just now. Everything above is read
           from the contract directly and is unaffected.
         </p>
       </>
@@ -51,7 +51,7 @@ export function FunderHistory({ taskId, funder }: { taskId: number; funder: stri
       <DimRule className="mt-10" note="Funder activity" />
       <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
         Every lifecycle call this task&rsquo;s funder has made to the protocol, as
-        Avalanche&rsquo;s own indexer recorded it &mdash; including any that reverted.
+        Arcscan&rsquo;s indexer recorded it &mdash; including any that reverted.
         Addresses, not tasks, are what the index is keyed by, so this is the
         funder&rsquo;s activity rather than only this task&rsquo;s.
       </p>

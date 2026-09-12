@@ -23,7 +23,7 @@ export type Tally = {
   paid: number;
   /** Sum of scores of measured runs, for a running mean. */
   scoreSum: number;
-  /** AVAX actually received, from confirmed receipts. */
+  /** The native token actually received, from confirmed receipts. */
   earned: number;
   /** The best score measured this sitting, on the contract's 0..10000 scale.
    *  A mean tells an operator how the sitting is going; a best tells them what
@@ -72,9 +72,9 @@ export function noteMeasured(score: number, taskId?: number): Tally {
 }
 
 /** The chain confirmed a payment. Only ever called from a settled receipt. */
-export function notePaid(avax: number): Tally {
+export function notePaid(amount: number): Tally {
   const t = readTally();
-  const next = { ...t, paid: t.paid + 1, earned: t.earned + avax };
+  const next = { ...t, paid: t.paid + 1, earned: t.earned + amount };
   write(next);
   return next;
 }

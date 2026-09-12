@@ -6,7 +6,7 @@
  * The curve is the point. secp256r1 (P-256) is what a passkey, a Secure Enclave
  * and a YubiKey sign with, and it is not the curve Ethereum uses — so verifying
  * one on chain needs the P-256 precompile at 0x0100 (EIP-7951 / RIP-7212),
- * which Avalanche provides. `PasskeyRegistry` binds the public key to an address
+ * which Arc provides. `PasskeyRegistry` binds the public key to an address
  * and checks signatures through it.
  *
  * The private key is generated non-extractable, so it cannot be read out of the

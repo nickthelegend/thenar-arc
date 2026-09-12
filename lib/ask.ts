@@ -79,7 +79,7 @@ const ENTRIES: Entry[] = [
     source: "ORDER_PENALTY and placedInOrder() in lib/score.ts",
   },
   {
-    match: /how much|paid|earn|reward|money|avax/i,
+    match: /how much|paid|earn|reward|money|usdc/i,
     question: "What does a run pay?",
     answer: () =>
       `The task's own rate, scaled by your score: a perfect run pays the full rate, a run at 80 pays four fifths of it. Every task's rate is on its page and in the contract. ` +

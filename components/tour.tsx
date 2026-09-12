@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { cn } from "@/lib/cn";
+import { appChain } from "@/lib/chain";
 
 /**
  * The loop, walked through, for somebody seeing it for the first time.
@@ -34,7 +35,7 @@ const STEPS: Step[] = [
     href: () => "/hub",
     title: "Work somebody paid for",
     body:
-      "Every task here holds real escrow on Avalanche Fuji. The slots, the " +
+      `Every task here holds real escrow on ${appChain.name}. The slots, the ` +
       "reward per run and the money left are read from the contract on this " +
       "page load — not from a database we control.",
   },

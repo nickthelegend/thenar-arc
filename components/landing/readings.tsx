@@ -3,7 +3,7 @@
 import { useReadContracts } from "wagmi";
 import { formatEther } from "viem";
 import { AXON_ABI } from "@/lib/abi";
-import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY } from "@/lib/chain";
+import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY, appChain } from "@/lib/chain";
 import { fmtInt, fmtMon, shortHash } from "@/lib/format";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 
@@ -68,7 +68,7 @@ export function LiveReadings() {
             className="meta meta-sm accent"
             style={{ marginLeft: "auto" }}
           >
-            {shortHash(AXON_ADDRESS)} on Avalanche Fuji &rarr;
+            {shortHash(AXON_ADDRESS)} on {appChain.name} &rarr;
           </a>
         </div>
       </div>

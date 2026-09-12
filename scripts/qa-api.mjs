@@ -74,10 +74,10 @@ const ITEMS = [
   ["B29", `/api/trajectory/${REAL_HASH}/similar`, 200, nonEmpty],
   ["B30", `/api/trajectory/${REAL_HASH}/annotation`, 200, nonEmpty],
   ["B31", `/api/physics/${REAL_HASH}`, 200, J((j) => [!!j.engine, `engine=${j.engine}`])],
-  // The one live third-party dependency: Glacier must answer, and the payload
-  // must say it came from Glacier rather than from anything of ours.
-  ["B32", "/api/glacier/0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0", 200,
-          J((j) => [j.source === "glacier", `source=${j.source}`])],
+  // The one live third-party dependency: Arcscan must answer, and the payload
+  // must say it came from Arcscan rather than from anything of ours.
+  ["B32", "/api/calls/0x6D6D6D0ee86C654b69646223049D6812c0218B2f", 200,
+          J((j) => [j.source === "arcscan", `source=${j.source}`])],
   ["D4",  "/api/props/definitely-not-a-prop", 404, (b, r) => {
       const ct = r.headers.get("content-type") ?? "";
       return [ct.includes("json"), `content-type ${ct.split(";")[0]}`];

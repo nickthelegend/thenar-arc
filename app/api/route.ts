@@ -30,7 +30,7 @@ const ENDPOINTS = [
   { path: "/api/props/{id}", returns: "One uploaded model, as GLB." },
   { path: "/api/stats", returns: "Aggregate usage. Counts with no subject." },
   { path: "/api/health", returns: "Every condition that has to hold for a run to be recorded and paid." },
-  { path: "/api/glacier/{address}", returns: "One address's settlements, from Avalanche's own index." },
+  { path: "/api/calls/{address}", returns: "One address's calls to the protocol, from Arcscan's index, reverted ones included." },
   { path: "/api/space", returns: "Who is working which task right now. Presence only." },
 ];
 
