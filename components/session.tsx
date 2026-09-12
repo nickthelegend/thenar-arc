@@ -1,25 +1,23 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import {
-  useAccount, useBalance, useConnect, useDisconnect, useSwitchChain,
-} from "wagmi";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { useAccount, useBalance, useConnect, useSwitchChain } from "wagmi";
+import { usePrivy } from "@privy-io/react-auth";
 import { appChain } from "@/lib/chain";
 
 /**
  * The operator's wallet, as the rest of the app sees it.
  *
- * Everything here is real: the address comes from the wallet the operator
- * picks in the RainbowKit modal, the balance from the chain's RPC. There is no
- * local shadow of either — if the chain says the balance is zero, the UI says
- * zero.
+ * Signing in is Privy's: an email address becomes an embedded wallet on Arc, or
+ * an operator who already has a wallet connects it through the same modal. From
+ * there it is wagmi as before — the address is the wallet Privy hands over, the
+ * balance comes from the chain's RPC, and there is no local shadow of either. If
+ * the chain says the balance is zero, the UI says zero.
  */
 export function useSession() {
+  const { ready, authenticated, login, logout } = usePrivy();
   const { address, isConnected, chainId, status } = useAccount();
-  const { isPending: connecting, error: connectError } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { openConnectModal, connectModalOpen } = useConnectModal();
+  const { error: connectError } = useConnect();
   const { switchChain, isPending: switching } = useSwitchChain();
 
   const { data: bal, refetch: refetchBalance } = useBalance({
@@ -27,10 +25,8 @@ export function useSession() {
     query: { enabled: Boolean(address), refetchInterval: 8_000 },
   });
 
-  // The wallet choice belongs to the modal, so this only has to open it.
-  const doConnect = useCallback(() => {
-    openConnectModal?.();
-  }, [openConnectModal]);
+  const connect = useCallback(() => login(), [login]);
+  const disconnect = useCallback(() => { void logout(); }, [logout]);
 
   const wrongNetwork = isConnected && chainId !== appChain.id;
 
@@ -41,11 +37,15 @@ export function useSession() {
     balance,
     balanceWei: bal?.value ?? 0n,
     connected: isConnected,
-    connecting: connecting || connectModalOpen || status === "connecting" || status === "reconnecting",
+    // Privy restores a session asynchronously on load, and a new operator's
+    // wallet exists only a moment after they sign in. Until the wallet has
+    // reached wagmi, the true answer is "connecting", not "not connected".
+    connecting:
+      !ready || (authenticated && !isConnected) || status === "connecting" || status === "reconnecting",
     connectError,
     wrongNetwork,
     switching,
-    connect: doConnect,
+    connect,
     disconnect,
     switchToChain: () => switchChain({ chainId: appChain.id }),
     refetchBalance,

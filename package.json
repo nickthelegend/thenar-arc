@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.81.0",
-    "@rainbow-me/rainbowkit": "^2.2.11",
+    "@privy-io/node": "^0.34.0",
+    "@privy-io/react-auth": "^3.42.0",
+    "@privy-io/wagmi": "^4.0.17",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "@tanstack/react-query": "^5.101.4",

@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
-import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
+import { PrivyProvider } from "@privy-io/react-auth";
+import { WagmiProvider } from "@privy-io/wagmi";
 import { TasksProvider } from "@/components/tasks-provider";
 import { ModelStageProvider } from "@/components/model-stage";
 import { Palette } from "@/components/palette";
@@ -14,28 +13,26 @@ import { wagmiConfig } from "@/lib/wagmi";
 import { appChain } from "@/lib/chain";
 
 /**
- * The modal is the one surface we do not draw ourselves, so it is pulled onto
- * the product's palette rather than left on RainbowKit's default purple.
+ * The Privy app operators sign in through.
  *
- * Both grounds, because the product has both. This was a single dark theme
- * accented #FF6A00 — the orange the rest of the product has discarded — which
- * meant the one screen a first-time operator has to get through to be paid was
- * still wearing the old identity, on the wrong ground, after everything else
- * had moved.
+ * Required rather than optional. Without it nobody can sign in, and a site that
+ * rendered anyway would show a Connect button that does nothing — so a missing
+ * id fails loudly here instead of quietly everywhere.
  */
-const shared = { borderRadius: "none", fontStack: "system", overlayBlur: "small" } as const;
-const lightModal = lightTheme({ ...shared, accentColor: "#2B50E0", accentColorForeground: "#EFEFEE" });
-const darkModal = darkTheme({ ...shared, accentColor: "#7C97FF", accentColorForeground: "#0D0D0F" });
+const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+if (!PRIVY_APP_ID) {
+  throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is not set. Operators sign in through Privy; see .env.example.");
+}
 
 /**
- * Which ground the wallet modal should be drawn on.
+ * Which ground the sign-in modal should be drawn on.
  *
  * The theme lives on a data attribute written before first paint, so it is read
  * from the DOM rather than from React state that does not exist yet, and it
  * follows the toggle: opening the modal, switching the theme behind it and
  * looking again should not show the other product's colours.
  */
-function useModalTheme() {
+function useDarkGround() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
     const read = () => setDark(document.documentElement.dataset.theme === "dark");
@@ -44,11 +41,11 @@ function useModalTheme() {
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => mo.disconnect();
   }, []);
-  return dark ? darkModal : lightModal;
+  return dark;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const modalTheme = useModalTheme();
+  const dark = useDarkGround();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -65,9 +62,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <PrivyProvider
+      appId={PRIVY_APP_ID!}
+      config={{
+        // An email address is enough to be paid: Privy makes the wallet. An
+        // operator who already has one can still bring it.
+        loginMethods: ["email", "wallet"],
+        appearance: {
+          theme: dark ? "dark" : "light",
+          accentColor: dark ? "#7C97FF" : "#2B50E0",
+        },
+        embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
+        defaultChain: appChain,
+        supportedChains: [appChain],
+      }}
+    >
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={modalTheme} initialChain={appChain} modalSize="compact">
+        <WagmiProvider config={wagmiConfig}>
           <TasksProvider>
           <ModelStageProvider>
             {children}
@@ -82,8 +93,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             </Suspense>
           </ModelStageProvider>
           </TasksProvider>
-        </RainbowKitProvider>
+        </WagmiProvider>
       </QueryClientProvider>
-    </WagmiProvider>
+    </PrivyProvider>
   );
 }

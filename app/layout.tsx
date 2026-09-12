@@ -7,9 +7,6 @@ import { Archivo, DM_Mono, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/googl
 import { Providers } from "@/components/providers";
 import { SiteNav } from "@/components/site-nav";
 import { Conditions } from "@/components/conditions";
-// Before globals.css on purpose: RainbowKit ships resets that otherwise
-// outrank Tailwind and collapse the station viewport to 300x150.
-import "@rainbow-me/rainbowkit/styles.css";
 import "./globals.css";
 
 /**

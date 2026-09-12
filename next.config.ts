@@ -31,11 +31,15 @@ const nextConfig: NextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
       "worker-src 'self' blob:",
+      // Privy draws its sign-in and the embedded wallet in frames from its own
+      // origin, behind a Cloudflare challenge; WalletConnect verifies from its.
+      "frame-src https://auth.privy.io https://verify.walletconnect.com https://verify.walletconnect.org https://challenges.cloudflare.com",
+      "child-src https://auth.privy.io https://verify.walletconnect.com https://verify.walletconnect.org",
       /**
        * Every origin this app is allowed to talk to, named.
        *
@@ -61,7 +65,10 @@ const nextConfig: NextConfig = {
         // payer's balance is read from the mirror node before signing.
         "https://api.testnet.blocky402.com " +
         "https://testnet.mirrornode.hedera.com " +
-        "wss://relay.walletconnect.com https://explorer-api.walletconnect.com",
+        // Privy: sign-in, and the relay its embedded wallets reach RPCs through.
+        "https://auth.privy.io https://*.rpc.privy.systems " +
+        "wss://relay.walletconnect.com wss://relay.walletconnect.org wss://www.walletlink.org " +
+        "https://explorer-api.walletconnect.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

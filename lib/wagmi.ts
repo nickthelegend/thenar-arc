@@ -1,33 +1,18 @@
-import { createConfig, fallback, http } from "wagmi";
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
-import {
-  injectedWallet,
-  metaMaskWallet,
-  rainbowWallet,
-  coinbaseWallet,
-  walletConnectWallet,
-} from "@rainbow-me/rainbowkit/wallets";
+import { fallback, http } from "wagmi";
+import { createConfig } from "@privy-io/wagmi";
 import { appChain, RPC_ENDPOINTS } from "./chain";
 
-// WalletConnect-backed wallets need a project id. Without one they would open a
-// modal that can never pair, so they are only offered when the id is present.
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
-
-const walletConnectGroup = projectId
-  ? [{ groupName: "More", wallets: [metaMaskWallet, rainbowWallet, walletConnectWallet] }]
-  : [];
-
-const connectors = connectorsForWallets(
-  [
-    { groupName: "Installed", wallets: [injectedWallet, coinbaseWallet] },
-    ...walletConnectGroup,
-  ],
-  { appName: "Thenar", projectId },
-);
-
+/**
+ * wagmi, with Privy supplying the wallet.
+ *
+ * Privy's createConfig takes no connectors. The wallet an operator uses is the
+ * one Privy hands wagmi after sign-in — an embedded wallet made from an email
+ * address, or a wallet they already had and connected through Privy's modal —
+ * so every hook the station, the task pages and the passkey flow already use
+ * keeps working against it unchanged.
+ */
 export const wagmiConfig = createConfig({
   chains: [appChain],
-  connectors,
   /**
    * More than one endpoint, because the chain half is the half that works.
    *
