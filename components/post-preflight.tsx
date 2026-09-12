@@ -96,9 +96,10 @@ export function PostPreflight({ slots, rewardMon }: { slots: number; rewardMon: 
           <li>
             <span className="text-scribe">Posting it costs gas too</span>, and
             there is no measured figure for it: no task has yet been created
-            through the call this button makes. The six here were seeded by
-            script through a different entry point on the same contract, and
-            their gas is not this call&rsquo;s.
+            through the call this button makes. The six here were posted with{" "}
+            <code className="font-mono text-[12px] text-scribe">createTaskUntil</code>,
+            the same contract&rsquo;s deadline-carrying entry point, and their gas
+            is not this call&rsquo;s.
           </li>
         ) : null}
 

@@ -53,6 +53,7 @@ const MEANS = {
   A36:"A run whose samples disagree with its score says so",
   A37:"A rejected run is told what one change would have paid",
   A38:"Declared difficulty is checked against the ledger, and loses",
+  A39:"Every write to the protocol, with its cost, each one named",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",

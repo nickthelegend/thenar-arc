@@ -1,6 +1,5 @@
-import { toFunctionSelector, type Abi } from "viem";
-import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, appChain } from "@/lib/chain";
+import { PROTOCOL_METHODS } from "@/lib/protocol-methods";
 
 /**
  * Avalanche's own index of the chain.
@@ -20,11 +19,20 @@ const BASE = "https://glacier-api.avax.network/v1";
 /** Selector to the name of the thing it does. Glacier returns the four bytes;
  *  the ABI is what turns them back into a verb. Derived, never typed out — a
  *  hand-written selector table is how the wrong function ends up on screen. */
-export const METHODS: Record<string, string> = Object.fromEntries(
-  (AXON_ABI as Abi)
-    .filter((f): f is Extract<Abi[number], { type: "function" }> => f.type === "function")
-    .map((f) => [toFunctionSelector(f), f.name]),
-);
+/**
+ * Every function the deployed protocol has, by selector.
+ *
+ * This used to be built from AXON_ABI, which is the pruned list of calls the
+ * interface makes — so a settlement log resolving against it could name a call
+ * the interface makes and nothing else. A third of this contract's history came
+ * back "unrecognised": createTaskUntil, closeTask and submitTrajectoryFor, all
+ * real functions of the deployed contract that this frontend never calls.
+ *
+ * Generated from the compiler's artifact by scripts/gen-abi.mjs, so it cannot
+ * name a function the deployed contract does not have, and cannot miss one it
+ * does.
+ */
+export const METHODS = PROTOCOL_METHODS;
 
 export type GlacierTx = {
   txHash: string;

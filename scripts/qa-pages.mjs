@@ -234,6 +234,24 @@ const ITEMS = [
       });
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A39", "/contracts",       async (p) => {
+      // Every write this contract has taken, from Avalanche's index, named
+      // against the deployed contract's own artifact rather than the pruned
+      // ABI the interface calls.
+      await p.waitForTimeout(3000);
+      const r = await p.evaluate(() => {
+        const t = document.body.innerText;
+        return {
+          here: /EVERY WRITE, AND WHAT IT COST/i.test(t),
+          totals: /Calls\s*\n?\s*\d+/.test(t) && /Spent\s*\n?\s*[\d.]+ nAVAX/.test(t),
+          // The three functions the frontend never calls, which read as
+          // unrecognised selectors against the interface's own ABI.
+          named: /createTaskUntil/.test(t) && /closeTask/.test(t) && /submitTrajectoryFor/.test(t),
+          noneUnknown: !/unrecognised \(0x/.test(t),
+        };
+      });
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;
