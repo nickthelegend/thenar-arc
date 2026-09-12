@@ -246,7 +246,11 @@ const ITEMS = [
         listed: /Lapsed calibration sweep/.test(every),
         // Uppercased by CSS, and innerText carries the transform.
         why: /escrow returned/i.test(every),
-        deadline: /until \d/.test(every),
+        // A deadline is either ahead of the reader or behind them, and which
+        // one is a fact about today rather than about the page. Pinning this
+        // to "until" made it pass for three days and then fail on the fourth,
+        // when task #4's deadline went by.
+        deadline: /until \d|deadline passed|escrow returned/i.test(every),
       };
       return [
         Object.values(r).every(Boolean) && Object.values(r2).every(Boolean),
@@ -341,6 +345,70 @@ const ITEMS = [
         };
       });
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
+  ["A45", "/operator/0x391a51f85e738188274df07c3dd9099dd6f2d42b", async (p) => {
+      // The page read gas from Avalanche's index and never put earnings beside
+      // it, leaving the interesting figure unstated: on this chain the work is
+      // worth about a million times what it costs to record.
+      await p.waitForTimeout(8000);
+      const t = await p.evaluate(() => document.body.innerText);
+      const r = {
+        earned: /EARNED ON CHAIN/i.test(t) && /0\.001512/.test(t),
+        gas: /GAS PAID/i.test(t),
+        // Read off the chain and the index, then divided — not written down.
+        ratio: /the work is worth\s+[\d,]+×\s+what it cost to record/.test(t),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
+  ["A46", "/hub",             async (p) => {
+      // One underline that travels, rather than a border that vanishes from
+      // one item and reappears on another. Asserted against the active item's
+      // own box, on two routes, so it is measured rather than laid out.
+      const read = () => p.evaluate(() => {
+        const nav = document.querySelector("nav[aria-label='Sections']");
+        const mark = nav?.querySelector("span[aria-hidden]");
+        const active = nav?.querySelector("[aria-current='page']");
+        if (!mark || !active) return null;
+        const x = (mark.style.transform.match(/translateX\(([-\d.]+)px\)/) || [])[1];
+        return {
+          left: Math.round(parseFloat(x)), width: Math.round(parseFloat(mark.style.width)),
+          activeLeft: active.offsetLeft, activeWidth: active.offsetWidth,
+          moves: /transform/.test(getComputedStyle(mark).transitionProperty),
+        };
+      });
+      await p.waitForTimeout(2500);
+      const a = await read();
+      await p.getByRole("link", { name: "Contracts", exact: true }).click();
+      await p.waitForTimeout(2500);
+      const b = await read();
+      const fits = (m) => m && m.left === m.activeLeft && m.width === m.activeWidth;
+      return [
+        fits(a) && fits(b) && a.left !== b.left && a.moves,
+        JSON.stringify({ hub: a, contracts: b }),
+      ];
+  }],
+  ["A47", "/task/1",          async (p) => {
+      // The tolerance drawn at the size it actually is, from lib/bench.ts —
+      // and on this task the object is wider than the band it aims at.
+      await p.waitForTimeout(6000);
+      const r = await p.evaluate(() => {
+        const svg = document.querySelector("figure svg");
+        if (!svg) return null;
+        const c = Array.from(svg.querySelectorAll("circle")).map((x) => ({
+          cx: +x.getAttribute("cx"), r: +x.getAttribute("r"),
+        }));
+        return {
+          ring: c.some((x) => x.cx === 0 && x.r === 75),
+          // Two payloads on this bench, seated either side of the datum.
+          seats: c.filter((x) => x.r === 25).map((x) => x.cx).sort((a, b) => a - b),
+          payload: c.some((x) => x.r === 66),
+          caption: document.querySelector("figcaption")?.innerText ?? "",
+        };
+      });
+      const ok = r && r.ring && r.payload &&
+                 r.seats.length === 2 && r.seats[0] === -38 && r.seats[1] === 38 &&
+                 /wider than the band it is aiming at/.test(r.caption);
+      return [Boolean(ok), JSON.stringify(r)];
   }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {

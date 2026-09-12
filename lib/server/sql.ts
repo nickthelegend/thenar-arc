@@ -426,6 +426,34 @@ export function migrate(): Promise<void> {
         added_at   INTEGER NOT NULL,
         PRIMARY KEY (task_id, member)
       );
+
+      -- These two exist in the Postgres branch above and did not exist here,
+      -- which is the failure this file's own header says the single ENGINE
+      -- switch is meant to prevent: one store answering a query the other
+      -- 500s on. /api/policy and the annotation routes were broken against
+      -- every SQLite database, new or old, and nothing said so until a page
+      -- that reads them was opened against one.
+      CREATE TABLE IF NOT EXISTS annotation (
+        traj_hash  TEXT PRIMARY KEY,
+        author     TEXT NOT NULL,
+        body       TEXT NOT NULL,
+        signature  TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS policy_submission (
+        weights_hash TEXT PRIMARY KEY,
+        submitter    TEXT NOT NULL,
+        label        TEXT NOT NULL,
+        grasped      INTEGER NOT NULL,
+        placed       INTEGER NOT NULL,
+        median_mm    REAL NOT NULL,
+        starts       INTEGER NOT NULL,
+        weights      TEXT NOT NULL,
+        created_at   INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_policy_rank
+        ON policy_submission(placed DESC, grasped DESC, median_mm ASC);
     `);
   })();
   return ready;

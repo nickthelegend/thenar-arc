@@ -252,18 +252,58 @@ type Summary = {
  */
 function DatasetPreview({ taskId }: { taskId: number }) {
   const [d, setD] = useState<Summary | null>(null);
-  const [missing, setMissing] = useState(false);
+  /**
+   * Nothing stored for this task, which is not the same as a broken read.
+   *
+   * The route answers 404 when a task has no settled runs on the active chain,
+   * which is the correct status and a legitimate state — a policy can be minted
+   * over runs the current deployment has never stored. The panel used to
+   * disappear on it, so a buyer looking at a minted policy saw the cap table,
+   * the fee, and no statement at all about what the licence covers.
+   *
+   * Told apart from a real failure, because "we hold nothing for this task" and
+   * "we could not find out" are different answers to the only question a buyer
+   * is asking here.
+   */
+  const [state, setState] = useState<"reading" | "ok" | "empty" | "failed">("reading");
 
   useEffect(() => {
     let live = true;
     fetch(`/api/dataset/summary?taskId=${taskId}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((j: Summary) => { if (live) setD(j); })
-      .catch(() => { if (live) setMissing(true); });
+      .then(async (r) => {
+        if (!live) return;
+        if (!r.ok) return setState("failed");
+        const j = (await r.json()) as Summary;
+        // The route answers with a zeroed summary rather than a 404, so the
+        // empty case is a value to read rather than a status to catch.
+        if (!j.episodes) return setState("empty");
+        setD(j);
+        setState("ok");
+      })
+      .catch(() => { if (live) setState("failed"); });
     return () => { live = false; };
   }, [taskId]);
 
-  if (missing) return null;
+  if (state === "empty" || state === "failed") {
+    return (
+      <div className="border-t border-rule px-5 py-4">
+        <DimRule note="What the licence buys" />
+        <p className="mt-4 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
+          {state === "empty" ? (
+            <>
+              This deployment holds no recordings for task #{taskId}, so there is
+              nothing to summarise. The policy and its cap table are on chain and
+              unaffected &mdash; a policy can be minted over runs settled against
+              a superseded contract, and those are listed on{" "}
+              <Link href="/archive" className="text-signal hover:text-signal-hi">/archive</Link>.
+            </>
+          ) : (
+            <>The corpus index did not answer. Everything above is read from the chain and is unaffected.</>
+          )}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="border-t border-rule px-5 py-4">

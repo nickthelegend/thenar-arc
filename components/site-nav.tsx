@@ -50,6 +50,37 @@ export function SiteNav() {
    */
   const scroller = useRef<HTMLElement>(null);
   const [overflowing, setOverflowing] = useState(false);
+
+  /**
+   * One underline that moves, rather than a border on whichever item is active.
+   *
+   * A border-bottom per item means the mark under the current section vanishes
+   * and reappears somewhere else — the eye has nothing to follow and the bar
+   * reads as two unrelated states. A single rule that travels says the same
+   * thing and says where it came from, which is the whole difference between a
+   * change and a transition.
+   *
+   * Measured rather than laid out: the items are different widths and the row
+   * scrolls, so the only reliable geometry is the active element's own box,
+   * read after layout. It is re-measured when the route changes, when the row
+   * resizes, and when a font swap changes the measure of the words in it.
+   */
+  const [mark, setMark] = useState<{ left: number; width: number } | null>(null);
+  useEffect(() => {
+    const row = scroller.current;
+    if (!row) return;
+    const place = () => {
+      const active = row.querySelector<HTMLElement>("[aria-current='page']");
+      if (!active) return setMark(null);
+      setMark({ left: active.offsetLeft, width: active.offsetWidth });
+    };
+    place();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(place);
+    ro.observe(row);
+    for (const child of Array.from(row.children)) ro.observe(child);
+    return () => ro.disconnect();
+  }, [pathname]);
   useEffect(() => {
     const el = scroller.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -90,7 +121,7 @@ export function SiteNav() {
                is gone — on while there is somewhere to scroll to, off when the
                row fits and a fade would only dim the last item for no reason. */
             className={cn(
-              "flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              "relative flex min-w-0 flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
               overflowing &&
                 "[mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)]",
             )}
@@ -104,16 +135,25 @@ export function SiteNav() {
                   href={r.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex shrink-0 items-center whitespace-nowrap border-b-2 px-3 font-mono text-[12px] font-medium uppercase tracking-[0.14em] transition-colors sm:px-4",
-                    active
-                      ? "border-signal text-scribe"
-                      : "border-transparent text-scribe-3 hover:text-scribe-2",
+                    "flex shrink-0 items-center whitespace-nowrap px-3 font-mono text-[12px] font-medium uppercase tracking-[0.14em] transition-colors sm:px-4",
+                    active ? "text-scribe" : "text-scribe-3 hover:text-scribe-2",
                   )}
                 >
                   {r.label}
                 </Link>
               );
             })}
+
+            {/* Drawn once, moved rather than redrawn. `motion-safe` is the whole
+                reduced-motion story here: with motion reduced it still lands in
+                the right place, it just arrives there without the journey. */}
+            {mark ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute bottom-0 h-[2px] bg-signal motion-safe:transition-[transform,width] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]"
+                style={{ transform: `translateX(${mark.left}px)`, width: mark.width }}
+              />
+            ) : null}
           </nav>
 
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">

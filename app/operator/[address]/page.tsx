@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isAddress } from "viem";
+import { formatEther, isAddress } from "viem";
 import { useReadContract } from "wagmi";
 import { DimRule } from "@/components/primitives";
 import { addressUrl, txUrlOn, appChain, CURRENCY, AXON_ADDRESS } from "@/lib/chain";
-import { fmtInt, fmtScore, shortHash } from "@/lib/format";
+import { fmtGasCost, fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { badgesFor, ACCEPTED_MEANS } from "@/lib/badges";
 import { Progression } from "@/components/progression";
@@ -52,6 +52,32 @@ export default function OperatorPage() {
    *
    * Both were right. What was missing was the subtraction, so it is done here.
    */
+  /**
+   * What the chain says this address earned, against what it paid to earn it.
+   *
+   * The page already read the gas from Avalanche's index and never put an
+   * earnings figure beside it, which leaves the more interesting number
+   * unstated: on this chain a submit costs about a two-millionth of what it
+   * pays. That ratio is the argument for settling a sub-cent payout on chain
+   * at all, and it was sitting in two figures nobody had subtracted.
+   */
+  const { data: chainStats } = useReadContract({
+    address: AXON_ADDRESS,
+    abi: [{
+      type: "function", name: "stats",
+      inputs: [{ name: "who", type: "address" }],
+      outputs: [
+        { name: "runs", type: "uint256" },
+        { name: "earned", type: "uint256" },
+        { name: "meanScore", type: "uint256" },
+      ],
+      stateMutability: "view",
+    }],
+    functionName: "stats",
+    args: [address as `0x${string}`],
+    query: { enabled: valid },
+  });
+
   const { data: onChainIds } = useReadContract({
     address: AXON_ADDRESS,
     abi: [{
@@ -104,6 +130,7 @@ export default function OperatorPage() {
   const best = accepted.length ? Math.max(...accepted.map((r) => r.score)) : 0;
   const mean = accepted.length ? accepted.reduce((n, r) => n + r.score, 0) / accepted.length : 0;
   const gas = (calls ?? []).reduce((n, c) => n + c.feeAvax, 0);
+  const earned = chainStats ? Number(formatEther((chainStats as readonly bigint[])[1])) : null;
   const badges = badgesFor(accepted);
   const scored: ScoredRun[] = accepted.map((r) => ({
     score: r.score,
@@ -137,8 +164,27 @@ export default function OperatorPage() {
         <Reading label="Mean score" value={accepted.length ? fmtScore(Math.round(mean)) : "—"} />
         <Reading label="Protocol calls" value={calls === null ? "—" : fmtInt(calls.length)} />
         <Reading label="Reverted" value={calls === null ? "—" : fmtInt(reverted)} tone={reverted ? "reject" : undefined} />
+        <Reading label="Earned on chain" value={earned === null ? "—" : fmtMon(earned, 6)} unit={CURRENCY} tone="signal" />
         <Reading label="Gas paid" value={calls === null ? "—" : gas.toFixed(9)} unit={CURRENCY} />
       </div>
+
+      {/* The subtraction nobody had done. Stated as a ratio because the two
+          figures are six orders of magnitude apart and sit side by side above,
+          where the eye reads them as comparable. */}
+      {earned !== null && earned > 0 && calls !== null && gas > 0 ? (
+        <p className="mt-3 max-w-[70ch] text-[13px] leading-relaxed text-scribe-2">
+          This address earned{" "}
+          <span className="font-mono tabular-nums text-scribe">{fmtMon(earned, 6)} {CURRENCY}</span>{" "}
+          and paid{" "}
+          <span className="font-mono tabular-nums text-scribe">{fmtGasCost(gas, CURRENCY)}</span>{" "}
+          in gas to do it &mdash; the work is worth{" "}
+          <span className="font-mono tabular-nums text-signal">
+            {Math.round(earned / gas).toLocaleString("en-GB")}×
+          </span>{" "}
+          what it cost to record. A payout this small only survives settlement
+          on a chain where the settlement is a rounding error on it.
+        </p>
+      ) : null}
 
       {/* The token that counts this address's work, and how far behind it is.
           sync is callable by anyone for anyone by design, and was callable from
@@ -277,12 +323,15 @@ export default function OperatorPage() {
 }
 
 function Reading({ label, value, unit, tone }: {
-  label: string; value: string; unit?: string; tone?: "reject";
+  label: string; value: string; unit?: string; tone?: "reject" | "signal";
 }) {
   return (
     <span className="flex items-baseline gap-2">
       <span className="label">{label}</span>
-      <span className={cn("font-mono text-[15px] tabular-nums", tone === "reject" ? "text-reject" : "text-scribe")}>
+      <span className={cn(
+        "font-mono text-[15px] tabular-nums",
+        tone === "reject" ? "text-reject" : tone === "signal" ? "text-signal" : "text-scribe",
+      )}>
         {value}
         {unit ? <span className="ml-1 text-[12px] text-scribe-3">{unit}</span> : null}
       </span>

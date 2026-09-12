@@ -40,8 +40,44 @@ export async function GET(req: Request) {
     [taskId, appChain.id, AXON_ADDRESS.toLowerCase()],
   );
 
+  /**
+   * An empty corpus is a summary, not a missing resource.
+   *
+   * This answered 404, which is a status for a thing that is not there — and
+   * the thing asked for is the shape of a task's corpus, which is there and is
+   * empty. The consequence was a console error on every page that previews a
+   * policy over a task this deployment holds no runs for, and a contract this
+   * API's own OpenAPI document does not describe: it advertises 200 and 400
+   * and nothing else.
+   *
+   * So the empty case answers with the same shape, zeroed, and says so in
+   * `note`. A caller that draws a histogram gets ten empty buckets rather than
+   * an exception, and a caller checking whether there is anything to buy reads
+   * `episodes`.
+   */
   if (rows.length === 0) {
-    return NextResponse.json({ error: "No trajectories recorded for that task." }, { status: 404 });
+    return NextResponse.json({
+      taskId,
+      episodes: 0,
+      trainable: {
+        episodes: 0,
+        of: 0,
+        note: "This deployment holds no settled runs for that task on the active contract.",
+      },
+      frames: 0,
+      frequencyHz: 20,
+      contributors: 0,
+      score: { min: 0, median: 0, p90: 0, max: 0, mean: 0 },
+      deviationMm: { mean: 0 },
+      seconds: { total: 0, mean: 0 },
+      recordedFrom: null,
+      recordedTo: null,
+      distribution: Array.from({ length: 10 }, (_, i) => ({
+        from: 4000 + i * 600,
+        to: 4000 + (i + 1) * 600,
+        n: 0,
+      })),
+    });
   }
 
   const scores = rows.map((r) => r.score).sort((a, b) => a - b);

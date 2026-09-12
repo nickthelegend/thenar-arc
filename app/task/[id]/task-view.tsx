@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
+import { DatumScale } from "@/components/datum-scale";
 import { SKILL_LABEL } from "@/lib/skills";
 import { taskStats } from "@/lib/task-stats";
 import { PathOverlay } from "@/components/path-overlay";
@@ -95,6 +96,16 @@ export default function TaskView() {
       </div>
 
       <div className="mt-4"><SlotTally filled={task.slotsFilled} total={task.slotsTotal} /></div>
+
+      {/* How hard this actually is, at the size it actually is. Every surface
+          states the band in millimetres and a number in millimetres tells
+          nobody whether 25 mm is generous or unforgiving. */}
+      <DatumScale
+        className="mt-6"
+        payloadMm={task.scene.payloads[0]?.widthMm ?? 56}
+        payloadLabel={task.scene.payloads[0]?.label ?? "payload"}
+        seats={task.scene.payloads.length}
+      />
 
       <TaskEscrow task={task} />
 
