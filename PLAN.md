@@ -1,6 +1,6 @@
 # Thenar — build plan
 
-Rewritten 3 Sep 2026. Every figure below was read from the live deployment,
+Rewritten 3 Sep 2026, extended the same day with Phase 9. Every figure below was read from the live deployment,
 Avalanche Fuji, or the source tree on the day of writing — not carried forward
 from the previous plan, which had drifted (it named a superseded contract as
 current and a database engine the project no longer uses).
@@ -14,8 +14,8 @@ current and a database engine the project no longer uses).
 | Chain | Avalanche Fuji, 43113 |
 | On chain now | 6 tasks · 9 trajectories · 1 policy · 0.017447 AVAX escrowed |
 | Off chain now | 6 station trajectories stored · 33 archived runs · 3 uploaded props |
-| Surface | 22 pages · 37 API routes · 12 deployed contracts |
-| Tests | 57 unit · 73 e2e · 108 contract · design detector clean · CI on push, PR and 6-hourly |
+| Surface | 24 pages · 37 API routes · 12 deployed contracts |
+| Tests | 72 unit · 72 e2e · 108 contract · 38 page checks · a driven run end to end · CI on push, PR and 6-hourly |
 
 **Deploying:** a change to anything under `app/api/` must go to **Railway**, not
 just Vercel. Deploying only to Vercel changes nothing about the live API — this
@@ -229,7 +229,7 @@ still needs a funded wallet.
 | 6.6 CI exists — `.github/workflows/verify.yml` runs typecheck, eslint, build, projected-size, `forge test`, `forge snapshot --check`, `forge lint`, and `test/e2e.mjs` against the live site, on push, PR, and every 6 hours | DONE |
 | 6.7 All seven runners are in CI's `live` job. Six of them exited 0 regardless of result, so wiring them in would have given green builds over red runs; every one now exits non-zero on failure, proven both ways — 0 against production, 1 against a host that cannot answer | DONE |
 
-### Phase 7 — Infrastructure · IN PROGRESS
+### Phase 7 — Infrastructure · DONE
 
 | Task | State |
 |---|---|
@@ -246,6 +246,38 @@ still needs a funded wallet.
 | 8.1 `docs/DEMO.md` — six steps from a private window with no wallet and nothing cached, each ending on something the watcher can check, plus what not to claim and the numbers worth having ready | DONE |
 | 8.2 `https://thenar.io/contracts` — every contract, address, code size, balance, source path, the surface that uses it, and live readings from those with state. Built in Phase 1 and this is the same page | DONE |
 | 8.3 **Rehearsed against production: 22.8s across six steps, zero console errors.** `scripts/demo-rehearse.mjs` re-runs and re-times it and exits non-zero if anything logs an error. It caught its own bug first — step 5 read the first 64-hex string in the feed, which is a trajectory hash and never resolves; it reads `tx_hash` by name now and returns a real receipt | DONE |
+
+### Phase 9 — What the contracts could do and the interface could not · DONE
+
+Added 3 Sep 2026, after the build plan closed. It began as sixteen ranked
+feature ideas and turned into an audit: five of the items below are not features
+at all, but capabilities the deployed contracts already had that no page could
+reach. Every one was simulated against the live contract before it shipped.
+
+| Task | State |
+|---|---|
+| 9.1 `/l1` renders the sovereign-L1 transcript as three checkable claims, generated from `docs/l1-proof.txt` at build time — a runtime `readFileSync` is invisible to Next's file trace and ships empty | DONE |
+| 9.2 The Warp payload on `/licence` is decoded to its ten fields and each checked against the protocol by a second route; the real `Attested` event is shown with its block and transaction | DONE |
+| 9.3 The station states what a submit will cost before it is signed, measured off real receipts — and reports that the charge never came in below half the gas limit the wallet set | DONE |
+| 9.4 **A two-object task could not be finished.** The run ended when the scene settled, and a payload nobody had touched was already at rest, so placing the first object ended the run and scored the second where it spawned. Found by driving a real run; `scripts/qa-run.mjs` drives one every time now | DONE |
+| 9.5 Repeated runs on one task are differenced oldest-first on `/operator` and `/portfolio`, with the delta named in millimetres and seconds where the ledger has them | DONE |
+| 9.6 The sitting survives leaving the station, and carries a best score | DONE |
+| 9.7 An empty corpus says which of its three reasons it is empty for, counted from the same endpoint the list uses | DONE |
+| 9.8 `/post` states what the escrow will actually draw, at this deployment's own mean score | DONE |
+| 9.9 The failure taxonomy is on the run page — and surfaced that two of thirty stored episodes disagree with the deviation they were scored against, both from before the verifier measured placement from the samples | DONE |
+| 9.10 A rejected run is told what one change would have paid, solved backwards into millimetres and seconds | DONE |
+| 9.11 Declared difficulty is checked against the ledger on `/hub`, and does not survive the check | DONE |
+| 9.12 Every write to the protocol is listed on `/contracts` with its cost, named against the deployed contract's own artifact rather than the pruned ABI the interface calls | DONE |
+| 9.13 **`lib/abi.ts` was generated from version one.** The deployed contract is `AxonProtocolV2`; a Task decoded against nine components dropped `expiresAt` and `closed`, so the hub offered a Run button on a task whose funder had already reclaimed the escrow. Every generated file now comes from the deployed artifact | DONE |
+| 9.14 `/post` offers a deadline and calls `createTaskUntil`; the task page shows the deadline and, to the funder alone and only past it, the button that reclaims the escrow | DONE |
+| 9.15 `CorpusAccess.subscribe` is reachable from `/corpus`. The 402 gate had nowhere to pay | DONE |
+| 9.16 `TrajectoryCertificate.mint` is reachable from the run page; the token goes to the recorded contributor, not the caller | DONE |
+| 9.17 `ContributionRecord.sync` is reachable from `/operator` and `/portfolio` for any address, which is how the contract intends it | DONE |
+| 9.18 The Foundry treasury's proposals, tally, vote and execute are on `/foundry`. Proposal 0 passed 165.00 to nil and had sat unexecuted because nothing could call it | DONE |
+
+**Still unreachable, correctly:** `ConfidentialPayouts.accrue` and
+`CorpusManifest.commit` are restricted to the adder and the verifier;
+`ConfidentialPayouts.registerKey` belongs to a research path with no surface.
 
 ---
 
