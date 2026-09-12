@@ -16,10 +16,10 @@ importers:
         version: 0.34.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@x402/fetch@2.25.0)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3))
       '@privy-io/react-auth':
         specifier: ^3.42.0
-        version: 3.42.0(@solana-program/memo@0.13.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/system@0.14.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)
+        version: 3.42.0(@solana-program/memo@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)
       '@privy-io/wagmi':
         specifier: ^4.0.17
-        version: 4.0.17(eff37c6538428be9a7a5dbd85f9a20e1)
+        version: 4.0.17(7e0055effba122d0f79c305496184ffb)
       '@react-three/drei':
         specifier: ^10.7.8
         version: 10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(three@0.185.1))(@types/react@19.2.18)(@types/three@0.185.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.185.1)
@@ -27,11 +27,11 @@ importers:
         specifier: ^9.7.0
         version: 9.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(three@0.185.1)
       '@solana-program/memo':
-        specifier: ^0.13.1
-        version: 0.13.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
+        specifier: ^0.10.0
+        version: 0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
       '@solana-program/system':
-        specifier: ^0.14.1
-        version: 0.14.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
+        specifier: ^0.10.0
+        version: 0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
       '@solana-program/token':
         specifier: 0.9.0
         version: 0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
@@ -1368,15 +1368,15 @@ packages:
     peerDependencies:
       '@solana/kit': ^5.0
 
-  '@solana-program/memo@0.13.1':
-    resolution: {integrity: sha512-c0J4nNSTbGjRlVfn81mavBQvBy22Gad6cKSJw+x2pqBtNiBLL60W+wWuxhHfQeb+v1nETvtupgIrDrrWrlqXcw==}
+  '@solana-program/memo@0.10.0':
+    resolution: {integrity: sha512-1FvQFenL3lzl5SpxhWV4QJCOLU/nvAOXGXjKjS7dprvG+0u971xoanApN7bM/a4NFZolp6S+lP2xVl6vTVIxbg==}
     peerDependencies:
-      '@solana/kit': ^8.0.0
+      '@solana/kit': ^5.0
 
-  '@solana-program/system@0.14.1':
-    resolution: {integrity: sha512-K6ZiIrAKoJAfcwfUdsoFvfSAxeRJaRrV7BPFTJvUVRS4m3zszN+nLcdaNMMe2F1/zTriZqC+xh+Kgw6ziGUqpQ==}
+  '@solana-program/system@0.10.0':
+    resolution: {integrity: sha512-Go+LOEZmqmNlfr+Gjy5ZWAdY5HbYzk2RBewD9QinEU/bBSzpFfzqDRT55JjFRBGJUvMgf3C2vfXEGT4i8DSI4g==}
     peerDependencies:
-      '@solana/kit': ^8.0.0
+      '@solana/kit': ^5.0
 
   '@solana-program/token-2022@0.6.1':
     resolution: {integrity: sha512-Ex02cruDMGfBMvZZCrggVR45vdQQSI/unHVpt/7HPt/IwFYB4eTlXtO8otYZyqV/ce5GqZ8S6uwyRf0zy6fdbA==}
@@ -6786,7 +6786,7 @@ snapshots:
 
   '@privy-io/popup@0.0.5': {}
 
-  '@privy-io/react-auth@3.42.0(@solana-program/memo@0.13.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/system@0.14.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)':
+  '@privy-io/react-auth@3.42.0(@solana-program/memo@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)':
     dependencies:
       '@base-org/account': 1.1.1(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)
       '@base-ui/react': 1.8.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -6833,8 +6833,8 @@ snapshots:
       x402: 0.7.3(@solana/sysvars@5.5.1(typescript@5.9.3))(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(typescript@5.9.3)(utf-8-validate@5.0.10)
       zustand: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.4.0(react@19.2.8))
     optionalDependencies:
-      '@solana-program/memo': 0.13.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
-      '@solana-program/system': 0.14.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
+      '@solana-program/memo': 0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
+      '@solana-program/system': 0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
       '@solana-program/token': 0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))
       '@solana/kit': 5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
@@ -6883,9 +6883,9 @@ snapshots:
 
   '@privy-io/urls@0.0.5': {}
 
-  '@privy-io/wagmi@4.0.17(eff37c6538428be9a7a5dbd85f9a20e1)':
+  '@privy-io/wagmi@4.0.17(7e0055effba122d0f79c305496184ffb)':
     dependencies:
-      '@privy-io/react-auth': 3.42.0(@solana-program/memo@0.13.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/system@0.14.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)
+      '@privy-io/react-auth': 3.42.0(@solana-program/memo@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(utf-8-validate@5.0.10))(react@19.2.8)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.8))(utf-8-validate@5.0.10)(zod@4.4.3)
       react: 19.2.8
       viem: 2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3)
       wagmi: 2.16.9(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.8)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
@@ -7916,11 +7916,11 @@ snapshots:
     dependencies:
       '@solana/kit': 5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
 
-  '@solana-program/memo@0.13.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))':
+  '@solana-program/memo@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))':
     dependencies:
       '@solana/kit': 5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
 
-  '@solana-program/system@0.14.1(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))':
+  '@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10))':
     dependencies:
       '@solana/kit': 5.5.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
 
