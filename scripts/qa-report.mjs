@@ -51,6 +51,7 @@ const MEANS = {
   A34:"A funder is told what the escrow draws, what happens to the rest, and what is not measured",
   A35:"The run page names which failure mode the run hit",
   A36:"A run whose samples disagree with its score says so",
+  A37:"A rejected run is told what one change would have paid",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",

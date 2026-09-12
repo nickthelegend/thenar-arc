@@ -198,6 +198,22 @@ const ITEMS = [
       };
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A37", "/run/0x845188107d38410fa8adc7cabaad97ef574a380f065f261da0947e5f88935e1e", async (p) => {
+      // A real run 4.90 points under the floor. The gap in points is a unit
+      // nobody drives in; these are the same points named as things to do.
+      await p.waitForTimeout(4000);
+      const t = await p.evaluate(() => document.body.innerText);
+      const r = {
+        here: /WHAT WOULD HAVE PAID/i.test(t),
+        gap: /4\.90 points short of 40\.00/.test(t),
+        placement: /come to rest within 22\.8 mm of the seat/.test(t),
+        time: /finish inside 135 s/.test(t),
+        // Smoothness is a quarter of the score and cannot carry a 40% floor on
+        // its own, so it must not be offered as a target.
+        noJerk: !/mean jerk under/.test(t),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

@@ -107,3 +107,96 @@ export function belowFloorBy(v: Verdict): number | null {
   if (v.success) return null;
   return Math.max(0, ACCEPT_FLOOR - v.score);
 }
+
+/**
+ * What would have paid.
+ *
+ * A rejected run is told how far below the floor it fell, in score points,
+ * which is a unit nobody drives in. An operator holds a joystick and puts a
+ * payload somewhere; "5.2 points short" does not tell them where. The score is
+ * a weighted sum of three terms they can each act on, so the same arithmetic
+ * run backwards says what any one of them would have had to be.
+ *
+ * Solved for one term at a time with the other two held at what this run
+ * actually did, because that is the question being asked: given the run I just
+ * drove, what single thing would have made it pay. When a term cannot reach the
+ * floor alone even at full marks, that is said instead of a number — a target
+ * an operator cannot hit is worse than no target.
+ */
+export type WouldHavePaid = {
+  /** Deviation, in mm, that alone would have cleared the floor. Null when even
+   *  a perfect placement could not. */
+  deviationMm: number | null;
+  /** Mean jerk, in m/s³, that alone would have cleared it. Null likewise. */
+  jerk: number | null;
+  /** Seconds that alone would have cleared it. Null likewise, and also when the
+   *  run was already at full marks for time. */
+  seconds: number | null;
+  /** True when no single term could have done it. */
+  needsMoreThanOne: boolean;
+};
+
+export function wouldHavePaid(v: Verdict, parSeconds: number): WouldHavePaid | null {
+  if (v.success) return null;
+  // A run that never reached the goal ring is scored zero on every term by
+  // construction, so there is no arithmetic to run backwards: it did not place
+  // the payload at all, and the taxonomy says so in words instead.
+  if (v.score === 0) {
+    return { deviationMm: null, jerk: null, seconds: null, needsMoreThanOne: true };
+  }
+
+  const { placement, efficiency, smoothness } = v.parts;
+  // The score is unit × (1 − penalty), so the unit share the floor needs
+  // depends on what this run was already penalised.
+  const scale = v.score / 10000 / (placement * W_PLACEMENT + efficiency * W_EFFICIENCY + smoothness * W_SMOOTHNESS);
+  const unitNeeded = ACCEPT_FLOOR / 10000 / (scale > 0 ? scale : 1);
+
+  /** The value one term must reach with the other two held where they are. */
+  const solve = (weight: number, others: number) => {
+    const need = (unitNeeded - others) / weight;
+    return need > 1 ? null : Math.max(0, need);
+  };
+
+  const pNeed = solve(W_PLACEMENT, efficiency * W_EFFICIENCY + smoothness * W_SMOOTHNESS);
+  const sNeed = solve(W_SMOOTHNESS, placement * W_PLACEMENT + efficiency * W_EFFICIENCY);
+  const eNeed = solve(W_EFFICIENCY, placement * W_PLACEMENT + smoothness * W_SMOOTHNESS);
+
+  return {
+    // placement = 1 − deviation / tolerance
+    deviationMm: pNeed === null ? null : TOLERANCE_MM * (1 - pNeed),
+    // smoothness = (ceil − jerk) / (ceil − floor)
+    jerk: sNeed === null ? null : JERK_CEIL - sNeed * (JERK_CEIL - JERK_FLOOR),
+    // efficiency = par / max(par × 0.35, seconds), and a run already at full
+    // marks has no faster time to name.
+    seconds: eNeed === null || eNeed <= 0 || efficiency >= 1 ? null : parSeconds / eNeed,
+    needsMoreThanOne: pNeed === null && sNeed === null && eNeed === null,
+  };
+}
+
+/**
+ * The same answer as a sentence, so both surfaces say it the same way.
+ *
+ * One clause per term that could have carried the run on its own, in the order
+ * an operator can act on them: where the payload went, how smoothly, how fast.
+ * When none could, it says that plainly rather than naming a target nobody
+ * could hit.
+ */
+export function wouldHavePaidSentence(w: WouldHavePaid): string {
+  if (w.needsMoreThanOne) {
+    return "No single change would have carried it: even full marks on any one term leaves it under the floor.";
+  }
+  const parts: string[] = [];
+  if (w.deviationMm !== null) {
+    parts.push(`come to rest within ${w.deviationMm.toFixed(1)} mm of the seat`);
+  }
+  if (w.jerk !== null) {
+    parts.push(`hold mean jerk under ${w.jerk.toFixed(1)} m/s³`);
+  }
+  if (w.seconds !== null) {
+    parts.push(`finish inside ${Math.round(w.seconds)} s`);
+  }
+  if (!parts.length) {
+    return "No single change would have carried it: even full marks on any one term leaves it under the floor.";
+  }
+  return `Any one of these would have paid: ${parts.join("; ")}.`;
+}

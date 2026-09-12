@@ -13,6 +13,8 @@ import { PhaseTimeline } from "@/components/phase-timeline";
 import { InCorpus } from "@/components/in-corpus";
 import { TOLERANCE_MM } from "@/lib/score";
 import { classifyFailure } from "@/lib/failure";
+import { wouldHavePaid, wouldHavePaidSentence } from "@/lib/shortfall";
+import { ACCEPT_FLOOR } from "@/lib/score";
 import { deviationFromSamples } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
@@ -356,6 +358,18 @@ export default function RunView() {
         onSeek={setCursor}
       />
 
+      {/* What would have paid. A run under the floor is told how far under, in
+          points — a unit nobody drives in. The same arithmetic backwards names
+          the one thing that would have carried it, with the other two terms
+          left where this run actually put them. */}
+      {data.score < ACCEPT_FLOOR && task ? (
+        <WouldHavePaidNote
+          score={data.score}
+          parts={data.parts}
+          parSeconds={task.parSeconds}
+        />
+      ) : null}
+
       <RunCertificate trajHash={data.trajHash} />
 
       <InCorpus taskId={data.taskId} trajHash={data.trajHash} />
@@ -658,6 +672,54 @@ function FailureNote({
         run &mdash; so it can be rederived rather than taken. The corpus export
         ships the same label against the same episode, which is what makes a
         failure worth training on.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * What one change would have made this run pay.
+ *
+ * Built from the parts the ledger stores rather than from the samples, because
+ * those are the numbers the score was actually computed from — a target derived
+ * from a different measurement than the one that rejected the run would be a
+ * target for a different run.
+ */
+function WouldHavePaidNote({
+  score, parts, parSeconds,
+}: {
+  score: number;
+  parts: { placement: number; efficiency: number; smoothness: number };
+  parSeconds: number;
+}) {
+  const w = useMemo(
+    () =>
+      wouldHavePaid(
+        {
+          score, success: false, deviationMm: 0, parts,
+          raw: { meanJerk: 0, seconds: 0, grasps: 1 }, payoutMon: 0,
+        } as never,
+        parSeconds,
+      ),
+    [score, parts, parSeconds],
+  );
+  if (!w) return null;
+
+  return (
+    <div className="mt-4 border border-rule bg-ink-1 px-5 py-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className="label">What would have paid</span>
+        <span className="font-mono text-[12px] tabular-nums text-reject">
+          {((ACCEPT_FLOOR - score) / 100).toFixed(2)} points short of {(ACCEPT_FLOOR / 100).toFixed(2)}
+        </span>
+      </div>
+      <p className="mt-2 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">
+        {wouldHavePaidSentence(w)}
+      </p>
+      <p className="mt-2 max-w-[64ch] font-mono text-[12px] leading-relaxed text-scribe-3">
+        Each solved with the other two terms held exactly where this run left
+        them, so it is what this run needed rather than what a better one would
+        have scored.
       </p>
     </div>
   );

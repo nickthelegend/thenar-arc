@@ -17,7 +17,7 @@ import { useRunsOnTask, useSubmitCost } from "@/lib/hooks";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 import { useSubmitRun } from "@/lib/submit";
 import { ACCEPT_FLOOR, evaluate, GRIP_CLOSED_MM, ORDER_PENALTY, TOLERANCE_MM } from "@/lib/score";
-import { shortfalls, belowFloorBy } from "@/lib/shortfall";
+import { shortfalls, belowFloorBy, wouldHavePaid, wouldHavePaidSentence } from "@/lib/shortfall";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/run-draft";
 import { readTally, noteMeasured, notePaid, meanScore, minutes, type Tally } from "@/lib/session-tally";
 import { soundOn, setSound } from "@/lib/click";
@@ -779,6 +779,7 @@ export default function StationPage() {
               practice={practice}
               passkey={hasPasskey ? { on: usePasskey, set: setUsePasskey } : undefined}
               rewardMon={task.rewardMon}
+              parSeconds={task.parSeconds}
               session={s}
               thinOnGas={thinOnGas}
               tx={tx}
@@ -909,7 +910,7 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, practice, passkey, rewardMon, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
+  verdict, accepted, practice, passkey, rewardMon, parSeconds, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
   verdict: Verdict;
   accepted: boolean;
@@ -918,6 +919,8 @@ function MeasurementSnap({
   passkey?: { on: boolean; set: (v: boolean) => void };
   /** This task's rate, so a lost point can be priced in AVAX. */
   rewardMon: number;
+  /** Par for this task, so a rejected run can be told what time would have paid. */
+  parSeconds: number;
   session: ReturnType<typeof useSession>;
   tx: ReturnType<typeof useSubmitRun>;
   thinOnGas: boolean;
@@ -1001,9 +1004,22 @@ function MeasurementSnap({
               ))}
             </ul>
             {belowFloorBy(verdict) !== null ? (
-              <p className="mt-3 border-t border-rule pt-3 font-mono text-[12px] text-reject">
-                {((belowFloorBy(verdict) ?? 0) / 100).toFixed(2)} points short of the 40.00 a run must reach to be paid.
-              </p>
+              <div className="mt-3 border-t border-rule pt-3">
+                <p className="font-mono text-[12px] text-reject">
+                  {((belowFloorBy(verdict) ?? 0) / 100).toFixed(2)} points short of the 40.00 a run must reach to be paid.
+                </p>
+                {/* Points are not a unit anybody drives in. The same arithmetic
+                    run backwards says what one term would have had to be, with
+                    the other two left exactly where this run put them. */}
+                {(() => {
+                  const w = wouldHavePaid(verdict, parSeconds);
+                  return w ? (
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-scribe-2">
+                      {wouldHavePaidSentence(w)}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
             ) : null}
           </details>
 
