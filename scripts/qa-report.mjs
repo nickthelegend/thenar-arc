@@ -49,6 +49,8 @@ const MEANS = {
   A32:"One run is not a progression and is not shown as one",
   A33:"An empty corpus says which of the three reasons it is empty for",
   A34:"A funder is told what the escrow draws, what happens to the rest, and what is not measured",
+  A35:"The run page names which failure mode the run hit",
+  A36:"A run whose samples disagree with its score says so",
   R1:"Run begins and the telemetry strip is live",
   "R2.0":"Tool reaches the first payload", "R3.0":"Jaws close on it",
   "R4.0":"It reaches its own seat", "R5.0":"And is released there",

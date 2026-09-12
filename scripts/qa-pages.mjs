@@ -170,6 +170,34 @@ const ITEMS = [
       });
       return [Object.values(r).every(Boolean), JSON.stringify(r)];
   }],
+  ["A35", "/run/0x363e2b555356e4f82e2fc9e26f2a81697c07f43c35415a9f9a311fd0d7c28485", async (p) => {
+      // A real run that was let go in the air. The taxonomy has shipped in the
+      // dataset export since the corpus started keeping failures and appeared
+      // nowhere a person could read it.
+      await p.waitForTimeout(4000);
+      const t = await p.evaluate(() => document.body.innerText);
+      const r = {
+        here: /WHERE IT WENT WRONG/i.test(t),
+        kind: /\bDROPPED\b/.test(t),
+        detail: /Let go 54 mm above the table/.test(t),
+        seek: /go to sample 4885/i.test(t),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
+  ["A36", "/run/0x77f0cc8cd166ce38679fee669324dc3b898ed308dbf7aee8752c96490941a7a2", async (p) => {
+      // The run whose samples disagree with the figure it was scored against —
+      // recorded before the verifier began measuring placement from them. The
+      // disagreement is the finding, and the page says so rather than showing
+      // two numbers and letting the reader decide which to believe.
+      await p.waitForTimeout(4000);
+      const t = await p.evaluate(() => document.body.innerText);
+      const r = {
+        disagrees: /These samples do not agree with the score/.test(t),
+        both: /scored against 4\.3 mm and the recording ends 61\.7 mm/.test(t),
+        kept: /left as recorded/.test(t),
+      };
+      return [Object.values(r).every(Boolean), JSON.stringify(r)];
+  }],
   ["A29", "/l1",              async (p) => {
       const r = await p.evaluate(() => {
         const t = document.body.innerText;

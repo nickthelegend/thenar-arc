@@ -12,6 +12,8 @@ import { Copyable, DimRule, ToleranceBand } from "@/components/primitives";
 import { PhaseTimeline } from "@/components/phase-timeline";
 import { InCorpus } from "@/components/in-corpus";
 import { TOLERANCE_MM } from "@/lib/score";
+import { classifyFailure } from "@/lib/failure";
+import { deviationFromSamples } from "@/lib/score";
 import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
 import { cn } from "@/lib/cn";
 import { fmtScore, fmtSeconds, shortHash } from "@/lib/format";
@@ -340,6 +342,20 @@ export default function RunView() {
         onSeek={setCursor}
       />
 
+      {/* Which of the failure modes this run hit.
+          The taxonomy has existed since the corpus started keeping failures —
+          a negative example is only worth training on if you know what it is an
+          example of — and it shipped in the dataset export and nowhere a person
+          could see it. Its own header says the reason shown on the run page is
+          the same string shipped in the corpus. It was not shown on the run
+          page. Now it is, derived here in the browser from the samples on this
+          page, so a reader can rederive the label rather than take it. */}
+      <FailureNote
+        samples={data.samples ?? []}
+        scoredDeviationMm={data.deviationMm}
+        onSeek={setCursor}
+      />
+
       <RunCertificate trajHash={data.trajHash} />
 
       <InCorpus taskId={data.taskId} trajHash={data.trajHash} />
@@ -555,6 +571,94 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="flex flex-wrap gap-x-3 border-b border-rule py-1.5">
       <dt className="label w-[104px] shrink-0">{label}</dt>
       <dd className="min-w-0 break-all text-scribe-2">{children}</dd>
+    </div>
+  );
+}
+
+/**
+ * Why the run did not work, named.
+ *
+ * Ordered by how early it went wrong, because a run that never picked the
+ * payload up also, trivially, did not place it accurately, and reporting the
+ * second is useless. The first thing that failed is the thing to say.
+ *
+ * Shown on every run, not only the failures. On a run that placed inside the
+ * band the answer is that the placement was not the problem — which is a real
+ * answer to the question the page invites, and the alternative is a panel that
+ * appears only when there is bad news and so reads as an accusation.
+ */
+function FailureNote({
+  samples, scoredDeviationMm, onSeek,
+}: {
+  samples: ReplaySample[];
+  /** The distance this run was actually scored against, as the ledger holds it. */
+  scoredDeviationMm: number;
+  onSeek: (v: number) => void;
+}) {
+  const failure = useMemo(
+    () => (samples.length >= 2 ? classifyFailure(samples) : null),
+    [samples],
+  );
+  const measured = useMemo(
+    () => (samples.length >= 2 ? deviationFromSamples(samples) : null),
+    [samples],
+  );
+  if (!failure || measured === null) return null;
+
+  const clean = failure.kind === "none";
+  /**
+   * Whether the recording and the figure it was scored with agree.
+   *
+   * They do on twenty-eight of the thirty episodes here. The two that do not
+   * were recorded before the verifier began measuring placement from the
+   * samples — one of them was scored at 0.0 mm against a recording that ends
+   * 60 mm out, which is exactly the claim that change removed. So the
+   * disagreement is not a rounding artefact; it is proof the number did not
+   * come from the recording, and it is worth more said than smoothed over.
+   */
+  const disagrees = Math.abs(measured - scoredDeviationMm) > 0.5;
+
+  return (
+    <div className="mt-6 border border-rule bg-ink-1 px-5 py-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className="label">Where it went wrong</span>
+        <span
+          className={`font-mono text-[12px] uppercase tracking-[0.12em] ${clean ? "text-go" : "text-reject"}`}
+        >
+          {failure.kind === "none" ? "not the placement" : failure.kind.replace(/-/g, " ")}
+        </span>
+      </div>
+      <p className="mt-2 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">
+        {failure.detail}
+      </p>
+      {failure.atSample !== undefined && samples.length > 1 ? (
+        <button
+          type="button"
+          onClick={() => onSeek(Math.min(1, Math.max(0, failure.atSample! / (samples.length - 1))))}
+          className="mt-3 border border-rule-strong px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-scribe transition-colors hover:border-scribe"
+        >
+          Go to sample {failure.atSample}
+        </button>
+      ) : null}
+      {disagrees ? (
+        <p className="mt-3 max-w-[64ch] border-l-2 border-reject pl-3 text-[13px] leading-relaxed text-scribe-2">
+          <span className="text-reject">These samples do not agree with the score.</span>{" "}
+          The run was scored against {scoredDeviationMm.toFixed(1)} mm and the
+          recording ends {measured.toFixed(1)} mm from its seat. That difference
+          is not rounding &mdash; it means the figure it was signed for did not
+          come from this recording. Runs from before the verifier began measuring
+          placement from the samples carry the number their client sent, and this
+          is one of them. It is left as recorded: the payout happened, and
+          restating it now would be inventing a second history.
+        </p>
+      ) : null}
+
+      <p className="mt-3 max-w-[64ch] font-mono text-[12px] leading-relaxed text-scribe-3">
+        Derived in this browser from the samples above, not stored beside the
+        run &mdash; so it can be rederived rather than taken. The corpus export
+        ships the same label against the same episode, which is what makes a
+        failure worth training on.
+      </p>
     </div>
   );
 }
