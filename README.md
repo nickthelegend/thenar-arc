@@ -1,352 +1,287 @@
-# Thenar
+# Thenar on Arc
 
-**The data foundry for physical AI.** Teleoperate a robot arm in the browser,
-have the run measured against the goal datum, and get paid on Avalanche in the
-same transaction that records the trajectory.
+**Robot training data, recorded by people, paid per run in USDC, and bought by
+agents.** An operator drives a robot arm in the browser; a verifier scores the
+recording against the goal and signs; one transaction on Arc records the
+trajectory and pays the operator from escrowed USDC, with gas from the same
+balance. An AI agent that wants a task's corpus asks for it over HTTP, is
+answered `402`, and either pays on Hedera through x402 or shows through World
+AgentKit that a verified human stands behind it.
 
-Built at Monad Blitz Hyderabad V3.
+A **Continuity** project for ETHOnline 2026. Thenar was built at Monad Blitz
+Hyderabad V3 (3rd place) and ran on Avalanche Fuji afterwards. What existed
+before this event and what was built during it are separated
+[below](#what-existed-before-ethonline-and-what-is-new), with the commits.
 
 | | |
 | --- | --- |
-| **Live** | **https://thenar.io** |
-| **Repo** | https://github.com/nickthelegend/axon-monad |
-| **Chain** | Avalanche Fuji (43113) |
-| **AxonProtocolV2** | [`0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0`](https://testnet.snowtrace.io/address/0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0) — Sourcify `exact_match`. Adds escrow refunds, relayed submission, and a passkey digest that works. |
-| **AxonProtocol v1** | [`0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3`](https://testnet.snowtrace.io/address/0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3) — superseded; its runs are in the archive |
-| **TrajectoryCertificate** | [`0x7a060129A3730852A606Bbe985207952AC25c4f6`](https://testnet.snowtrace.io/address/0x7a060129A3730852A606Bbe985207952AC25c4f6) — Sourcify `exact_match`. Soulbound; names a run's recorder and conveys no rights over the data. |
-| **ConfidentialPayouts** | [`0x8CD8A9211CE32184a89F9ab9DC26224D08B775c2`](https://testnet.snowtrace.io/address/0x8CD8A9211CE32184a89F9ab9DC26224D08B775c2) — Sourcify `exact_match`. ElGamal on secp256k1: earnings add up on chain without the chain holding a number. |
-| **LicenceReceipt** | [`0xbA65eC5479C9E131d158Af1947452C989eF7D143`](https://testnet.snowtrace.io/address/0xbA65eC5479C9E131d158Af1947452C989eF7D143) — Sourcify `exact_match`. Emits an Avalanche Warp message attesting a policy, signed by Fuji's validators. |
-| **ContributionRecord** | [`0xa3b2dd739be34D13ca51a92ADDD0Ce2022E23247`](https://testnet.snowtrace.io/address/0xa3b2dd739be34D13ca51a92ADDD0Ce2022E23247) — Sourcify `exact_match`. A running total of work recorded, in a shape wallets read. Cannot be transferred, sold or redeemed. |
-| **Referrals** | [`0x50414b04e39434Fc66527Fc7c816d835C766AC32`](https://testnet.snowtrace.io/address/0x50414b04e39434Fc66527Fc7c816d835C766AC32) — Sourcify `exact_match`. Pays for bringing someone who then does the work, not for signing up. |
-| **Foundry** | [`0xFf4007B14d3bb18a409EF9eF1ac6DD21e601783E`](https://testnet.snowtrace.io/address/0xFf4007B14d3bb18a409EF9eF1ac6DD21e601783E) — Sourcify `exact_match`. A treasury the protocol's contributors vote to spend on new tasks, weighted by work recorded. |
-| **PrizePool** | [`0x42912F9a437C8EcF2a90Cb18F49D8a54DDe3F84f`](https://testnet.snowtrace.io/address/0x42912F9a437C8EcF2a90Cb18F49D8a54DDe3F84f) — Sourcify `exact_match`. Funded pot for one task; contributors enter themselves and it splits by work the protocol recorded. |
-| **CorpusAccess** | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.snowtrace.io/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — Sourcify `exact_match`. Time-boxed read access to the corpus. Sells time, not rights. |
-| **PasskeyRegistry** | [`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`](https://testnet.snowtrace.io/address/0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F) — Sourcify `exact_match` |
-| **Every contract, read live** | [`https://thenar.io/contracts`](https://thenar.io/contracts) — all eleven with balances, code size, the surface that uses each, and live readings from those with state |
-| **Hosting** | Vercel (frontend, custom domain) + Railway (API, Postgres, and a signer service holding the verifier key) |
+| **Runs and payouts** | Arc Testnet, chain 5042002. Bounties, payouts and gas are all USDC. |
+| **Agent payments** | Hedera testnet, x402 `exact` scheme in HBAR, settled by the [Blocky402](https://api.testnet.blocky402.com/supported) facilitator |
+| **Agent identity** | World AgentKit; AgentBook on World Chain (480) decides who gets free pulls |
+| **Repo** | https://github.com/nickthelegend/thenar-arc |
+| **Submission notes** | [SUBMISSION.md](SUBMISSION.md) · World feedback: [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md) |
 
-> **The directory is named `monad-blitz` and the git remote is `axon-monad`.**
-> Both are from the build this started as; the product is Thenar and it settles
-> on Avalanche. The names are left alone so the history stays traceable.
->
-> **Built at Monad Blitz Hyderabad V3, where it placed 3rd.** It ran on Monad
-> then; it settles on Avalanche now. The Monad deployment and the two
-> transactions in the demo below are left in place because they happened, and
-> the audits in [MONAD.md](MONAD.md) and [MONAD-2.md](MONAD-2.md) are kept as
-> the record of that build — they describe the Monad deployment, not what
-> thenar.io runs today.
+Everything below is on testnets and every link is to a real transaction.
 
 ---
 
-## Demo
+## Architecture
 
-Drive the arm, place the payload, get paid, then buy a licence and watch the fee
-split across every contributor. Both transactions are real and linked below.
+```mermaid
+flowchart LR
+  OP["Operator's browser<br/>station + wallet"]
+  AGENT["Buyer agent<br/>scripts/agent-buy.mjs"]
 
-![Axon demo — pick and place, payout, and the transaction on Monad](docs/demo.gif)
+  subgraph APP["Thenar app (Next.js)"]
+    VERIFY["/api/verify<br/>scores the samples,<br/>signs EIP-712"]
+    SUBMITTED["/api/submitted<br/>reads the receipt back"]
+    CORPUS["/api/agent/corpus<br/>x402 + AgentKit"]
+    PAGES["/agents, /corpus, /hub"]
+    DB[("SQLite or Postgres<br/>trajectory · agentkit_usage<br/>agentkit_nonce · corpus_sale")]
+  end
 
-**[▶ Watch the full 2:54 demo](https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4)** — no narration, download or stream from the release.
+  subgraph ARC["Arc Testnet"]
+    AXON["AxonProtocolV2<br/>escrow and payout in USDC"]
+    ACCESS["CorpusAccess<br/>subscriptions in USDC"]
+  end
 
-<video src="https://github.com/nickthelegend/axon-monad/releases/download/demo-v1/axon-demo.mp4" controls muted playsinline width="100%"></video>
+  subgraph HEDERA["Hedera testnet"]
+    B402["Blocky402<br/>verify · settle · pays fee"]
+    TREASURY["Treasury 0.0.10518776"]
+  end
 
-The two transactions the video shows, on Monad Testnet:
+  subgraph WORLD["World Chain"]
+    BOOK["AgentBook"]
+  end
 
-| Step | Transaction | Block |
-| --- | --- | --- |
-| Payout — `submitTrajectory` records the run and pays the operator | [`0x4496b36a…434c5433`](https://testnet.monadscan.com/tx/0x4496b36a16be3f5b622305d058314212c0ab820eebda8fd1dd5cc2c4434c5433) | 55950354 |
-| Licence — `licensePolicy` pays the whole cap table in one call | [`0x139bc19e…73f14b9a`](https://testnet.monadscan.com/tx/0x139bc19e419194a12034059fb92cc864016a4ee5012b679f9acc1ecc73f14b9a) | 55950691 |
-
----
-
-## Contracts
-
-Solidity, Foundry, deployed and source-verified on **Avalanche Fuji (chain
-43113)**. The full set with addresses is in the table at the top of this file;
-every one reports `exact_match` on Sourcify, so the verified source is the
-source in this repo.
-
-The pair below is the **Monad Testnet** deployment this project was built on at
-Monad Blitz Hyderabad V3. It is kept because it happened, and because the demo
-video and its two transactions are from it. It is not what the live app talks
-to.
-
-| Contract (Monad Testnet, historical) | Address | Source |
-| --- | --- | --- |
-| `AxonProtocol` — tasks, escrow, trajectories, policies, cap tables | [`0x89384f46…C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) | [`contracts/src/AxonProtocol.sol`](contracts/src/AxonProtocol.sol) |
-| `PasskeyRegistry` — secp256r1 verification via the P256 precompile at `0x0100` | [`0xD6dE823E…DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) | [`contracts/src/PasskeyRegistry.sol`](contracts/src/PasskeyRegistry.sol) |
-
-What the protocol does, in the order the video shows it:
-
-- **`createTask`** escrows `slots × rewardPerTrajectory` up front. A task that
-  cannot pay is not a task.
-- **`submitTrajectory`** takes the trajectory hash, the task, and a score the
-  verifier signed with EIP-712. It records the run and transfers the reward in
-  the same call — there is no separate claim. Replays revert `AlreadySubmitted`;
-  an unsigned score reverts `BadSignature`.
-- **`mintPolicy`** snapshots the contributor cap table when a task fills, weights
-  in basis points summing to 10000.
-- **`licensePolicy`** pays every contributor pro-rata in one transaction. A payee
-  that refuses transfers is credited instead of reverting the sale, and can pull
-  later with `claim`.
-
-Slot counters are **sharded** (`MAX_SHARDS`, `SLOTS_PER_SHARD`) so concurrent
-submissions to the same task write to different storage slots. The design was
-made for Monad, where a shared counter forces optimistically-parallel execution
-to re-run transactions serially. Avalanche C-Chain executes sequentially, so
-that particular argument does not apply on Fuji — the sharding stays because it
-costs nothing, still removes the one contended write, and is what the deployed
-contract does.
-
-Tests: [`contracts/test/AxonProtocol.t.sol`](contracts/test/AxonProtocol.t.sol)
-(23, including a 256-run fuzz and the sharding invariants) and
-[`contracts/test/PasskeyRegistry.t.sol`](contracts/test/PasskeyRegistry.t.sol)
-(10, run against a fork because the P256 precompile cannot be `vm.etch`ed).
-
-```bash
-cd contracts && forge test
-cd contracts && forge test --match-contract PasskeyRegistry --fork-url https://testnet-rpc.monad.xyz
+  OP -- "samples" --> VERIFY --> DB
+  OP -- "submitTrajectory: records the run,<br/>pays the operator, gas in USDC" --> AXON
+  OP -- "tx hash" --> SUBMITTED -- "getTransactionReceipt" --> AXON
+  AGENT -- "GET, then agentkit header,<br/>then PAYMENT-SIGNATURE" --> CORPUS
+  CORPUS -- "lookupHuman" --> BOOK
+  CORPUS -- "verify, then settle<br/>after the file is ready" --> B402
+  B402 -- "HBAR transfer" --> TREASURY
+  CORPUS --> DB
+  PAGES --> DB
+  PAGES -. "reads" .-> AXON
 ```
 
 ---
 
-## The idea in one paragraph
+## What is proven, with links
 
-Physical AI is bottlenecked by data, not compute. Robot manipulation data is
-collected in closed labs — slow, expensive, too narrow to generalise. The
-networks already crowdsourcing it write one small record per trajectory on
-chain (a data ID bound to a task and a wallet) and keep the economics off chain:
-points, non-transferable, settled by hand every fortnight, redeemable for a
-possible future airdrop.
+### Arc Testnet
 
-Thenar writes the payment instead. A task is a funded escrow. An accepted
-trajectory pays out in the call that records it. A policy is minted with its
-contributor cap table attached, so a licence fee splits to everyone who trained
-it without anyone claiming anything. That is several times the state writes of a
-bare anchor, and those writes barely touch each other — different operators,
-different tasks, one shared slot counter. It is the workload parallel execution
-exists for, which is why it was built on Monad. It settles on Avalanche now,
-where the argument for the chain is different — see the top of this file.
+The contracts, unchanged Solidity from the Avalanche build, redeployed on Arc
+([`contracts/script/DeployArc.s.sol`](contracts/script/DeployArc.s.sol),
+[`DeployArcExtras.s.sol`](contracts/script/DeployArcExtras.s.sol)). The value
+they escrow and pay is the chain's native value, which on Arc is USDC, so none
+of them needed a token interface to become dollar-denominated.
+
+| Contract | Address | Does |
+| --- | --- | --- |
+| AxonProtocolV2 | [`0x6D6D6D0e…0218B2f`](https://testnet.arcscan.app/address/0x6D6D6D0ee86C654b69646223049D6812c0218B2f) | Tasks, escrow, trajectories, payouts. Five tasks seeded, 1.5 USDC escrowed. |
+| TrajectoryCertificate | [`0x9dAc88a5…B9B7B`](https://testnet.arcscan.app/address/0x9dAc88a501F908FFaF41F4e0c6071c1F8B6B9B7B) | Soulbound record of who recorded a run |
+| ContributionRecord | [`0x940a9A5C…25523`](https://testnet.arcscan.app/address/0x940a9A5CB219D5061748AD10b1Dd38f82C825523) | Running total of work recorded |
+| CorpusAccess | [`0x14588B2b…B7Bc8`](https://testnet.arcscan.app/address/0x14588B2b26c3af1D0dDabc386fCe659d662B7Bc8) | A day of corpus access for a cent of USDC |
+| PasskeyRegistry | [`0xecbbC9d4…7615e`](https://testnet.arcscan.app/address/0xecbbC9d43eF7C4E4Df00BC02757b8FC3E3b7615e) | P-256 keys, verified through the precompile at `0x0100`, which answers on Arc |
+| Referrals | [`0x4688D98C…9971d`](https://testnet.arcscan.app/address/0x4688D98Ca5813CA9c4702AcBbfED28B88dF9971d) | Two cents of USDC for bringing someone who then does the work; 0.1 USDC pot |
+| Foundry | [`0x3c6eAaeE…a6846`](https://testnet.arcscan.app/address/0x3c6eAaeEb14743944b6AC37aBBfAd6aD735a6846) | Treasury contributors vote to spend on new tasks; 0.2 USDC |
+| PrizePool | [`0x39C7983E…d8b13`](https://testnet.arcscan.app/address/0x39C7983E14ad17FA24399d8394E36EFcBd6d8b13) | Funded pot for task 1, split by recorded work; 0.1 USDC |
+| ConfidentialPayouts | [`0x02376942…93003`](https://testnet.arcscan.app/address/0x023769421D2501E7F9cF06c1F677d85C1C393003) | ElGamal on secp256k1: totals add up without the chain holding a number |
+| CorpusManifest | [`0x956f1Bf0…148f8`](https://testnet.arcscan.app/address/0x956f1Bf0dd1CE3Af862388E643e708c4C37148f8) | The published shape of the corpus |
+
+Runs, each scored and signed by the verifier and submitted by a fresh operator
+key with [`scripts/arc-run.mjs`](scripts/arc-run.mjs). Each paid **0.0225 USDC**
+(score 45.00 of a 0.05 USDC bounty) inside the transaction that recorded it, and
+each operator's balance rose by exactly that net of gas, because the gas came out
+of the same USDC.
+
+| Task | Transaction | Arm holds the payload? |
+| --- | --- | --- |
+| 1 | [`0x6d24002f…8242b2`](https://testnet.arcscan.app/tx/0x6d24002f52c29db71e4bec3a332ad9b9f73888cd7a473bf4e31cb0ccad8242b2) | No — first version of the script |
+| 1 | [`0xfbddfe56…f0605a`](https://testnet.arcscan.app/tx/0xfbddfe563e2dc440fe71178c15ca6c3c6f5c6437491ee9af0053106788f0605a) | No — first version of the script |
+| 2 | [`0xb59f1c4a…e01bb`](https://testnet.arcscan.app/tx/0xb59f1c4a85e7d4d31f1fbb84099242058830e08b504687610a795536883c01bb) | No — first version of the script |
+| 1 | [`0xa9962cb8…c272e`](https://testnet.arcscan.app/tx/0xa9962cb8844de65cace708e06faa1d2aa2aaaaec895cb4a451362c60be2c272e) | Yes — joints solved from the payload, 0.0 mm |
+| 2 | [`0x9d54e8f8…aa2a0`](https://testnet.arcscan.app/tx/0x9d54e8f8b2b9f6fb46da415bd1a5da4f14d172f98e7b6ea0d836e7c71aeaa2a0) | Yes — joints solved from the payload, 0.0 mm |
+
+The first three are real, paid, and not usable as training data: the script
+ramped the joints while the payload moved on its own. The product's own
+coherence check catches exactly that, and `/api/dataset/summary` reports task 1
+as 1 of 3 trainable and task 2 as 1 of 2. They are left on the ledger and
+labelled rather than hidden.
+
+### Hedera testnet
+
+| What | Id | Detail |
+| --- | --- | --- |
+| Agent account | [`0.0.10518775`](https://hashscan.io/testnet/account/0.0.10518775) | ECDSA, alias `0x9a6c46e7…cb63aa` — the agent's own EVM key. Created by [`scripts/hedera-setup.mjs`](scripts/hedera-setup.mjs). |
+| Corpus treasury | [`0.0.10518776`](https://hashscan.io/testnet/account/0.0.10518776) | What `/api/agent/corpus` asks agents to pay |
+| Paid pull, task 1 | [`0.0.7162784@1789279979.058986056`](https://hashscan.io/testnet/transaction/0.0.7162784-1789279979-058986056) | `SUCCESS`: agent −0.5 HBAR, treasury +0.5 HBAR, fee paid by Blocky402 (`0.0.7162784`) |
+| Paid pull, task 2 | [`0.0.7162784@1789281472.024056054`](https://hashscan.io/testnet/transaction/0.0.7162784-1789281472-024056054) | `SUCCESS`: agent −0.5 HBAR, treasury +0.5 HBAR, fee paid by Blocky402 |
+
+Both are also rows in `corpus_sale` and on the `/agents` page, each linked to
+its Hashscan transaction.
+
+### World
+
+- The paywall's 402 carries an AgentKit challenge for `eip155:480`. The agent
+  signs it (EIP-191) and retries; the server validates the message, checks the
+  nonce against the database, verifies the signature, and asks
+  [AgentBook](https://worldscan.org/address/0xA23aB2712eA7BBa896930544C7d6636a96b944dA)
+  on World Chain whether a human stands behind the wallet.
+- For the agent above, AgentBook answered **not registered**, so both pulls were
+  paid. `GET /api/agent/status?address=…` makes the same lookup on demand.
+- Free pulls for human-backed agents are counted in the database
+  (`agentkit_usage`), not in memory, so a restart does not reset a trial.
 
 ---
 
-## The Monad deployment
+## The payment flow, step by step
 
-Historical. This is what the project ran on at Monad Blitz Hyderabad V3, and
-what the demo video shows. The live app settles on Avalanche Fuji — see the
-table at the top of this file.
+`GET /api/agent/corpus?taskId=N` ([route](app/api/agent/corpus/route.ts)).
 
-| | |
-| --- | --- |
-| AxonProtocol | [`0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`](https://testnet.monadscan.com/address/0x89384f46e430F37DB61Afb98810eba995C0d6Ed4) — **verified**, exact match |
-| PasskeyRegistry | [`0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165`](https://testnet.monadscan.com/address/0xD6dE823EE979c4aAD3ba8eDe05f6E363DE65E165) — **verified**, exact match |
-| Network | Monad Testnet, chain `10143` |
+1. **No headers.** The server answers `402`. The offer is in the
+   `PAYMENT-REQUIRED` header and, decoded, in the body:
+   `accepts[0] = { scheme: "exact", network: "hedera:testnet", amount: "50000000", asset: "0.0.0", payTo: "0.0.10518776", extra: { feePayer: "0.0.7162784" } }`,
+   plus `extensions.agentkit` with a fresh nonce.
+2. **AgentKit.** The agent's `createAgentkitClient` signs the challenge with its
+   wallet and retries with an `agentkit` header. The server's `requestHook`
+   validates it and calls `AgentBook.lookupHuman`. A human with free pulls left
+   is granted the file with no payment, recorded as an `agentkit` sale. Anyone
+   else gets a new `402`.
+3. **x402.** `@x402/fetch` builds a Hedera `CryptoTransfer` of 0.5 HBAR from the
+   agent's account to the treasury, with Blocky402 as fee payer, signs it with
+   the agent's key, and retries with `PAYMENT-SIGNATURE`.
+4. **Verify.** The server sends the payment to Blocky402's `/verify`.
+5. **The file.** Only now does the route build the corpus. A task with nothing
+   recorded answers `404`, and a response of 400 or above is never settled, so
+   the agent is not charged for nothing.
+6. **Settle.** Blocky402's `/settle` submits the transfer. The response carries
+   `PAYMENT-RESPONSE` with the Hedera transaction id, which the server records in
+   `corpus_sale`.
 
-## Live endpoints
+One key does both jobs: `AGENT_PRIVATE_KEY` signs the AgentKit challenge and is
+the key of Hedera account `0.0.10518775`, created with that key's EVM address as
+its alias. The identity that could earn a free pull and the account that pays
+when it doesn't cannot belong to two different parties.
 
-| | |
-| --- | --- |
-| **Live app** | **https://thenar.io** |
-| Network | Avalanche Fuji, chain `43113` |
-| Verifier key | `0x5beE0b22906c28F747279217F5C8019c39fB086b` — held only by the signer service |
-| Contract metadata | [`https://thenar.io/api/contract`](https://thenar.io/api/contract) — address, chain and full ABI |
-| Health | [`https://thenar.io/api/health`](https://thenar.io/api/health) |
-| Hosting | Vercel serves the pages. **Every `/api/*` request is rewritten to the Railway `web` service**, so an API change deployed only to Vercel changes nothing. Postgres and an isolated signer service also run on Railway |
+Two things had to be fixed at the seam between AgentKit 0.2.1 and x402 2.25, and
+both are written up in [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md): the
+AgentKit client reads the offer from the body while x402 v2 sends it in a header,
+and a paid retry failed with `extension_echo_mismatch` until the challenge's
+nonce and timestamps were declared dynamic.
+
+---
+
+## What existed before ETHOnline, and what is new
+
+**Boundary:** commit
+[`e4f131d`](https://github.com/nickthelegend/thenar-arc/commit/e4f131d) on
+2026-09-03 is the last commit before the event. `git log e4f131d..HEAD` is the
+work done during it; `git diff --stat e4f131d..HEAD` is its size.
+
+**Before** (Monad Blitz, then Avalanche Fuji): the browser station and arm
+simulation, the verifier and its scoring, all the Solidity in `contracts/src`,
+the corpus export and its coherence check, CorpusAccess subscriptions, passkey
+submission, ElGamal payouts, the archive of earlier chains.
+
+**During ETHOnline 2026:**
+
+- *2026-09-10, on the Avalanche build* — ten commits: an empty standings window,
+  RPC fallback across endpoints, degraded-browser QA, a pageview counter that
+  could fail the site, the referral pot made visible.
+- *Arc* — every contract redeployed on Arc Testnet and funded in USDC; chain
+  config, CSP and registry moved to Arc; the per-address history that came from
+  Avalanche's Glacier now comes from Arcscan (`lib/glacier.ts`,
+  `/api/calls/[address]`); the Warp attestation and the `/l1` page removed
+  because Arc has neither; `scripts/arc-run.mjs`, which solves the arm's joints
+  from the payload so a scripted run is a coherent one.
+- *Hedera* — the x402 paywall on `/api/agent/corpus` settled by Blocky402, the
+  agent and treasury accounts, the buyer agent, the `corpus_sale` ledger,
+  `/api/agent/sales`, and the `/agents` page.
+- *World* — AgentKit on the same route with AgentBook deciding free pulls,
+  database-backed usage and nonce storage, `/api/agent/status`, and the
+  integration feedback.
+- *Shared* — the corpus export lifted out of `/api/dataset` into
+  `lib/server/corpus-export.ts`, so a subscription on Arc and a payment on Hedera
+  hand over the same file.
+
+---
 
 ## Run it
 
-Requires Node 20+, pnpm, and an injected EVM wallet to submit runs.
+Node 22 or later (the scripts import TypeScript directly), pnpm, and Foundry to
+deploy.
 
 ```bash
 pnpm install
-cp .env.example .env.local   # then fill in the two values it lists
-pnpm dev
+cp .env.example .env.local        # fill in the 0x... values
+pnpm dev --port 3222
 ```
 
-Open http://localhost:3000. Browsing, the hub, the leaderboard, the foundry and
-the station all work read-only with no wallet, and the station's practice mode
-records a run without one. Submitting a run for payment needs a wallet on
-**Avalanche Fuji** with a little AVAX for gas — the faucet is at
-https://core.app/tools/testnet-faucet/ (select Fuji C-Chain).
-
-To regenerate the robot arm geometry (optional — the GLB is committed):
+A paid run on Arc (the deployer in `.env.deployer` funds a fresh operator with
+0.05 USDC once the verifier has accepted its run):
 
 ```bash
-python3 -m pip install numpy && python3 cad/arm.py
+node scripts/arc-run.mjs http://localhost:3222 1
 ```
 
-## Verification
-
-Every one of these runs green right now:
+The Hedera accounts, once, from any funded testnet operator:
 
 ```bash
-cd contracts && forge test              # 23 tests, incl. a 256-run fuzz
-cd contracts && forge test --match-contract PasskeyRegistry \
-  --fork-url https://testnet-rpc.monad.xyz            # 10, against the real precompile
-node --experimental-strip-types scripts/check-loop.ts   # IK + scoring
-node scripts/e2e.mjs http://localhost:3000              # live on-chain proof
-node scripts/lifecycle.mjs http://localhost:3000        # create -> fill -> mint -> licence
-npx impeccable detect app components lib                # design detector
-pnpm exec eslint app components lib && pnpm exec tsc --noEmit
+HEDERA_OPERATOR_ENV=/path/to/file/with/HEDERA_OPERATOR_ID/and/KEY node scripts/hedera-setup.mjs
 ```
 
-`scripts/e2e.mjs` is the one that matters: it records a run, has the server
-score and sign it, submits it on chain, and then asserts that the escrow fell
-by exactly the payout, that the operator's balance rose by exactly the payout
-net of gas, that replaying the same trajectory is refused, and that a forged
-score is refused. It passes against the live deployment, not just localhost:
-
-```
-node scripts/e2e.mjs https://thenar.io
-```
-
-`scripts/lifecycle.mjs` covers the other half — creating a funded task, filling
-every slot, minting its policy, and buying a licence, asserting the cap table
-sums to 100% and that the contributor is paid exactly its share.
-
-Two Monad behaviours were worth knowing when these ran there, and are recorded
-because the numbers below came from that deployment. Gas is reserved
-against the **limit**, not usage, and the floor is higher than `value + gas`:
-the same licence call reverted at 0.3 MON and settled at 2. And consensus and
-execution are pipelined, so a transaction receipt means the transaction was
-*ordered*, not that its state change has landed — a freshly funded account can
-still fail the next transaction until the balance actually appears.
-
----
-
-## What is actually built
-
-| Surface | Route | What it does |
-| --- | --- | --- |
-| Landing | `/` | The thesis, with a live THENAR-6 running a pick-and-place cycle |
-| Hub | `/hub` | Task board — scenario, skill, difficulty, lifecycle, slots, reward |
-| Station | `/station/[taskId]` | The teleoperation console: 3D viewport, recorder, live measurement |
-| Portfolio | `/portfolio` | Run history, measurements, earnings, held runs |
-| Leaderboard | `/leaderboard` | Operators ranked by what they produced |
-| Foundry | `/foundry` | Policies with their contributor cap tables and licence split |
-
-**The run loop.** Drive the arm with the arrow keys, `E`/`D` for height and
-space for the jaws. The pose is recorded at 20 Hz. When the payload comes to
-rest the measurement is taken automatically: how far its centre finished from
-the goal datum, against a ±25 mm band. Placement (55%), path smoothness (25%)
-and time against par (20%) resolve to one score on 0–10000. Below 4000 the run
-is rejected and pays nothing.
-
-Scoring is deterministic — the same trajectory always produces the same score,
-because the payout is derived from it and a drifting score would be an
-unauditable payout.
-
-| Task detail | `/task/[id]` | Chain state plus every recorded submission and its score distribution |
-| Verify a run | `/run/[hash]` | Public audit: re-hashes the stored samples and replays the tool path |
-| Post a task | `/post` | Open a bounty and escrow it |
-| Spec sheet | `/spec` | THENAR-6, generated from the CAD constants |
-
-**Nothing on these pages is a fixture.** Tasks, slots, escrow, scores, payouts,
-standings and cap tables are all read from the contract. The trajectories behind
-them are in Postgres, addressed by the same hash the chain records.
-
-### Not built, and never presented as built
-
-The station is still a kinematic sim with analytic grasping, and every payout
-is derived from that — MuJoCo is in the project but measures the recordings
-rather than driving them, reporting per run how far each is from rigid-body
-dynamics (about 1.3 mm, against a ±25 mm band). No IsaacSim augmentation, no
-trained policy, no post-training/DAgger
-loop, no mobile capture, no mainnet deployment. These are named as roadmap in
-the interface wherever a visitor could read them as capabilities.
-
----
-
-## The arm is code
-
-`cad/` is a parametric CAD kernel in Python — numpy only, no CSG booleans, no
-CAD file to open. Every part is a surface of revolution or a swept polygon,
-which keeps it manifold by construction; `arm.py` validates every part for
-closure before export and fails the build if any part is open.
-
-```
-21 parts, 8080 triangles, 0 not closed
-```
-
-It writes `public/models/thenar-6.glb` as a **named node hierarchy** — `J1_yaw`,
-`J2_pitch`, `J3_pitch`, `J5_pitch`, `jaw_left`, `jaw_right` — which is what lets
-the viewport drive the arm joint by joint from the IK solver rather than playing
-a baked animation. It also writes one STL per part to `cad/exports/`.
-
-Dimensions are named constants at the top of `cad/arm.py`; change one and rerun.
-`lib/kinematics.ts` carries the same link lengths in metres — the arm and its
-solver are one part.
-
----
-
-## Design
-
-The visual system is documented in [DESIGN.md](DESIGN.md) and the product truth
-it serves in [PRODUCT.md](PRODUCT.md).
-
-The world is **the inspection bench**: layout dye as the ground, a scribed line
-as the ink, brass for anything the operator is paid, and a two-value verdict for
-anything measured. It is not decoration — Thenar's semantics are metrology, so
-every recurring device (tolerance band, gauge-block slot tally, datum zone,
-leader-line callouts) is a real instrument-shop device doing its actual job.
-
-Verified clean by `npx impeccable detect` across all ten routes and the
-whole source tree.
-
----
-
-## Deployment
-
-The contract is deployed and verified. Redeploy with:
+An agent buying task 1's corpus:
 
 ```bash
-cd contracts && forge script script/Deploy.s.sol:Deploy   --rpc-url https://testnet-rpc.monad.xyz --broadcast --slow
+node scripts/agent-buy.mjs http://localhost:3222 1
 ```
 
-It needs `DEPLOYER_PRIVATE_KEY` and `VERIFIER_ADDRESS` in the environment, and
-it seeds eight funded task bounties as part of the same run.
+To let that agent earn free pulls, register its wallet in AgentBook with World
+App, then run the buyer again:
 
-**Sharded slot accounting.** A single `slotsFilled` counter is one storage
-slot that every operator on a task writes to, which on an optimistically
-parallel chain forces them to re-execute serially — the exact anti-pattern
-Monad punishes, and the reason this was built. On Avalanche's sequential
-C-Chain the contention argument does not apply; the shape is kept because it is
-what is deployed and it costs nothing. Each operator instead writes only the shard their address
-maps to, and each shard carries its own quota, so concurrent submissions from
-different operators touch no shared state. A caller whose own shard is spent
-falls back to a scan; that is the only path that can contend and it only
-happens at the margin. `slotsFilledOf` sums the shards as a view, so reads
-never contend at all.
+```bash
+npx @worldcoin/agentkit-cli register 0x9a6C46E7115CfB5FF5a2265E5a1B955038cb63aA
+```
 
-The first deployment (`0x82aE3011CE1dE3fce4fCf0F1A683b5d3826BCE9F`) carried the
-single-counter version and is kept for the record.
+Deploying the contracts yourself:
 
-**Passkeys.** Both chains ship the P-256 precompile at `0x0100` — EIP-7951 on
-Monad, RIP-7212 on Avalanche — so a
-secp256r1 signature — the curve a passkey already uses — can be verified by the
-chain itself. `PasskeyRegistry` binds a public key to an address and spends
-signatures through it, and `submitTrajectoryWithPasskey` lets an operator
-authorise a run with that key rather than their wallet. The browser surface that
-demonstrated it was cut when wallet connection moved to RainbowKit, so the proof
-now lives in the fork tests: a genuine WebCrypto vector is accepted, the same
-signature with one bit flipped is refused, for about 34k gas. Ethereum mainnet has no
-such precompile; verifying secp256r1 there costs hundreds of thousands of gas
-in Solidity.
-
-This exists because Thenar's operators are gig workers, and the seed phrase is
-where that funnel dies.
-
-**The economics.** `createTask` escrows MON against a slot count.
-`submitTrajectory` checks a verifier signature, records the trajectory hash and
-its content address, decrements the slot, and transfers the operator's share —
-one call. `mintPolicy` snapshots the contributor cap table weighted by
-cumulative quality. `licensePolicy` fans a licence fee out to every contributor
-in a single transaction, crediting anyone whose transfer fails rather than
-reverting the sale.
+```bash
+cd contracts
+set -a; . ../.env.deployer; set +a
+forge script script/DeployArc.s.sol --rpc-url https://rpc.testnet.arc.network --broadcast
+AXON_ADDRESS=<AxonProtocolV2 from the step above> \
+  forge script script/DeployArcExtras.s.sol --rpc-url https://rpc.testnet.arc.network --broadcast
+```
 
 ---
 
-## Stack
+## Stated plainly: what is not proven
 
-Next.js 16 · React 19 · TypeScript · Tailwind v4 · three.js via
-react-three-fiber · Python (numpy) for the CAD kernel · Foundry for the
-contracts.
+- **Testnets only.** Arc mainnet is not live, so none of this is on it.
+- **No run here was driven by a person.** All five Arc runs came from
+  `scripts/arc-run.mjs`. The station works in the browser, but no human run has
+  been submitted to this Arc deployment yet.
+- **The free AgentKit path has not been exercised.** The agent wallet is not in
+  AgentBook yet; registering it needs World App. Until then only the paid path is
+  shown.
+- **Not Circle's Agent Stack.** The agent pays in HBAR on Hedera; it does not
+  hold a Circle wallet or pay in USDC on Arc. The USDC on Arc is the operators'
+  bounties and payouts.
+- **Not hosted.** thenar.io's old backend is gone. This deployment runs locally
+  against the live testnets.
+- **Contract source is not yet verified on Arcscan.** Submissions to Arcscan's
+  Blockscout verifier were rate-limited; the Solidity in `contracts/src` is what
+  was deployed, compiled by the scripts above.
+- **LicenceReceipt is not deployed on Arc.** It attests a policy through
+  Avalanche's Warp precompile, which Arc does not have.
+
+---
+
+## History
+
+The README from the Avalanche build, with its Monad and Fuji deployments and the
+original demo, is kept at
+[docs/history/README-avalanche.md](docs/history/README-avalanche.md).
