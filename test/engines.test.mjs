@@ -59,3 +59,27 @@ test("the tables the app actually queries are in both", () => {
     assert.ok(tablesIn(sqlite).has(t), `sqlite has no ${t}`);
   }
 });
+
+/**
+ * The endpoints the app reads from and the origins it is allowed to reach.
+ *
+ * These are two lists in two files, and they went out of step the moment the
+ * second and third RPC were added: the browser refused every request to them
+ * and the entire page sweep went red. The policy was right and the omission
+ * was mine, which is exactly the pair worth asserting.
+ */
+const chain = readFileSync(new URL("../lib/chain.ts", import.meta.url), "utf8");
+const config = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
+
+test("every RPC endpoint is allowed by the content security policy", () => {
+  // Ends at `] as const`, not at the first bracket: the first entry is
+  // `avalancheFuji.rpcUrls.default.http[0]`, whose own bracket would cut the
+  // list off before the literals this is here to check.
+  const from = chain.indexOf("export const RPC_ENDPOINTS");
+  const block = chain.slice(from, chain.indexOf("] as const;", from));
+  const hosts = [...block.matchAll(/https:\/\/([^"'\s/]+)/g)].map((m) => m[1]);
+  assert.ok(hosts.length >= 2, `expected the fallback list, found ${hosts.length}`);
+  for (const h of hosts) {
+    assert.ok(config.includes(h), `connect-src does not allow ${h}`);
+  }
+});

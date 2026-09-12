@@ -35,7 +35,25 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
       "worker-src 'self' blob:",
-      "connect-src 'self' https://api.avax-test.network https://glacier-api.avax.network https://testnet-rpc.monad.xyz wss://relay.walletconnect.com https://explorer-api.walletconnect.com",
+      /**
+       * Every origin this app is allowed to talk to, named.
+       *
+       * The two fallback RPCs belong here for the reason the policy exists:
+       * adding an endpoint to lib/chain.ts and not to this line means the
+       * browser refuses the request, and the failover that was supposed to
+       * survive an outage instead fails on every page load. It did — the whole
+       * page sweep went red the moment the secondaries were wired in, which is
+       * the policy doing its job.
+       *
+       * Kept in the same order as RPC_ENDPOINTS so the two lists can be read
+       * against each other.
+       */
+      "connect-src 'self' " +
+        "https://api.avax-test.network " +
+        "https://avalanche-fuji-c-chain-rpc.publicnode.com " +
+        "https://avalanche-fuji.drpc.org " +
+        "https://glacier-api.avax.network " +
+        "wss://relay.walletconnect.com https://explorer-api.walletconnect.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

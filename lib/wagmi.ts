@@ -47,8 +47,11 @@ export const wagmiConfig = createConfig({
       RPC_ENDPOINTS.map((url) =>
         http(url, {
           batch: true,        // one round trip for a screen full of reads
-          retryCount: 2,
-          retryDelay: 400,
+          // One retry, not three. A public endpoint answers a burst with 429,
+          // and retrying the same one is asking the thing that just refused —
+          // there are two others, and moving on is both faster and quieter.
+          retryCount: 1,
+          retryDelay: 300,
         }),
       ),
       { rank: false },        // in order: the first is the one that answers widest
