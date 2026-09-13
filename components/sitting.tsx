@@ -22,7 +22,10 @@ import { fmtMon, fmtScore } from "@/lib/format";
  */
 export function Sitting({ className }: { className?: string }) {
   const [tally, setTally] = useState<Tally | null>(null);
-  useEffect(() => setTally(readTally()), []);
+  useEffect(() => {
+    const t = setTimeout(() => setTally(readTally()), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   if (!tally || tally.measured === 0) return null;
 

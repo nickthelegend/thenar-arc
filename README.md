@@ -94,11 +94,12 @@ they escrow and pay is the chain's native value, which on Arc is USDC, so none
 of them needed a token interface to become dollar-denominated. All ten are
 source-verified on Sourcify with `exact_match`, so the deployed bytecode is this
 repository's Solidity (for example
-[AxonProtocolV2](https://sourcify.dev/server/v2/contract/5042002/0x6D6D6D0ee86C654b69646223049D6812c0218B2f)).
+[AxonProtocolV2](https://sourcify.dev/server/v2/contract/5042002/0x6D6D6D0ee86C654b69646223049D6812c0218B2f)),
+and Arcscan shows the verified source for all ten.
 
 | Contract | Address | Does |
 | --- | --- | --- |
-| AxonProtocolV2 | [`0x6D6D6D0e…0218B2f`](https://testnet.arcscan.app/address/0x6D6D6D0ee86C654b69646223049D6812c0218B2f) | Tasks, escrow, trajectories, payouts. Five tasks seeded, 1.5 USDC escrowed. |
+| AxonProtocolV2 | [`0x6D6D6D0e…0218B2f`](https://testnet.arcscan.app/address/0x6D6D6D0ee86C654b69646223049D6812c0218B2f) | Tasks, escrow, trajectories, payouts. Eight tasks: five seeded with 1.5 USDC, and #5–#7 funded from the Privy lab wallet. |
 | TrajectoryCertificate | [`0x9dAc88a5…B9B7B`](https://testnet.arcscan.app/address/0x9dAc88a501F908FFaF41F4e0c6071c1F8B6B9B7B) | Soulbound record of who recorded a run |
 | ContributionRecord | [`0x940a9A5C…25523`](https://testnet.arcscan.app/address/0x940a9A5CB219D5061748AD10b1Dd38f82C825523) | Running total of work recorded |
 | CorpusAccess | [`0x14588B2b…B7Bc8`](https://testnet.arcscan.app/address/0x14588B2b26c3af1D0dDabc386fCe659d662B7Bc8) | A day of corpus access for a cent of USDC |
@@ -107,7 +108,7 @@ repository's Solidity (for example
 | Foundry | [`0x3c6eAaeE…a6846`](https://testnet.arcscan.app/address/0x3c6eAaeEb14743944b6AC37aBBfAd6aD735a6846) | Treasury contributors vote to spend on new tasks; 0.2 USDC |
 | PrizePool | [`0x39C7983E…d8b13`](https://testnet.arcscan.app/address/0x39C7983E14ad17FA24399d8394E36EFcBd6d8b13) | Funded pot for task 1, split by recorded work; 0.1 USDC |
 | ConfidentialPayouts | [`0x02376942…93003`](https://testnet.arcscan.app/address/0x023769421D2501E7F9cF06c1F677d85C1C393003) | ElGamal on secp256k1: totals add up without the chain holding a number |
-| CorpusManifest | [`0x956f1Bf0…148f8`](https://testnet.arcscan.app/address/0x956f1Bf0dd1CE3Af862388E643e708c4C37148f8) | The published shape of the corpus |
+| CorpusManifest | [`0x956f1Bf0…148f8`](https://testnet.arcscan.app/address/0x956f1Bf0dd1CE3Af862388E643e708c4C37148f8) | The committed Merkle root of each task's corpus. Tasks 1 and 2 committed by the verifier on 13 September ([`0xd779a45a…`](https://testnet.arcscan.app/tx/0xd779a45a2de0f38c7b5dc1ba83a9a6fa5b3d40ce8681e8c44789c04c1b57eed3), [`0x907bcc1b…`](https://testnet.arcscan.app/tx/0x907bcc1bdf0ef458517cc4204707034528e55be7f5dd11596da92deb5030546d)), each with an episode's proof checked by the contract |
 
 Runs, each scored and signed by the verifier and submitted by a fresh operator
 key with [`scripts/arc-run.mjs`](scripts/arc-run.mjs). Each paid **0.0225 USDC**
@@ -141,7 +142,10 @@ labelled rather than hidden.
 | Sales topic | [`0.0.10519262`](https://hashscan.io/testnet/topic/0.0.10519262) | Consensus Service; only the treasury's key can post to it. Created in `0.0.9842030@1789282023.896089542`. |
 | Paid pull, task 1, logged | [`0.0.7162784@1789282116.389653271`](https://hashscan.io/testnet/transaction/0.0.7162784-1789282116-389653271) | `SUCCESS`: agent −0.5 HBAR, treasury +0.5 HBAR. Logged as [message #1](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10519262/messages/1), posted by the treasury, with sha256 `2539ff76…d4008b61`. The agent hashed the three-episode file it received and read the same digest from the mirror node. |
 
-All three pulls are rows in `corpus_sale` and on the `/agents` page, each linked
+| Paid pull, task 1, logged | [`0.0.7162784@1789290611.109538307`](https://hashscan.io/testnet/transaction/0.0.7162784-1789290611-109538307) | Settled by Blocky402. Logged as [message #2](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10519262/messages/2). |
+| Paid pull, task 1, logged | [`0.0.7162784@1789296779.408785255`](https://hashscan.io/testnet/transaction/0.0.7162784-1789296779-408785255) | Settled by Blocky402, run again on 13 September. Logged as [message #3](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10519262/messages/3); the buyer's own sha256 of the file it received, `424220d1…3ac988`, matched it. |
+
+All five pulls are rows in `corpus_sale` and on the `/agents` page, each linked
 to its Hashscan transaction. The first two came before the sales topic existed
 and are shown as unlogged rather than backfilled.
 
@@ -183,7 +187,8 @@ creation match, because the ATS factory created it inside `deployEquity`.
 | Lab policy | `sf7wzkldy5364a56jol16spa` | Two ALLOW rules, for `eth_sendTransaction` and `eth_signTransaction`: `to` is AxonProtocolV2, `chain_id` is 5042002, `value` is at most 1 USDC. A wallet with a policy is refused anything no rule allows. |
 | Lab wallet | [`0x7b4d4a77…0E44E51a`](https://testnet.arcscan.app/address/0x7b4d4a773fCA1E20D2361411B34655210E44E51a) | Privy server wallet `t3f4kq36uzu0zieqd5i425p0`, created with the policy attached; its key exists only inside Privy. Topped up with 1.5 USDC from the deployer in [`0x56ccbaba…`](https://testnet.arcscan.app/tx/0x56ccbababc924e9b84c9c788994a33f559f86cad23634c7d5fe55f4cf91ab56c). |
 | A bounty from the budget | [`0x7a7c387f…f6d9291c`](https://testnet.arcscan.app/tx/0x7a7c387f00110499e4e2c4d6665bb120ecbe7db716012d8a35338797f6d9291c) | From the lab wallet to AxonProtocolV2, 0.4 USDC, success in block 61860451: task #5, two runs at 0.2 USDC. Signed by Privy under the policy. |
-| Spending it elsewhere | none | Asked to sign a 0.01 USDC transfer to the deployer, Privy answered `400 policy_violation` ("RPC request denied due to policy violation") and signed nothing. |
+| A bounty from the page | [`0x5ef56687…2e3f8c`](https://testnet.arcscan.app/tx/0x5ef56687df9d4db9baf510a5f53f093c79cb54ef587b3b07f11d98c9b42e3f8c) | Posted from `/lab` on 13 September: task #7, one run at 0.01 USDC, success in block 61886811. Clicked twice, posted once. |
+| Spending it elsewhere | none | Asked to sign a 0.01 USDC transfer to the deployer, Privy answered `400 policy_violation` ("RPC request denied due to policy violation") and signed nothing. Asked again from the `/lab` page on 13 September, with the same refusal. |
 
 Privy will not broadcast on Arc for this app (`App is not authorized to transact
 on chain eip155:5042002`), so the app broadcasts what Privy signs. The policy
@@ -351,10 +356,10 @@ AXON_ADDRESS=<AxonProtocolV2 from the step above> \
 ## Stated plainly: what is not proven
 
 - **Testnets only.** Arc mainnet is not live, so none of this is on it.
-- **Privy sign-in has not been exercised in a browser.** The provider and the
-  embedded-wallet setup typecheck and the lab's server wallet works end to end,
-  but the dev server stalled under memory pressure before the sign-in modal
-  could be opened.
+- **Privy email sign-in has not been completed in a browser.** The provider and
+  the embedded-wallet setup build, and the lab's server wallet works end to end,
+  but finishing a sign-in needs the one-time code sent to a real inbox, and no
+  operator's sign-in has been run through yet.
 - **Privy does not broadcast on Arc for this app.** The lab wallet's
   transactions are signed by Privy and broadcast by this app.
 - **Privy lists no Continuity track.** Thenar existed before the event; whether
@@ -377,9 +382,6 @@ AXON_ADDRESS=<AxonProtocolV2 from the step above> \
   bounties and payouts.
 - **Not hosted.** thenar.io's old backend is gone. This deployment runs locally
   against the live testnets.
-- **Arcscan does not show the verified source.** All ten contracts are
-  `exact_match` on Sourcify for chain 5042002, but every submission to Arcscan's
-  own Blockscout verifier was refused as rate-limited.
 - **LicenceReceipt is not deployed on Arc.** It attests a policy through
   Avalanche's Warp precompile, which Arc does not have.
 

@@ -20,7 +20,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { rootOf, proofFor, verifyProof } from "../lib/merkle.ts";
 
 const TASK = Number(process.argv[2] ?? 0);
-const BASE = process.argv[3] ?? "https://thenar.io";
+const BASE = process.argv[3] ?? "http://localhost:3222";
 
 const envOf = (f) =>
   Object.fromEntries(
@@ -28,8 +28,11 @@ const envOf = (f) =>
       .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }),
   );
 
+// Ported to Arc: this still named the Fuji manifest and signed on Fuji, where
+// the verifier holds nothing, so no Arc corpus had ever been committed.
 const MANIFEST = process.env.MANIFEST_ADDRESS
-  ?? "0x318e5faf04c9db5d844aaa93850e71406012dd62";
+  ?? envOf(".env.local").NEXT_PUBLIC_CORPUS_MANIFEST
+  ?? "0x956f1Bf0dd1CE3Af862388E643e708c4C37148f8";
 const abi = parseAbi([
   "function commit(uint256 taskId, bytes32 root, uint32 episodes)",
   "function latest(uint256 taskId) view returns ((bytes32 root, uint32 episodes, uint64 at))",
@@ -38,9 +41,9 @@ const abi = parseAbi([
 ]);
 
 const chain = {
-  id: 43113, name: "Avalanche Fuji",
-  nativeCurrency: { name: "AVAX", symbol: "AVAX", decimals: 18 },
-  rpcUrls: { default: { http: ["https://api.avax-test.network/ext/bc/C/rpc"] } },
+  id: 5042002, name: "Arc Testnet",
+  nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
 };
 const pub = createPublicClient({ chain, transport: http() });
 const verifier = privateKeyToAccount(

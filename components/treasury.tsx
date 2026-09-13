@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useBalance, useReadContract, useReadContracts } from "wagmi";
 import { formatEther } from "viem";
 import { useSession } from "@/components/session";
@@ -120,7 +121,17 @@ function Row({
   weight: number;
 }) {
   const closesAt = Number(p.closesAt) * 1000;
-  const open = Date.now() < closesAt;
+  // The clock is read after mount and every half minute, not during render:
+  // a render that reads Date.now() gives two different answers to the server
+  // and the browser, and never notices the vote closing while the page is open.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const every = setInterval(tick, 30_000);
+    return () => { clearTimeout(first); clearInterval(every); };
+  }, []);
+  const open = now !== null && now < closesAt;
   const forW = Number(p.forWeight);
   const againstW = Number(p.againstWeight);
   const passed = forW > againstW;

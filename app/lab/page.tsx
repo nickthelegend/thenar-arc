@@ -101,7 +101,10 @@ export default function LabPage() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const t = setTimeout(() => { void load(); }, 0);
+    return () => clearTimeout(t);
+  }, [load]);
 
   async function postBounty() {
     if (formProblem) return;
