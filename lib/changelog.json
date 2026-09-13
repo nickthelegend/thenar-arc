@@ -1,5 +1,35 @@
 [
   {
+    "hash": "6378001",
+    "date": "2026-09-13T16:44:50+05:30",
+    "subject": "Stop offering a practice run back as an unsent run, and say why a run is practice",
+    "body": "A run the policy drove, or one the operator chose to practise, was saved to\nthe tab's draft store like a real one. After a reload the station offered it\nas 'An unsent run is waiting', and with the practice switch now off it could\nbe picked up and submitted as the operator's own demonstration. Practice runs\nare no longer saved. Checked in Chrome: a policy-driven run ended, nothing\nwas stored, and the reload offered nothing back.\n\nEvery practice run was explained as 'You have used all 5 of your runs', even\nat 0 / 5 with the policy driving. The reason is now the real one.\n\nThe unsent-run card sat beside the brief in a row and covered it on anything\nnarrower than a desktop; it now stacks above it.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "c2fe4df",
+    "date": "2026-09-13T16:38:00+05:30",
+    "subject": "Clear the skill filter too, and name the search when it is what emptied the hub",
+    "body": "'Clear filters' reset the scenario, the view and the search but left the\nskill filter set, so a list emptied by skill stayed empty after pressing it.\nThe empty state also told people to clear the scenario filter when the\nscenario was already 'All' and their search text was the reason.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "b9b51a1",
+    "date": "2026-09-13T16:34:08+05:30",
+    "subject": "Say why a holder lookup is refused, stop telling policy viewers to press keys, and record today's live evidence",
+    "body": "/corpus-token greyed out Check for a malformed address and said nothing; it\nnow says what an address looks like, and the lookup is a form, so Enter\nsubmits it.\n\nWhile the trained policy drove the station arm, the telemetry strip kept\ntelling the viewer 'OVER THE PAYLOAD — PRESS Q TO LOWER'. Watched for two and\na half minutes on task #1, which has two objects, the policy hovered and never\ngrasped: it was trained and evaluated on one object from eight starts. The\npanel said it 'grasps from every start tested' without saying tested where; it\nnow says so, and what happens elsewhere.\n\nSUBMISSION.md gains what was run for real on 13 September: the Privy lab\nwallet funding task #7 from the page and being refused a transfer anywhere\nelse, a fifth x402 settlement on Hedera whose hash matched sales-topic message\n#3, and /api/verify refusing a run from an operator with no Selfie Check.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "2d3e78e",
+    "date": "2026-09-13T16:25:39+05:30",
+    "subject": "Answer bad requests with 400s and unreachable servers with sentences",
+    "body": "Found by sending every API route empty, malformed and well-formed input:\n\n- /api/sign and /api/verify answered a body that was not JSON with a 500,\n  one of them carrying the parser's own message. Both now say 400 'body must\n  be JSON'.\n- /api/agent/corpus checked the task id inside the paywall, so ?taskId=abc\n  got a 402 offer to buy it. It is refused with a 400 before any offer.\n- With no CorpusManifest deployed on Arc, the manifest, datasheet and OpenAPI\n  documents published the contract as an empty string and read from it. They\n  now say null, and the manifest says why there is no root to compare.\n\nThe lab, agents and corpus-token pages showed a failed request as the\nbrowser's 'TypeError: Failed to fetch'. lib/fetch-error.ts turns that, and an\nunreadable reply, into a sentence.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "c603e6e",
+    "date": "2026-09-13T16:05:41+05:30",
+    "subject": "Regenerate the changelog from git",
+    "body": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
     "hash": "e5bcde7",
     "date": "2026-09-13T16:05:41+05:30",
     "subject": "Reuse Arcscan's answer instead of spending its rate limit on every page load",
@@ -328,35 +358,5 @@
     "date": "2026-09-03T09:37:06+05:30",
     "subject": "Final: one task unexecuted, and it is the one with no credential",
     "body": "Every phase is worked through. Phase 2, which had been recorded as blocked\noutright, is done apart from the accepting case: eth_call verifies the write\npath's refusals against the deployed bytecode without a wallet, without gas and\nwithout changing state. What remains is a signed run being accepted and paid,\nwhich has to move AVAX and needs an operator key that does not exist here.\n\nVerified against production with every runner exiting non-zero on failure:\n23/23 pages, 10/10 deep, 37/37 API, 6/6 POST, 8/8 contracts, C1-C6.5 on chain,\n57/57 route-mode combinations, 72/72 e2e, 57 unit, 108 contract, and a cold demo\nrehearsal at 23.1s with zero console errors.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "c824bf1",
-    "date": "2026-09-03T09:25:38+05:30",
-    "subject": "Phase 2: verify the write path without spending, and finish 1.9",
-    "body": "A transaction is not the only way to ask a contract what it would do. eth_call\nruns against the deployed bytecode at current state and returns the revert, so\nevery refusal the write path enforces can be checked for real — on the real\ncontract, with no wallet, no gas and no state change. Section C6 does that:\na settled hash reads as used, replaying it is refused, an unsigned score is\nrefused, an over-maximum score is refused, and the per-operator cap is read from\nthe contract rather than assumed. Only the accepting case is left, because a run\nthat is accepted has to actually move AVAX, and it says so rather than being\nskipped in silence.\n\nIt also corrected me. I expected a replay to revert AlreadySubmitted and an\nover-maximum score to revert ScoreTooHigh. Both revert BadSignature, because the\ncontract verifies the verifier's signature before it consults any business rule\n— so a forged submission never reaches them. That ordering is the stronger\nproperty and is what the checks now assert.\n\nAnd 1.9 is finished: the soulbound certificate now appears on the run it\ncertifies, resolving the trajectory id out of the ledger rather than trusting an\noff-chain index that could disagree with the chain.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "86f2394",
-    "date": "2026-09-03T09:21:01+05:30",
-    "subject": "Close the plan: every task executed except the one with no credential",
-    "body": "Phases 0, 1, 3, 4, 6, 7 and 8 are done and deployed. Phase 5 is measured and\ndocumented; 5.3 is scoped with the evidence that justifies it but needs an\nAvalanche L1 deployed and validated, which is not a change to this repository.\nPhase 2 stays blocked: no operator wallet exists here, and the only chain key is\nthe verifier's, which must not submit runs.\n\nFinal verification against production, every runner exiting non-zero on failure:\n23/23 pages, 10/10 deep, 37/37 API, 6/6 POST, 5/5 chain, 8/8 contracts, 57/57\nroute-mode combinations, 72/72 e2e, 57 unit, 108 contract, and a cold demo\nrehearsal at 23.1s with zero console errors.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "c807e31",
-    "date": "2026-09-03T09:07:24+05:30",
-    "subject": "Task 1.9: the Warp attestation on the licence it attests",
-    "body": "LicenceReceipt is the most Avalanche-specific thing this project has built and\nit lived only on the contract registry, which is a list. The place it means\nsomething is beside the licence it is about, so the licence page now reads\npayloadFor and shows the validator-signed payload, its source chain and its\nlength — or says plainly that a policy is not attested, which policy 1 is not.\npayloadFor reverts for one that has never been attested, and that is reported\nrather than dressed up.\n\nThe registry's recorded surface for LicenceReceipt is widened to match, under\nits own rule that the surface is the honest answer and not the aspirational one.\n\nship.mjs now refuses a dirty tree. In a git repository the Vercel CLI uploads\nwhat git knows about, so this component — untracked when the last ship ran — was\nsimply not in the build. It deployed clean and the panel was missing.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "4948a5c",
-    "date": "2026-09-03T08:59:52+05:30",
-    "subject": "Phase 8: a demo that runs cold, and a rehearsal that times it",
-    "body": "docs/DEMO.md walks the five-step loop from a private window with no wallet and\nnothing cached, each step ending on something the person watching can check\nrather than on a claim. It carries the non-capabilities too, because saying them\nout loud is better than being asked.\n\nscripts/demo-rehearse.mjs runs and times the same path against production and\nexits non-zero if anything logs an error: 22.8s across six steps, zero errors.\nIt found its own bug on the first run — step five took the first 64-hex string\nout of the feed, which is a trajectory hash rather than a transaction, so the\none step that proves a stranger can verify the payout was silently reporting\n'no receipt'. It reads tx_hash by name now and resolves a real one.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "0862bdd",
-    "date": "2026-09-03T08:57:37+05:30",
-    "subject": "Task 7.5: prove a snapshot restores, not just that it checksums",
-    "body": "The daily export has been running and integrity-checked for a while and nothing\nhad ever written one back. An export nobody has restored is a file with a\nchecksum, not a backup.\n\nscripts/restore.mjs reads the newline-delimited snapshot, inserts every row and\nverifies the result against the manifest the snapshot carries. Rehearsed: 18\ntrajectories out, 18 back, zero faults. Prop digests are checked against the\nbytes rather than trusted from the row, and the target defaults to a scratch\npath so a rehearsal cannot touch the live corpus by being run in the wrong\ndirectory.\n\nTogether with the existing drill — which verifies every prop's sha256 against\nits actual bytes on the real 22.8 MB snapshot — both halves of a restore are\nnow covered.\n\nAlso documented: submitTrajectoryFor is permissionless, so anyone may pay the\ngas for someone else's run without being able to forge it. No relayer service\nis running, and /contracts says that rather than implying the path is offered.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   }
 ]
