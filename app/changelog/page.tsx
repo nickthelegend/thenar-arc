@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 
 type Entry = { hash: string; date: string; subject: string; body: string };
 
+// The calendar day the commit was written on, in its author's own offset. A
+// server-side toLocaleDateString used the host's locale and time zone instead.
+const day = (iso: string) => iso.slice(0, 10);
+
 /**
  * What changed, from the history rather than from a summary of it.
  *
@@ -38,7 +42,7 @@ export default function ChangelogPage() {
         <span className="flex items-baseline gap-2">
           <span className="label">Most recent</span>
           <span className="font-mono text-[15px] text-scribe-2">
-            {log[0] ? new Date(log[0].date).toLocaleDateString() : "—"}
+            {log[0] ? day(log[0].date) : "—"}
           </span>
         </span>
       </div>
@@ -51,7 +55,7 @@ export default function ChangelogPage() {
             <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <span className="text-[15px] leading-snug text-scribe">{e.subject}</span>
               <span className="shrink-0 font-mono text-[12px] tabular-nums text-scribe-3">
-                {new Date(e.date).toLocaleDateString()} · {e.hash}
+                {day(e.date)} · {e.hash}
               </span>
             </span>
             {e.body ? (

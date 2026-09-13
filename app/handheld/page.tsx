@@ -32,9 +32,9 @@ type Phase = "idle" | "recording" | "done";
  * one thing.
  *
  * Two things this is not. It is not vision: nothing here sees a real object,
- * and the payload is the simulated one. And it is not verified on a device —
- * I have no phone to run it on, so what is checked is the mapping, the
- * clamping and the recorded format, not how it feels in the hand.
+ * and the payload is the simulated one. And it has not been tried on a phone,
+ * so what is checked is the mapping, the clamping and the recorded format,
+ * not how it feels in the hand.
  */
 export default function HandheldPage() {
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -236,10 +236,9 @@ export default function HandheldPage() {
       <p className="mt-3 max-w-[64ch] text-[14px] leading-relaxed text-scribe-3">
         It is not vision. Nothing here sees a real object: the payload, the bench
         and the datum are the simulated ones, and the phone supplies a hand pose
-        rather than a scene. And it is not verified on a device &mdash; the
-        mapping, the clamping at the arm&rsquo;s reach and the recorded format
-        are tested, but I have no phone to run it on, so how it feels in the hand
-        is unknown.
+        rather than a scene. And it has not yet been tried on a phone &mdash;
+        the mapping, the clamping at the arm&rsquo;s reach and the recorded
+        format are tested, but how it feels in the hand is not yet known.
       </p>
     </div>
   );

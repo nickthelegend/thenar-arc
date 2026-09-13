@@ -46,11 +46,11 @@ export function RecordSync({ address }: { address: `0x${string}` }) {
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
         <span className="label">Contribution record</span>
         <span className="font-mono text-[13px] tabular-nums text-scribe">
-          {fmtInt(have)} recorded
+          {fmtScore(have)} points recorded
         </span>
         {behind > 0 ? (
           <span className="font-mono text-[13px] tabular-nums text-reject">
-            {fmtInt(behind)} behind
+            {fmtScore(behind)} behind
           </span>
         ) : (
           <span className="font-mono text-[13px] text-scribe-3">up to date</span>

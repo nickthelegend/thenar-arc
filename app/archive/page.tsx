@@ -16,17 +16,26 @@ type Contract = { address: string; chainId: number; label: string; why: string; 
 export default function ArchivePage() {
   const [chains, setChains] = useState<Chain[] | null>(null);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
     fetch("/api/archive")
-      .then((r) => r.json())
-      .then((d: { chains?: Chain[]; contracts?: Contract[] }) => {
+      .then(async (r) => {
+        const d: { chains?: Chain[]; contracts?: Contract[]; error?: string } = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error ?? `the archive answered ${r.status}`);
+        return d;
+      })
+      .then((d) => {
         if (!live) return;
         setChains(d.chains ?? []);
         setContracts(d.contracts ?? []);
       })
-      .catch(() => { if (live) setChains([]); });
+      .catch((e: unknown) => {
+        if (!live) return;
+        setError(e instanceof Error ? e.message : String(e));
+        setChains([]);
+      });
     return () => { live = false; };
   }, []);
 
@@ -37,12 +46,11 @@ export default function ArchivePage() {
     <div className="mx-auto max-w-[1000px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Archive</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        Runs this deployment no longer answers for. They were settled on Monad
-        Testnet and Avalanche Fuji, before the move to Arc. All of them are real
-        and their operators were really paid &mdash; they are kept out of the
-        feed, the standings and the task pages because a payout is only
-        verifiable against the deployment that made it, and the live contract
-        has never heard of these.
+        Runs this deployment no longer answers for: anything settled on an
+        earlier chain, or against a contract the app has since replaced. They
+        are kept out of the feed, the standings and the task pages because a
+        payout is only verifiable against the deployment that made it, and the
+        live contract has never heard of them.
       </p>
 
       <DimRule className="mt-6" />
@@ -51,6 +59,8 @@ export default function ArchivePage() {
         <ul className="mt-4 flex flex-col gap-2" aria-busy="true">
           {Array.from({ length: 5 }, (_, i) => <li key={i} className="hatch h-8" />)}
         </ul>
+      ) : error ? (
+        <p className="mt-6 text-[14px] text-reject">Could not read the archive: {error}</p>
       ) : list.length === 0 && contracts.length === 0 ? (
         <div className="mt-6 border border-rule px-6 py-16 text-center">
           <p className="text-[15px] text-scribe-2">Nothing archived.</p>
