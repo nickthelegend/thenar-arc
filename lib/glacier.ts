@@ -62,11 +62,47 @@ export type Settlement = {
 };
 
 /**
+ * Arcscan's last answer per address, and the request already on its way.
+ *
+ * A task page asks for its funder's history on every load — twice under React's
+ * development double effect — and Arcscan answers a burst like that with 429,
+ * which the page then had to report as the index being unreachable. An answer
+ * is reused for thirty seconds, concurrent callers share one request, and when
+ * Arcscan refuses, the last list it did return is used if it is under ten
+ * minutes old. Older than that, the refusal is passed on.
+ */
+const FRESH_MS = 30_000;
+const STALE_OK_MS = 10 * 60_000;
+const answered = new Map<string, { at: number; value: Settlement[] }>();
+const asking = new Map<string, Promise<Settlement[]>>();
+
+/**
  * Every call this address has made to the protocol, newest first, as Arcscan
  * recorded them. Nothing is inferred: a row exists only because the index
  * returned a transaction whose recipient is the contract.
  */
 export async function settlementsFor(address: string, pages = 2): Promise<Settlement[]> {
+  const key = `${address.toLowerCase()}:${pages}`;
+  const last = answered.get(key);
+  if (last && Date.now() - last.at < FRESH_MS) return last.value;
+  const inFlight = asking.get(key);
+  if (inFlight) return inFlight;
+
+  const request = readSettlements(address, pages)
+    .then((value) => {
+      answered.set(key, { at: Date.now(), value });
+      return value;
+    })
+    .catch((e: unknown) => {
+      if (last && Date.now() - last.at < STALE_OK_MS) return last.value;
+      throw e;
+    })
+    .finally(() => asking.delete(key));
+  asking.set(key, request);
+  return request;
+}
+
+async function readSettlements(address: string, pages: number): Promise<Settlement[]> {
   const out: Settlement[] = [];
   const offset = 100;
 
