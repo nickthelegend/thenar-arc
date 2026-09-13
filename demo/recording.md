@@ -1,33 +1,43 @@
-# Axon — demo recording plan
+# Thenar demo — recording plan
 
-**Chain:** Monad Testnet (10143). This is a blockchain app, so the submission
-beat is a real signature broadcast from a testnet key and held on screen until
-the transaction confirms.
+Blockchain app: yes. Arc Testnet (runs, bounties, payouts in USDC), Hedera
+testnet (x402 sales, Consensus Service log, Asset Tokenization Studio
+security), World Chain (AgentBook, read only), World ID (Selfie Check gate).
 
-**Target runtime:** under 3:00.
+No browser wallet signs in this take. Every transaction is signed by a key that
+already exists for it on testnet: the Privy server wallet (lab budget, signed
+inside Privy), the agent's Hedera key (`AGENT_PRIVATE_KEY`, x402), and the ATS
+issuer key (`HEDERA_ATS_ISSUER_KEY`). None of them holds mainnet funds. A
+human-signed station submission is not recorded: it needs a Selfie Check on a
+phone, which cannot be produced here. The World gate is shown by a real refusal
+captured during the take (beat e3).
 
-**Contract:** `AxonProtocol` `0x89384f46e430F37DB61Afb98810eba995C0d6Ed4`
+Server: the production build on `http://localhost:3222`. Browser: Playwright
+Chromium, headed, fresh profile, viewport `DEMO_W`x`DEMO_H` (1440x810), video
+cropped to the viewport during capture.
 
-| # | id | What is on screen | Signing |
+| # | id | What is shown | Signing beat |
 | --- | --- | --- | --- |
-| 1 | `intro` | Landing hero, the AXON-6 arm running its cycle | |
-| 2 | `landing-figures` | The live counters, all read from the contract | |
-| 3 | `hub` | Open tasks, their escrow and per-run reward | |
-| 4 | `station-open` | The station for one task: goal, reward, slots | |
-| 5 | `station-begin` | Begin run — timer starts, arm is live | |
-| 6 | `station-grasp` | Lower onto the payload, IN RANGE, jaws close | |
-| 7 | `station-place` | Carry it to the datum and let go | |
-| 8 | `station-score` | The verdict: score, deviation, breakdown | |
-| 9 | `connect` | Wallet connects to Monad Testnet | |
-| 10 | `sign` | **Submitting: real transaction signed and broadcast** | **YES** |
-| 11 | `confirmed` | Payout, transaction hash, block time | |
-| 12 | `explorer` | The same hash on testnet.monadscan.com — the MON transfer | |
-| 13 | `foundry` | A minted policy's cap table; one licence pays every contributor | |
-| 14 | `outro` | Close | |
+| 1 | b01-landing | Landing page with the moving arm | |
+| 2 | b02-hub | Hub: open tasks, escrow in USDC | |
+| 3 | b03-station | Station: policy drives a practice run | |
+| 4 | b04-verdict | End run: measured verdict | |
+| 5 | b05-lab | Lab: Privy wallet and its policy | |
+| 6 | b06-lab-sign | Post a 0.01 USDC bounty; overlay until the Arc receipt is status 1 | **yes (Arc)** |
+| 7 | b07-arcscan | That transaction on Arcscan | |
+| 8 | b08-lab-refuse | Same wallet asked to send elsewhere: Privy refuses | |
+| 9 | b09-agents | Agents page: 402 terms, treasury 0.0.10518776, topic 0.0.10519262 | |
+| 10 | b10-agentbook | AgentBook lookup of the agent wallet | |
+| 11 | b11-x402-sign | Agent buys task 1's corpus; overlay until the mirror node reports SUCCESS; new row on /agents | **yes (Hedera)** |
+| 12 | b12-hashscan-x402 | That settlement on HashScan | |
+| 13 | b13-hashscan-topic | The sales topic on HashScan | |
+| 14 | b14-corpus-token | The ATS security on /corpus-token | |
+| 15 | b15-ats-sign | Issue 10 reserve shares; overlay until the mirror node reports SUCCESS; supply +10 | **yes (Hedera ATS)** |
+| 16 | b16-hashscan-ats | That issuance on HashScan | |
+| 17 | b17-lookup | Holder lookup: agent wallet refused, AccountIsBlocked | |
+| 18 | b18-contracts | The ten Arc contracts | |
+| 19 | b19-status | Live status checks | |
 
-## Preflight
-- The task driven must have a free slot and escrow, chosen at run time from the
-  contract rather than hardcoded.
-- The demo key is the testnet deployer in `.env.deployer`. Never mainnet.
-- Wallet state is cleared before driving; the shim connects as `injected`.
-- The grasp is verified from the app's own readout (`PAYLOAD HELD`), not assumed.
+Post-production scenes, with narration, drawn from the take file:
+`intro`, `e1-path` (after b13), `e2-receipts` (after b17, the take's three
+transaction ids), `e3-world` (after e2, the take's real 403 refusal), `outro`.

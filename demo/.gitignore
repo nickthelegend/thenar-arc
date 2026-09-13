@@ -1,0 +1,13 @@
+audio/
+take/
+scenes/*.webm
+scenes/*.mp4
+scenes/*.png
+out/
+v2/models/
+v2/audio/
+v2/take/
+v2/out/
+v2/scenes/*.webm
+v2/scenes/*.mp4
+v2/scenes/*.png

@@ -85,7 +85,11 @@ async function handlePOST(req: Request) {
     }
   } catch (e) {
     if (e instanceof PolicyRefusal) {
-      return NextResponse.json({ refused: true, by: "privy-policy", code: e.code, message: e.message }, { status: 403 });
+      // 200: the request did what it was for — it asked Privy, and Privy said
+      // no. The refusal is the demonstration's answer and the body says so;
+      // as a 403 every refusal also logged "Failed to load resource" in the
+      // browser console, as if the page had broken.
+      return NextResponse.json({ refused: true, by: "privy-policy", code: e.code, message: e.message });
     }
     return NextResponse.json(
       { error: e instanceof Error ? e.message.split("\n")[0] : "the lab's wallet could not act" },
