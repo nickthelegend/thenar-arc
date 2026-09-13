@@ -1,5 +1,17 @@
 [
   {
+    "hash": "b0a1c93",
+    "date": "2026-09-13T18:12:25+05:30",
+    "subject": "Put THENAR-6 in motion on the landing page",
+    "body": "The hero arm now moves: a ten-second pick-and-place generated with Google\nVeo from the hero's own render, with its flat grey background keyed out to\nalpha so the arm still passes between the back and front layers of the word,\nand its base plate scaled onto the still's so the swap does not shift it. The\nclip is VP9 with an alpha channel, 960x622 and 1.3 MB, muted and looping, and\nit returns to its first pose so the loop has no seam.\n\nThe still render stays the first paint and the fallback: it is what the\nserver renders, what shows until the clip is actually playing, and all that\nSafari (which does not draw VP9 alpha), reduced-motion visitors, and any\nfailed load get. A credit under the arm's specs says the motion was generated,\nsince everything else on the page is measured.\n\nChecked in the browser at desktop and 375px, in light and dark themes, and\nwith the file missing, where the still stayed up.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "041d65a",
+    "date": "2026-09-13T16:44:51+05:30",
+    "subject": "Regenerate the changelog from git",
+    "body": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
     "hash": "6378001",
     "date": "2026-09-13T16:44:50+05:30",
     "subject": "Stop offering a practice run back as an unsent run, and say why a run is practice",
@@ -346,17 +358,5 @@
     "date": "2026-09-03T10:00:09+05:30",
     "subject": "Phase 2: eth_call covers the accepting case too, so no wallet is needed",
     "body": "I had 2.2 down as needing a funded operator key. It does not. A submission the\ncontract would accept returns the trajectory id from eth_call instead of\nreverting, with nothing sent and nothing written — so the accepting case is\nprovable the same way the refusals already are. 2.1 existed only to unblock 2.2\nand is dropped.\n\nWhat it needs is a signature the verifier actually produced, and the verifier\nonly signs a run it has scored. C6.6 takes one through QA_SIGNED_RUN and asserts\nit; without one it prints exactly what it wants rather than sitting dead.\n\nIt is deliberately not fabricated. /api/verify persists what it signs, and every\narchived run predates payloadIds, which are part of the canonical hash — so a\nsignature cannot be reconstructed without inventing a run that never happened.\nPutting a demonstration nobody performed into a corpus sold as human\nteleoperation is worse than an untested assertion. Anyone who drives one\npractice run can close it in a minute.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "9d2f513",
-    "date": "2026-09-03T09:46:49+05:30",
-    "subject": "Attempt the L1 for real, and correct the procedure it needed",
-    "body": "5.3 was recorded as infrastructure outside this repository. That was wrong: the\nwork was already scripted here — a genesis carrying chainId 88812 with the\nnative minter, fee manager and warp precompiles admin'd to the deployer, a\nscript that proves the three claims by reading them back off the chain, and the\nmatching deployer key.\n\nSo it was attempted. avalanche-cli 1.9.6 installed, a two-node local network up\nand healthy, subnet and blockchain created with real fees, and ConvertSubnetToL1Tx\nsucceeded — the subnet is a sovereign L1. It stops at initValidatorManager, which\nreaches the L1's own RPC on 9656 and is refused because the primary-network nodes\ndo not track the new subnet yet. Fixing that means editing avalanchego's config,\nexposing a P2P port and restarting, which is system configuration rather than a\nchange here, and not something to do on a machine whose owner is asleep.\n\nl1/README.md carries the corrected procedure. Its commands were written for an\nolder CLI and no longer complete: --bootstrap-endpoints is required or the\nconversion fails with \"conversion must include at least one validator\", and the\nprivate key must be bare hex or the CLI reports an invalid ending. Both cost a\ncycle to discover and are now written down.\n\nThe local network was stopped afterwards.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "99cc537",
-    "date": "2026-09-03T09:37:06+05:30",
-    "subject": "Final: one task unexecuted, and it is the one with no credential",
-    "body": "Every phase is worked through. Phase 2, which had been recorded as blocked\noutright, is done apart from the accepting case: eth_call verifies the write\npath's refusals against the deployed bytecode without a wallet, without gas and\nwithout changing state. What remains is a signed run being accepted and paid,\nwhich has to move AVAX and needs an operator key that does not exist here.\n\nVerified against production with every runner exiting non-zero on failure:\n23/23 pages, 10/10 deep, 37/37 API, 6/6 POST, 8/8 contracts, C1-C6.5 on chain,\n57/57 route-mode combinations, 72/72 e2e, 57 unit, 108 contract, and a cold demo\nrehearsal at 23.1s with zero console errors.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   }
 ]
