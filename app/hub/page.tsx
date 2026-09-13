@@ -213,16 +213,20 @@ export default function HubPage() {
           <p className="text-[15px] text-scribe-2">
             {(tasks ?? []).length === 0
               ? "The registry has no tasks yet."
-              : "No task matches that combination."}
+              : q.trim()
+                ? `No task matches “${q.trim()}” with these filters.`
+                : "No task matches that combination."}
           </p>
           <p className="mx-auto mt-1 max-w-[52ch] text-[14px] text-scribe-3">
             {(tasks ?? []).length === 0
               ? "Post the first bounty and fund it — anyone can open work here."
-              : "Clear the scenario filter or widen the view to see the rest."}
+              : "Clear the search and the filters, or widen the view to every task, to see the rest."}
           </p>
           <div className="mt-5 flex justify-center gap-2">
+            {/* The skill filter was left set, so a list emptied by skill stayed
+                empty after "Clear filters". */}
             <button
-              onClick={() => { setScenario("all"); setOpenOnly(false); setQ(""); }}
+              onClick={() => { setScenario("all"); setSkill("all"); setOpenOnly(false); setQ(""); }}
               className="border border-rule-strong px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-scribe transition-colors hover:border-scribe"
             >
               Clear filters
