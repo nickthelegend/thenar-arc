@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatEther } from "viem";
 import { chainClient } from "@/lib/rpc";
-import { appChain, addressUrl, AXON_ADDRESS, CURRENCY, txUrl } from "@/lib/chain";
+import { appChain, addressUrl, AXON_ADDRESS, CURRENCY, txUrl, chainMeta } from "@/lib/chain";
 import { DEPLOYED, SUPERSEDED, type Deployed } from "@/lib/registry";
 import {
   CONTRIBUTION_RECORD_ABI, REFERRALS_ABI, PRIZE_POOL_ABI,
@@ -73,7 +73,7 @@ async function readings(): Promise<Record<string, [string, string][]>> {
       ]);
       return [
         ["Bounty per referral", `${formatEther(bounty as bigint)} ${CURRENCY}`],
-        ["Remaining in pot", `${formatEther(remaining as bigint)} ${CURRENCY}`],
+        ["Claims the pot can still pay", String(remaining)],
         ["Paid out", `${formatEther(paidOut as bigint)} ${CURRENCY}`],
         ["Cap per referrer", String(cap)],
       ];
@@ -112,7 +112,7 @@ async function readings(): Promise<Record<string, [string, string][]>> {
 
 export default async function ContractsPage() {
   const [live, prior, reads] = await Promise.all([
-    presence(DEPLOYED), presence(SUPERSEDED), readings(),
+    presence(DEPLOYED), SUPERSEDED, readings(),
   ]);
   const held = live.reduce((n, r) => n + Number(formatEther(r.balance)), 0);
   const dark = live.filter((r) => r.surface === "/contracts").length;
@@ -207,17 +207,17 @@ export default async function ContractsPage() {
         <section key={r.key} className="border-t border-rule py-5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
             <h2 className="font-display text-lg font-600 text-scribe-2">{r.name}</h2>
-            <a href={addressUrl(r.address)} target="_blank" rel="noreferrer"
+            <a href={`${chainMeta(r.chainId ?? appChain.id)?.explorer ?? appChain.blockExplorers.default.url}/address/${r.address}`}
+               target="_blank" rel="noreferrer"
                className="font-mono text-[12px] text-scribe-3 transition-colors hover:text-scribe">
               {r.address} &rarr;
             </a>
           </div>
           <p className="mt-2 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">{r.does}</p>
           <div className="mt-3 flex flex-wrap gap-x-7 gap-y-1 font-mono text-[12px] text-scribe-3">
-            <span>{r.bytes.toLocaleString("en-GB")} bytes</span>
-            <span className={Number(formatEther(r.balance)) > 0 ? "text-reject" : undefined}>
-              {formatEther(r.balance)} {CURRENCY} stranded
-            </span>
+            {/* Read on its own chain or not at all: this page's node is Arc's, and an
+                Arc reading of an address on another chain says 0 bytes and 0 held. */}
+            <span>on {chainMeta(r.chainId ?? appChain.id)?.name ?? appChain.name}</span>
             <span>{r.source}</span>
           </div>
         </section>

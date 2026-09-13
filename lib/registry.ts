@@ -24,6 +24,8 @@ export type Deployed = {
   surface: string;
   /** Set when the contract leans on something Arc gives it that a generic chain would not. */
   arc?: string;
+  /** The chain the contract is on, when it is not the one this app settles on. */
+  chainId?: number;
 };
 
 /**
@@ -132,6 +134,7 @@ export const DEPLOYED: Deployed[] = [
 export const SUPERSEDED: Deployed[] = [
   {
     key: "axon-fuji",
+    chainId: 43113,
     name: "AxonProtocolV2 on Avalanche Fuji",
     address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
     does: "The deployment Thenar ran on before moving to Arc. Its runs are real, paid in AVAX, and verifiable on Snowtrace.",
