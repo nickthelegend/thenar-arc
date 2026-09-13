@@ -72,7 +72,7 @@ the console shows no error or exception.
 
 | # | Flow | Correct means | Result |
 | --- | --- | --- | --- |
-| D1 | Practice run driven by the policy | Begin → the arm moves → End run → "Measurement taken…" with score; nothing saved as an unsent run; the practice reason is the real one | PASS (fixed: practice runs were offered back for submission; wrong reason text) |
+| D1 | Practice run driven by the policy | Begin → the arm moves → End run → "Measurement taken…" with score; nothing saved as an unsent run; the practice reason is the real one | PASS — re-run on the production build: "The policy is driving, and a run it drives is not yours to be paid for", arm moving at 0:10.9, "Measurement taken. Out of tolerance, score 0.00.", Run again, no draft saved (fixed: practice runs were offered back for submission; wrong reason text) |
 | D2 | Run from an operator with no World ID | `/api/verify` answers 403 "Prove you are a live human with World ID before contributing"; nothing signed, funded or sent | PASS — `scripts/arc-run.mjs` |
 | D3 | Paid runs on chain | Each run's payout is in the transaction that records it; feed transactions resolve on Arc; stored samples re-hash to the recorded value | PASS — 5 runs |
 | D4 | Leaving mid-run | Navigation is held by a "Leave site?" prompt while a run is in progress | PASS |
@@ -102,8 +102,8 @@ the console shows no error or exception.
 
 | # | Flow | Correct means | Result |
 | --- | --- | --- | --- |
-| G1 | Bounty from the lab budget | Privy signs, Arc confirms, the task appears; a double click posts once | PASS — task #7, `0x5ef56687…2e3f8c` |
-| G2 | Policy refusal | "Refused by Privy's policy engine. policy_violation… Nothing was signed." | PASS |
+| G1 | Bounty from the lab budget | Privy signs, Arc confirms, the task appears; a double click posts once | PASS — task #7, `0x5ef56687…2e3f8c` (double click, one task); re-run on the production build: task #8, `0xba2dca24…2533c2`, status 1 in block 61903124 |
+| G2 | Policy refusal | "Refused by Privy's policy engine. policy_violation… Nothing was signed." | PASS — also re-run on the production build |
 | G3 | Sign-in modal | Connect opens Privy with email and wallet options, no console error | PASS — "Log in or sign up", email field, "Continue with a wallet"; an existing extension wallet in Chrome still reconnects |
 | G4 | Email sign-in completes | One-time code accepted, embedded wallet created on Arc | UNTESTED — needs an inbox |
 
