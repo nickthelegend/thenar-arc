@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { chainClient } from "@/lib/rpc";
@@ -41,6 +42,12 @@ async function taskCount(): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+/** The tab names the thing on the page, so a row of open runs and tasks can be told apart. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  return { title: `Task #${id} — Thenar` };
 }
 
 export default async function TaskPage({ params }: { params: Promise<{ id: string }> }) {

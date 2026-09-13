@@ -103,6 +103,7 @@ export default function LabPage() {
   useEffect(() => { void load(); }, [load]);
 
   async function postBounty() {
+    if (formProblem) return;
     setPosting(true);
     setPosted(null);
     try {
@@ -133,6 +134,15 @@ export default function LabPage() {
 
   const ready = lab && "wallet" in lab ? lab : null;
   const escrow = slots * reward;
+  // Checked before anything is sent, with the same limits /api/lab enforces, so
+  // a mistyped form says what is wrong instead of costing a request to find out.
+  const formProblem =
+    name.trim().length < 3 ? "Describe what to record in at least 3 characters."
+    : name.length > 96 ? "Keep the description to 96 characters."
+    : !Number.isInteger(slots) || slots < 1 || slots > 20 ? "Runs wanted must be a whole number from 1 to 20."
+    : !(reward >= 0.01) || reward > 100 ? "Pay per run must be at least 0.01 USDC."
+    : !Number.isInteger(difficulty) || difficulty < 1 || difficulty > 5 ? "Difficulty must be a whole number from 1 to 5."
+    : null;
   const ceiling = ready ? Number(formatEther(BigInt(ready.limitWei))) : null;
   const funded = ready ? tasks.filter((t) => t.funder.toLowerCase() === ready.wallet.address.toLowerCase()) : [];
 
@@ -220,10 +230,12 @@ export default function LabPage() {
           <input className={field} type="number" min={1} max={5} value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))} />
         </label>
         <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
-          <button type="submit" disabled={posting || !ready} className={button}>
+          <button type="submit" disabled={posting || !ready || formProblem !== null} className={button}>
             {posting ? "Privy is signing…" : `Escrow ${escrow.toLocaleString("en-GB", { maximumFractionDigits: 4 })} USDC`}
           </button>
-          {ceiling !== null ? (
+          {formProblem ? (
+            <span className="text-[13px] text-reject">{formProblem}</span>
+          ) : ceiling !== null ? (
             <span className={`text-[13px] ${escrow > ceiling ? "text-reject" : "text-scribe-3"}`}>
               {escrow > ceiling
                 ? `Over the policy's ${ceiling} USDC ceiling. Privy will refuse to sign it — try it.`

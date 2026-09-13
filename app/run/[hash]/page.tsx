@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import RunView from "./run-view";
 
@@ -16,6 +17,12 @@ import RunView from "./run-view";
  * was ever recorded, so it is refused here without asking anyone.
  */
 const HASH = /^0x[0-9a-fA-F]{64}$/;
+
+/** The tab names the thing on the page, so a row of open runs and tasks can be told apart. */
+export async function generateMetadata({ params }: { params: Promise<{ hash: string }> }): Promise<Metadata> {
+  const { hash } = await params;
+  return { title: `Run ${hash.slice(0, 10)}… — Thenar` };
+}
 
 export default async function RunPage({ params }: { params: Promise<{ hash: string }> }) {
   const { hash } = await params;
