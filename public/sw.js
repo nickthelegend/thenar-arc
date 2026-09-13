@@ -12,7 +12,14 @@
  * Bumping VERSION drops every previous cache on activate. A stale shell is the
  * failure mode worth being paranoid about.
  */
-const VERSION = "thenar-shell-v2";
+const VERSION = "thenar-shell-v3";
+
+/**
+ * What a navigation gets when the browser is online but this server did not
+ * answer. The cached "No network" page is for a browser with no connection;
+ * showing it here told people to fix a connection that was working.
+ */
+const SERVER_UNREACHABLE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Server did not answer — Thenar</title><body style="font:15px/1.6 system-ui,sans-serif;max-width:560px;margin:15vh auto;padding:0 20px;color:#1b1b1b;background:#efefee"><h1 style="font-size:28px;line-height:1.15;margin:0 0 12px">Thenar's server did not answer</h1><p>Your connection is working, but this page could not be loaded from the server. Nothing you recorded is lost: a measured run stays in this browser until you submit it.</p><p><a href="" style="color:#2b50e0">Try again</a></p></body>`;
 const SHELL = ["/", "/hub", "/offline"];
 
 self.addEventListener("install", (e) => {
@@ -87,7 +94,13 @@ self.addEventListener("fetch", (e) => {
         const hit = await caches.match(request);
         if (hit) return hit;
         if (request.mode === "navigate") {
-          return (await caches.match("/offline")) ?? Response.error();
+          if (self.navigator.onLine === false) {
+            return (await caches.match("/offline")) ?? Response.error();
+          }
+          return new Response(SERVER_UNREACHABLE, {
+            status: 503,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          });
         }
         return Response.error();
       }),

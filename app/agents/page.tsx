@@ -52,6 +52,10 @@ export default function AgentsPage() {
   }, []);
 
   async function check() {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(address.trim())) {
+      setStatus({ error: "That is not a wallet address. It should be 0x followed by 40 hexadecimal characters." });
+      return;
+    }
     setChecking(true);
     try {
       const r = await fetch(`/api/agent/status?address=${encodeURIComponent(address.trim())}`);
@@ -151,7 +155,7 @@ export default function AgentsPage() {
         />
         <button
           type="submit"
-          disabled={checking}
+          disabled={checking || address.trim() === ""}
           className="border border-scribe bg-scribe px-4 py-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-0 transition-colors hover:border-signal-hi hover:bg-signal-hi disabled:opacity-60"
         >
           {checking ? "Asking World Chain…" : "Look it up"}
