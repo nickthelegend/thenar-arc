@@ -3,10 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/changelog.mjs",
-    "dev": "next dev",
-    "prebuild": "node scripts/changelog.mjs",
-    "build": "next build",
+    "dev": "node scripts/changelog.mjs && next dev",
+    "build": "node scripts/changelog.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:unit && npm run test:e2e",

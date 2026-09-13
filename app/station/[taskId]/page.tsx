@@ -729,9 +729,13 @@ export default function StationPage() {
           ) : null}
 
           {phase === "brief" ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-ink-0/78 px-6">
+            // Auto margins rather than items-center: on a phone the brief is taller
+            // than the workspace, and a centred child overflows upward under the
+            // header where it cannot be scrolled to. This centres while it fits
+            // and scrolls from the top when it does not.
+            <div className="absolute inset-0 flex justify-center overflow-y-auto bg-ink-0/78 px-6 py-6">
               {recovered ? (
-                <div className="mb-4 border border-signal bg-signal-dim px-4 py-3 text-left">
+                <div className="my-auto mb-4 border border-signal bg-signal-dim px-4 py-3 text-left">
                   <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-signal">
                     An unsent run is waiting
                   </p>
@@ -762,7 +766,7 @@ export default function StationPage() {
                   </div>
                 </div>
               ) : null}
-              <div className="max-w-sm text-center">
+              <div className="my-auto max-w-sm text-center">
                 <h2 className="font-display text-2xl font-600">Ready to record</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-scribe-2">
                   The timer starts on your first frame. Pick the payload up, bring

@@ -165,7 +165,7 @@ export default function LabPage() {
         <dl className="mt-4 grid grid-cols-[max-content_1fr] gap-x-8 gap-y-2 text-[14px]">
           <dt className={label}>Address</dt>
           <dd>
-            <a href={addressUrl(lab.wallet.address)} target="_blank" rel="noreferrer" className="font-mono text-[13px] text-signal hover:text-signal-hi">
+            <a href={addressUrl(lab.wallet.address)} target="_blank" rel="noreferrer" className="break-all font-mono text-[13px] text-signal hover:text-signal-hi">
               {lab.wallet.address} &rarr;
             </a>
           </dd>
