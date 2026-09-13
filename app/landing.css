@@ -229,6 +229,27 @@
   pointer-events: none;
 }
 
+/* The still sizes the subject's box. The moving arm's frame is 1244x806 with
+   the still's 1228x566 box at its bottom-left (4px in), and its base plate
+   scaled onto the still's, so it is pinned to the same bottom-left corner and
+   lets the raised arm rise above the box rather than shrinking to fit it. It
+   fades in only once it is actually playing. */
+.lp .subject .subject-still {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: opacity 500ms var(--ease);
+}
+.lp .subject .subject-motion {
+  position: absolute;
+  left: calc(-4 / 1228 * 100%);
+  bottom: 0;
+  width: calc(1244 / 1228 * 100%);
+  height: auto;
+  max-width: none;
+  transition: opacity 500ms var(--ease);
+}
+
 /* ---- motion ------------------------------------------------------------ */
 
 /* Every reveal is scoped to .js, which is only added when motion is wanted. The

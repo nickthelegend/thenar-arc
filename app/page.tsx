@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import "./landing.css";
+import { HeroSubject } from "@/components/landing/hero-subject";
 import { LandingMotion } from "@/components/landing/motion";
 import { CounterTravelStage } from "@/components/landing/stage";
 import { FieldSwap } from "@/components/landing/field";
@@ -137,22 +137,17 @@ export default function Home() {
               </div>
             ))}
           </dl>
+          {/* Everything else on this page is measured; the arm's motion is not,
+              and says so. */}
+          <p className="meta meta-sm muted rv rv-d3" style={{ marginTop: 14 }}>
+            Arm motion generated with Google Veo from the THENAR-6 render
+          </p>
         </div>
 
         {/* The weave: back layer, subject, front layer. */}
         <div className="weave" style={{ height: "min(46vh, 340px)" }}>
           <WordLayer className="word-back" owns={(i) => i !== FRONT_LETTER} />
-          <Image
-            src="/hero-arm.png"
-            alt="THENAR-6, a six-axis arm with a parallel-jaw gripper, reaching"
-            width={1228}
-            height={566}
-            priority
-            className="subject rv"
-            data-hero-subject
-            data-rv-now
-            style={{ transform: "translateY(var(--par, 0px))" }}
-          />
+          <HeroSubject />
           <WordLayer className="word-front" owns={(i) => i === FRONT_LETTER} />
         </div>
       </section>
