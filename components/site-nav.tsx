@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ThenarWordmark } from "@/components/brand";
 import { useSession } from "@/components/session";
-import { addressUrl, IS_DEPLOYED, CURRENCY, FAUCET_URL, appChain } from "@/lib/chain";
+import { addressUrl, IS_DEPLOYED, CURRENCY, appChain } from "@/lib/chain";
 import { fmtMon, shortHash } from "@/lib/format";
 
 const ROUTES = [
@@ -23,9 +23,6 @@ const ROUTES = [
   { href: "/foundry", label: "Foundry" },
   { href: "/contracts", label: "Contracts" },
 ];
-
-/** Enough of the native token to cover gas on a submit with headroom. */
-const LOW_BALANCE = 0.02;
 
 export function SiteNav() {
   const pathname = usePathname();
@@ -104,8 +101,6 @@ export function SiteNav() {
   // Rendering both would stack two fixed headers on top of one another.
   if (pathname === "/") return null;
   if (pathname?.startsWith("/station/")) return null;
-
-  const lowOnGas = s.connected && !s.wrongNetwork && s.balance < LOW_BALANCE;
 
   return (
     <>
@@ -209,33 +204,6 @@ export function SiteNav() {
       {!IS_DEPLOYED ? (
         <Banner tone="reject">
           No contract address is configured. Set <code>NEXT_PUBLIC_AXON_ADDRESS</code> and restart.
-        </Banner>
-      ) : null}
-
-      {s.wrongNetwork ? (
-        <Banner tone="reject">
-          Your wallet is on the wrong network. Thenar settles on {appChain.name}.
-          <button
-            onClick={s.switchToChain}
-            disabled={s.switching}
-            className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-reject hover:text-ink-0 disabled:opacity-60"
-          >
-            {s.switching ? "Switching…" : `Switch to ${appChain.name}`}
-          </button>
-        </Banner>
-      ) : null}
-
-      {lowOnGas ? (
-        <Banner tone="signal">
-          Balance is {fmtMon(s.balance, 4)} {CURRENCY} — not much runway for gas.
-          <a
-            href={FAUCET_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="ml-3 border border-current px-2.5 py-0.5 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-signal hover:text-ink-0"
-          >
-            Open the faucet
-          </a>
         </Banner>
       ) : null}
 

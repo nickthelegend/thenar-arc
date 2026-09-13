@@ -5,7 +5,7 @@ import { useAccount, useSignMessage } from "wagmi";
 import { IDKitRequestWidget, selfieCheckLegacy, type IDKitResult, type RpContext } from "@worldcoin/idkit";
 import { Button } from "@/components/primitives";
 import { ATS } from "@/lib/ats";
-import { bindingMessage } from "@/lib/world";
+import { bindingMessage, worldErrorMessage } from "@/lib/world";
 
 type Human = { credential: string; protocol: string; environment: string; verifiedAt: number };
 
@@ -23,6 +23,22 @@ const CREDENTIAL: Record<string, string> = {
   selfie: "Selfie Check",
   proof_of_human: "Orb",
 };
+
+/**
+ * Tell the server about a World ID failure the browser saw.
+ *
+ * The widget reaches World App through World's bridge, so a Selfie Check can
+ * fail without a single request reaching this server. Reported, it is in the
+ * logs as well as on the operator's screen.
+ */
+function reportWorldError(address: string, code: string) {
+  return fetch("/api/world/report", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ address, code }),
+    keepalive: true,
+  }).catch((e) => console.error("Could not report the World ID error to the server", e));
+}
 
 /**
  * The World ID check between an operator and the payroll.
@@ -181,7 +197,10 @@ export function HumanGate({ onVerified }: { onVerified?: () => void }) {
           allow_legacy_proofs
           preset={selfieCheckLegacy({ signal: pending.request.signal })}
           onSuccess={finish}
-          onError={(code) => setError(`World ID stopped: ${code}`)}
+          onError={(code) => {
+            setError(worldErrorMessage(code));
+            void reportWorldError(address, code);
+          }}
         />
       ) : null}
     </div>

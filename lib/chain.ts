@@ -104,6 +104,15 @@ export const IS_DEPLOYED = /^0x[0-9a-fA-F]{40}$/.test(AXON_ADDRESS);
  */
 export const AXON_DEPLOY_BLOCK = 61_851_064n;
 
+/**
+ * Below this many USDC a wallet cannot be relied on to pay for a submit.
+ *
+ * A submit on Arc has measured at about 0.009 USDC of gas, so this leaves room
+ * for one with headroom. One number, used by every warning, so two banners
+ * cannot disagree about whether the same balance is low.
+ */
+export const LOW_GAS_BALANCE = 0.02;
+
 /** The registry that binds a secp256r1 key to an address. Public, so the client
  *  can read it without the server. */
 export const PASSKEY_ADDRESS =

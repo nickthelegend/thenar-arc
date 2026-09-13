@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
-import { appChain, RPC_ENDPOINTS, FAUCET_URL, CURRENCY } from "@/lib/chain";
+import { appChain, RPC_ENDPOINTS, FAUCET_URL, CURRENCY, LOW_GAS_BALANCE } from "@/lib/chain";
 import { useSession } from "@/components/session";
 
 /**
@@ -116,7 +116,7 @@ export function Conditions() {
   }, []);
 
   const wrongNetwork = isConnected && s.wrongNetwork;
-  const lowGas = s.connected && !s.wrongNetwork && s.balance < 0.001;
+  const lowGas = s.connected && !s.wrongNetwork && s.balance < LOW_GAS_BALANCE;
   // Blocks land every couple of seconds, so anything past two minutes is the
   // machine, not the network.
   const skewed = skewMs !== null && Math.abs(skewMs) > 120_000;

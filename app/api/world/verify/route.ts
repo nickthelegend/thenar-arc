@@ -1,4 +1,4 @@
-import { logged } from "@/lib/server/log";
+import { logged, logLine } from "@/lib/server/log";
 import { NextResponse } from "next/server";
 import { getAddress, isHex, verifyMessage } from "viem";
 import type { IDKitResult } from "@worldcoin/idkit-core";
@@ -51,7 +51,11 @@ async function handlePOST(req: Request) {
   try {
     human = await verifyHuman(address, result);
   } catch (e) {
-    if (e instanceof HumanError) return NextResponse.json({ error: e.message }, { status: e.status });
+    if (e instanceof HumanError) {
+      // Logged with its reason: a status code alone says a proof was refused, not why.
+      logLine("warn", "world_verify_refused", { address: address.toLowerCase(), status: e.status, reason: e.message });
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
     throw e;
   }
 

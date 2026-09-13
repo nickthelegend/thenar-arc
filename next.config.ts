@@ -38,7 +38,8 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      // World ID's widget draws its icons from World's asset host.
+      "img-src 'self' data: blob: https://world-id-assets.com",
       "font-src 'self' data:",
       "worker-src 'self' blob:",
       // Privy draws its sign-in and the embedded wallet in frames from its own
@@ -73,6 +74,9 @@ const nextConfig: NextConfig = {
         "https://testnet.mirrornode.hedera.com " +
         // Privy: sign-in, and the relay its embedded wallets reach RPCs through.
         "https://auth.privy.io https://*.rpc.privy.systems " +
+        // World ID: the widget reaches the phone through World's bridge. Without
+        // this the Selfie Check failed in the browser before any request left it.
+        "https://bridge.worldcoin.org " +
         "wss://relay.walletconnect.com wss://relay.walletconnect.org wss://www.walletlink.org " +
         "https://explorer-api.walletconnect.com",
       "frame-ancestors 'none'",
