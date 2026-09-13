@@ -85,7 +85,11 @@ async function handlePOST(req: Request) {
       );
     }
 
-    const body = await req.json();
+    // A body that is not JSON is the caller's mistake: it answered 500 with the
+    // parser's own message before.
+    const body = await req.json().catch(() => {
+      throw new VerifyError("body must be JSON");
+    });
     const { taskId, contributor, durationSeconds, deviationMm, success } = body ?? {};
 
     if (typeof taskId !== "number" || taskId < 0) throw new VerifyError("taskId is required");

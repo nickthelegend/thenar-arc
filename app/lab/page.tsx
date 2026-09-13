@@ -6,6 +6,7 @@ import { formatEther } from "viem";
 import { DimRule } from "@/components/primitives";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { AXON_ADDRESS, SCENARIOS, addressUrl, appChain, txUrl } from "@/lib/chain";
+import { readableError } from "@/lib/fetch-error";
 
 /**
  * A lab's data budget, in a wallet that can only fund Thenar.
@@ -96,7 +97,7 @@ export default function LabPage() {
       const b = await r.json();
       setLab(r.ok ? b : { error: b.error ?? `the lab answered ${r.status}` });
     } catch (e) {
-      setLab({ error: String(e) });
+      setLab({ error: readableError(e) });
     }
   }, []);
 
@@ -114,7 +115,7 @@ export default function LabPage() {
         void load();
       }
     } catch (e) {
-      setPosted({ kind: "error", message: String(e) });
+      setPosted({ kind: "error", message: readableError(e) });
     } finally {
       setPosting(false);
     }
@@ -126,7 +127,7 @@ export default function LabPage() {
     try {
       setProbe(await act({ action: "test-policy", to: probeTo.trim() }));
     } catch (e) {
-      setProbe({ kind: "error", message: String(e) });
+      setProbe({ kind: "error", message: readableError(e) });
     } finally {
       setProbing(false);
     }

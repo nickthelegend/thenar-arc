@@ -144,6 +144,12 @@ async function handleGET(req: Request) {
     );
   }
 
+  // Before the paywall, not inside it: a malformed task id was answered with an
+  // offer to sell it, so the caller learned it was wrong only after paying.
+  if (taskIdOf(req.url) === null) {
+    return NextResponse.json({ error: "taskId must be a non-negative integer" }, { status: 400 });
+  }
+
   const res = await build(treasury)(req as NextRequest);
 
   // x402 v2 puts the offer in a header and leaves the body empty. AgentKit's

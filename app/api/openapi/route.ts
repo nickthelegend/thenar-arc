@@ -52,7 +52,7 @@ function spec() {
       chain: appChain.name,
       chainId: appChain.id,
       protocol: AXON_ADDRESS,
-      corpusManifest: CORPUS_MANIFEST,
+      corpusManifest: CORPUS_MANIFEST || null,
       acceptanceFloor: ACCEPT_FLOOR,
       placementToleranceMm: TOLERANCE_MM,
     },

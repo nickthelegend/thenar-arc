@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DimRule } from "@/components/primitives";
 import { AGENT_CORPUS, agentCorpusPrice } from "@/lib/agent-corpus";
+import { readableError } from "@/lib/fetch-error";
 
 /**
  * Where an agent buys the corpus, and every pull an agent has taken.
@@ -47,7 +48,7 @@ export default function AgentsPage() {
         const body = await r.json();
         if (live) setSales(r.ok ? body : { error: body.error ?? `the ledger answered ${r.status}` });
       })
-      .catch((e) => live && setSales({ error: String(e) }));
+      .catch((e) => live && setSales({ error: readableError(e) }));
     return () => { live = false; };
   }, []);
 
@@ -61,7 +62,7 @@ export default function AgentsPage() {
       const r = await fetch(`/api/agent/status?address=${encodeURIComponent(address.trim())}`);
       setStatus(await r.json());
     } catch (e) {
-      setStatus({ error: String(e) });
+      setStatus({ error: readableError(e) });
     } finally {
       setChecking(false);
     }

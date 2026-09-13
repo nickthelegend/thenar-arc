@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ATS } from "@/lib/ats";
+import { readableError } from "@/lib/fetch-error";
 
 /**
  * The corpus as a security on Hedera.
@@ -56,7 +57,7 @@ export default function CorpusTokenPage() {
         const body = await r.json();
         if (live) setSecurity(r.ok ? body : { error: body.error ?? `the security answered ${r.status}` });
       })
-      .catch((e) => live && setSecurity({ error: String(e) }));
+      .catch((e) => live && setSecurity({ error: readableError(e) }));
     return () => {
       live = false;
     };
@@ -69,7 +70,7 @@ export default function CorpusTokenPage() {
       const body = await r.json();
       setHolder(r.ok ? body : { error: body.error ?? `answered ${r.status}` });
     } catch (e) {
-      setHolder({ error: String(e) });
+      setHolder({ error: readableError(e) });
     } finally {
       setChecking(false);
     }

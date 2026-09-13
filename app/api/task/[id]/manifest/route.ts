@@ -57,20 +57,25 @@ async function handleGET(req: Request, ctx: { params: Promise<{ id: string }> })
   const computed = hashes.length ? rootOf(hashes) : null;
 
   let committed: { root: string; episodes: number; at: number } | null = null;
-  try {
-    const c = await client.readContract({
-      address: CORPUS_MANIFEST, abi: ABI, functionName: "latest", args: [BigInt(taskId)],
-    });
-    committed = { root: c.root, episodes: Number(c.episodes), at: Number(c.at) };
-  } catch {
-    // NoCommitment is the ordinary answer for a task nobody has committed yet,
-    // and it is not an error worth a 500 — the corpus simply has no commitment.
-    committed = null;
+  // With no manifest contract configured there is nothing to read, and asking
+  // an empty address answered as if a contract had simply never been committed to.
+  if (CORPUS_MANIFEST) {
+    try {
+      const c = await client.readContract({
+        address: CORPUS_MANIFEST, abi: ABI, functionName: "latest", args: [BigInt(taskId)],
+      });
+      committed = { root: c.root, episodes: Number(c.episodes), at: Number(c.at) };
+    } catch {
+      // NoCommitment is the ordinary answer for a task nobody has committed yet,
+      // and it is not an error worth a 500 — the corpus simply has no commitment.
+      committed = null;
+    }
   }
 
   return NextResponse.json({
     taskId,
-    contract: CORPUS_MANIFEST,
+    contract: CORPUS_MANIFEST || null,
+    ...(CORPUS_MANIFEST ? {} : { note: "No CorpusManifest contract is deployed on this chain, so there is no on-chain root to compare against." }),
     chainId: appChain.id,
     episodes: hashes.length,
     computed,

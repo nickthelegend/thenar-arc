@@ -45,7 +45,11 @@ async function handlePOST(req: Request) {
       return NextResponse.json({ error: "no contract address configured" }, { status: 503 });
     }
 
-    const body = await req.json();
+    // A body that is not JSON is the caller's mistake, not the verifier's: it
+    // answered 500 "could not score this run" before.
+    const body = await req.json().catch(() => {
+      throw new VerifyError("body must be JSON");
+    });
     const { taskId, contributor, durationSeconds, deviationMm, success } = body ?? {};
 
     if (typeof taskId !== "number" || taskId < 0) throw new VerifyError("taskId is required");
