@@ -49,6 +49,9 @@ export default function CorpusTokenPage() {
   const [address, setAddress] = useState("");
   const [holder, setHolder] = useState<Holder | { error: string } | null>(null);
   const [checking, setChecking] = useState(false);
+  // The hint waits until the field is left or submitted: shown on every
+  // keystroke, it flashed "not an address" all the way through typing one.
+  const [touched, setTouched] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -159,11 +162,12 @@ export default function CorpusTokenPage() {
         </div>
         <form
           className="flex flex-wrap gap-2 px-4 py-4"
-          onSubmit={(e) => { e.preventDefault(); if (validAddress && !checking) void lookup(); }}
+          onSubmit={(e) => { e.preventDefault(); setTouched(true); if (validAddress && !checking) void lookup(); }}
         >
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            onBlur={() => setTouched(address.trim() !== "")}
             placeholder="0x… operator address"
             aria-label="Holder address"
             spellCheck={false}
@@ -176,7 +180,7 @@ export default function CorpusTokenPage() {
           >
             {checking ? "Asking the security…" : "Check"}
           </button>
-          {address.trim() !== "" && !validAddress ? (
+          {touched && address.trim() !== "" && !validAddress ? (
             // A disabled button with no reason reads as a broken page.
             <p className="w-full text-[13px] text-reject">
               That is not an address. It should be 0x followed by 40 hexadecimal characters.

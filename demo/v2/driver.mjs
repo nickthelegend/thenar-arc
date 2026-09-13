@@ -279,6 +279,17 @@ async function go(url, label, ready, timeout = 45000) {
   resetCast();
   await until(label, ready, timeout);
   await ensureCursor();
+  // HashScan opens with a cookie-consent dialog over the page; decline
+  // non-essential cookies with a real click so the explorer beat shows the
+  // transaction, not the dialog.
+  if (!url.includes("hashscan.io")) return;
+  const reject = page.locator("button:visible", { hasText: /^\s*reject\s*$/i }).first();
+  const seen = await until("cookie dialog check", async () => (await reject.count()) > 0, 5000, 250).catch(() => false);
+  if (seen === true) {
+    await clickEl(reject);
+    await until("cookie dialog gone", async () => (await reject.count()) === 0, 8000);
+    await sleep(400);
+  }
 }
 const visibleButton = (re) => page.locator("button:visible", { hasText: re }).first();
 

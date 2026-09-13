@@ -24,7 +24,7 @@ const durations = JSON.parse(readFileSync(`${AUDIO}/durations.json`, "utf8"));
 for (const n of narration) if (!existsSync(`${AUDIO}/${n.id}.wav`)) throw new Error(`NO_SLIDE_AUDIO:${n.id}`);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const short = (h, a = 10, b = 6) => (h.length > a + b + 1 ? `${h.slice(0, a)}…${h.slice(-b)}` : h);
-const VENC = ["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(FPS)];
+const VENC = ["-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", "-r", String(FPS)];
 const AENC = ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"];
 
 // ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ function receiptsHtml(txs) {
   const card = (x, delay, chain, title, rows) => `<div class="pop" style="position:absolute;left:${x}px;top:300px;width:540px;border:3px solid #0D0D0F;background:#fff;animation-delay:${delay}">
       <div style="background:#0D0D0F;color:#fff;padding:18px 26px;font:600 24px/1 Menlo,monospace;letter-spacing:.12em;text-transform:uppercase">${chain}</div>
       <div style="padding:26px"><div style="font:700 38px/1.1 'Helvetica Neue',Arial;margin-bottom:22px">${title}</div>
-      ${rows.map(([k, v], i) => `<div class="rise" style="animation-delay:calc(${delay} + ${0.25 + i * 0.12}s);margin-top:16px"><div class="label" style="font-size:18px">${esc(k)}</div><div class="mono" style="font-size:25px;margin-top:6px;word-break:break-all">${esc(v)}</div></div>`).join("")}
+      ${rows.map(([k, v], i) => `<div class="rise" style="animation-delay:calc(${delay} + ${0.25 + i * 0.12}s);margin-top:16px"><div class="label" style="font-size:18px">${esc(k)}</div><div class="mono" style="font-size:25px;margin-top:6px;word-break:${/^0x|@/.test(v) ? "break-all" : "normal"}">${esc(v)}</div></div>`).join("")}
       </div></div>`;
   return [`<div style="position:absolute;left:120px;top:90px" class="label rise">From this recording</div>
     <div class="rise" style="position:absolute;left:120px;top:140px;font:800 76px/1 'Helvetica Neue',Arial;letter-spacing:-0.02em;animation-delay:.1s">Three transactions</div>
