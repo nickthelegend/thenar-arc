@@ -1,5 +1,23 @@
 [
   {
+    "hash": "e5bcde7",
+    "date": "2026-09-13T16:05:41+05:30",
+    "subject": "Reuse Arcscan's answer instead of spending its rate limit on every page load",
+    "body": "Arcscan allows ten API calls per IP before answering 429 for about\ntwenty-five minutes. The task page asked for its funder's history on every\nload, twice in development, so the quota went quickly and the funder\nactivity section then reported the index as unavailable. Settlements are now\nreused for thirty seconds, concurrent callers share one request, and a\nrefusal falls back to the last real answer if it is under ten minutes old.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "4c9b679",
+    "date": "2026-09-13T16:03:37+05:30",
+    "subject": "Fit the station brief and the lab wallet on a phone, and stop the landing header covering the status band",
+    "body": "At 375px the station's 'Ready to record' brief was taller than the workspace\nand centred in it, so its heading went under the station header, where it\ncould not be scrolled to, and Begin run spilled over the Goal section. It now\ncentres with auto margins and scrolls from the top once it overflows.\n\nThe lab's 42-character wallet address could not wrap and widened the whole\npage to 435px.\n\nOn the landing page the conditions band (wrong network, low gas, offline)\nsat in the normal flow underneath the page's fixed header, with both lines of\ntext showing through. There it now docks to the bottom of the viewport.\n\nThe changelog generator ran as predev/prebuild, which pnpm does not run.\nIt is chained into dev and build instead.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "d401cbf",
+    "date": "2026-09-13T15:54:27+05:30",
+    "subject": "Generate the changelog from git as it claims, and stop four pages saying things that are not so",
+    "body": "/changelog said it was generated from git at build time. Nothing generated\nit: lib/changelog.json was a static copy ending on 30 August. scripts/\nchangelog.mjs now writes it from git log before dev and build, and keeps the\ncommitted file where there is no full history rather than writing a partial\none. Dates are the commit's own day instead of the server's locale.\n\n/archive told readers its runs were real and paid on Monad and Fuji directly\nabove 'Nothing archived', and showed that same empty state when the request\nfailed. The intro now describes what belongs there, and a failed read says so.\n\nThe operator page's contribution record printed raw units ('4,500 behind')\nbeside a button offering to sync 45.00 points. Both are points now.\n\nThe 404 page carried the site's generic title, and /handheld spoke in the\nfirst person about not owning a phone.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+  },
+  {
     "hash": "430f4db",
     "date": "2026-09-13T15:49:18+05:30",
     "subject": "Refuse a malformed agent address before asking World Chain, and stop calling a dead server 'offline'",
@@ -340,23 +358,5 @@
     "date": "2026-09-03T08:57:37+05:30",
     "subject": "Task 7.5: prove a snapshot restores, not just that it checksums",
     "body": "The daily export has been running and integrity-checked for a while and nothing\nhad ever written one back. An export nobody has restored is a file with a\nchecksum, not a backup.\n\nscripts/restore.mjs reads the newline-delimited snapshot, inserts every row and\nverifies the result against the manifest the snapshot carries. Rehearsed: 18\ntrajectories out, 18 back, zero faults. Prop digests are checked against the\nbytes rather than trusted from the row, and the target defaults to a scratch\npath so a rehearsal cannot touch the live corpus by being run in the wrong\ndirectory.\n\nTogether with the existing drill — which verifies every prop's sha256 against\nits actual bytes on the real 22.8 MB snapshot — both halves of a restore are\nnow covered.\n\nAlso documented: submitTrajectoryFor is permissionless, so anyone may pay the\ngas for someone else's run without being able to forge it. No relayer service\nis running, and /contracts says that rather than implying the path is offered.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "3ad0542",
-    "date": "2026-09-03T08:53:42+05:30",
-    "subject": "Tasks 6.5 and 6.7: run the plan in CI, and let it fail",
-    "body": "scripts/qa-contracts.mjs checks the registry against the chain it claims to\nread — every address has bytecode, every address renders, the escrow the page\nprints matches the node, nothing is unreadable, and Warp and ElGamal are both\nnamed. 8/8 against production.\n\nAll seven runners are wired into CI's live job, which until now ran only the\nolder test/e2e.mjs. That would have been worse than useless as it stood: six of\nthe seven printed their tally and exited 0 regardless, so CI would have gone\ngreen over a red run. Every runner now exits non-zero when anything fails,\nproven both ways — 0 against production, 1 against a host that cannot answer.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "9c20810",
-    "date": "2026-09-03T08:50:49+05:30",
-    "subject": "Record the execution log against every phase",
-    "body": "Phases 0, 1, 3 and 7.1-7.4 are done and deployed. Phase 2 is blocked on a\ncredential that does not exist in this repo. The rest is itemised task by task\nwith what is done and what is not, so the plan says what is true rather than\nwhat was intended.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-  },
-  {
-    "hash": "2ea933e",
-    "date": "2026-09-03T08:43:18+05:30",
-    "subject": "Phase 7: one command that ships both halves, and the truth about v1's balance",
-    "body": "This product is served by two hosts — Vercel renders the pages, every /api/* is\nrewritten to Railway — and both half-deploy failures have now happened here: an\nAPI fix that changed nothing because it only went to Vercel, and a page that\n404'd because it only went to Railway. scripts/ship.mjs does both, forces the\nVercel build so its cache cannot serve a stale route, and refuses to continue\nunless Vercel reports READY. --check prints the plan and deploys nothing.\n\nAnd a correction. I recorded 0.263 AVAX as stranded in AxonProtocol v1 because\na grep for withdraw/refund/sweep found nothing. That grep was wrong: v1 has a\npull-payment claim(). The conclusion survives for a better reason — claimable is\nzero for all nineteen addresses this deployment has ever paid or been funded by,\nso the balance is unfilled task escrow and escrow refunds only arrived in V2.\n/contracts now gives that reasoning rather than the guess.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   }
 ]
