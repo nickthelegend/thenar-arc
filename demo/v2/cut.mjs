@@ -229,7 +229,15 @@ if (MODE === "review") { console.log("review frames written"); process.exit(0); 
 const MAX_SPEED = 3.0, BREATH = 0.35, THINK_TO = 3.5;
 function beatClip(id, i) {
   const start = vt(beatMs[i]);
-  const end = vt(i + 1 < BEATS.length ? beatMs[i + 1] : endMs);
+  // A beat's footage ends when its narration (and, for a signing beat, its
+  // confirmation) is over — not at the next beat's mark. The gap before that
+  // mark is the navigation into the next page, and letting it run showed the
+  // HashScan topic page under the line describing the x402 transfer.
+  const next = vt(i + 1 < BEATS.length ? beatMs[i + 1] : endMs);
+  const spoken = start + durations[id] + 0.45;
+  const end = SIGNING.includes(id)
+    ? Math.min(next, Math.max(spoken, vt(markOf(`${id}:confirmed`)) + 3.2))
+    : Math.min(next, spoken + 0.6);
   const parts = [];
   if (SIGNING.includes(id)) {
     const s = vt(markOf(`${id}:signing`)), c = vt(markOf(`${id}:confirmed`));
