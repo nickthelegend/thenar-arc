@@ -241,8 +241,13 @@ export default function StationPage() {
 
   // A measured run is real work that has not been paid yet, and the wallet
   // prompt between here and the chain is where runs were being lost.
+  //
+  // Not a practice run. A run the policy drove, or one the operator chose to
+  // practise, was saved like any other and offered back after a reload as "an
+  // unsent run" — where, with the practice switch now off, it could be picked
+  // up and submitted as the operator's own demonstration.
   useEffect(() => {
-    if (phase !== "measured" || !verdict || !task) return;
+    if (phase !== "measured" || !verdict || !task || policyOn || chosePractice) return;
     saveDraft({
       taskId: task.id,
       samples: samples.current,
@@ -250,7 +255,7 @@ export default function StationPage() {
       durationSeconds: verdict.raw.seconds,
       at: Date.now(),
     });
-  }, [phase, verdict, task]);
+  }, [phase, verdict, task, policyOn, chosePractice]);
 
   // Once the chain has it, the draft is not an unsent run any more.
   useEffect(() => {
@@ -741,9 +746,11 @@ export default function StationPage() {
             // than the workspace, and a centred child overflows upward under the
             // header where it cannot be scrolled to. This centres while it fits
             // and scrolls from the top when it does not.
-            <div className="absolute inset-0 flex justify-center overflow-y-auto bg-ink-0/78 px-6 py-6">
+            <div className="absolute inset-0 flex flex-col items-center overflow-y-auto bg-ink-0/78 px-6 py-6">
               {recovered ? (
-                <div className="my-auto mb-4 border border-signal bg-signal-dim px-4 py-3 text-left">
+                // Stacked above the brief. Side by side in a row they overlapped
+                // it on anything narrower than a desktop.
+                <div className="mt-auto mb-4 max-w-sm border border-signal bg-signal-dim px-4 py-3 text-left">
                   <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-signal">
                     An unsent run is waiting
                   </p>
@@ -774,7 +781,7 @@ export default function StationPage() {
                   </div>
                 </div>
               ) : null}
-              <div className="my-auto max-w-sm text-center">
+              <div className={cn("max-w-sm text-center", recovered ? "mb-auto" : "my-auto")}>
                 <h2 className="font-display text-2xl font-600">Ready to record</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-scribe-2">
                   The timer starts on your first frame. Pick the payload up, bring
@@ -787,9 +794,15 @@ export default function StationPage() {
                       Practice run
                     </p>
                     <p className="mt-1 text-[13px] leading-relaxed text-scribe-3">
+                      {/* Every practice run used to be explained as a used-up
+                          quota, including one the policy drives from 0 / 5. */}
                       {!task.open
                         ? "This task has no slots left, so nothing here will be paid."
-                        : "You have used all 5 of your runs on this task, so the chain will not pay another."}
+                        : capped
+                          ? "You have used all 5 of your runs on this task, so the chain will not pay another."
+                          : policyOn
+                            ? "The policy is driving, and a run it drives is not yours to be paid for."
+                            : "You chose to practise, so nothing here will be paid or submitted."}
                       {" "}
                       The scene, the controls and the measurement are exactly the
                       same &mdash; you just will not be asked to sign at the end.
