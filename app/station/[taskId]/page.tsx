@@ -562,10 +562,12 @@ export default function StationPage() {
             </button>
             {policyOn ? (
               <p className="mt-1.5 text-[12px] leading-relaxed text-scribe-3">
-                3,076 parameters, trained on 220 scripted demonstrations &mdash; not on
-                this corpus, which is not yet coherent enough to learn from. It
-                grasps from every start tested and reaches the datum; it releases
-                in five of eight. Nothing it does is submitted.
+                3,076 parameters, trained on 220 scripted demonstrations of a single
+                object &mdash; not on this corpus, which is not yet coherent enough to
+                learn from. On that scene it grasps from every start tested and
+                reaches the datum, and releases in five of eight. It has learned
+                nothing else: on a task with other objects, or two of them, it can
+                hover without ever grasping. Nothing it does is submitted.
               </p>
             ) : null}
             <dl className="flex flex-col gap-1.5">
@@ -636,7 +638,11 @@ export default function StationPage() {
               {/* Without this the operator is hunting for the payload blind:
                   the capture volume is invisible, so nothing says whether
                   closing the jaws will do anything. */}
-              {!tel.held ? (
+              {/* The key hints are for a person driving. While the policy has
+                  the arm they told the viewer to press keys that do nothing. */}
+              {policyOn ? (
+                <span className="text-probe">POLICY DRIVING — NOTHING TO PRESS</span>
+              ) : !tel.held ? (
                 tel.inRange ? (
                   <span className="text-go">IN RANGE — PRESS SPACE</span>
                 ) : tel.overPayload ? (
@@ -701,10 +707,12 @@ export default function StationPage() {
             </button>
             {policyOn ? (
               <p className="mt-1.5 text-[12px] leading-relaxed text-scribe-3">
-                3,076 parameters, trained on 220 scripted demonstrations &mdash; not on
-                this corpus, which is not yet coherent enough to learn from. It
-                grasps from every start tested and reaches the datum; it releases
-                in five of eight. Nothing it does is submitted.
+                3,076 parameters, trained on 220 scripted demonstrations of a single
+                object &mdash; not on this corpus, which is not yet coherent enough to
+                learn from. On that scene it grasps from every start tested and
+                reaches the datum, and releases in five of eight. It has learned
+                nothing else: on a task with other objects, or two of them, it can
+                hover without ever grasping. Nothing it does is submitted.
               </p>
             ) : null}
             <dl className="flex flex-col gap-1.5">

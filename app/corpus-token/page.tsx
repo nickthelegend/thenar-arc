@@ -77,6 +77,7 @@ export default function CorpusTokenPage() {
   }
 
   const s = security && "address" in security ? security : null;
+  const validAddress = /^0x[0-9a-fA-F]{40}$/.test(address.trim());
 
   return (
     <div className="mx-auto max-w-[900px] px-5 py-8">
@@ -156,22 +157,32 @@ export default function CorpusTokenPage() {
         <div className="border-b border-rule px-4 py-2.5">
           <span className="label">Look up a holder</span>
         </div>
-        <div className="flex flex-wrap gap-2 px-4 py-4">
+        <form
+          className="flex flex-wrap gap-2 px-4 py-4"
+          onSubmit={(e) => { e.preventDefault(); if (validAddress && !checking) void lookup(); }}
+        >
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="0x… operator address"
+            aria-label="Holder address"
+            spellCheck={false}
             className="min-w-[280px] flex-1 border border-rule bg-ink-1 px-3 py-2 font-mono text-[13px] text-scribe outline-none focus:border-scribe-3"
           />
           <button
-            type="button"
-            onClick={lookup}
-            disabled={checking || !/^0x[0-9a-fA-F]{40}$/.test(address.trim())}
+            type="submit"
+            disabled={checking || !validAddress}
             className="border border-rule-strong bg-ink-3 px-4 py-2 text-[13px] text-scribe hover:border-scribe-3 disabled:opacity-50"
           >
             {checking ? "Asking the security…" : "Check"}
           </button>
-        </div>
+          {address.trim() !== "" && !validAddress ? (
+            // A disabled button with no reason reads as a broken page.
+            <p className="w-full text-[13px] text-reject">
+              That is not an address. It should be 0x followed by 40 hexadecimal characters.
+            </p>
+          ) : null}
+        </form>
         {holder ? (
           "error" in holder ? (
             <p className="border-t border-rule px-4 py-3 text-[13px] text-scribe-2">{holder.error}</p>

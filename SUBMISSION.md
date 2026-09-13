@@ -63,6 +63,7 @@ after a Selfie Check, and a paid run issues shares to its contributor
 | Uses Selfie Check, or a compatible World ID credential flow, in a meaningful way | `/api/verify` refuses to sign a run without a World ID Selfie Check proof for the contributor (`lib/server/world-id.ts`, `/api/world/*`, `components/human-gate.tsx`) |
 | Treats it as a risk, eligibility, fairness or abuse-prevention signal | Abuse prevention: a nullifier is one per human per action, and a wallet signature over the server's nonce binds it to one address, so one person cannot collect bounties from many wallets |
 | Feedback document | [docs/FEEDBACK-WORLD.md](docs/FEEDBACK-WORLD.md), "Selfie Check — integration notes" |
+| Refusal without a proof | Run on 13 September: `node scripts/arc-run.mjs http://localhost:3222 1` scores a coherent run for a fresh operator with no Selfie Check, and `/api/verify` answers 403 "Prove you are a live human with World ID before contributing." Nothing is signed, funded or sent. |
 | Shows a working app | **Not yet proven end to end.** A new World app, "thenar", is configured, and the Developer Portal precheck reports face check enabled for the `thenar-contribute` action. The app's signing key derives to the portal's signer address, and a request IDKit signs with it recovers to that address. Still to do, once: a Selfie Check in World App, World's `/api/v4/verify` accepting the proof, and the Hedera whitelist admission. |
 
 ---
@@ -73,11 +74,18 @@ These are working and linked from the README. They support the Continuity
 entries above.
 
 - **Hedera x402 and World AgentKit:** an agent pays 0.5 HBAR per corpus through
-  Blocky402, three settlements so far, each logged to Consensus Service topic
-  `0.0.10519262` with the sha256 of the file served. AgentBook decides free pulls.
+  Blocky402. Five settlements so far; the three since the sales log existed are
+  messages #1–#3 on Consensus Service topic `0.0.10519262`, each with the sha256
+  of the file served. The latest, run again on 13 September, is
+  [`0.0.7162784@1789296779.408785255`](https://hashscan.io/testnet/transaction/0.0.7162784-1789296779-408785255),
+  and the buyer's own hash of what it received matched message #3. AgentBook
+  decides free pulls.
 - **Privy:** a lab wallet under a policy funded task #5 on Arc
-  ([`0x7a7c387f…`](https://testnet.arcscan.app/tx/0x7a7c387f00110499e4e2c4d6665bb120ecbe7db716012d8a35338797f6d9291c))
-  and was refused a transfer anywhere else with `policy_violation`.
+  ([`0x7a7c387f…`](https://testnet.arcscan.app/tx/0x7a7c387f00110499e4e2c4d6665bb120ecbe7db716012d8a35338797f6d9291c)),
+  and task #7 from the `/lab` page on 13 September
+  ([`0x5ef56687…`](https://testnet.arcscan.app/tx/0x5ef56687df9d4db9baf510a5f53f093c79cb54ef587b3b07f11d98c9b42e3f8c)).
+  Asked from the same page to send 0.01 USDC anywhere else, it was refused with
+  `policy_violation` and nothing was signed.
 - **Arc:** runs recorded and paid in USDC; all ten contracts `exact_match` on
   Sourcify.
 
