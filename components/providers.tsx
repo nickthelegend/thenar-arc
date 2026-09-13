@@ -71,6 +71,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         appearance: {
           theme: dark ? "dark" : "light",
           accentColor: dark ? "#7C97FF" : "#2B50E0",
+          // Browser-extension wallets, MetaMask, Rabby and WalletConnect. Not
+          // Coinbase or Base Account: their SDK probed every page's own URL on
+          // load and logged a console error wherever that URL was a 404.
+          walletList: ["detected_ethereum_wallets", "metamask", "rabby_wallet", "wallet_connect"],
         },
         embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
         defaultChain: appChain,

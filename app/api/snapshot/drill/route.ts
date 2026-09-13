@@ -25,9 +25,10 @@ export async function GET(req: Request) {
     const ok = result.integrity === "ok" && result.matchesLive && result.withSamples === result.trajectories;
     return NextResponse.json({ ok, ...result }, { status: ok ? 200 : 500 });
   } catch (e) {
-    return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Drill failed." },
-      { status: 500 },
-    );
+    const message = e instanceof Error ? e.message : "Drill failed.";
+    // A missing bucket is a deployment without backups configured, not a
+    // server fault: 503 says so, where 500 read as the drill itself breaking.
+    const unconfigured = /No bucket configured/.test(message);
+    return NextResponse.json({ ok: false, error: message }, { status: unconfigured ? 503 : 500 });
   }
 }
