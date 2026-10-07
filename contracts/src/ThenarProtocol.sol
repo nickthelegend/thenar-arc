@@ -215,6 +215,7 @@ contract ThenarProtocol is ReentrancyGuard {
     error AlreadyClosed();
     error NoSuchTask(uint256 taskId);
     error WrongNonce(bytes32 expected, bytes32 got);
+    error InsufficientGasForVerdict();
 
     // ----------------------------------------------------------------- init
 
@@ -407,14 +408,18 @@ contract ThenarProtocol is ReentrancyGuard {
     }
 
     /**
-     * @notice Return unspent escrow to the funder after a task's deadline.
-     *         Only the funder, only after the deadline, only once.
+     * @notice Return unspent escrow to the funder after a task's deadline, or
+     *         once every slot is filled. Only the funder, only once.
      */
     function closeTask(uint256 taskId) external nonReentrant returns (uint256 refunded) {
+        if (taskId >= _tasks.length) revert NoSuchTask(taskId);
         Task storage t = _tasks[taskId];
         if (msg.sender != t.funder) revert NotFunder();
         if (t.closed) revert AlreadyClosed();
-        if (t.expiresAt == 0 || block.timestamp < t.expiresAt) revert NotExpired();
+        // Expired, or nothing left to pay for: every slot is filled, so whatever runs
+        // below a perfect score left behind would otherwise be locked forever.
+        bool expired = t.expiresAt != 0 && block.timestamp >= t.expiresAt;
+        if (!expired && slotsFilledOf(taskId) < t.slotsTotal) revert NotExpired();
 
         refunded = t.escrow;
         t.escrow = 0;
@@ -533,6 +538,9 @@ contract ThenarProtocol is ReentrancyGuard {
 
         // ERC-8004: the verdict on the verifier's record. Bounded and isolated.
         if (address(verdicts) != address(0)) {
+            // A caller must not be able to skip the record by starving it of gas: with less
+            // than VERDICT_GAS available to forward (EIP-150 keeps 1/64 back), refuse the run.
+            if (gasleft() < (VERDICT_GAS * 64) / 63 + 10_000) revert InsufficientGasForVerdict();
             try verdicts.recordVerdict{gas: VERDICT_GAS}(trajectoryId, taskId, contributor, trajHash, score, payout) {}
             catch (bytes memory reason) {
                 emit VerdictNotRecorded(trajectoryId, reason);
@@ -546,6 +554,8 @@ contract ThenarProtocol is ReentrancyGuard {
     function mintPolicy(uint256 taskId, uint128 licenceFee) external returns (uint256 policyId) {
         if (taskId >= _tasks.length) revert NoSuchTask(taskId);
         Task storage t = _tasks[taskId];
+        // The fee decides what every contributor earns from a licence: only the funder sets it.
+        if (msg.sender != t.funder) revert NotFunder();
         uint32 filled = slotsFilledOf(taskId);
         if (filled < t.slotsTotal) revert NotFilled();
         if (t.policyMinted) revert AlreadyMinted();

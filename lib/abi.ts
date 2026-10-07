@@ -1855,6 +1855,11 @@ export const AXON_ABI = [
   },
   {
     "type": "error",
+    "name": "InsufficientGasForVerdict",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NoPasskey",
     "inputs": []
   },
