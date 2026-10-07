@@ -1,0 +1,19 @@
+{
+  "name": "@thenar/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Thenar on Arc: ThenarProtocol (USDC escrow), ThenarVerdicts (ERC-8004), corpus contracts, and the Chainlink CCIP sender/receiver. Foundry project; npm supplies forge-std, OpenZeppelin and the Chainlink packages.",
+  "license": "MIT",
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "test:fork": "ARC_FORK_TESTS=1 ${ARC_FORGE:-arc-forge} test --network arc --match-path 'test/fork/*'"
+  },
+  "devDependencies": {
+    "@chainlink/contracts": "1.5.0",
+    "@chainlink/contracts-ccip": "2.0.0",
+    "@chainlink/local": "0.3.1",
+    "@openzeppelin/contracts-4.8.3": "npm:@openzeppelin/contracts@4.8.3",
+    "@openzeppelin/contracts-5.3.0": "npm:@openzeppelin/contracts@5.3.0"
+  }
+}

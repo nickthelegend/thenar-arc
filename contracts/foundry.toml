@@ -1,0 +1,40 @@
+# Thenar on Arc. OpenZeppelin v5 and forge-std come from npm (package.json in
+# this directory, its own package-lock), as do the Chainlink packages, which
+# import OpenZeppelin by versioned paths that only these remappings resolve.
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+libs = ["node_modules"]
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+remappings = [
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.3.0/",
+  "@openzeppelin/contracts@4.8.3/=node_modules/@openzeppelin/contracts-4.8.3/",
+  "@openzeppelin/contracts@5.3.0/=node_modules/@openzeppelin/contracts-5.3.0/",
+  "@chainlink/contracts-ccip/=node_modules/@chainlink/contracts-ccip/",
+  "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+  "@chainlink/local/=node_modules/@chainlink/local/",
+  "forge-std/=node_modules/forge-std/src/",
+]
+# Deploy.s.sol writes deployments/*.json at the repo root.
+fs_permissions = [
+  { access = "read-write", path = "../deployments" },
+  { access = "read-write", path = "../.fork" },
+  { access = "read-write", path = "./cache" },
+  { access = "read", path = "./" },
+]
+
+[fuzz]
+runs = 512
+
+[rpc_endpoints]
+arc_testnet = "https://rpc.testnet.arc.io"
+arc_mainnet = "https://rpc.mainnet.arc.io"
+base_sepolia = "https://sepolia.base.org"
+
+[fmt]
+line_length = 120
