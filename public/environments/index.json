@@ -1,0 +1,67 @@
+{
+  "environments": [
+    {
+      "id": "general",
+      "label": "Calibration bench",
+      "blurb": "A plain bench with a datum strip. What a task with no stated room gets.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/general.glb",
+      "bytes": 63612
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen counter",
+      "blurb": "A run of counter with a splashback and a wall cabinet.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/kitchen.glb",
+      "bytes": 31408
+    },
+    {
+      "id": "office",
+      "label": "Office desk",
+      "blurb": "A desk with a monitor and a cable tray.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/office.glb",
+      "bytes": 38136
+    },
+    {
+      "id": "bathroom",
+      "label": "Bathroom vanity",
+      "blurb": "A vanity top with a basin and a mirror.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/bathroom.glb",
+      "bytes": 41424
+    },
+    {
+      "id": "workshop",
+      "label": "Workbench",
+      "blurb": "A steel-framed bench with a pegboard and a vice.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/workshop.glb",
+      "bytes": 119852
+    },
+    {
+      "id": "home",
+      "label": "Sideboard",
+      "blurb": "A sideboard with a lower shelf and a lamp.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/home.glb",
+      "bytes": 39096
+    },
+    {
+      "id": "play",
+      "label": "Play table",
+      "blurb": "A low table with a felt mat and a toy bin.",
+      "surfaceWidthMm": 980.0,
+      "surfaceDepthMm": 720.0,
+      "url": "/environments/play.glb",
+      "bytes": 33816
+    }
+  ]
+}

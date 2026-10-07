@@ -1,0 +1,390 @@
+{
+  "props": [
+    {
+      "id": "mug",
+      "label": "Mug",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 82,
+      "url": "/props/mug.glb",
+      "bytes": 43756
+    },
+    {
+      "id": "bottle",
+      "label": "Bottle",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 90,
+      "url": "/props/bottle.glb",
+      "bytes": 239804,
+      "source": "Poly Haven \"multi_cleaner_bottle\", photoscanned, CC0 \u2014 https://polyhaven.com/a/multi_cleaner_bottle"
+    },
+    {
+      "id": "toothpaste",
+      "label": "Toothpaste",
+      "scenario": "bathroom",
+      "role": "payload",
+      "widthMm": 34,
+      "url": "/props/toothpaste.glb",
+      "bytes": 15920
+    },
+    {
+      "id": "dice",
+      "label": "Dice",
+      "scenario": "play",
+      "role": "payload",
+      "widthMm": 42,
+      "url": "/props/dice.glb",
+      "bytes": 14844
+    },
+    {
+      "id": "pen",
+      "label": "Pen",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 12,
+      "url": "/props/pen.glb",
+      "bytes": 14780
+    },
+    {
+      "id": "eraser",
+      "label": "Eraser",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 46,
+      "url": "/props/eraser.glb",
+      "bytes": 5476
+    },
+    {
+      "id": "jar",
+      "label": "Honey jar",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 76,
+      "url": "/props/jar.glb",
+      "bytes": 16276
+    },
+    {
+      "id": "toast",
+      "label": "Toast",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 96,
+      "url": "/props/toast.glb",
+      "bytes": 12040
+    },
+    {
+      "id": "apricot",
+      "label": "Apricot",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 50,
+      "url": "/props/apricot.glb",
+      "bytes": 12260
+    },
+    {
+      "id": "shrimp",
+      "label": "Shrimp",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 48,
+      "url": "/props/shrimp.glb",
+      "bytes": 21144
+    },
+    {
+      "id": "drawer",
+      "label": "Drawer",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 190,
+      "url": "/props/drawer.glb",
+      "bytes": 22040
+    },
+    {
+      "id": "shelf",
+      "label": "Shelf",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 200,
+      "url": "/props/shelf.glb",
+      "bytes": 12412
+    },
+    {
+      "id": "pen_cup",
+      "label": "Pen cup",
+      "scenario": "office",
+      "role": "target",
+      "widthMm": 76,
+      "url": "/props/pen_cup.glb",
+      "bytes": 18376
+    },
+    {
+      "id": "crate",
+      "label": "Crate",
+      "scenario": "workshop",
+      "role": "target",
+      "widthMm": 408,
+      "url": "/props/crate.glb",
+      "bytes": 665768,
+      "source": "Poly Haven \"plastic_crate_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/plastic_crate_01"
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "scenario": "office",
+      "role": "target",
+      "widthMm": 230,
+      "url": "/props/laptop.glb",
+      "bytes": 8960
+    },
+    {
+      "id": "air_fryer",
+      "label": "Air fryer",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 164,
+      "url": "/props/air_fryer.glb",
+      "bytes": 19588
+    },
+    {
+      "id": "can",
+      "label": "Can",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 88,
+      "url": "/props/can.glb",
+      "bytes": 216940,
+      "source": "Poly Haven \"cleaner_tin_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/cleaner_tin_01"
+    },
+    {
+      "id": "bowl",
+      "label": "Bowl",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 131,
+      "url": "/props/bowl.glb",
+      "bytes": 336220,
+      "source": "Poly Haven \"wooden_bowl_02\", photoscanned, CC0 \u2014 https://polyhaven.com/a/wooden_bowl_02"
+    },
+    {
+      "id": "cup",
+      "label": "Glass",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 72,
+      "url": "/props/cup.glb",
+      "bytes": 12408
+    },
+    {
+      "id": "spoon",
+      "label": "Spoon",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 278,
+      "url": "/props/spoon.glb",
+      "bytes": 275480,
+      "source": "Poly Haven \"wooden_spoon\", photoscanned, CC0 \u2014 https://polyhaven.com/a/wooden_spoon"
+    },
+    {
+      "id": "banana",
+      "label": "Banana",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 172,
+      "url": "/props/banana.glb",
+      "bytes": 24876
+    },
+    {
+      "id": "block",
+      "label": "Block",
+      "scenario": "play",
+      "role": "payload",
+      "widthMm": 44,
+      "url": "/props/block.glb",
+      "bytes": 8588
+    },
+    {
+      "id": "ball",
+      "label": "Ball",
+      "scenario": "play",
+      "role": "payload",
+      "widthMm": 75,
+      "url": "/props/ball.glb",
+      "bytes": 448460,
+      "source": "Poly Haven \"baseball_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/baseball_01"
+    },
+    {
+      "id": "screwdriver",
+      "label": "Screwdriver",
+      "scenario": "workshop",
+      "role": "payload",
+      "widthMm": 27,
+      "url": "/props/screwdriver.glb",
+      "bytes": 193820,
+      "source": "Poly Haven \"screwdriver\", photoscanned, CC0 \u2014 https://polyhaven.com/a/screwdriver"
+    },
+    {
+      "id": "battery",
+      "label": "Battery",
+      "scenario": "workshop",
+      "role": "payload",
+      "widthMm": 27,
+      "url": "/props/battery.glb",
+      "bytes": 8416
+    },
+    {
+      "id": "soap",
+      "label": "Soap",
+      "scenario": "bathroom",
+      "role": "payload",
+      "widthMm": 92,
+      "url": "/props/soap.glb",
+      "bytes": 7928
+    },
+    {
+      "id": "book",
+      "label": "Book",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 148,
+      "url": "/props/book.glb",
+      "bytes": 8960
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 72,
+      "url": "/props/phone.glb",
+      "bytes": 8968
+    },
+    {
+      "id": "tray",
+      "label": "Tray",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 220,
+      "url": "/props/tray.glb",
+      "bytes": 358472,
+      "source": "Poly Haven \"seeding_tray_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/seeding_tray_01"
+    },
+    {
+      "id": "basket",
+      "label": "Basket",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 383,
+      "url": "/props/basket.glb",
+      "bytes": 550956,
+      "source": "Poly Haven \"wicker_basket_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/wicker_basket_01"
+    },
+    {
+      "id": "bin",
+      "label": "Bin",
+      "scenario": "home",
+      "role": "target",
+      "widthMm": 256,
+      "url": "/props/bin.glb",
+      "bytes": 17036
+    },
+    {
+      "id": "plate",
+      "label": "Plate",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 272,
+      "url": "/props/plate.glb",
+      "bytes": 172284,
+      "source": "Poly Haven \"carved_wooden_plate\", photoscanned, CC0 \u2014 https://polyhaven.com/a/carved_wooden_plate"
+    },
+    {
+      "id": "rack",
+      "label": "Dish rack",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 280,
+      "url": "/props/rack.glb",
+      "bytes": 42704
+    },
+    {
+      "id": "sink",
+      "label": "Sink",
+      "scenario": "bathroom",
+      "role": "target",
+      "widthMm": 336,
+      "url": "/props/sink.glb",
+      "bytes": 24572
+    },
+    {
+      "id": "apple",
+      "label": "Apple",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 98,
+      "url": "/props/apple.glb",
+      "bytes": 218320,
+      "source": "Poly Haven \"food_apple_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/food_apple_01"
+    },
+    {
+      "id": "lemon",
+      "label": "Lemon",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 69,
+      "url": "/props/lemon.glb",
+      "bytes": 258828,
+      "source": "Poly Haven \"lemon\", photoscanned, CC0 \u2014 https://polyhaven.com/a/lemon"
+    },
+    {
+      "id": "onion",
+      "label": "Onion",
+      "scenario": "kitchen",
+      "role": "payload",
+      "widthMm": 72,
+      "url": "/props/onion.glb",
+      "bytes": 243940,
+      "source": "Poly Haven \"yellow_onion\", photoscanned, CC0 \u2014 https://polyhaven.com/a/yellow_onion"
+    },
+    {
+      "id": "pliers",
+      "label": "Pliers",
+      "scenario": "workshop",
+      "role": "payload",
+      "widthMm": 180,
+      "url": "/props/pliers.glb",
+      "bytes": 291064,
+      "source": "Poly Haven \"pliers\", photoscanned, CC0 \u2014 https://polyhaven.com/a/pliers"
+    },
+    {
+      "id": "stapler",
+      "label": "Stapler",
+      "scenario": "office",
+      "role": "payload",
+      "widthMm": 208,
+      "url": "/props/stapler.glb",
+      "bytes": 313652,
+      "source": "Poly Haven \"vintage_stapler\", photoscanned, CC0 \u2014 https://polyhaven.com/a/vintage_stapler"
+    },
+    {
+      "id": "board",
+      "label": "Cutting board",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 450,
+      "url": "/props/board.glb",
+      "bytes": 194444,
+      "source": "Poly Haven \"wooden_cutting_board\", photoscanned, CC0 \u2014 https://polyhaven.com/a/wooden_cutting_board"
+    },
+    {
+      "id": "pot",
+      "label": "Pot",
+      "scenario": "kitchen",
+      "role": "target",
+      "widthMm": 263,
+      "url": "/props/pot.glb",
+      "bytes": 309956,
+      "source": "Poly Haven \"pot_enamel_01\", photoscanned, CC0 \u2014 https://polyhaven.com/a/pot_enamel_01"
+    }
+  ]
+}

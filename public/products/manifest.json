@@ -1,0 +1,87 @@
+{
+  "generated": "2026-09-30",
+  "conventions": "glTF 2.0 binary. Y up, metres, +Z is the robot's front, origin on the floor at the centre of the base (arms) or between the feet (duck, humanoids). Posters: 1200x1200 WebP, transparent background, three-quarter view (35 deg azimuth, 15 deg elevation).",
+  "loader": "All files use EXT_meshopt_compression (required): three.js GLTFLoader needs setMeshoptDecoder(MeshoptDecoder) from three/examples/jsm/libs/meshopt_decoder.module.js; @react-three/drei useGLTF enables it by default. No Draco, no textures.",
+  "products": [
+    {
+      "id": "so101-follower",
+      "name": "SO-101 Follower (MG996R)",
+      "file": "/products/so101-follower.glb",
+      "poster": "/products/so101-follower.webp",
+      "bytes": 408368,
+      "triangles": 64602,
+      "compression": "meshopt (EXT_meshopt_compression + KHR_mesh_quantization)",
+      "heightM": 0.2579,
+      "source": {
+        "repo": "nickthelegend/thenar-monad",
+        "path": "public/models/so101-mg996r.glb",
+        "commit": "057162fe5b372f15e483aa0f82fc1078fd758396"
+      },
+      "notes": "The app's existing SO-101 GLB (built from thenar-arms robot-studio/public/models/so101/study-manifest.json, sha256 39180f84…, commit 461f82d) with geometry and materials unchanged: 7 R3 printed units, 6 MG996R envelopes, 6 metal horns. Posed at the manifest HOME [0,-25,35,0,0,20] deg. Node tree is the joint tree: the six joint nodes (follower_shoulder_link … follower_moving_jaw_so101_v1_link) carry extras.joint 0–5 and rotate about their local +Z, as components/station/so101-arm.tsx drives them. Wrapped in a root node that maps the source mm Z-up frame to metres Y-up."
+    },
+    {
+      "id": "so101-leader",
+      "name": "SO-101 Leader (passive AS5600, L1)",
+      "file": "/products/so101-leader.glb",
+      "poster": "/products/so101-leader.webp",
+      "bytes": 656560,
+      "triangles": 108388,
+      "compression": "meshopt (EXT_meshopt_compression + KHR_mesh_quantization)",
+      "heightM": 0.2613,
+      "source": {
+        "repo": "nickthelegend/thenar-arms",
+        "path": "robot-studio/public/models/so101/study-manifest.json (+ encoder-leader-l1/print-parts, encoder-leader-l1/reference)",
+        "commit": "f1e5eaa99fe01200b31c332e9cdcb56c288d36ef"
+      },
+      "notes": "Assembled from the repo's own manifest: all 73 leader instances (37 printed pieces, 36 purchased-part envelopes: 688 bearings, AS5600 PCB/chip/connectors, magnets) placed on the leader kinematic nodes exactly as the robot studio does, at HOME [0,-25,35,0,0,20] deg. Same recipe as the follower GLB (thenar-quest scripts/build-models.mjs): per-link merge by material, meshopt simplify to 45% (prints) / 60% (hardware), 35 deg creased normals; leader blue #5585df from the studio. docs/final_report.md records the SolidWorks leader master matching this forward kinematics to 5.8e-7 mm; the manifest itself still flags leader_pose_verified=false and the trigger's +15 deg mounting index as provisional. Joint nodes carry extras.joint 0–5 (local +Z), like the follower."
+    },
+    {
+      "id": "thenar-duck",
+      "name": "Thenar Duck (revision B)",
+      "file": "/products/thenar-duck.glb",
+      "poster": "/products/thenar-duck.webp",
+      "bytes": 1191240,
+      "triangles": 144341,
+      "compression": "meshopt (EXT_meshopt_compression + KHR_mesh_quantization)",
+      "heightM": 0.4306,
+      "source": {
+        "repo": "nickthelegend/thenar-duck",
+        "path": "cad/thenar_duck_B/Thenar_Duck_B_FULL_ASSEMBLY.glb (Git LFS) + cad/thenar_duck_B/reports/assembly_index.json",
+        "commit": "e7e131282ea00af538510de282144180ece8b50b"
+      },
+      "notes": "Source is the LFS review GLB (36.1 MB, 1,827,536 triangles, sha256 23e048a9…), mm, X forward/Y left/Z up, in its static review pose. It carries no materials (vertex colours are all white), so each of its 123 parts is coloured from the repo's reports/assembly_index.json (the colours its own renders use). Simplified with meshoptimizer within 0.08 mm (ST3215 vendor servo models, 82% of the source triangles, within 0.15 mm), 35 deg creased normals, merged per material (8 draw calls, no articulation). The source's labelled hardware envelopes (battery, PDB/UBEC/fuse capacity boxes, Pi connectors) are kept as-is. Origin is the centre of the two feet."
+    },
+    {
+      "id": "jx1",
+      "name": "JX1 humanoid",
+      "file": "/products/jx1.glb",
+      "poster": "/products/jx1.webp",
+      "bytes": 664316,
+      "triangles": 91980,
+      "compression": "meshopt (EXT_meshopt_compression + KHR_mesh_quantization)",
+      "heightM": 1.23,
+      "source": {
+        "repo": "nickthelegend/thenar-jx1",
+        "path": "simulation/meshes/source_mm/*.STL placed by tools/cad/leg_kinematics.py + tools/cad/upper_kinematics.py (link tree: simulation/mujoco/jx1.xml)",
+        "commit": "1a91033b61b962519ad87ba17fb3d695366650b4"
+      },
+      "notes": "All 87 exported SolidWorks part meshes (21 RobStride actuator housings + 21 outputs, 6061/7075 brackets, steel ankle cross/push-rods, torso, head, electronics) placed with the repo's own CAD kinematics, exactly as tools/media/assembly_film.py places them for the README hero renders; per-link frames were cross-checked against the MJCF body tree (all 24 match). Zero pose = straight-legged standing. Colours are the film's LOOK table (aluminium, black actuators, orange PETG-CF head, blue battery, green Jetson/hub). Node tree = MJCF bodies; each jointed node has extras {joint, axis, range(rad)}; link frames are world-aligned at zero pose. Battery, Jetson, hub board, DC-DC, switch, stereo camera and ST3215 body are box envelopes in the source CAD. No simplification needed (source 91,980 triangles)."
+    },
+    {
+      "id": "jx0",
+      "name": "JX0 small humanoid",
+      "file": "/products/jx0.glb",
+      "poster": "/products/jx0.webp",
+      "bytes": 177448,
+      "triangles": 31894,
+      "compression": "meshopt (EXT_meshopt_compression + KHR_mesh_quantization)",
+      "heightM": 0.5165,
+      "source": {
+        "repo": "nickthelegend/thenar-jx1",
+        "path": "jx0/cad/assembly.json + jx0/cad/stl/*.stl",
+        "commit": "1a91033b61b962519ad87ba17fb3d695366650b4"
+      },
+      "notes": "The 46 components of jx0/cad/assembly.json (the JX0_Robot.SLDASM placement: pose_mm + rotation matrix per component) using the exported part STLs: 12 ST3215 and 9 MG90S servo envelopes, printed PETG frame, orange head with GC9A01 display and face. Colours from jx0/cad/build_cad.py (the SolidWorks part colours; the cyan face gets a slight emissive). Merged per colour (5 draw calls, static). Origin is the centre of the two feet."
+    }
+  ]
+}

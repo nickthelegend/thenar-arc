@@ -1,0 +1,284 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   THENARLABS — black glass.
+
+   One theme. A black stage, white type set in Poppins, and light that comes
+   from the objects themselves: prismatic glass renders whose spectra are the
+   only colour on a page. Controls are pale lilac pills and translucent glass;
+   figures of value take the lavender accent; the verdict pair stays green and
+   rose so a payout is never read by hue against the accent alone.
+
+   The token names are the product's old ones (ink, rule, scribe, signal), so
+   every page moved to this world by changing values, not markup.
+   ========================================================================== */
+
+@theme {
+  /* Ground: black, and four lifts for panels and wells. */
+  --color-ink-0: #000000;
+  --color-ink-1: #0B0B0D;
+  --color-ink-2: #131316;
+  --color-ink-3: #1C1C20;
+  --color-ink-4: #26262B;
+
+  /* Hairlines, as they read on black glass. */
+  --color-rule: #1E1E23;
+  --color-rule-strong: #34343B;
+
+  /* Type. */
+  --color-scribe: #FFFFFF;
+  --color-scribe-2: #B6B6BE;
+  --color-scribe-3: #83838C;
+
+  /* The accent: lavender, lifted enough to read as a figure on black. */
+  --color-signal: #B9A2FF;
+  --color-signal-hi: #DCCFFF;
+  --color-signal-dim: #1B1530;
+
+  /* The pale lilac of the primary pill. Text on it is black. */
+  --color-lilac: #EEE6FF;
+
+  --color-go: #4ADE80;
+  --color-go-dim: #0B2817;
+  --color-reject: #FB7185;
+  --color-reject-dim: #2E0B14;
+
+  --color-probe: #A9B6FF;
+  --color-probe-dim: #141729;
+
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+
+  --radius-edge: 0px;
+  --radius-cut: 2px;
+
+  /* The one motion curve: mass and spring, never linear. */
+  --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-rule);
+    min-width: 0;
+  }
+
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    background-color: #000000;
+  }
+
+  body {
+    background-color: var(--color-ink-0);
+    color: var(--color-scribe);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Every figure in this product is a measurement; none of them may jitter. */
+  :where(table, .tnum, input, output, time, code, kbd, samp) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p, li {
+    text-wrap: pretty;
+  }
+
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+  }
+
+  /* The surfaces the browser draws still belong to the design. */
+  ::selection {
+    background-color: var(--color-signal);
+    color: var(--color-ink-0);
+  }
+
+  :where(input, textarea) {
+    caret-color: var(--color-signal);
+  }
+
+  :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-strong) transparent;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--color-ink-0); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-rule-strong);
+    border: 3px solid var(--color-ink-0);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-signal); }
+}
+
+@layer components {
+  /* A dimension line: the rule that separates two things on a drawing, with
+     its terminators. Used wherever a division is structural. */
+  .dim-rule {
+    position: relative;
+    height: 1px;
+    background-color: var(--color-rule);
+  }
+
+  .dim-rule::before,
+  .dim-rule::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    width: 1px;
+    height: 7px;
+    background-color: var(--color-rule-strong);
+  }
+
+  .dim-rule::before { left: 0; }
+  .dim-rule::after { right: 0; }
+
+  /* Hatching for out-of-tolerance regions and any area the operator cannot act
+     in. Drawn, not tinted, so it survives without depending on colour. */
+  .hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0 3px,
+      color-mix(in oklab, var(--color-rule-strong) 80%, transparent) 3px 4px
+    );
+  }
+
+  .panel {
+    background-color: var(--color-ink-1);
+    border: 1px solid var(--color-rule);
+    border-radius: 16px;
+  }
+
+  /* Dark glass: the nav pill and floating controls. Opaque enough that
+     whatever scrolls beneath never reads through it. */
+  .glass {
+    background-color: rgb(10 10 12 / 0.92);
+    border: 1px solid rgb(255 255 255 / 0.09);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+
+  /* The hero heading: white into grey, left to right, on the text only. */
+  .heading-glow {
+    background-image: linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 35%, #9B9B9B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* The accent word, as the reference sets it: violet into orchid. */
+  .text-prism {
+    background-image: linear-gradient(90deg, #A78BFA, #E879F9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Renders on black blend into the page: black is transparent under screen. */
+  .glass-art {
+    mix-blend-mode: screen;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Uppercase and letterspaced costs legibility, so labels sit a step above
+     the 11px functional floor rather than on it. */
+  .label {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--color-scribe-3);
+  }
+
+  /* The wordmark: the display face, cut tight. Uppercase at this size needs
+     negative tracking to stop reading as spaced-out letters rather than a
+     name, and it sits against a drawn mark whose strokes are all one weight. */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes thenar-draw {
+  0%   { stroke-dashoffset: 1; }
+  45%  { stroke-dashoffset: 0; }
+  85%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 1; }
+}
+
+/* -------------------------------------------------------------------------
+   Print.
+
+   The task page is a work order: an instruction, a rate, a tolerance, a par
+   time. Printed, it should read as one — which means dropping the things that
+   only make sense on a screen (navigation, connect button, 3D canvases, the
+   banner) and putting the ink back on white. Explorer links print their URL,
+   because a printed hash with no destination is not verifiable by anyone.
+   ------------------------------------------------------------------------- */
+@media print {
+  :root {
+    --ink-0: #ffffff; --ink-1: #ffffff; --ink-2: #ffffff; --ink-3: #ffffff;
+    --scribe: #000000; --scribe-2: #1C1C1C; --scribe-3: #4A4A4A;
+    --rule: #C8C8C8; --rule-strong: #8F8F8F;
+  }
+
+  html, body { background: #ffffff !important; color: #000000 !important; }
+
+  header, nav, footer, canvas,
+  [role="status"], [data-print="hide"] { display: none !important; }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 12px;
+    color: var(--scribe-3);
+    word-break: break-all;
+  }
+
+  /* Keep a reading measure on paper rather than the screen's full width. */
+  main { max-width: none !important; padding: 0 !important; }
+
+  /* Nothing should be split across a page break mid-figure. */
+  li, dl, table, section { break-inside: avoid; }
+}
+
+@keyframes labs-rise {
+  from { transform: translateY(48px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes labs-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}

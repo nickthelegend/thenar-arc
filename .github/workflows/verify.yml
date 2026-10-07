@@ -1,0 +1,145 @@
+name: verify
+
+# Three jobs on every push:
+# - static: types, lint and unit tests;
+# - contracts: the contract suite, its gas snapshot and lint;
+# - localnet: the whole product on a local chain. Anvil gets the same contracts
+#   DeployMonad.s.sol puts on Monad, the app is built against them, and every
+#   page and API is checked with real signed transactions behind them.
+# On a schedule, a read-only check of the deployed site catches drift that
+# happens without a commit: the ledger falling out of step with the chain.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      deep:
+        description: "Also run the itemised qa-* suite against https://thenar.io"
+        type: boolean
+        default: false
+
+jobs:
+  static:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm exec eslint .
+      - run: pnpm test:unit
+      # Every model has to be a real glTF 2.0 binary, and big enough on screen
+      # to see — this project shipped props at 0.1 x 0.1 pixels once.
+      - run: node scripts/projected-size.mjs
+
+  contracts:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The version the gas snapshot was taken with: gas accounting differs between releases.
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+      # forge-std is not vendored (contracts/lib is ignored); pin the version the suite is written against.
+      - run: forge install foundry-rs/forge-std@v1.16.2 --no-git
+        working-directory: contracts
+      # The contracts hold the escrow and decide the payouts.
+      - run: forge test
+        working-directory: contracts
+      # Gas is a regression surface like any other: a change that quietly
+      # doubles the cost of submitTrajectory is a change that quietly doubles
+      # what an operator pays to be paid. The snapshot is committed, so this
+      # fails until somebody re-snapshots on purpose. One percent of tolerance,
+      # because solc is not bit-identical across patch versions.
+      - run: forge snapshot --check --tolerance 1
+        working-directory: contracts
+      - run: forge lint
+        working-directory: contracts
+
+  localnet:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # The version the gas snapshot was taken with: gas accounting differs between releases.
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+      - run: pnpm install --frozen-lockfile
+      - run: forge install foundry-rs/forge-std@v1.16.2 --no-git
+        working-directory: contracts
+      # Anvil with the Osaka hardfork (the P-256 precompile Monad has), the
+      # contracts, a local USDC and Monad's Multicall3. It writes .env.localnet.
+      # Compiled first, on its own: a cold compile of every contract is most of the deploy's time.
+      - run: forge build
+        working-directory: contracts
+      - name: Start the local chain
+        run: |
+          nohup node scripts/localnet.mjs > localnet.log 2>&1 &
+          for i in $(seq 1 450); do grep -q -E "^ready|Error" localnet.log && break; sleep 2; done
+          cat localnet.log | grep -v "^anvil" | tail -20
+          grep -q "^ready" localnet.log
+      - name: Start the x402 facilitator
+        run: |
+          nohup env NEXT_PUBLIC_CHAIN=local node --import ./test/register.mjs scripts/x402-facilitator.mjs > facilitator.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4021/supported > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:4021/supported > /dev/null
+      - name: Build and serve the app against the local chain
+        run: |
+          nohup node scripts/localnet-app.mjs > app.log 2>&1 &
+          for i in $(seq 1 300); do curl -sf http://localhost:3336/api/health > /dev/null && break; sleep 3; done
+          tail -20 app.log
+          curl -sf http://localhost:3336/api/health > /dev/null
+      - name: Every page and API, on real contracts
+        run: pnpm test:e2e:local
+      - name: Logs
+        if: failure()
+        run: |
+          tail -80 localnet.log | grep -v "^anvil" || true
+          tail -80 facilitator.log || true
+          tail -120 app.log || true
+
+  live:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Read-only against the deployed system, which is the only place the
+      # frontend, the API, the database and the chain are assembled together.
+      - run: node --import ./test/register.mjs test/e2e.mjs
+        env:
+          BASE: https://thenar.io
+      # The itemised qa-* suite assumes paid runs on the Monad deployment, which
+      # it will have after the testnet go (docs/DEPLOY-LATER.md). Until then it
+      # runs only when asked.
+      - if: inputs.deep
+        run: |
+          node scripts/qa-api.mjs https://thenar.io
+          node --import ./test/register.mjs scripts/qa-chain.mjs
+          node scripts/qa-post.mjs
+          pnpm exec playwright install --with-deps chromium
+          node scripts/qa-pages.mjs https://thenar.io
+          node scripts/qa-contracts.mjs https://thenar.io
+          node scripts/qa-deep.mjs
+          node scripts/qa-matrix.mjs https://thenar.io
