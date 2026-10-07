@@ -31,10 +31,9 @@ import { soundOn, setSound } from "@/lib/click";
 import { txUrl, CURRENCY, CHAIN_SHORT, FAUCET_URL, LOW_GAS_BALANCE, LOCALNET, appChain } from "@/lib/chain";
 import { sceneForTask } from "@/lib/props";
 import { cn } from "@/lib/cn";
-import { fmtGasCost, fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { fmtGasCost, fmtUsdc, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import type { Sample, Verdict } from "@/lib/types";
-import { useGasSponsored } from "@/lib/contract-write";
-import { MonadHeartbeat } from "@/components/monad-pipeline";
+import { ArcHeartbeat } from "@/components/arc-finality";
 import { ReceiptTimers } from "@/components/receipt-timers";
 
 const StationViewport = dynamic(
@@ -88,7 +87,6 @@ export default function StationPage() {
   const task = useCatalogueTask(valid ? taskId : undefined);
   const { data: myRuns } = useRunsOnTask(valid ? taskId : undefined);
   const s = useSession();
-  const gasSponsored = useGasSponsored();
   // Presence in this task's room. It never touches the measurement: the
   // trajectory is recorded and signed exactly as it is with the room empty.
   const { ghosts, report } = useSpace(taskId, s.address, valid);
@@ -224,7 +222,7 @@ export default function StationPage() {
             deviationMm: t.deviationMm,
           },
           task.parSeconds,
-          task.rewardMon,
+          task.rewardUsdc,
           goalFor(task.chainName),
         ),
       );
@@ -319,8 +317,8 @@ export default function StationPage() {
     if (tx.phase !== "confirmed" || !tx.txHash) return;
     if (countedPaid.current === tx.txHash) return;
     countedPaid.current = tx.txHash;
-    setTally(notePaid(tx.paidMon ?? 0));
-  }, [tx.phase, tx.txHash, tx.paidMon]);
+    setTally(notePaid(tx.paidUsdc ?? 0));
+  }, [tx.phase, tx.txHash, tx.paidUsdc]);
 
   // Offer it back once, on arrival, if this tab was interrupted mid-flow.
   const [recovered, setRecovered] = useState<ReturnType<typeof loadDraft>>(null);
@@ -474,8 +472,8 @@ export default function StationPage() {
   const announcement =
     tx.phase === "verifying" ? "Verifying the run."
     : tx.phase === "signing" ? "Waiting for you to confirm in your wallet."
-    : tx.phase === "pending" ? "Transaction sent. Waiting for it to execute and become final."
-    : tx.phase === "confirmed" ? `Run recorded and paid. ${fmtMon(tx.paidMon ?? 0)} ${CURRENCY}.`
+    : tx.phase === "pending" ? "Transaction sent. Waiting for the block that makes it final."
+    : tx.phase === "confirmed" ? `Run recorded and paid. ${fmtUsdc(tx.paidUsdc ?? 0)} ${CURRENCY}.`
     : tx.phase === "error" ? `Submission failed. ${tx.error ?? ""}`
     : verdict ? `Measurement taken. ${verdict.success ? "In tolerance" : "Out of tolerance"}, score ${fmtScore(verdict.score)}.`
     : null;
@@ -494,13 +492,10 @@ export default function StationPage() {
   // Practice is forced when there is nothing to pay for, and chosen when a
   // first-time operator would rather not spend a slot learning the controls.
   const practice = !task.open || capped || chosePractice || policyOn || repeatOn;
-  // Monad charges a submit its whole gas limit at the offered fee, whatever it
-  // spends, and rejects the transaction outright when the balance cannot cover
-  // that. The floor is LOW_GAS_BALANCE, the same one every banner uses, so the
-  // station and the header cannot disagree about the same wallet.
-  const RESERVE_FLOOR = LOW_GAS_BALANCE;
-  // When Privy pays the gas, an empty wallet can still submit.
-  const thinOnGas = s.connected && !s.wrongNetwork && !gasSponsored && s.balance < RESERVE_FLOOR;
+  // Gas on Arc is USDC, and a submit costs a fraction of a cent of it. The
+  // floor is LOW_GAS_BALANCE, the same one every banner uses, so the station
+  // and the header cannot disagree about the same wallet.
+  const thinOnGas = s.connected && !s.wrongNetwork && s.balance < LOW_GAS_BALANCE;
 
   return (
     <div className="flex min-h-dvh flex-col bg-ink-1 lg:h-dvh lg:overflow-hidden">
@@ -770,7 +765,7 @@ export default function StationPage() {
               verdict={verdict}
               accepted={accepted}
               practice={practice}
-              rewardMon={task.rewardMon}
+              rewardUsdc={task.rewardUsdc}
               parSeconds={task.parSeconds}
               session={s}
               thinOnGas={thinOnGas}
@@ -795,7 +790,7 @@ export default function StationPage() {
           <div>
             <p className="text-xs text-scribe-3">Paid per run</p>
             <p className="mt-1 text-3xl font-medium tabular-nums text-signal">
-              {fmtMon(task.rewardMon)} <span className="text-base text-scribe-3">{CURRENCY}</span>
+              {fmtUsdc(task.rewardUsdc)} <span className="text-base text-scribe-3">{CURRENCY}</span>
             </p>
             <div className="mt-3 flex items-center justify-between text-xs text-scribe-3">
               <span>{task.slotsTotal - task.slotsFilled} of {task.slotsTotal} runs left</span>
@@ -812,14 +807,14 @@ export default function StationPage() {
             )}
           </div>
 
-          {/* The network a run settles on, live: its blocks moving through consensus. */}
-          <MonadHeartbeat />
+          {/* The network a run settles on, live: each block final when it is made. */}
+          <ArcHeartbeat />
 
           {tally && tally.measured > 0 ? (
             <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 p-3 text-center">
               <div><p className="text-lg tabular-nums">{tally.measured}</p><p className="text-[11px] text-scribe-3">runs</p></div>
               <div><p className="text-lg tabular-nums">{tally.best ? fmtScore(tally.best) : "—"}</p><p className="text-[11px] text-scribe-3">best</p></div>
-              <div><p className="text-lg tabular-nums text-signal">{fmtMon(tally.earned, 4)}</p><p className="text-[11px] text-scribe-3">earned</p></div>
+              <div><p className="text-lg tabular-nums text-signal">{fmtUsdc(tally.earned, 4)}</p><p className="text-[11px] text-scribe-3">earned</p></div>
             </div>
           ) : null}
 
@@ -856,14 +851,14 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, practice, rewardMon, parSeconds, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
+  verdict, accepted, practice, rewardUsdc, parSeconds, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
   verdict: Verdict;
   accepted: boolean;
   /** The chain will not pay this one, and said so before it started. */
   practice: boolean;
   /** This task's rate, so a lost point can be priced. */
-  rewardMon: number;
+  rewardUsdc: number;
   /** Par for this task, so a rejected run can be told what time would have paid. */
   parSeconds: number;
   session: ReturnType<typeof useSession>;
@@ -873,16 +868,13 @@ function MeasurementSnap({
   onAgain: () => void;
   onLeave: () => void;
 }) {
-  // The same floor the warning is raised at; the note said 0.05 while the
-  // warning appeared under 0.1.
-  const RESERVE_FLOOR = LOW_GAS_BALANCE;
   const busy = tx.phase === "verifying" || tx.phase === "signing" || tx.phase === "pending";
   const done = tx.phase === "confirmed";
 
   const label =
     tx.phase === "verifying" ? "Verifying the run…"
     : tx.phase === "signing" ? "Confirm in your wallet…"
-    : tx.phase === "pending" ? (tx.timers?.executedMs !== undefined ? "Executed, waiting for finality…" : "Waiting for the block…")
+    : tx.phase === "pending" ? "Waiting for the block…"
     : practice ? "Practice run — nothing to submit"
     : s.wrongNetwork ? `Switch to ${appChain.name}`
     : !s.connected ? "Connect a wallet to get paid"
@@ -936,13 +928,13 @@ function MeasurementSnap({
               Where the points went
             </summary>
             <ul className="mt-3 flex flex-col gap-3">
-              {shortfalls(verdict, rewardMon).map((s) => (
+              {shortfalls(verdict, rewardUsdc).map((s) => (
                 <li key={s.key} className="flex flex-col gap-1">
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-mono text-[13px] text-scribe">{s.label}</span>
                     <span className="font-mono text-[12px] tabular-nums text-scribe-3">
                       {s.lost > 0 ? `-${(s.lost / 100).toFixed(2)} pts` : "no loss"}
-                      {s.costMon > 0 ? ` \u00b7 ${fmtMon(s.costMon, 4)} ${CURRENCY}` : ""}
+                      {s.costMon > 0 ? ` \u00b7 ${fmtUsdc(s.costMon, 4)} ${CURRENCY}` : ""}
                     </span>
                   </span>
                   <span className="font-mono text-[12px] text-scribe-3">{s.reading}</span>
@@ -975,7 +967,7 @@ function MeasurementSnap({
             <div className="flex items-end justify-between border-t border-rule pt-4">
               <span className="label">{done ? "Paid to your wallet" : "Payable on submit"}</span>
               <span className="font-mono text-4xl font-medium leading-none tracking-[-0.02em] text-signal">
-                {done ? <CountUp to={tx.paidMon ?? verdict.payoutMon} /> : fmtMon(verdict.payoutMon)}
+                {done ? <CountUp to={tx.paidUsdc ?? verdict.payoutMon} /> : fmtUsdc(verdict.payoutMon, 4)}
                 <span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
               </span>
             </div>
@@ -1000,7 +992,7 @@ function MeasurementSnap({
               signature over this exact trajectory and that does not exist until
               the submit is under way, so this is what the last handful of real
               submissions burned, priced at the gas the chain is quoting now. */}
-          {accepted && !done && !practice ? <SubmitCostLine withPasskey={false} payoutMon={verdict.payoutMon} /> : null}
+          {accepted && !done && !practice ? <SubmitCostLine withPasskey={false} payoutUsdc={verdict.payoutMon} /> : null}
 
           {tx.phase === "pending" && tx.timers ? (
             <div className="border-t border-rule pt-3 font-mono text-[12px]"><ReceiptTimers timers={tx.timers} /></div>
@@ -1015,26 +1007,39 @@ function MeasurementSnap({
                 </a>
               </span>
               <ReceiptTimers timers={tx.timers} />
+              {tx.deferred ? (
+                <span className="text-signal">
+                  The USDC transfer to your wallet was refused, so the payout waits in the protocol as claimable. Claim it from{" "}
+                  <Link href="/portfolio" className="underline">your portfolio</Link>.
+                </span>
+              ) : null}
               <span>
-                gas <span className="text-scribe-2 tabular-nums">{(tx.gasMon ?? 0).toFixed(6)}</span> {CURRENCY}
-                {tx.gasLimit !== undefined && tx.gasUsed !== undefined ? (
-                  <>
-                    {" "}· limit <span className="tabular-nums">{tx.gasLimit.toLocaleString("en-US")}</span>, used{" "}
-                    <span className="tabular-nums">{tx.gasUsed.toLocaleString("en-US")}</span>
-                    {LOCALNET ? " (a local chain charges what is used; Monad charges the limit, set at the estimate plus a tenth)" : " (Monad charges the limit, set at the estimate plus a tenth)"}
+                gas <span className="text-scribe-2 tabular-nums">{fmtGasCost(tx.gasUsdc ?? 0, CURRENCY)}</span>, paid in USDC
+                {tx.gasUsed !== undefined ? (
+                  <> · <span className="tabular-nums">{tx.gasUsed.toLocaleString("en-US")}</span> gas used
+                    {tx.gasLimit !== undefined ? <> of a <span className="tabular-nums">{tx.gasLimit.toLocaleString("en-US")}</span> limit (estimate plus a fifth; Arc charges what is used)</> : null}
                   </>
                 ) : null}
               </span>
+              {tx.memo ? (
+                tx.memo.tagged ? (
+                  <span data-testid="run-memo">
+                    Memo-tagged on {CHAIN_SHORT}: <span className="text-scribe-2">{tx.memo.line}</span> · memo id{" "}
+                    <span className="text-scribe-2">{shortHash(tx.memo.memoId)}</span> (the run id)
+                  </span>
+                ) : (
+                  <span data-testid="run-memo">Untagged: {tx.memo.reason}.</span>
+                )
+              ) : null}
             </div>
           ) : null}
 
           {thinOnGas && !done ? (
             <p className="border border-signal bg-signal-dim px-3 py-2 text-[13px] leading-relaxed text-signal">
-              Your balance is {fmtMon(s.balance, 4)} {CURRENCY}. The chain reserves against
-              the whole gas limit, so a submit needs roughly {RESERVE_FLOOR} {CURRENCY}{" "}
-              on hand even though it spends a fraction of that.{" "}
-              <a href={FAUCET_URL} target="_blank" rel="noreferrer" className="underline">
-                Top up
+              Your balance is {fmtUsdc(s.balance, 4)} {CURRENCY}. Gas on {CHAIN_SHORT} is paid in USDC, and a submit
+              needs a little on hand (about {LOW_GAS_BALANCE} {CURRENCY} covers many).{" "}
+              <a href={FAUCET_URL} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })} className="underline">
+                {LOCALNET ? "Fund it from the fork's faucet" : "Top up"}
               </a>
               .
             </p>
@@ -1167,24 +1172,14 @@ function Key({ keys, action }: { keys: string[]; action: string }) {
  * inventing a number. A cost quoted from no observations is worse than an
  * unanswered question.
  */
-function SubmitCostLine({ withPasskey, payoutMon }: { withPasskey: boolean; payoutMon: number }) {
+function SubmitCostLine({ withPasskey, payoutUsdc }: { withPasskey: boolean; payoutUsdc: number }) {
   const cost = useSubmitCost(withPasskey);
-  const sponsored = useGasSponsored();
-  // A sponsored wallet pays no gas, so quoting what others paid would understate its payout.
-  if (sponsored) {
-    return (
-      <p className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
-        <span>Gas on submit is paid by the sponsor, not by you</span>
-        <span>net <span className="tabular-nums text-scribe-2">{fmtMon(payoutMon, 4)}</span> {CURRENCY}</span>
-      </p>
-    );
-  }
   if (!cost) return null;
 
   // Nothing has gone down this path yet, so there is nothing to quote. Said
   // rather than left blank: the panel's job is to answer "what will this cost",
   // and "no run has been charged this way yet" is an answer.
-  if (cost.costMon === null || cost.medianGas === null) {
+  if (cost.costUsdc === null || cost.medianGas === null) {
     return (
       <p className="border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
         {withPasskey
@@ -1194,8 +1189,9 @@ function SubmitCostLine({ withPasskey, payoutMon }: { withPasskey: boolean; payo
     );
   }
 
-  const net = payoutMon - cost.costMon;
-  const gwei = Number(cost.gasPriceWei) / 1e9;
+  const net = payoutUsdc - cost.costUsdc;
+  // The gas price is native USDC per gas at 18 decimals, so gwei here is a billionth of a dollar per gas.
+  const gwei = Number(cost.gasPrice) / 1e9;
   const spread = cost.lowGas !== cost.highGas;
 
   return (
@@ -1203,28 +1199,19 @@ function SubmitCostLine({ withPasskey, payoutMon }: { withPasskey: boolean; payo
       <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span>
           Gas on submit, about{" "}
-          <span className="tabular-nums text-scribe-2">{fmtGasCost(cost.costMon, CURRENCY)}</span>
+          <span className="tabular-nums text-scribe-2">{fmtGasCost(cost.costUsdc, CURRENCY)}</span>
         </span>
         <span>
-          net <span className="tabular-nums text-scribe-2">{fmtMon(net, 4)}</span> {CURRENCY}
+          net <span className="tabular-nums text-scribe-2">{fmtUsdc(net, 4)}</span> {CURRENCY}
         </span>
       </span>
       <span>
         {cost.medianGas.toLocaleString()} gas
         {spread ? ` (${cost.lowGas!.toLocaleString()}–${cost.highGas!.toLocaleString()})` : ""}
         {" across "}
-        {cost.samples} measured {cost.samples === 1 ? "submit" : "submits"}, at{" "}
-        {gwei < 0.001 ? `${Number(cost.gasPriceWei).toLocaleString()} wei` : `${gwei.toFixed(2)} gwei`}
+        {cost.samples} measured {cost.samples === 1 ? "submit" : "submits"}, at {gwei.toFixed(2)} gwei of USDC
         {withPasskey ? " \u00b7 passkey path" : ""}
       </span>
-      {/* Not a warning and not advice — a measured property of this chain that
-          changes what a run costs, and the operator is the one paying it. */}
-      {cost.chargedToTheLimit ? (
-        <span className="text-scribe-3">
-          Every one of those was charged at least half the gas limit its wallet
-          set, so the wallet&rsquo;s safety margin is part of the price.
-        </span>
-      ) : null}
     </div>
   );
 }

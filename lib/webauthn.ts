@@ -1,5 +1,5 @@
 /**
- * The arithmetic between a WebAuthn assertion and Monad's P-256 precompile,
+ * The arithmetic between a WebAuthn assertion and Arc's P-256 precompile (0x0100),
  * shared by the server that admits operators and the page that lets them
  * check it themselves, so both compute the same digest byte for byte.
  */

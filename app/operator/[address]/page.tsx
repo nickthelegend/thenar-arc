@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { INDEX_CONFIGURED, INDEX_MISSING, fetchIndex } from "@/lib/index-config";
-import { formatEther, getAddress, isAddress } from "viem";
-import { useReadContract } from "wagmi";
+import { getAddress, isAddress, type Address } from "viem";
+import { useAccount, useReadContract } from "wagmi";
 import { DimRule } from "@/components/primitives";
-import { addressUrl, txUrlOn, appChain, CURRENCY, AXON_ADDRESS } from "@/lib/chain";
-import { fmtGasCost, fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
+import { addressUrl, txUrlOn, appChain, CURRENCY, AXON_ADDRESS, LOCALNET } from "@/lib/chain";
+import { formatUsdc } from "@/lib/usdc";
+import { CctpWithdraw, ClaimPanel, useClaimable, useUsdcBalance } from "@/components/operator-money";
+import { fmtGasCost, fmtInt, fmtUsdc, fmtScore, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { badgesFor, ACCEPTED_MEANS } from "@/lib/badges";
 import { Progression } from "@/components/progression";
@@ -31,7 +33,7 @@ type Settlement = {
  * wallet connected. Neither lets you look up a contributor — which is what a
  * buyer does when deciding whether a corpus is worth paying for, and what a
  * contributor does when they want a link to their own work. Both halves are
- * public: the runs from the ledger, the calls from Monadscan's index.
+ * public: the runs from the ledger, the calls from Arc's explorer index.
  */
 export default function OperatorPage() {
   const { address: raw } = useParams<{ address: string }>();
@@ -39,6 +41,10 @@ export default function OperatorPage() {
   // in its checksummed form.
   const valid = typeof raw === "string" && isAddress(raw, { strict: false });
   const address = valid ? getAddress(raw.toLowerCase()) : raw;
+  const { address: connected } = useAccount();
+  const own = valid && connected?.toLowerCase() === String(address).toLowerCase();
+  const { data: usdcBal } = useUsdcBalance(valid ? (address as Address) : null);
+  const { data: claimable } = useClaimable(valid ? (address as Address) : null);
 
   const [runs, setRuns] = useState<Run[] | null>(null);
   const [runsFailed, setRunsFailed] = useState<string | null>(null);
@@ -145,7 +151,8 @@ export default function OperatorPage() {
   const best = accepted.length ? Math.max(...accepted.map((r) => r.score)) : 0;
   const mean = accepted.length ? accepted.reduce((n, r) => n + r.score, 0) / accepted.length : 0;
   const gas = (calls ?? []).reduce((n, c) => n + c.fee, 0);
-  const earned = chainStats ? Number(formatEther((chainStats as readonly bigint[])[1])) : null;
+  // Earned is USDC base units (6 dec), as every amount the protocol holds.
+  const earned = chainStats ? Number(formatUsdc((chainStats as readonly bigint[])[1])) : null;
   const badges = badgesFor(accepted);
   const scored: ScoredRun[] = accepted.map((r) => ({
     score: r.score,
@@ -165,7 +172,7 @@ export default function OperatorPage() {
     <div className="mx-auto max-w-[1000px] px-5 py-8">
       <span className="label">Operator</span>
       <h1 className="mt-1 break-all font-mono text-2xl text-scribe">{address}</h1>
-      <a href={addressUrl(address)} target="_blank" rel="noreferrer"
+      <a href={addressUrl(address)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer"
          className="mt-2 inline-block font-mono text-[12px] text-scribe-3 hover:text-probe">
         on {appChain.blockExplorers.default.name} &rarr;
       </a>
@@ -179,7 +186,9 @@ export default function OperatorPage() {
         <Reading label="Mean score" value={accepted.length ? fmtScore(Math.round(mean)) : "—"} />
         <Reading label="Protocol calls" value={calls === null ? "—" : fmtInt(calls.length)} />
         <Reading label="Reverted" value={calls === null ? "—" : fmtInt(reverted)} tone={reverted ? "reject" : undefined} />
-        <Reading label="Earned on chain" value={earned === null ? "—" : fmtMon(earned, 6)} unit={CURRENCY} tone="signal" />
+        <Reading label="Earned on chain" value={earned === null ? "—" : fmtUsdc(earned, 4)} unit={CURRENCY} tone="signal" />
+        <Reading label="USDC balance" value={usdcBal === undefined ? "—" : fmtUsdc(Number(formatUsdc(usdcBal as bigint)), 4)} unit={CURRENCY} />
+        {claimable ? <Reading label="Claimable" value={fmtUsdc(Number(formatUsdc(claimable as bigint)), 4)} unit={CURRENCY} tone="signal" /> : null}
         <Reading label="Gas paid" value={calls === null ? "—" : gas.toFixed(9)} unit={CURRENCY} />
       </div>
 
@@ -189,7 +198,7 @@ export default function OperatorPage() {
       {earned !== null && earned > 0 && calls !== null && gas > 0 ? (
         <p className="mt-3 max-w-[70ch] text-[13px] leading-relaxed text-scribe-2">
           This address earned{" "}
-          <span className="font-mono tabular-nums text-scribe">{fmtMon(earned, 6)} {CURRENCY}</span>{" "}
+          <span className="font-mono tabular-nums text-scribe">{fmtUsdc(earned, 4)} {CURRENCY}</span>{" "}
           and paid{" "}
           <span className="font-mono tabular-nums text-scribe">{fmtGasCost(gas, CURRENCY)}</span>{" "}
           in gas to do it &mdash; the work is worth{" "}
@@ -205,6 +214,8 @@ export default function OperatorPage() {
           sync is callable by anyone for anyone by design, and was callable from
           nowhere. */}
       <RecordSync address={address as `0x${string}`} />
+
+      {own ? <ClaimPanel address={address as Address} /> : null}
 
       <DimRule className="mt-8" note="What the record says" />
       <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
@@ -297,7 +308,7 @@ export default function OperatorPage() {
               <span className="hidden font-mono text-[13px] tabular-nums text-scribe-2 sm:block">{fmtScore(r.score)}</span>
               <span className="hidden font-mono text-[12px] tabular-nums text-scribe-3 sm:block">{r.deviation_mm.toFixed(1)} mm</span>
               {r.tx_hash ? (
-                <a href={txUrlOn(appChain.id, r.tx_hash)} target="_blank" rel="noreferrer"
+                <a href={txUrlOn(appChain.id, r.tx_hash)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer"
                    className="font-mono text-[12px] text-scribe-3 hover:text-probe">
                   {shortHash(r.tx_hash)} &rarr;
                 </a>
@@ -307,7 +318,9 @@ export default function OperatorPage() {
         </ol>
       )}
 
-      <DimRule className="mt-10" note="Every call, from Monadscan's index" />
+      {own ? <CctpWithdraw address={address as Address} /> : null}
+
+      <DimRule className="mt-10" note="Every call, from Arc's explorer index" />
       <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-scribe-3">
         Including the ones that reverted, which a ledger of accepted runs by
         definition cannot show.
@@ -329,7 +342,7 @@ export default function OperatorPage() {
               <span className={cn("text-[12px]", c.succeeded ? "text-scribe-3" : "text-reject")}>
                 {c.succeeded ? "ok" : "reverted"}
               </span>
-              <a href={txUrlOn(appChain.id, c.txHash)} target="_blank" rel="noreferrer"
+              <a href={txUrlOn(appChain.id, c.txHash)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer"
                  className="font-mono text-[12px] text-scribe-3 hover:text-probe">
                 {c.txHash.slice(0, 10)}&hellip; &rarr;
               </a>

@@ -1,64 +1,60 @@
 "use client";
 
 import type { Timers } from "@/lib/receipt-timers";
-import { median } from "@/lib/monad-commit";
-import { useMonadStream } from "@/lib/monad-stream";
+import { useArcHeartbeat } from "@/lib/arc-blocks";
 import { cn } from "@/lib/cn";
 
 /**
- * The two timers for a transaction this page sent: executed, then final.
+ * The one timer for a transaction this page sent: send to final.
  *
- * On Monad they are the chain's own pace, measured here. On a local build
- * they are anvil's, which mines on demand and calls every block final at once,
- * so the card says that in words and sets the real network's finality beside
- * it, read live, instead of letting a local number pass for a Monad one.
+ * On Arc a block is final when it is produced, so the receipt is the
+ * settlement and there is nothing after it to wait for. The card shows the
+ * time, the block, and the check behind the word: whether the node's
+ * `finalized` tag already covered that block when it was read. On a fork build
+ * the number is the fork's (its node mines on demand and its finalized tag
+ * trails by dozens of blocks), and the card sets Arc testnet's measured block
+ * interval beside it instead of letting a local number pass for Arc's.
  */
 
-const ms = (v?: number) => (v === undefined ? "…" : v >= 1000 ? `${(v / 1000).toFixed(2)} s` : `${Math.max(0, Math.round(v))} ms`);
+const ms = (v?: number | null) =>
+  v === undefined || v === null ? "…" : v >= 1000 ? `${(v / 1000).toFixed(2)} s` : `${Math.max(0, Math.round(v))} ms`;
 
 export function ReceiptTimers({ timers, className }: { timers?: Timers; className?: string }) {
-  const stream = useMonadStream();
+  const beat = useArcHeartbeat();
   if (!timers) return null;
-  const local = timers.where === "local";
-  const liveFinal = median(stream.pipeline.latencies.Finalized);
-  const rows: [string, string, string, string][] = [];
-  if (timers.seen) rows.push(["seen", "Seen by the node", ms(timers.seen.ms), `txpool_statusByHash: ${timers.seen.status}`]);
-  rows.push([
-    "executed",
-    "Executed",
-    ms(timers.executedMs),
-    timers.via === "eth_sendRawTransactionSync" ? "receipt in the send's own response (eth_sendRawTransactionSync)" : local ? "receipt read back from the node" : "receipt at Proposed, one block in",
-  ]);
-  const lag = timers.finalizedLag;
-  rows.push([
-    "final",
-    "Final",
-    timers.timedOut ? "not seen" : timers.finalMs === undefined ? "waiting" : ms(timers.finalMs),
-    timers.timedOut
-      ? "the finalized tag did not reach this block in time"
-      : `${timers.finalMs === undefined ? "waiting for " : ""}${timers.blockNumber !== undefined ? `block ${timers.blockNumber.toLocaleString("en-US")} ` : ""}${timers.finalMs === undefined ? "to reach the finalized tag" : "at the finalized tag, hash checked"}${timers.moved ? " (it moved to another proposal first)" : ""}${!local && lag !== undefined ? `; the tag trails the head by ${lag} block${lag === 1 ? "" : "s"}` : ""}`,
-  ]);
+  const fork = timers.where === "fork";
+  const block = timers.blockNumber !== undefined ? `block ${timers.blockNumber.toLocaleString("en-US")}` : "";
+  const note = timers.timedOut
+    ? "no receipt arrived in the time allowed"
+    : timers.finalMs === undefined
+      ? "waiting for the block that includes it"
+      : [
+          block,
+          timers.via === "eth_sendRawTransactionSync" ? "receipt in the send's own response" : "receipt read back from the node",
+          timers.finalizedTagCovers === true
+            ? "the finalized tag already covered it"
+            : timers.finalizedTagCovers === false && timers.finalizedLag !== undefined
+              ? `this node's finalized tag trails its head by ${timers.finalizedLag} block${timers.finalizedLag === 1 ? "" : "s"}`
+              : "",
+        ].filter(Boolean).join(" · ");
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)} data-testid="receipt-timers" data-where={timers.where}>
-      <dl className="flex flex-col gap-1">
-        {rows.map(([key, label, value, note]) => (
-          <div key={key} className="flex flex-wrap items-baseline gap-x-3">
-            <dt className="w-[108px] shrink-0 text-scribe-3">{label}</dt>
-            <dd className="w-[64px] shrink-0 tabular-nums text-scribe" data-key={key}>{value}</dd>
-            <dd className="w-full min-w-0 text-scribe-3 [overflow-wrap:anywhere] sm:w-auto sm:flex-1">{note}</dd>
-          </div>
-        ))}
+      <dl className="flex flex-wrap items-baseline gap-x-3">
+        <dt className="w-[108px] shrink-0 text-scribe-3">Final</dt>
+        <dd className="w-[64px] shrink-0 tabular-nums text-scribe" data-key="final">
+          {timers.timedOut ? "not seen" : ms(timers.finalMs)}
+        </dd>
+        <dd className="w-full min-w-0 text-scribe-3 [overflow-wrap:anywhere] sm:w-auto sm:flex-1">{note}</dd>
       </dl>
       <p className="leading-relaxed text-scribe-3">
-        {local ? (
+        {fork ? (
           <>
-            Local chain timings, not Monad&rsquo;s: anvil mines on demand, and its finalized tag trails the head by
-            {lag !== undefined ? ` ${lag} blocks` : " dozens of blocks"}, the way Ethereum&rsquo;s trails by two epochs. Monad&rsquo;s trails by two.
-            {liveFinal !== null ? <> Monad testnet right now finalizes a block {ms(liveFinal)} after it is proposed, measured live in this page.</> : null}
+            Timed on the local Arc fork, not on Arc: the fork&rsquo;s node mines on demand.
+            {beat.intervalMs !== null ? <> Arc testnet right now makes a block every {ms(beat.intervalMs)}, and a block is final when it is made.</> : null}
           </>
         ) : (
-          <>Measured in this browser on Monad testnet, from the moment the wallet sent the transaction. The signing prompt is in neither number.</>
+          <>Measured in this browser on {"Arc"}, from the moment the wallet sent the transaction to its receipt. Arc is final on inclusion, so that is the whole wait.</>
         )}
       </p>
     </div>

@@ -10,6 +10,8 @@ import { explainTxError } from "./submit";
 
 export type TxPhase = "idle" | "signing" | "pending" | "confirmed" | "error";
 
+type Target = { address: `0x${string}`; abi: readonly unknown[] };
+
 /** One shared write path so every transaction reports the same way. */
 export function useThenarWrite() {
   const client = usePublicClient();
@@ -31,19 +33,29 @@ export function useThenarWrite() {
    * Send a write and report it the one way every surface reports one.
    *
    * Defaults to the protocol, because that is where almost every write goes.
-   * The exceptions are real ones and were unreachable for exactly this reason:
-   * minting a run's certificate and buying corpus access are calls to their own
-   * contracts, both open to anyone, both deployed and read by this interface
-   * and callable from none of it. Passing the address and ABI is what lets one
-   * error path and one phase machine cover them too.
+   * The exceptions are real ones: minting a run's certificate, syncing a
+   * contribution record, setting a dividend are calls to their own contracts.
+   * Passing the address and ABI is what lets one error path and one phase
+   * machine cover them too.
+   *
+   * There is no `value`: on Arc every amount is the USDC ERC-20, pulled by the
+   * contract after an approval (lib/usdc-approve.ts). The third argument still
+   * accepts the old `undefined` placeholder so `run(fn, args, undefined, on)`
+   * keeps working; a non-zero native amount is refused rather than sent.
    */
   const run = useCallback(
     async (
       functionName: string,
       args: readonly unknown[],
-      value?: bigint,
-      on?: { address: `0x${string}`; abi: readonly unknown[] },
+      onOrLegacy?: Target | bigint,
+      legacyOn?: Target,
     ) => {
+      if (typeof onOrLegacy === "bigint" && onOrLegacy > 0n) {
+        setPhase("error");
+        setError("Arc writes carry no native value: approve USDC and let the contract pull it.");
+        return null;
+      }
+      const on = typeof onOrLegacy === "object" ? onOrLegacy : legacyOn;
       try {
         setError(undefined);
         setPhase("signing");
@@ -54,12 +66,12 @@ export function useThenarWrite() {
           abi: on?.abi ?? AXON_ABI,
           functionName,
           args,
-          ...(value !== undefined ? { value } : {}),
         });
 
         setTxHash(hash);
         setPhase("pending");
 
+        // Arc is final on inclusion: the receipt is the settlement, not a first confirmation.
         const receipt = await client!.waitForTransactionReceipt({ hash });
         setElapsedMs(performance.now() - started);
 

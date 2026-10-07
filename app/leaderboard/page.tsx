@@ -3,14 +3,13 @@
 import Link from "next/link";
 
 import { DimRule } from "@/components/primitives";
-import { IndexedActivity } from "@/components/indexed-activity";
 import { useEffect, useState } from "react";
 import { useLeaderboard } from "@/lib/hooks";
 import { readSeen, writeSeen, delta, type Seen } from "@/lib/standings-memory";
 import { useSession } from "@/components/session";
 import { CURRENCY } from "@/lib/chain";
 import { cn } from "@/lib/cn";
-import { fmtInt, fmtMon, fmtScore, shortHash } from "@/lib/format";
+import { fmtInt, fmtUsdc, fmtScore, shortHash } from "@/lib/format";
 
 export default function LeaderboardPage() {
   const { standings, isLoading, isError } = useLeaderboard();
@@ -35,10 +34,10 @@ export default function LeaderboardPage() {
     <div className="mx-auto max-w-[1000px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Operators</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        Every accepted run on this contract, read back from its trajectory ledger.
-        Nothing here is a fixture — an address appears the moment its first run is paid.
-        Runs from the Blitz contract and from Avalanche settled on earlier deployments and are
-        kept in the <a href="/archive" className="text-scribe-2 underline underline-offset-2 hover:text-probe">archive</a> instead.
+        Every accepted run on this contract, read back from its trajectory ledger, and what each
+        operator was paid for it in USDC on Arc. Nothing here is a fixture — an address appears the
+        moment its first run is paid. Runs settled on earlier deployments are kept in the{" "}
+        <a href="/archive" className="text-scribe-2 underline underline-offset-2 hover:text-probe">archive</a> instead.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
@@ -53,7 +52,7 @@ export default function LeaderboardPage() {
         <span className="flex items-baseline gap-2">
           <span className="label">Paid out</span>
           <span className="font-mono text-[15px] tabular-nums text-signal">
-            {fmtMon(totalPaid, 4)} <span className="text-[12px] text-scribe-3">{CURRENCY}</span>
+            {fmtUsdc(totalPaid, 4)} <span className="text-[12px] text-scribe-3">{CURRENCY}</span>
           </span>
         </span>
       </div>
@@ -111,14 +110,13 @@ export default function LeaderboardPage() {
                 <Cell label="Runs" value={fmtInt(o.runs)} />
                 <Cell label="Mean" value={fmtScore(o.meanScore)} className="hidden sm:flex" />
                 <Cell label="Tasks" value={String(o.tasks)} className="hidden sm:flex" />
-                <Cell label="Earned" value={fmtMon(o.earned, 4)} tone="signal" className="hidden sm:flex" />
+                <Cell label="Earned" value={fmtUsdc(o.earned, 4)} tone="signal" className="hidden sm:flex" />
               </li>
             );
           })}
         </ol>
       )}
 
-      <IndexedActivity />
     </div>
   );
 }

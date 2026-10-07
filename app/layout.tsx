@@ -42,11 +42,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://thenar.io"),
   title: "ThenarLabs — we build physical AI",
   description:
-    "ThenarLabs builds robots, the teleoperation that drives them, and Thenar: the data foundry where people are paid on Monad for every run they record.",
+    "ThenarLabs builds robots, the teleoperation that drives them, and Thenar: the data foundry where people are paid in USDC on Arc for every run they record.",
   openGraph: {
     title: "ThenarLabs — we build physical AI",
     description:
-      "Drive a robot arm, get measured against the datum, and get paid on Monad in the transaction that records the run.",
+      "Drive a robot arm, get measured against the datum, and get paid in USDC on Arc in the transaction that records the run.",
     type: "website",
     // A static file rather than the opengraph-image route convention. That
     // convention built locally, appeared in the routes manifest and produced
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ThenarLabs — we build physical AI",
     description:
-      "Drive a robot arm, get measured against the datum, and get paid on Monad in the transaction that records the run.",
+      "Drive a robot arm, get measured against the datum, and get paid in USDC on Arc in the transaction that records the run.",
     images: ["/og.png"],
   },
 };
@@ -91,12 +91,16 @@ export default function RootLayout({
         <Providers>
           <LocaleReady>
             <SiteNav />
-            {/* The copy across the site names Monad, where Thenar runs. A local
-                build says, on every page, that this is not Monad. */}
+            {/* The copy across the site names Arc, where Thenar runs. A fork
+                build says, on every page, that its transactions are on a local
+                copy of Arc testnet, not on Arc. */}
             {LOCALNET ? (
               <div data-testid="localnet-banner" className="border-b border-rule bg-ink-1 px-5 py-1.5 text-center font-mono text-[12px] text-scribe-2">
-                Local chain: every transaction here is on {appChain.name} ({appChain.id}) on this machine, not on Monad.{" "}
+                Local Arc fork: every transaction here is on a fork of Arc testnet (chain {appChain.id}) running on this
+                machine, with Circle&rsquo;s real USDC, CCTP, Gateway and ERC-8004 contracts. Nothing here touches Arc.{" "}
                 <a href="/localnet" className="text-probe hover:underline">Wallet and faucet</a>
+                {" · "}
+                <a href="/arc" className="text-probe hover:underline">The Arc stack</a>
               </div>
             ) : null}
             <Conditions />

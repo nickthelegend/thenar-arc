@@ -3,10 +3,21 @@
 import { useCallback, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { useContractWrite } from "./contract-write";
-import { BaseError, ContractFunctionRevertedError, UserRejectedRequestError, toFunctionSelector } from "viem";
+import {
+  BaseError, ContractFunctionRevertedError, UserRejectedRequestError, decodeEventLog, encodeFunctionData,
+  toFunctionSelector, type Hex, type TransactionReceipt,
+} from "viem";
+import { formatAbiItem } from "viem/utils";
+import { PASSKEY_ABI } from "./passkey-abi";
+import {
+  CONTRIBUTION_RECORD_ABI, CORPUS_AUDIT_ABI, CORPUS_SHARES_ABI, SALES_LOG_ABI, THENAR_CCIP_RECEIVER_ABI,
+  THENAR_VERDICTS_ABI, TRAJECTORY_CERTIFICATE_ABI,
+} from "./registry-abi";
 import { AXON_ABI } from "./abi";
-import { AXON_ADDRESS, LOCALNET } from "./chain";
+import { ARC_EXTERNAL, AXON_ADDRESS, LOCALNET, USDC } from "./chain";
+import { MEMO_ABI, probeMemo, runMemoLine, wrapInMemo } from "./memo";
 import { trackReceipt, type Timers } from "./receipt-timers";
+import { formatNative, formatUsdc } from "./usdc";
 import type { Sample } from "./types";
 import { CURRENCY, FAUCET_URL } from "@/lib/chain";
 
@@ -18,19 +29,33 @@ export type RunShares =
   | { issued: true; tx: string; units?: string; already?: boolean }
   | { issued: false; reason: string };
 
+/**
+ * Whether the run's payout carries an Arc Memo tag (lib/memo.ts): the submit
+ * went through `Memo.memo(protocol, submitTrajectory…, memoId = trajHash, line)`,
+ * so the chain records, indexed by the run id, what the USDC was for.
+ */
+export type RunMemo =
+  | { tagged: true; memoId: Hex; line: string; memoIndex?: bigint }
+  | { tagged: false; reason: string };
+
 export type SubmitState = {
   phase: SubmitPhase;
   txHash?: `0x${string}`;
   trajHash?: `0x${string}`;
   cid?: string;
   score?: number;
-  paidMon?: number;
-  /** Executed and final, measured from the send (lib/receipt-timers.ts). */
+  /** What the protocol paid, in USDC base units (6 dec), read from the receipt's TrajectoryAccepted. */
+  paid?: bigint;
+  paidUsdc?: number;
+  /** The payout's transfer failed and it waits in `claimable` instead (PaymentDeferred). */
+  deferred?: boolean;
+  /** Send to final, measured here (lib/receipt-timers.ts). */
   timers?: Timers;
-  gasMon?: number;
-  /** The transaction's gas limit and the gas it used: Monad charges the first. */
+  /** What the submit cost in gas, in USDC (gas used times price, 18-dec native). */
+  gasUsdc?: number;
   gasLimit?: bigint;
   gasUsed?: bigint;
+  memo?: RunMemo;
   error?: string;
   /** The verifier refused because no passkey has admitted this address yet. */
   passkeyRequired?: boolean;
@@ -39,102 +64,77 @@ export type SubmitState = {
   shares?: RunShares;
 };
 
-/** Turn any wallet or contract failure into a sentence an operator can act on. */
+/**
+ * Whether this node executes Arc's CallFrom (Memo), asked once per page
+ * session. Arc testnet and mainnet do; a local fork's node does not, and
+ * there runs are sent as plain calls and say "untagged".
+ */
+let memoLive: Promise<boolean> | null = null;
+function memoIsLive(client: NonNullable<ReturnType<typeof usePublicClient>>): Promise<boolean> {
+  memoLive ??= probeMemo(client as never, USDC, ARC_EXTERNAL.memo).catch(() => false);
+  return memoLive;
+}
+
+/** What the receipt says the run paid, and whether that payment was deferred to `claimable`. */
+function payoutOf(receipt: TransactionReceipt, trajHash: Hex): { paid?: bigint; deferred: boolean } {
+  let paid: bigint | undefined;
+  let deferred = false;
+  for (const log of receipt.logs) {
+    if (log.address.toLowerCase() !== AXON_ADDRESS.toLowerCase()) continue;
+    try {
+      const ev = decodeEventLog({ abi: AXON_ABI, data: log.data, topics: log.topics });
+      if (ev.eventName === "TrajectoryAccepted" && (ev.args as { trajHash: Hex }).trajHash.toLowerCase() === trajHash.toLowerCase()) {
+        paid = (ev.args as { paid: bigint }).paid;
+      }
+      if (ev.eventName === "PaymentDeferred") deferred = true;
+    } catch {
+      /* not one of the protocol's events */
+    }
+  }
+  return { paid, deferred };
+}
+
+/** The Memo event in a receipt for this run, if the submit was tagged. */
+export function memoOf(receipt: TransactionReceipt, memoId: Hex): { line: string; memoIndex: bigint } | null {
+  for (const log of receipt.logs) {
+    if (log.address.toLowerCase() !== ARC_EXTERNAL.memo.toLowerCase()) continue;
+    try {
+      const ev = decodeEventLog({ abi: MEMO_ABI, data: log.data, topics: log.topics });
+      if (ev.eventName !== "Memo") continue;
+      const a = ev.args as { memoId: Hex; memo: Hex; memoIndex: bigint };
+      if (a.memoId.toLowerCase() !== memoId.toLowerCase()) continue;
+      const bytes = a.memo.slice(2).match(/../g) ?? [];
+      return { line: new TextDecoder().decode(Uint8Array.from(bytes.map((b) => Number.parseInt(b, 16)))), memoIndex: a.memoIndex };
+    } catch {
+      /* not a Memo event */
+    }
+  }
+  return null;
+}
+
 /**
  * Every custom error the deployed contracts declare, by selector.
  *
  * A write made with a pruned ABI that leaves a contract's errors out reverts
- * as a bare selector, and the page showed it as such: "The contract function
- * "mint" reverted with the following signature: 0xddefae28". The selector is
- * enough to name the error, and the name is enough to say what happened.
+ * as a bare selector, and the page showed it as such: "reverted with the
+ * following signature: 0xddefae28". The selector is enough to name the error,
+ * and the name is enough to say what happened. Built from the generated ABIs,
+ * so it names exactly the errors the deployed contracts have, plus Circle's
+ * USDC and CCTP reverts an operator can hit.
  */
-const ERROR_SIGNATURES = [
-  "AccountIsNotInControlList(address)",
-  "AlreadyClaimed()",
-  "AlreadyClaimed(uint256,address)",
-  "AlreadyClosed()",
-  "AlreadyEntered()",
-  "AlreadyExecuted()",
-  "AlreadyLogged(bytes32)",
-  "AlreadyMinted()",
-  "AlreadySettled()",
-  "AlreadySubmitted()",
-  "AlreadyUsed()",
-  "AlreadyVoted()",
-  "BadDuration()",
-  "BadPasskeySignature()",
-  "BadSignature()",
-  "CannotReferYourself()",
-  "CapReached()",
-  "DividendNotPayable(uint256,uint64)",
-  "EmptyCorpus()",
-  "EntryClosed()",
-  "EscrowEmpty()",
-  "ExecutionBeforeRecord(uint64,uint64)",
-  "Expired()",
-  "InsufficientAllowance(uint256,uint256)",
-  "InsufficientBalance(uint256,uint256)",
-  "KeyAlreadySet()",
-  "NoCommitment()",
-  "NoKey()",
-  "NoPasskey()",
-  "NoPolicy()",
-  "NoRecordedWork()",
-  "NoSlots()",
-  "NoStanding()",
-  "NoSuchDividend(uint256)",
-  "NoSuchPolicy()",
-  "NoSuchProposal()",
-  "NoSuchSale(uint256)",
-  "NoSuchTrajectory()",
-  "NoToken()",
-  "NotClosedYet()",
-  "NotEnoughWork()",
-  "NotExpired()",
-  "NotFilled()",
-  "NotFunder()",
-  "NotIssuer()",
-  "NotMessenger()",
-  "NotOnCurve()",
-  "NotSeller()",
-  "NotTheAdder()",
-  "NotTheContributor()",
-  "NotTransferable()",
-  "NotVerifier()",
-  "NothingOwed(uint256,address)",
-  "NothingToClaim()",
-  "NothingToReclaim(uint256)",
-  "NothingToSplit()",
-  "NothingToSync()",
-  "PaymentFailed(address,uint256)",
-  "PotEmpty()",
-  "PrecompileUnavailable()",
-  "RecordDateNotInFuture(uint64)",
-  "ReferrerAtCap()",
-  "ReferrerHasNoWork()",
-  "Rejected()",
-  "ScoreTooHigh()",
-  "ScoreTooLow()",
-  "ShardFull()",
-  "Soulbound()",
-  "StillOpen()",
-  "TaskClosed()",
-  "TooManyContributors()",
-  "TransferFailed()",
-  "TreasuryTooSmall()",
-  "Unchanged()",
-  "Underfunded()",
-  "Underpaid()",
-  "VotingClosed()",
-  "WrongAnnouncer(address)",
-  "WrongFee()",
-  "WrongSourceChain(bytes32)",
-  "ZeroAmount()",
-  "ZeroReward()",
-  "ZeroSlots()",
-];
-const ERROR_BY_SELECTOR = new Map(ERROR_SIGNATURES.map((s) => [toFunctionSelector(s), s.slice(0, s.indexOf("("))]));
+const ERROR_BY_SELECTOR = new Map<string, string>();
+for (const abi of [AXON_ABI, PASSKEY_ABI, TRAJECTORY_CERTIFICATE_ABI, CONTRIBUTION_RECORD_ABI, CORPUS_SHARES_ABI, SALES_LOG_ABI, CORPUS_AUDIT_ABI, THENAR_VERDICTS_ABI, THENAR_CCIP_RECEIVER_ABI] as readonly (readonly unknown[])[]) {
+  for (const item of abi as readonly { type: string; name?: string }[]) {
+    if (item.type !== "error" || !item.name) continue;
+    try {
+      ERROR_BY_SELECTOR.set(toFunctionSelector(formatAbiItem(item as never)), item.name);
+    } catch {
+      /* an error the formatter cannot render is left unnamed */
+    }
+  }
+}
 
+/** Turn any wallet or contract failure into a sentence an operator can act on. */
 export function explainTxError(e: unknown): string {
   if (e instanceof UserRejectedRequestError) return "You rejected the transaction in your wallet.";
   if (e instanceof BaseError) {
@@ -155,7 +155,6 @@ export function explainTxError(e: unknown): string {
         Underfunded: "The escrow does not cover a single run at that rate.",
         ZeroSlots: "A task needs at least one slot.",
         ZeroReward: "A task needs a reward above zero.",
-        WrongFee: "The licence fee sent did not match the price.",
         TooManyContributors: "This task has reached its contributor limit.",
         AlreadyMinted: "This run's certificate has already been minted.",
         NoSuchTrajectory: "The protocol has no run with that number.",
@@ -165,35 +164,24 @@ export function explainTxError(e: unknown): string {
         AlreadyClosed: "This task is already closed.",
         NotFilled: "This task has not filled every slot yet, so its policy cannot be minted.",
         NoSuchPolicy: "There is no policy with that number.",
-        AlreadyVoted: "You have already voted on this proposal.",
-        VotingClosed: "Voting on this proposal has closed.",
-        NotEnoughWork: "Voting needs recorded, paid work on this protocol.",
-        NoStanding: "Voting needs recorded, paid work on this protocol.",
-        AlreadyExecuted: "This proposal has already been executed.",
-        StillOpen: "Voting on this proposal is still open.",
-        BadDuration: "Choose between 1 and 365 days.",
-        Underpaid: "The payment sent was less than the price.",
-        CannotReferYourself: "You cannot credit yourself as your own referrer.",
-        AlreadyUsed: "That has already been used.",
         NothingToSync: "There is no new work to sync.",
         AccountIsNotInControlList: "This address is not on the corpus shares whitelist. Set up your passkey first.",
+        EscrowCapExceeded: "That escrow is above this deployment's per-task cap.",
+        WrongNonce: "The funding authorisation was signed for different task terms. Sign it again.",
+        NoSuchTask: "The protocol has no task with that number.",
+        NothingToClaim: "There is no USDC waiting to be claimed for this address.",
+        SafeERC20FailedOperation: "A USDC transfer failed: check the balance and the approval, then try again.",
+        NoPasskey: "This address has no passkey registered yet. Set one up first.",
+        BadPasskeySignature: "The passkey signature did not verify on chain.",
       };
       if (name && map[name]) return map[name];
       if (name) return `The contract rejected this: ${name}.`;
     }
     const text = `${e.shortMessage ?? ""} ${e.message ?? ""} ${e.details ?? ""}`;
-    // The chain reserves against the gas limit rather than gas used, and the floor
-    // it enforces sits well above value + gas. The wallet's own wording for
-    // this ("Signer had insufficient balance") tells an operator nothing.
-    if (/signer had insufficient balance/i.test(text)) {
-      return (
-        "The chain holds back more than the transaction costs — it reserves against " +
-        "your whole gas limit, not what the transaction actually uses. Top up " +
-        `from ${new URL(FAUCET_URL).host} and try again.`
-      );
-    }
+    if (/exceeds allowance/i.test(text)) return "The USDC approval is short of the amount. Approve it again and retry.";
+    if (/exceeds balance/i.test(text)) return "This wallet does not hold enough USDC for that.";
     if (/insufficient funds/i.test(text)) {
-      return `Not enough ${CURRENCY} to cover gas. Top up from the faucet and try again.`;
+      return `Not enough ${CURRENCY} to cover gas (gas on Arc is USDC). Top up from ${FAUCET_URL.startsWith("/") ? "the fork's faucet" : new URL(FAUCET_URL).host} and try again.`;
     }
     if (/user rejected/i.test(e.shortMessage ?? e.message)) {
       return "You rejected the transaction in your wallet.";
@@ -206,7 +194,7 @@ export function explainTxError(e: unknown): string {
 export function useSubmitRun() {
   const { address } = useAccount();
   const client = usePublicClient();
-  const { writeContractAsync } = useContractWrite();
+  const { writeContractAsync, sendRawAsync } = useContractWrite();
   const [state, setState] = useState<SubmitState>({ phase: "idle" });
 
   const reset = useCallback(() => setState({ phase: "idle" }), []);
@@ -222,14 +210,8 @@ export function useSubmitRun() {
        *  determine them. Sent so the verifier hashes the same scene the
        *  operator actually drove, rather than one it guessed at. */
       payloadIds?: string[];
-      /**
-       * Authorise the run with a registered passkey instead of a wallet
-       * signature. The wallet still sends the transaction and pays the gas;
-       * what changes is that the operator's consent to *this run* is bound to
-       * the trajectory rather than implied by the transaction.
-       */
     }) => {
-      if (!address) {
+      if (!address || !client) {
         setState({ phase: "error", error: "Connect a wallet first." });
         return;
       }
@@ -262,56 +244,77 @@ export function useSubmitRun() {
           return;
         }
 
-        // 2. One transaction records the trajectory and pays for it.
+        // 2. One transaction records the trajectory and pays for it in USDC.
+        //    Through Arc's Memo when the node runs CallFrom and the sender is a
+        //    plain EOA (Memo calls the protocol *as* the sender, so it still
+        //    pays the operator), tagged with the run id; a plain call otherwise.
         setState({ phase: "signing", trajHash: v.trajHash, cid: v.cid, score: v.score });
+        const trajHash = v.trajHash as Hex;
+        const line = runMemoLine(args.taskId, v.score);
+        const submitArgs = [BigInt(args.taskId), trajHash, v.cid, v.score, v.signature] as const;
+        const [live, code] = await Promise.all([
+          memoIsLive(client),
+          client.getCode({ address }).catch(() => undefined),
+        ]);
+        const eoa = !code || code === "0x";
+        const viaMemo = live && eoa;
 
-        const txHash = await writeContractAsync({
-          address: AXON_ADDRESS,
-          abi: AXON_ABI,
-          functionName: "submitTrajectory",
-          args: [BigInt(args.taskId), v.trajHash, v.cid, v.score, v.signature],
-        });
+        const txHash = viaMemo
+          ? await sendRawAsync(wrapInMemo({
+              memo: ARC_EXTERNAL.memo,
+              target: AXON_ADDRESS,
+              data: encodeFunctionData({ abi: AXON_ABI, functionName: "submitTrajectory", args: submitArgs }),
+              memoId: trajHash,
+              line,
+            }))
+          : await writeContractAsync({ address: AXON_ADDRESS, abi: AXON_ABI, functionName: "submitTrajectory", args: submitArgs });
 
-        // The clocks start when the wallet hands the transaction over, so the
-        // signing prompt is in neither of them.
+        // The clock starts when the wallet hands the transaction over, so the
+        // signing prompt is not in it.
         const sentAt = performance.now();
         setState((s) => ({ ...s, phase: "pending", txHash }));
 
-        const tracked = await trackReceipt(client!, txHash, {
+        // Arc is final on inclusion: the receipt is the settlement.
+        const { receipt, timers } = await trackReceipt(client, txHash, {
           sentAt,
-          where: LOCALNET ? "local" : "monad",
-          // Only onto this transaction's state: finality can land after the operator has moved on.
-          onUpdate: (timers) => setState((s) => (s.txHash === txHash ? { ...s, timers } : s)),
+          where: LOCALNET ? "fork" : "arc",
+          onUpdate: (t) => setState((s) => (s.txHash === txHash ? { ...s, timers: t } : s)),
         });
-        // On Monad a payout is credited once it is final, about 600 ms after it
-        // executes. A local chain's finalized tag trails by a minute of blocks,
-        // so there the card shows finality when it lands instead of holding the run.
-        const { receipt } = LOCALNET ? tracked : await tracked.final;
 
         if (receipt.status !== "success") {
           setState((s) => ({ ...s, phase: "error", error: "The transaction reverted on chain." }));
           return;
         }
 
-        // What the operator was charged: on Monad the whole gas limit, on a local
-        // chain (Ethereum's rules) the gas used.
-        const sent = await client!.getTransaction({ hash: txHash }).catch(() => null);
-        const gasLimit = sent?.gas;
-        const charged = LOCALNET || gasLimit === undefined ? receipt.gasUsed : gasLimit;
-        const gasMon = Number(charged * receipt.effectiveGasPrice) / 1e18;
-        const paidMon = (Number(v.rewardWei) * v.score) / 10_000 / 1e18;
+        const sent = await client.getTransaction({ hash: txHash }).catch(() => null);
+        const gasUsdc = Number(formatNative(receipt.gasUsed * receipt.effectiveGasPrice));
+        const { paid, deferred } = payoutOf(receipt, trajHash);
+        const tag = viaMemo ? memoOf(receipt, trajHash) : null;
+        const memo: RunMemo = tag
+          ? { tagged: true, memoId: trajHash, line: tag.line, memoIndex: tag.memoIndex }
+          : {
+              tagged: false,
+              reason: viaMemo
+                ? "sent through Memo, but no Memo event came back"
+                : !live
+                  ? LOCALNET ? "this fork's node does not run Arc's CallFrom, so the run went as a plain call" : "Memo's CallFrom did not answer the probe, so the run went as a plain call"
+                  : "this wallet is not a plain EOA, which Memo requires",
+            };
 
         setState((s) => ({
           phase: "confirmed",
-          timers: s.timers,
+          timers: s.timers ?? timers,
           txHash,
-          trajHash: v.trajHash,
+          trajHash,
           cid: v.cid,
           score: v.score,
-          paidMon,
-          gasMon,
-          gasLimit,
+          paid,
+          paidUsdc: paid !== undefined ? Number(formatUsdc(paid)) : undefined,
+          deferred,
+          gasUsdc,
+          gasLimit: sent?.gas,
           gasUsed: receipt.gasUsed,
+          memo,
           sharesPending: true,
         }));
 
@@ -322,7 +325,7 @@ export function useSubmitRun() {
           const recorded = await fetch("/api/submitted", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ trajHash: v.trajHash, txHash }),
+            body: JSON.stringify({ trajHash, txHash, memo: memo.tagged }),
           });
           const body = await recorded.json();
           const shares: RunShares = recorded.ok && body.shares
@@ -340,7 +343,7 @@ export function useSubmitRun() {
         setState({ phase: "error", error: explainTxError(e) });
       }
     },
-    [address, client, writeContractAsync],
+    [address, client, writeContractAsync, sendRawAsync],
   );
 
   return { ...state, submit, reset };

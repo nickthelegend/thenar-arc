@@ -7,12 +7,13 @@ import { useSession } from "@/components/session";
 import { useMyRuns, useStats } from "@/lib/hooks";
 import { Progression } from "@/components/progression";
 import { RecordSync } from "@/components/record-sync";
-import { Referral } from "@/components/referral";
 import { progressionByTask, type ScoredRun } from "@/lib/progression";
 import { TOLERANCE_MM } from "@/lib/score";
-import { addressUrl, CURRENCY, txUrl } from "@/lib/chain";
+import { addressUrl, CHAIN_SHORT, CURRENCY, LOCALNET, txUrl } from "@/lib/chain";
 import { cn } from "@/lib/cn";
-import { fmtMon, fmtScore } from "@/lib/format";
+import { fmtUsdc, fmtScore } from "@/lib/format";
+import { CctpWithdraw, ClaimPanel, useUsdcBalance } from "@/components/operator-money";
+import { formatUsdc } from "@/lib/usdc";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { INDEX_CONFIGURED, INDEX_MISSING, fetchIndex } from "@/lib/index-config";
 
@@ -21,6 +22,7 @@ export default function PortfolioPage() {
   const { data: runs, isLoading, isError, refetch } = useMyRuns();
   const { data: stats } = useStats();
   const { tasks } = useTaskCatalogue();
+  const { data: usdc } = useUsdcBalance(s.address);
 
   const nameOf = (id: number) => tasks?.find((t) => t.id === id)?.name ?? `Task #${id}`;
 
@@ -40,7 +42,7 @@ export default function PortfolioPage() {
     );
   }
 
-  const totalPaid = (runs ?? []).reduce((n, r) => n + r.paidMon, 0);
+  const totalPaid = (runs ?? []).reduce((n, r) => n + r.paidUsdc, 0);
   const best = runs?.length ? Math.max(...runs.map((r) => r.score)) : 0;
   const scored: ScoredRun[] = (runs ?? []).map((r) => ({
     score: r.score, at: r.at, trajHash: r.trajHash, taskId: r.taskId,
@@ -53,7 +55,7 @@ export default function PortfolioPage() {
         <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Portfolio</h1>
         <a
           href={s.address ? addressUrl(s.address) : "#"}
-          target="_blank"
+          target={LOCALNET ? undefined : "_blank"}
           rel="noreferrer"
           className="font-mono text-[12px] text-scribe-3 hover:text-probe"
         >
@@ -62,19 +64,20 @@ export default function PortfolioPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-rule py-3">
-        <Reading label="Balance" value={fmtMon(s.balance, 4)} unit={CURRENCY} tone="signal" />
-        <Reading label="Earned on chain" value={fmtMon(stats?.earnedMon ?? totalPaid, 4)} unit={CURRENCY} tone="signal" />
+        <Reading label="USDC balance" value={usdc !== undefined ? fmtUsdc(Number(formatUsdc(usdc as bigint)), 4) : "…"} unit={CURRENCY} tone="signal" />
+        <Reading label="Earned on chain" value={fmtUsdc(stats?.earnedUsdc ?? totalPaid, 4)} unit={CURRENCY} tone="signal" />
         <Reading label="Accepted runs" value={String(stats?.runs ?? runs?.length ?? 0)} />
         <Reading label="Mean score" value={stats?.runs ? fmtScore(stats.meanScore) : "—"} />
         <Reading label="Best score" value={best ? fmtScore(best) : "—"} />
       </div>
 
-      {s.address ? <RecordSync address={s.address} /> : null}
+      <p className="mt-2 text-[12px] text-scribe-3">
+        Paid in USDC on {CHAIN_SHORT}, final in the block that records each run. The same balance pays your gas.
+      </p>
 
-      {/* Deployed, funded and paying since the beginning, and reachable from
-          nowhere: nobody could see whether they had been credited, and the
-          newcomer who has to make the call had no way to make it. */}
-      <Referral />
+      {s.address ? <ClaimPanel address={s.address} /> : null}
+
+      {s.address ? <RecordSync address={s.address} /> : null}
 
       {/* Whether running a task again helped. Read from the chain here rather
           than from the ledger, so the deltas are score only — the chain has
@@ -140,7 +143,7 @@ export default function PortfolioPage() {
                   </div>
                   <div className="flex items-center gap-6">
                     <Reading label="Score" value={fmtScore(r.score)} tone={inTol ? undefined : "reject"} />
-                    <Reading label="Paid" value={fmtMon(r.paidMon, 4)} tone="signal" />
+                    <Reading label="Paid" value={fmtUsdc(r.paidUsdc, 4)} unit={CURRENCY} tone="signal" />
                   </div>
                 </div>
               </li>
@@ -148,6 +151,8 @@ export default function PortfolioPage() {
           })}
         </ul>
       )}
+
+      {s.address ? <CctpWithdraw address={s.address} /> : null}
 
       <Settlements address={s.address} />
     </div>
@@ -160,10 +165,10 @@ type Settlement = {
 };
 
 /**
- * The same address, read from Monadscan's index rather than from us.
+ * The same address, read from Arc's explorer index rather than from us.
  *
  * Everything above arrives through this deployment: our RPC calls, our
- * database's transaction hashes. This asks Monadscan instead, so it still answers
+ * database's transaction hashes. This asks Arc's Blockscout instead, so it still answers
  * if our server is gone — and it shows the calls that reverted, which a ledger
  * of accepted runs by definition cannot.
  */
@@ -195,8 +200,8 @@ function Settlements({ address }: { address?: string | null }) {
     <>
       <DimRule className="mt-10" note="On-chain activity" />
       <p className="mt-4 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
-        Every call this address has made to the protocol, as Monadscan&rsquo;s
-        indexer recorded it &mdash; including the ones that reverted. This list does
+        Every call this address has made to the protocol, as Arc&rsquo;s explorer
+        indexed it &mdash; including the ones that reverted. This list does
         not pass through our database, so it still resolves if this deployment does not.
       </p>
 
@@ -250,7 +255,7 @@ function Settlements({ address }: { address?: string | null }) {
               </span>
               <a
                 href={txUrl(r.txHash)}
-                target="_blank"
+                target={LOCALNET ? undefined : "_blank"}
                 rel="noreferrer"
                 className="font-mono text-[12px] text-scribe-3 hover:text-probe"
               >

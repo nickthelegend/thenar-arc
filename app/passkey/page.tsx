@@ -15,11 +15,12 @@ import { shortHash } from "@/lib/format";
 type Proof = { ok: boolean; digest: string; at: number } | null;
 
 /**
- * Your passkey, and what Monad knows about it.
+ * Your passkey, and what Arc knows about it.
  *
  * The passkey is made by your device (Face ID, a fingerprint, a PIN) through
- * Mera, Monad's passkey library. Its P-256 public key is registered in
- * PasskeyRegistry, and Monad verifies its signatures directly with the P-256
+ * the browser's own WebAuthn, with the PRF extension for derived keys. Its
+ * P-256 public key is registered in PasskeyRegistry, and Arc verifies its
+ * signatures directly with the P-256
  * precompile at 0x0100 — the curve passkeys sign on, which Ethereum's own
  * signature check does not cover.
  */
@@ -35,7 +36,7 @@ export default function PasskeyPage() {
     args: s.address ? [s.address] : undefined, query: { enabled: Boolean(s.address) },
   });
 
-  // Sign a fresh message with the passkey and ask the registry, on Monad, to check it.
+  // Sign a fresh message with the passkey and ask the registry, on Arc, to check it.
   const prove = useCallback(async () => {
     if (!s.address) return;
     setError(null); setBusy(true); setProof(null);
@@ -62,7 +63,7 @@ export default function PasskeyPage() {
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Your passkey</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
         A paid run has to come from a person. On Thenar that person is a passkey: your device makes it,
-        unlocked with Face ID, a fingerprint or a PIN, and Monad checks its signature directly. There is no
+        unlocked with Face ID, a fingerprint or a PIN, and Arc checks its signature directly. There is no
         seed phrase, and nothing about you leaves your device.
       </p>
 
@@ -101,7 +102,7 @@ export default function PasskeyPage() {
             <>
               <DimRule className="mt-10" note={`Check it on ${CHAIN_SHORT} yourself`} />
               <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
-                Your passkey signs a fresh random message, and the registry on Monad verifies that signature
+                Your passkey signs a fresh random message, and the registry on Arc verifies that signature
                 against the key registered to your address, through the P-256 precompile. Nothing is sent and
                 nothing costs gas: it is a read.
               </p>

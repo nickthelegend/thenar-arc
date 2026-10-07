@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatEther, formatGwei, type Hash } from "viem";
+import { formatGwei, type Hash } from "viem";
+import { formatNative } from "@/lib/usdc";
 import { LOCALNET, appChain, CURRENCY } from "@/lib/chain";
 import { chainClient } from "@/lib/rpc";
 import { decodeCall, decodeLog, known } from "@/lib/server/explorer";
@@ -18,7 +19,7 @@ const client = chainClient();
  */
 export default async function TxPage({ params }: { params: Promise<{ hash: string }> }) {
   const { hash } = await params;
-  // Monad has Monadscan; this is for the chain nothing else indexes.
+  // Arc testnet and mainnet have Blockscout; this is for the local fork nothing else indexes.
   if (!LOCALNET || !/^0x[0-9a-fA-F]{64}$/.test(hash)) notFound();
   const [tx, receipt] = await Promise.all([
     client.getTransaction({ hash: hash as Hash }).catch(() => null),
@@ -53,11 +54,11 @@ export default async function TxPage({ params }: { params: Promise<{ hash: strin
           ) : "—"}
         </dd>
         <dt className="label">Value</dt>
-        <dd>{formatEther(tx.value)} {CURRENCY}</dd>
+        <dd>{formatNative(tx.value)} {CURRENCY} <span className="text-scribe-3">(native, 18 decimals)</span></dd>
         <dt className="label">Gas</dt>
         <dd>
           {receipt ? `${receipt.gasUsed} used of ${tx.gas}` : `${tx.gas} limit`}
-          {receipt?.effectiveGasPrice ? ` · ${formatGwei(receipt.effectiveGasPrice)} gwei · ${formatEther(receipt.gasUsed * receipt.effectiveGasPrice)} ${CURRENCY}` : ""}
+          {receipt?.effectiveGasPrice ? ` · ${formatGwei(receipt.effectiveGasPrice)} gwei · ${formatNative(receipt.gasUsed * receipt.effectiveGasPrice)} ${CURRENCY} gas` : ""}
         </dd>
         <dt className="label">Nonce</dt>
         <dd>{tx.nonce}</dd>

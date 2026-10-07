@@ -3,11 +3,10 @@
 import { useCallback, useState } from "react";
 import { useReadContract } from "wagmi";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { isMeraError } from "@category-labs/mera";
 import { Button, DimRule } from "@/components/primitives";
 import { PASSKEY_ADDRESS } from "@/lib/chain";
 import { PASSKEY_ABI } from "@/lib/passkey-abi";
-import { storedPasskey } from "@/lib/passkey";
+import { isPasskeyError, storedPasskey } from "@/lib/passkey";
 import { commandMessage, toHex } from "@/lib/robot-command";
 import { shortHash } from "@/lib/format";
 
@@ -19,7 +18,7 @@ type Derived = { key: string; message: string; signature: string; verified: bool
 /**
  * One passkey, more than one key.
  *
- * The passkey's own P-256 key is the operator's identity, registered on Monad.
+ * The passkey's own P-256 key is the operator's identity, registered on Arc.
  * Its PRF, asked with a salt that names one purpose, gives 32 bytes nothing
  * else can reproduce; the robot key is made from the "so101-commands" salt and
  * signs every command to the operator's physical arm. This panel derives it on
@@ -60,9 +59,9 @@ export function PasskeyKeys({ address }: { address: `0x${string}` }) {
       }
     } catch (e) {
       setError(
-        isMeraError(e) && e.code === "PRF_UNAVAILABLE"
+        isPasskeyError(e) && e.code === "PRF_UNAVAILABLE"
           ? "This passkey cannot make keys: its provider does not support PRF. iCloud Keychain, Google Password Manager and 1Password do; a passkey kept in a desktop Chrome profile does not."
-          : isMeraError(e) && e.code === "PASSKEY_OPERATION_FAILED"
+          : isPasskeyError(e) && e.code === "PASSKEY_OPERATION_FAILED"
             ? "The passkey did not answer. Nothing was derived."
             : e instanceof Error ? e.message.split("\n")[0] : "The key could not be derived.",
       );
@@ -88,7 +87,7 @@ export function PasskeyKeys({ address }: { address: `0x${string}` }) {
             <span className="font-mono text-[12px] text-scribe-3">P-256 · the passkey itself</span>
           </dt>
           <dd className="text-scribe-2">
-            Proves a run came from a person. Its public key is registered in PasskeyRegistry and Monad checks it
+            Proves a run came from a person. Its public key is registered in PasskeyRegistry and Arc checks it
             through the P-256 precompile.
             <span className="mt-1 block font-mono text-[12px] text-scribe-3">
               {x ? `on chain · x ${shortHash(x)}` : "not registered yet"}

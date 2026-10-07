@@ -4,9 +4,9 @@ import { LOCAL_RPC, thenarLocalnet } from "./chain";
 import { localWallet } from "./local-wallet";
 
 /**
- * wagmi on the local chain: the browser-held local wallet first, and any
- * browser wallet pointed at the local chain after it. No Privy, which cannot
- * see a chain on this machine.
+ * wagmi on the local Arc fork: the browser-held local wallet first, and any
+ * browser wallet pointed at the fork after it. No Privy, which cannot see a
+ * chain on this machine.
  */
 export const localWagmiConfig = createConfig({
   chains: [thenarLocalnet],

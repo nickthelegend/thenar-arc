@@ -1,19 +1,20 @@
 /**
  * The operator's passkey: a real one, made by the device (Face ID, a
- * fingerprint, Windows Hello, a security key), through Mera.
+ * fingerprint, Windows Hello, a security key), through the browser's own
+ * WebAuthn.
  *
- * Mera (@category-labs/mera, Monad's passkey library) runs the WebAuthn
- * ceremonies and hands back PRF output: key material only this passkey can
- * reproduce, on any device it syncs to. It does not hand back the passkey's
- * own P-256 public key, which PasskeyRegistry on Monad needs, or the signed
- * assertion the registry checks. So it runs them through a WebAuthn client of
- * ours that keeps both: the browser's own ceremony, with a note taken.
+ * Two things come out of it:
+ *  - its P-256 public key, which PasskeyRegistry on Arc binds to the
+ *    operator's address. Arc verifies the passkey's signatures on chain
+ *    through its P-256 precompile at 0x0100, so a paid run comes from a person;
+ *  - PRF output (the WebAuthn `prf` extension): 32 bytes only this passkey can
+ *    reproduce, per salt, on any device it syncs to. lib/robot-key.ts turns it
+ *    into the key that commands an operator's own SO-101.
  *
- * What is stored, in this browser only: the credential id and its transports.
- * Both are public. The private key never leaves the authenticator, and no PRF
- * output or derived key is ever stored.
+ * What is stored, in this browser only: the credential id, its transports and
+ * the public key. All public. The private key never leaves the authenticator,
+ * and no PRF output or derived key is ever stored.
  */
-import { createPasskeyWithPrfOutput, getPasskeyPrfOutput, type WebAuthnClient } from "@category-labs/mera";
 import { coordsOfSpki } from "@/lib/webauthn";
 
 const STORE = "thenar:passkey:v2:";
@@ -56,98 +57,81 @@ export const passkeysAvailable = () =>
 export const passkeyHostOk = () =>
   typeof window === "undefined" || !/^(\d{1,3}(\.\d{1,3}){3}|\[[0-9a-f:]+\])$/i.test(window.location.hostname);
 
-type Captured = { spki?: ArrayBuffer | null; credentialId?: string; transports?: string[]; assertion?: Assertion };
+export type PasskeyErrorCode = "PRF_UNAVAILABLE" | "PASSKEY_OPERATION_FAILED" | "UNSUPPORTED";
 
-/**
- * The browser's WebAuthn, as Mera would call it, keeping what Mera discards.
- * `challenge` replaces Mera's random one when the assertion has to answer a
- * challenge from the server.
- */
-function capturingClient(challenge?: Uint8Array): { client: WebAuthnClient; captured: Captured } {
-  const captured: Captured = {};
-  const client: WebAuthnClient = {
-    async createCredential(r) {
-      const c = (await navigator.credentials.create({
-        publicKey: {
-          rp: r.rp,
-          user: r.user,
-          challenge: r.challenge,
-          // P-256 only: the curve Monad's precompile verifies.
-          pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-          authenticatorSelection: { residentKey: "required", userVerification: "required" },
-          attestation: "none",
-          timeout: r.timeout,
-          extensions: { prf: { eval: { first: r.prfSalt } } } as AuthenticationExtensionsClientInputs,
-        },
-      })) as PublicKeyCredential | null;
-      if (!c) throw new Error("No passkey was made.");
-      const res = c.response as AuthenticatorAttestationResponse;
-      captured.spki = res.getPublicKey();
-      captured.credentialId = b64url(c.rawId);
-      captured.transports = res.getTransports?.();
-      const prf = (c.getClientExtensionResults() as { prf?: { enabled?: boolean; results?: { first?: ArrayBuffer } } }).prf;
-      return {
-        credentialId: new Uint8Array(c.rawId),
-        transports: res.getTransports?.() as WebAuthnClient.CreateCredentialResult["transports"],
-        prfEnabled: prf?.enabled === true || !!prf?.results?.first,
-        ...(prf?.results?.first ? { prfOutput: new Uint8Array(prf.results.first) } : {}),
-      };
-    },
-    async getCredential(r) {
-      const c = (await navigator.credentials.get({
-        publicKey: {
-          rpId: r.rpId,
-          challenge: (challenge ?? r.challenge) as BufferSource,
-          allowCredentials: r.allowCredential
-            ? [{ type: "public-key", id: r.allowCredential.credentialId, transports: r.allowCredential.transports as AuthenticatorTransport[] }]
-            : undefined,
-          userVerification: "required",
-          timeout: r.timeout,
-          extensions: { prf: { eval: { first: r.prfSalt } } } as AuthenticationExtensionsClientInputs,
-        },
-      })) as PublicKeyCredential | null;
-      if (!c) throw new Error("The passkey did not answer.");
-      const res = c.response as AuthenticatorAssertionResponse;
-      captured.assertion = {
-        authenticatorData: b64url(res.authenticatorData),
-        clientDataJSON: b64url(res.clientDataJSON),
-        signature: b64url(res.signature),
-      };
-      const prf = (c.getClientExtensionResults() as { prf?: { results?: { first?: ArrayBuffer } } }).prf;
-      return { credentialId: new Uint8Array(c.rawId), ...(prf?.results?.first ? { prfOutput: new Uint8Array(prf.results.first) } : {}) };
-    },
-  };
-  return { client, captured };
+/** A passkey ceremony that failed, with the reason a page can act on. */
+export class PasskeyError extends Error {
+  readonly code: PasskeyErrorCode;
+  constructor(code: PasskeyErrorCode, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+export const isPasskeyError = (e: unknown): e is PasskeyError => e instanceof PasskeyError;
+
+const enc = new TextEncoder();
+/** A PRF salt for one named purpose: SHA-256 of a readable label, so salts are auditable and never collide. */
+export async function prfSalt(purpose: string): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(`thenar:${purpose}:v1`)));
+}
+const random = (n: number) => crypto.getRandomValues(new Uint8Array(n));
+
+type PrfResults = { prf?: { enabled?: boolean; results?: { first?: ArrayBuffer | Uint8Array } } };
+function prfOf(c: PublicKeyCredential): Uint8Array | null {
+  const first = (c.getClientExtensionResults() as PrfResults).prf?.results?.first;
+  return first ? new Uint8Array(first instanceof Uint8Array ? first : new Uint8Array(first)) : null;
+}
+
+async function ceremony<T>(fn: () => Promise<T>): Promise<T> {
+  if (!passkeysAvailable()) throw new PasskeyError("UNSUPPORTED", "This browser cannot use passkeys here (it needs a secure context).");
+  try {
+    return await fn();
+  } catch (e) {
+    if (e instanceof PasskeyError) throw e;
+    throw new PasskeyError("PASSKEY_OPERATION_FAILED", e instanceof Error ? e.message : "The passkey prompt failed.");
+  }
 }
 
 /**
- * Make a new passkey for this operator address. Mera runs the ceremony and
- * evaluates its PRF, where the authenticator supports it; the P-256 key comes
- * back either way, because the key is what the registry needs.
+ * Make a new passkey for this operator address: P-256 only (alg -7, the curve
+ * Arc's precompile verifies), discoverable, user-verified, with PRF asked for
+ * at creation. The public key comes back from the attestation either way; PRF
+ * is recorded as available when the authenticator enabled it.
  */
 export async function createPasskey(address: string): Promise<StoredPasskey> {
-  const { client, captured } = capturingClient();
-  const rp = { id: location.hostname, name: "Thenar" };
-  const user = { name: `thenar-${address.slice(2, 8).toLowerCase()}`, displayName: `Thenar operator ${address.slice(0, 6)}…${address.slice(-4)}` };
-  let prf = false;
-  try {
-    const made = await createPasskeyWithPrfOutput({ rp, user, webAuthnClient: client });
-    prf = true;
-    made.prfOutput.fill(0);
-  } catch (e) {
-    // Mera refuses a passkey without PRF. The passkey still exists and still
-    // proves a person was there, so it is kept; only the PRF keys are missing.
-    if (!captured.spki) throw e;
-  }
-  if (!captured.spki || !captured.credentialId) throw new Error("The browser did not return the passkey's public key.");
-  const saved: StoredPasskey = {
-    credentialId: captured.credentialId,
-    transports: captured.transports,
-    ...coordsOfSpki(new Uint8Array(captured.spki)),
-    prf,
-  };
-  try { localStorage.setItem(STORE + address.toLowerCase(), JSON.stringify(saved)); } catch { /* storage unavailable */ }
-  return saved;
+  return ceremony(async () => {
+    const salt = await prfSalt("passkey");
+    const c = (await navigator.credentials.create({
+      publicKey: {
+        rp: { id: location.hostname, name: "Thenar" },
+        user: {
+          id: random(16),
+          name: `thenar-${address.slice(2, 8).toLowerCase()}`,
+          displayName: `Thenar operator ${address.slice(0, 6)}…${address.slice(-4)}`,
+        },
+        challenge: random(32),
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        authenticatorSelection: { residentKey: "required", userVerification: "required" },
+        attestation: "none",
+        extensions: { prf: { eval: { first: salt } } } as AuthenticationExtensionsClientInputs,
+      },
+    })) as PublicKeyCredential | null;
+    if (!c) throw new PasskeyError("PASSKEY_OPERATION_FAILED", "No passkey was made.");
+    const res = c.response as AuthenticatorAttestationResponse;
+    const spki = res.getPublicKey();
+    if (!spki) throw new PasskeyError("PASSKEY_OPERATION_FAILED", "The browser did not return the passkey's public key.");
+    const ext = (c.getClientExtensionResults() as PrfResults).prf;
+    const out = prfOf(c);
+    out?.fill(0);
+    const saved: StoredPasskey = {
+      credentialId: b64url(c.rawId),
+      transports: res.getTransports?.(),
+      ...coordsOfSpki(new Uint8Array(spki)),
+      prf: ext?.enabled === true || Boolean(out),
+    };
+    try { localStorage.setItem(STORE + address.toLowerCase(), JSON.stringify(saved)); } catch { /* storage unavailable */ }
+    return saved;
+  });
 }
 
 /** Sign a challenge from the server with this operator's passkey. */
@@ -171,19 +155,34 @@ export async function signChallenge(address: string, challenge: string): Promise
 /**
  * Key material only this passkey can reproduce, for one named purpose.
  *
- * Mera evaluates the passkey's PRF with a salt made from the purpose, so each
- * purpose gets its own independent 32 bytes, on any device the passkey has
- * synced to. The caller derives what it needs and zeroes the bytes after.
+ * One WebAuthn assertion evaluates the passkey's PRF with a salt made from the
+ * purpose, so each purpose gets its own independent 32 bytes, on any device
+ * the passkey has synced to. The caller derives what it needs and zeroes the
+ * bytes after.
  */
 export async function passkeySecret(address: string, purpose: string): Promise<Uint8Array> {
   const stored = storedPasskey(address);
-  const salt = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`thenar:${purpose}:v1`)));
-  const { prfOutput } = await getPasskeyPrfOutput({
-    rpId: location.hostname,
-    prfSalt: salt,
-    ...(stored?.credentialId
-      ? { credential: { credentialId: stored.credentialId, transports: stored.transports as never } }
-      : {}),
+  const salt = await prfSalt(purpose);
+  return ceremony(async () => {
+    const c = (await navigator.credentials.get({
+      publicKey: {
+        rpId: location.hostname,
+        challenge: random(32),
+        userVerification: "required",
+        allowCredentials: stored?.credentialId
+          ? [{ type: "public-key", id: fromB64url(stored.credentialId), transports: stored.transports as AuthenticatorTransport[] }]
+          : [],
+        extensions: { prf: { eval: { first: salt } } } as AuthenticationExtensionsClientInputs,
+      },
+    })) as PublicKeyCredential | null;
+    if (!c) throw new PasskeyError("PASSKEY_OPERATION_FAILED", "The passkey did not answer.");
+    const out = prfOf(c);
+    if (!out) {
+      throw new PasskeyError(
+        "PRF_UNAVAILABLE",
+        "This passkey cannot make keys: its provider does not support WebAuthn PRF.",
+      );
+    }
+    return out;
   });
-  return prfOutput;
 }

@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useAccount, useConfig, useReadContract, usePublicClient } from "wagmi";
 import { readContracts } from "wagmi/actions";
-import { formatEther, toFunctionSelector } from "viem";
+import { toFunctionSelector } from "viem";
+import { formatNative, formatUsdc } from "./usdc";
 import { AXON_ABI } from "./abi";
 import { AXON_ADDRESS, IS_DEPLOYED, scenarioName } from "./chain";
 import { parSecondsFor } from "./par";
@@ -22,8 +23,18 @@ export type ChainTask = {
   /** Where the payload and its target really stood, for a task scanned from a table. */
   scanned: ScannedScene | null;
   funder: `0x${string}`;
+  /** Paid per run at a full score, in USDC base units (6 decimals). */
+  reward: bigint;
+  /** The same, in dollars. */
+  rewardUsdc: number;
+  /** What is left in the task's escrow, in USDC base units (6 decimals). */
+  escrow: bigint;
+  escrowUsdc: number;
+  /** @deprecated 6-dec USDC base units despite the name; read `reward`. */
   rewardWei: bigint;
+  /** @deprecated USDC despite the name; read `rewardUsdc`. */
   rewardMon: number;
+  /** @deprecated 6-dec USDC base units despite the name; read `escrow`. */
   escrowWei: bigint;
   slotsTotal: number;
   slotsFilled: number;
@@ -70,6 +81,9 @@ type RawTask = {
   closed: boolean;
 };
 
+/** USDC base units (6 dec) as dollars. Every contract amount is this unit. */
+const usd = (units: bigint) => Number(formatUsdc(units));
+
 function shape(raw: RawTask, id: number): ChainTask {
   const expiresAt = Number(raw.expiresAt) > 0 ? Number(raw.expiresAt) * 1000 : null;
   const expired = expiresAt !== null && Date.now() >= expiresAt;
@@ -80,8 +94,12 @@ function shape(raw: RawTask, id: number): ChainTask {
     arm: armOf(raw.name),
     scanned: parseScan(raw.name),
     funder: raw.funder,
+    reward: raw.rewardPerTrajectory,
+    rewardUsdc: usd(raw.rewardPerTrajectory),
+    escrow: raw.escrow,
+    escrowUsdc: usd(raw.escrow),
     rewardWei: raw.rewardPerTrajectory,
-    rewardMon: Number(formatEther(raw.rewardPerTrajectory)),
+    rewardMon: usd(raw.rewardPerTrajectory),
     escrowWei: raw.escrow,
     slotsTotal: Number(raw.slotsTotal),
     slotsFilled: Number(raw.slotsFilled),
@@ -160,7 +178,12 @@ export type ChainRun = {
   trajHash: `0x${string}`;
   cid: string;
   score: number;
+  /** USDC base units (6 dec). */
+  paid: bigint;
+  paidUsdc: number;
+  /** @deprecated read `paid` (6-dec USDC). */
   paidWei: bigint;
+  /** @deprecated read `paidUsdc`. */
   paidMon: number;
   at: number;
 };
@@ -216,8 +239,10 @@ export function useMyRuns() {
             trajHash: t.trajHash,
             cid: t.cid,
             score: Number(t.score),
+            paid: t.paid,
+            paidUsdc: usd(t.paid),
             paidWei: t.paid,
-            paidMon: Number(formatEther(t.paid)),
+            paidMon: usd(t.paid),
             at: Number(t.at) * 1000,
           };
         })
@@ -242,8 +267,12 @@ export function useStats(who?: `0x${string}`) {
         const [runs, earned, meanScore] = d as [bigint, bigint, bigint];
         return {
           runs: Number(runs),
+          earned,
+          earnedUsdc: usd(earned),
+          /** @deprecated read `earned` (6-dec USDC). */
           earnedWei: earned,
-          earnedMon: Number(formatEther(earned)),
+          /** @deprecated read `earnedUsdc`. */
+          earnedMon: usd(earned),
           meanScore: Number(meanScore),
         };
       },
@@ -256,6 +285,10 @@ export type FeedEntry = {
   taskId: number;
   contributor: `0x${string}`;
   score: number;
+  /** USDC base units (6 dec). */
+  paid: bigint;
+  paidUsdc: number;
+  /** @deprecated read `paidUsdc`. */
   paidMon: number;
   trajHash: `0x${string}`;
   at: number;
@@ -296,12 +329,12 @@ export function useActivity(limit = 40) {
       /**
        * Every accepted run, read from the contract's storage.
        *
-       * This read the TrajectoryAccepted log from the deployment block onward,
-       * which on Monad cannot work: the public endpoints answer a log query a
-       * hundred blocks wide, and a day of Monad is two hundred thousand blocks.
-       * The contract keeps every run in an array anyway, so the runs are read
-       * from there through Multicall3 — a hundred per call, each id read once
-       * and cached, because the array is only ever appended to.
+       * Not the TrajectoryAccepted log from the deployment block onward: Arc
+       * makes a block every half second or so, so a day is well over a hundred
+       * thousand blocks, and public endpoints cap a log query's range. The
+       * contract keeps every run in an array anyway, so the runs are read from
+       * there through Multicall3 — a hundred per call, each id read once and
+       * cached, because the array is only ever appended to.
        */
       const runs = await readRuns(client);
       const newest = runs.slice().reverse().slice(0, Math.max(limit, 1));
@@ -318,7 +351,9 @@ export function useActivity(limit = 40) {
         taskId: r.taskId,
         contributor: r.contributor,
         score: r.score,
-        paidMon: Number(formatEther(r.paid)),
+        paid: r.paid,
+        paidUsdc: usd(r.paid),
+        paidMon: usd(r.paid),
         trajHash: r.trajHash,
         txHash: hashes[i],
         at: r.at * 1000,
@@ -343,7 +378,7 @@ export function useLeaderboard() {
         rows.get(k) ??
         { address: e.contributor, runs: 0, earned: 0, scoreSum: 0, tasks: new Set<number>() };
       r.runs += 1;
-      r.earned += e.paidMon;
+      r.earned += e.paidUsdc;
       r.scoreSum += e.score;
       r.tasks.add(e.taskId);
       rows.set(k, r);
@@ -370,9 +405,17 @@ export type ChainPolicy = {
   minter: `0x${string}`;
   trajectories: number;
   mintedAt: number;
-  licenceWei: bigint;
-  licenceMon: number;
+  /** USDC base units (6 dec). */
+  licenceFee: bigint;
+  licenceUsdc: number;
   licencesSold: number;
+  distributed: bigint;
+  distributedUsdc: number;
+  /** @deprecated read `licenceFee`. */
+  licenceWei: bigint;
+  /** @deprecated read `licenceUsdc`. */
+  licenceMon: number;
+  /** @deprecated read `distributedUsdc`. */
   distributedMon: number;
 };
 
@@ -417,10 +460,14 @@ export function usePolicies() {
             minter: p.minter,
             trajectories: Number(p.trajectories),
             mintedAt: Number(p.mintedAt) * 1000,
-            licenceWei: p.licenceFee,
-            licenceMon: Number(formatEther(p.licenceFee)),
+            licenceFee: p.licenceFee,
+            licenceUsdc: usd(p.licenceFee),
             licencesSold: Number(p.licencesSold),
-            distributedMon: Number(formatEther(p.distributed)),
+            distributed: p.distributed,
+            distributedUsdc: usd(p.distributed),
+            licenceWei: p.licenceFee,
+            licenceMon: usd(p.licenceFee),
+            distributedMon: usd(p.distributed),
           };
         })
         .filter(Boolean) as ChainPolicy[];
@@ -441,7 +488,10 @@ export function useCapTable(policyId: number | undefined) {
         return who.map((a, i) => ({
           address: a,
           weightBps: Number(bps[i]),
-          payoutMon: Number(formatEther(payout[i])),
+          payout: payout[i],
+          payoutUsdc: usd(payout[i]),
+          /** @deprecated read `payoutUsdc`. */
+          payoutMon: usd(payout[i]),
         }));
       },
     },
@@ -470,22 +520,20 @@ export function useCapTable(policyId: number | undefined) {
  * another would be quoting a number for a transaction nobody sent.
  */
 export type SubmitCost = {
-  /** Wei per gas the chain is quoting now. */
+  /** The gas price the chain is quoting now, in native USDC units (18 decimals) per gas. */
+  gasPrice: bigint;
+  /** @deprecated read `gasPrice` (18-dec native USDC per gas). */
   gasPriceWei: bigint;
-  /** Median gas charged, over the samples for this path. */
+  /** Median gas used, over the samples for this path. */
   medianGas: number | null;
   lowGas: number | null;
   highGas: number | null;
   /** How many real transactions that median stands on. */
   samples: number;
-  /** Median gas at the current price, in the native token. */
+  /** Median gas at the current price, in USDC: Arc's gas token. */
+  costUsdc: number | null;
+  /** @deprecated read `costUsdc`. */
   costMon: number | null;
-  /**
-   * Whether every sample was charged at least half the gas limit its wallet
-   * set — which is what the receipts say, and what makes a generous limit
-   * expensive here rather than merely cautious.
-   */
-  chargedToTheLimit: boolean;
 };
 
 /** The calls whose cost anything asks about, and the event that finds them. */
@@ -511,7 +559,7 @@ const TASK_CREATED_EVENT = {
     { name: "funder", type: "address", indexed: true },
     { name: "name", type: "string", indexed: false },
     { name: "slots", type: "uint32", indexed: false },
-    { name: "reward", type: "uint128", indexed: false },
+    { name: "rewardPerTrajectory", type: "uint128", indexed: false },
     { name: "scenario", type: "uint8", indexed: false },
     { name: "difficulty", type: "uint8", indexed: false },
   ],
@@ -528,14 +576,20 @@ const CALLS = {
   },
   createTask: {
     event: TASK_CREATED_EVENT,
-    signature: "createTask(string,uint32,uint128,uint8,uint8)",
+    signature: "createTask(string,uint32,uint128,uint8,uint8,uint256)",
   },
   // Not a variant of the one above with an extra argument: a task created
   // without a deadline can never be closed, so its escrow can never return.
   // Different function, different gas, and a different offer.
   createTaskUntil: {
     event: TASK_CREATED_EVENT,
-    signature: "createTaskUntil(string,uint32,uint128,uint8,uint8,uint64)",
+    signature: "createTaskUntil(string,uint32,uint128,uint8,uint8,uint64,uint256)",
+  },
+  // A task funded by an EIP-3009 authorisation, sent by the relayer: the
+  // sponsor signs, the relayer pays the gas, so its cost is the relayer's.
+  createTaskWithAuthorization: {
+    event: TASK_CREATED_EVENT,
+    signature: "createTaskWithAuthorization(address,(string,uint32,uint128,uint8,uint8,uint64,uint256),uint256,uint256,bytes32,bytes)",
   },
 } as const;
 
@@ -556,7 +610,7 @@ export function useObservedCost(kind: CallKind) {
     staleTime: 60_000,
     queryFn: async () => {
       if (!client) return null;
-      const gasPriceWei = await client.getGasPrice();
+      const gasPrice = await client.getGasPrice();
 
       // The most recent calls of this kind, found from storage: a run or a
       // task records the block it was made in, and the transaction is the one
@@ -587,7 +641,7 @@ export function useObservedCost(kind: CallKind) {
       );
 
       return {
-        gasPriceWei,
+        gasPrice,
         measured: measured.filter(Boolean) as { gas: number; limit: number; selector: string }[],
       };
     },
@@ -595,7 +649,7 @@ export function useObservedCost(kind: CallKind) {
 
   return useMemo((): SubmitCost | null => {
     if (!q.data) return null;
-    const { gasPriceWei, measured } = q.data;
+    const { gasPrice, measured } = q.data;
     const want = toFunctionSelector(call.signature).toLowerCase();
 
     // Only this call's own samples. There is no falling back to another's:
@@ -604,37 +658,22 @@ export function useObservedCost(kind: CallKind) {
     // nothing has gone that way yet.
     const pool = measured.filter((m) => m.selector === want);
     if (!pool.length) {
-      return {
-        gasPriceWei, medianGas: null, lowGas: null, highGas: null,
-        samples: 0, costMon: null, chargedToTheLimit: false,
-      };
+      return { gasPrice, gasPriceWei: gasPrice, medianGas: null, lowGas: null, highGas: null, samples: 0, costUsdc: null, costMon: null };
     }
 
     const gas = pool.map((m) => m.gas).sort((a, b) => a - b);
     const medianGas = gas[Math.floor(gas.length / 2)];
-
-    /**
-     * Every sample charged at least half the limit its wallet set.
-     *
-     * Fifteen transactions on this contract — nine submits and six task
-     * postings — and in every one the receipt's gasUsed is exactly max(what the
-     * call needed, half the gas limit). A re-estimate of one submit against its
-     * own parent block answers 394,668; it was charged 600,000, half of the
-     * 1,200,000 its wallet asked for. So a wallet that doubles an estimate for
-     * safety does not buy headroom here — it sets the price. Reported rather
-     * than corrected: fixing it means pinning a gas limit, and a limit pinned
-     * too tight fails a real transaction.
-     */
-    const chargedToTheLimit = pool.every((m) => m.gas >= Math.floor(m.limit / 2));
-
+    // Arc charges the gas used, priced in native USDC (18 decimals).
+    const costUsdc = Number(formatNative(gasPrice * BigInt(medianGas)));
     return {
-      gasPriceWei,
+      gasPrice,
+      gasPriceWei: gasPrice,
       medianGas,
       lowGas: gas[0],
       highGas: gas[gas.length - 1],
       samples: gas.length,
-      costMon: Number(gasPriceWei * BigInt(medianGas)) / 1e18,
-      chargedToTheLimit,
+      costUsdc,
+      costMon: costUsdc,
     };
   }, [q.data, call.signature]);
 }

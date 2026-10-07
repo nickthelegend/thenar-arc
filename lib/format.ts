@@ -70,16 +70,20 @@ export const fmtInt = (n: number) => n.toLocaleString(locale());
  * the same transaction look like two different amounts.
  */
 /**
- * A MON amount at a fixed number of places, except that an amount too small
- * to show at that precision keeps two significant figures rather than reading
- * as zero: a task paying 0.0000001 MON a run said "0.000 MON".
+ * A USDC amount (in dollars, not base units) at a fixed number of places,
+ * except that an amount too small to show at that precision keeps two
+ * significant figures rather than reading as zero: a task paying 0.0001 USDC
+ * a run would otherwise say "0.00 USDC".
  */
-export const fmtMon = (n: number, dp = 3) => {
+export const fmtUsdc = (n: number, dp = 2) => {
   if (n !== 0 && Math.abs(n) < 0.5 * 10 ** -dp) {
     return n.toLocaleString(locale(), { maximumSignificantDigits: 2, maximumFractionDigits: 18 });
   }
   return n.toLocaleString(locale(), { minimumFractionDigits: dp, maximumFractionDigits: dp });
 };
+
+/** @deprecated The same formatter under its old name, three places by default; use `fmtUsdc`. */
+export const fmtMon = (n: number, dp = 3) => fmtUsdc(n, dp);
 
 /** Scores live on 0..10000 on chain; operators read them as a percentage. */
 export const fmtScore = (score: number) =>
@@ -125,25 +129,24 @@ export const SCENARIO_LABEL: Record<string, string> = {
 };
 
 /**
- * A gas figure at a price the chain is genuinely quoting.
+ * A gas figure at a price the chain is genuinely quoting, in USDC.
  *
- * A call that costs less than a thousandth of a token renders through `fmtMon`
- * at three decimals as 0.000, which is a zero where there is a real cost — and
- * a product that prints a zero for a number it charged is doing the thing it
+ * A call that costs less than a thousandth of a dollar renders at three
+ * decimals as 0.000, which is a zero where there is a real cost — and a
+ * product that prints a zero for a number it charged is doing the thing it
  * exists to argue against.
  *
- * So below a thousandth of a token it counts in billionths, with an n before
- * the symbol.
+ * So below a thousandth it counts in billionths, with an n before the symbol.
  */
-export const fmtGasCost = (mon: number, symbol: string) => {
-  if (mon === 0) return `0 ${symbol}`;
-  if (mon < 0.001) {
+export const fmtGasCost = (usdc: number, symbol: string) => {
+  if (usdc === 0) return `0 ${symbol}`;
+  if (usdc < 0.001) {
     // Under one billionth the decimals are the whole figure, so keep three;
     // under ten, two; above that, none, because 96 and 96.00 say the same
     // thing and one of them is harder to read.
-    const nano = mon * 1e9;
+    const nano = usdc * 1e9;
     const dp = nano < 1 ? 3 : nano < 10 ? 2 : 0;
     return `${nano.toLocaleString(locale(), { maximumFractionDigits: dp })} n${symbol}`;
   }
-  return `${fmtMon(mon, 6)} ${symbol}`;
+  return `${fmtUsdc(usdc, 6)} ${symbol}`;
 };

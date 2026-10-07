@@ -18,7 +18,12 @@ import { classifyRead } from "@/lib/store-failure";
 import { ACCEPT_FLOOR } from "@/lib/score";
 import { deviationFromSamples } from "@/lib/score";
 import { goalFor } from "@/lib/bench";
-import { txUrlOn, addressUrl, appChain, chainMeta } from "@/lib/chain";
+import { txUrlOn, addressUrl, appChain, chainMeta, AXON_ADDRESS, CHAIN_SHORT, LOCALNET } from "@/lib/chain";
+import { usePublicClient } from "wagmi";
+import { decodeEventLog, type Hex } from "viem";
+import { AXON_ABI } from "@/lib/abi";
+import { memoOf } from "@/lib/submit";
+import { usdcLabel } from "@/lib/usdc";
 import { cn } from "@/lib/cn";
 import { fmtScore, fmtSeconds, shortHash } from "@/lib/format";
 import { keccak256, toHex } from "viem";
@@ -578,18 +583,21 @@ export default function RunView() {
           <Link href={`/task/${data.taskId}`} className="text-probe hover:underline">#{data.taskId}</Link>
         </Field>
         <Field label="Contributor">
-          <a href={addressUrl(data.contributor)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
+          <a href={addressUrl(data.contributor)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer" className="text-probe hover:underline">
             {data.contributor}
           </a>
         </Field>
         <Field label="Recorded">{new Date(data.createdAt).toLocaleString()}</Field>
         <Field label="Transaction">
           {data.txHash ? (
-            <a href={txUrlOn(data.chainId ?? appChain.id, data.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">{data.txHash}</a>
+            <a href={txUrlOn(data.chainId ?? appChain.id, data.txHash)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer" className="text-probe hover:underline">{data.txHash}</a>
           ) : (
             <span className="text-scribe-3">not submitted on chain</span>
           )}
         </Field>
+        {data.txHash && (data.chainId ?? appChain.id) === appChain.id ? (
+          <OnChainReceipt txHash={data.txHash as Hex} trajHash={data.trajHash as Hex} />
+        ) : null}
         {data.chainId && data.chainId !== appChain.id ? (
           // Runs from before the move. Saying so is the difference between an
           // archived payout and one the current chain cannot account for.
@@ -761,5 +769,53 @@ function WouldHavePaidNote({
         have scored.
       </p>
     </div>
+  );
+}
+
+/**
+ * What the run's own transaction says, read from its receipt: the USDC the
+ * protocol paid (TrajectoryAccepted), and the Arc Memo tag when the submit went
+ * through Memo (`memoId == trajHash`). Nothing here comes from our database.
+ */
+function OnChainReceipt({ txHash, trajHash }: { txHash: Hex; trajHash: Hex }) {
+  const client = usePublicClient();
+  const { data, isError } = useQuery({
+    queryKey: ["run-receipt", txHash],
+    enabled: Boolean(client),
+    staleTime: Infinity,
+    queryFn: async () => {
+      const receipt = await client!.getTransactionReceipt({ hash: txHash });
+      let paid: bigint | null = null;
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() !== AXON_ADDRESS.toLowerCase()) continue;
+        try {
+          const ev = decodeEventLog({ abi: AXON_ABI, data: log.data, topics: log.topics });
+          if (ev.eventName === "TrajectoryAccepted" && (ev.args as { trajHash: Hex }).trajHash.toLowerCase() === trajHash.toLowerCase()) {
+            paid = (ev.args as { paid: bigint }).paid;
+          }
+        } catch { /* another event */ }
+      }
+      return { paid, memo: memoOf(receipt, trajHash), block: receipt.blockNumber };
+    },
+  });
+  if (isError) return <Field label="Receipt"><span className="text-scribe-3">could not be read from {CHAIN_SHORT}</span></Field>;
+  if (!data) return <Field label="Paid"><span className="text-scribe-3">reading the receipt…</span></Field>;
+  return (
+    <>
+      <Field label="Paid">
+        <span className="text-signal">{data.paid !== null ? usdcLabel(data.paid, 6) : "—"}</span>
+        <span className="ml-2 text-scribe-3">in block {data.block.toLocaleString("en-US")}, final when included</span>
+      </Field>
+      <Field label="Memo">
+        {data.memo ? (
+          <span data-testid="run-memo">
+            <span className="text-scribe-2">{data.memo.line}</span>
+            <span className="ml-2 text-scribe-3">memo #{data.memo.memoIndex.toString()} · id {shortHash(trajHash)} (this run)</span>
+          </span>
+        ) : (
+          <span className="text-scribe-3">untagged: submitted as a plain call, not through Arc&rsquo;s Memo</span>
+        )}
+      </Field>
+    </>
   );
 }

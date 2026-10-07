@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useSession } from "@/components/session";
 import { useTaskCatalogue } from "@/components/tasks-provider";
-import { useGasSponsored } from "@/lib/contract-write";
 import { STATION_SEEN } from "@/lib/first-run";
 import { CURRENCY, FAUCET_URL, LOCALNET, LOW_GAS_BALANCE, PASSKEY_ADDRESS, appChain } from "@/lib/chain";
-import { fmtMon, shortHash } from "@/lib/format";
+import { fmtUsdc, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 /**
@@ -46,7 +45,6 @@ type Step = {
 
 export default function StartPage() {
   const s = useSession();
-  const gasSponsored = useGasSponsored();
   const { open, isLoading } = useTaskCatalogue();
   const drove = useSyncExternalStore(noop, seenStation, () => false);
   const address = s.connected ? s.address : null;
@@ -78,7 +76,7 @@ export default function StartPage() {
   const myRuns = runs?.for === address ? runs.v : undefined;
   const paid = myRuns?.[0] ?? null;
   const task = open[0] ?? null;
-  const enoughGas = gasSponsored || s.balance >= LOW_GAS_BALANCE;
+  const enoughGas = s.balance >= LOW_GAS_BALANCE;
 
   const steps: Step[] = [
     {
@@ -88,18 +86,16 @@ export default function StartPage() {
       detail: s.connected && address
         ? <>Signed in as <span className="font-mono">{shortHash(address)}</span> on {appChain.name}.</>
         : LOCALNET
-          ? "A wallet this browser makes and keeps, on the local chain. The local faucet funds it."
-          : "With an email address or a wallet you already have. Privy makes you a wallet on Monad; there is no seed phrase to write down.",
+          ? "A wallet this browser makes and keeps, on the local Arc fork. The fork's faucet sends it USDC."
+          : "With an email address or a wallet you already have. Privy makes you a wallet on Arc; there is no seed phrase to write down.",
       action: <button type="button" onClick={() => void s.connect()} className={primary}>{LOCALNET ? "Sign in with the local wallet" : "Sign in"}</button>,
     },
     {
       key: "gas",
-      title: "Gas for a submit",
+      title: "USDC for gas",
       state: !s.connected ? "todo" : enoughGas ? "done" : "todo",
-      detail: gasSponsored
-        ? "Gas is sponsored: a submit costs you nothing, and your balance never moves for it."
-        : <>You hold {fmtMon(s.balance, 4)} {CURRENCY}. Monad charges the whole gas limit, not what a transaction uses, so a submit needs about {LOW_GAS_BALANCE} {CURRENCY} on hand.</>,
-      action: <a href={FAUCET_URL} className={primary} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })}>{LOCALNET ? "Fund it from the local faucet" : "Get testnet MON"}</a>,
+      detail: <>You hold {fmtUsdc(s.balance, 4)} {CURRENCY}. Gas on Arc is USDC, the same dollars you are paid in, and a submit costs a fraction of a cent: {LOW_GAS_BALANCE} {CURRENCY} covers many.</>,
+      action: <a href={FAUCET_URL} className={primary} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })}>{LOCALNET ? "Fund it from the fork's faucet" : "Get testnet USDC"}</a>,
     },
     {
       key: "passkey",
@@ -107,7 +103,7 @@ export default function StartPage() {
       state: !address ? "todo" : !operator ? "checking" : "error" in operator ? "todo" : operator.passkey ? "done" : "todo",
       detail: operator && "error" in operator
         ? <span className="text-reject">{operator.error}</span>
-        : <>Face ID, a fingerprint or a PIN. Its public key goes into PasskeyRegistry (<span className="font-mono">{shortHash(PASSKEY_ADDRESS)}</span>), and Monad&rsquo;s P-256 precompile at <span className="font-mono">0x0100</span> checks its signatures, so a paid run comes from a person.</>,
+        : <>Face ID, a fingerprint or a PIN. Its public key goes into PasskeyRegistry (<span className="font-mono">{shortHash(PASSKEY_ADDRESS)}</span>), and Arc&rsquo;s P-256 precompile at <span className="font-mono">0x0100</span> checks its signatures, so a paid run comes from a person.</>,
       action: <Link href="/passkey" className={primary}>Set up your passkey</Link>,
     },
     {
@@ -123,7 +119,7 @@ export default function StartPage() {
       state: !address ? "todo" : myRuns === undefined ? "checking" : paid ? "done" : "todo",
       detail: paid
         ? <>Paid and recorded on chain. <Link href={`/run/${paid.traj_hash}`} className="text-signal hover:text-signal-hi">Run {shortHash(paid.traj_hash)} on task #{paid.task_id} &rarr;</Link></>
-        : <>Place the payload inside the ring. The verifier scores it from the samples, and one transaction records the run and pays you{task ? <> {fmtMon(task.rewardMon)} {CURRENCY} on task #{task.id}</> : null}.</>,
+        : <>Place the payload inside the ring. The verifier scores it from the samples, and one transaction records the run and pays you{task ? <> {fmtUsdc(task.rewardUsdc)} {CURRENCY} on task #{task.id}</> : null}, final in under a second.</>,
       action: task ? <Link href={`/station/${task.id}`} className={primary}>Earn on task #{task.id}</Link> : isLoading ? null : <Link href="/hub" className={primary}>Find a task</Link>,
     },
   ];

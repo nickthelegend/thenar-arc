@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { MonadPipeline } from "@/components/monad-pipeline";
+import { ArcFinality } from "@/components/arc-finality";
 import { Reveal } from "@/components/labs/reveal";
 import { SiteNav } from "@/components/site-nav";
-import { appChain } from "@/lib/chain";
+import { CHAIN_SHORT, LOCALNET, appChain } from "@/lib/chain";
+import { fmtUsdc } from "@/lib/format";
 import { openTasks } from "@/lib/server/open-tasks";
 import { labsHref } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Thenar — teach a robot, get paid on Monad",
+  title: "Thenar — teach a robot, get paid in USDC on Arc",
   description:
-    "Pick a funded task, drive an SO-101 from your browser, a Meta Quest 3S or your own leader arm, and be paid on Monad in the transaction that records the run.",
+    "Pick a funded task, drive an SO-101 from your browser, a Meta Quest 3S or your own leader arm, and be paid in USDC on Arc in the transaction that records the run.",
 };
 
 export const revalidate = 60;
@@ -41,10 +42,20 @@ const WAYS = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Set up your passkey", body: "Once. Face ID, a fingerprint or a PIN; Monad checks it on chain, so paid runs come from a person." },
+  { n: "01", title: "Set up your passkey", body: "Once. Face ID, a fingerprint or a PIN; Arc checks it on chain through its P-256 precompile, so paid runs come from a person." },
   { n: "02", title: "Do the task", body: "Pick the payload up and place it in the goal ring. The station measures the run as you finish." },
-  { n: "03", title: "Get paid", body: "The verifier signs the score and one Monad transaction records the run and pays you. Your share of the corpus is issued a moment later." },
+  { n: "03", title: "Get paid", body: "The verifier, an ERC-8004 agent on Arc, signs the score, and one Arc transaction records the run and pays you in USDC, final in under a second. Take it to any chain with CCTP." },
 ];
+
+/** What Thenar uses Arc for, one line each; /arc has the contracts and how each was verified. */
+const ARC_STACK = [
+  { tag: "USDC", title: "Paid per run, in USDC", body: "Escrow, payouts, licences and dividends are Circle's USDC. Gas is USDC too, so an operator holds one token." },
+  { tag: "Finality", title: "Final in under a second", body: "Arc's finality is deterministic: the block that records a run is final when it is made. No confirmations to wait for." },
+  { tag: "x402", title: "Agents pay per request", body: "An AI agent buys a task's corpus over HTTP with an EIP-3009 USDC authorisation, settled on Arc." },
+  { tag: "ERC-8004", title: "The verifier is an agent", body: "The scorer is registered in Arc's Identity Registry, and every paid verdict is written to its Reputation Registry." },
+  { tag: "CCTP V2", title: "Withdraw to any chain", body: "Operators burn their Arc earnings with CCTP and mint native USDC on Base, Ethereum or Arbitrum." },
+  { tag: "Gateway · CCIP", title: "Funded and bought from anywhere", body: "Sponsors fund tasks from any chain through Circle Gateway; buyers on Base license a corpus over Chainlink CCIP." },
+] as const;
 
 export default async function ThenarHome() {
   const figures = await openTasks();
@@ -57,20 +68,21 @@ export default async function ThenarHome() {
         <Reveal fade>
           <p className="rounded-full border border-white/10 px-3 py-1 text-xs text-scribe-2">
             <span className="mr-2 inline-block size-1.5 rounded-full bg-go align-middle" />
-            Live on {appChain.name}
+            {LOCALNET ? `Local fork of ${appChain.name}` : `Live on ${appChain.name}`}
           </p>
         </Reveal>
         <Reveal fade delay={100}>
           <h1 className="heading-glow mx-auto mt-6 max-w-[760px] text-5xl font-medium leading-none tracking-tight sm:text-7xl">
             Teach a robot.
             <br />
-            Get paid on Monad.
+            Get paid in USDC.
           </h1>
         </Reveal>
         <Reveal delay={200}>
           <p className="mx-auto mt-6 max-w-[580px] text-base text-scribe-2 sm:text-lg">
-            Pick a funded task and drive the robot arm. The run is scored and paid in the same Monad transaction that
-            records it, and every paid run makes you an owner of the data.
+            Pick a funded task and drive the robot arm. The run is scored and paid in USDC in the same Arc transaction
+            that records it, final in under a second, and every paid run makes you an owner of the data. Gas is USDC
+            too: one token, nothing else to hold.
           </p>
         </Reveal>
         <Reveal delay={300} className="mt-8 flex flex-wrap justify-center gap-3">
@@ -86,12 +98,12 @@ export default async function ThenarHome() {
           <Reveal delay={400} className="mt-14 grid w-full max-w-[860px] grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-[#0B0B0D]">
             <Figure value={String(figures.tasks.length)} label="funded tasks" />
             <Figure value={String(figures.slotsLeft)} label="paid runs open" />
-            <Figure value={`${figures.escrowMon.toFixed(3)}`} label="MON in escrow" />
+            <Figure value={fmtUsdc(figures.escrowUsdc)} label="USDC in escrow" />
           </Reveal>
         ) : null}
-        {/* Monad's pace, shown rather than claimed: the real testnet's blocks, live. */}
+        {/* Arc's finality, shown rather than claimed: the real chain's blocks, live. */}
         <Reveal delay={500} className="mt-4 w-full max-w-[860px]">
-          <MonadPipeline />
+          <ArcFinality />
         </Reveal>
       </section>
 
@@ -115,8 +127,8 @@ export default async function ThenarHome() {
                   <p className="mt-4 text-lg leading-snug">{t.instruction}</p>
                   <div className="mt-auto flex items-end justify-between pt-6">
                     <span>
-                      <span className="text-2xl font-medium tabular-nums text-signal">{t.rewardMon}</span>
-                      <span className="ml-1 text-sm text-scribe-3">MON a run</span>
+                      <span className="text-2xl font-medium tabular-nums text-signal">{fmtUsdc(t.rewardUsdc)}</span>
+                      <span className="ml-1 text-sm text-scribe-3">USDC a run</span>
                     </span>
                     <span className="text-sm text-scribe-3">{t.slotsLeft} of {t.slotsTotal} left</span>
                   </div>
@@ -161,12 +173,29 @@ export default async function ThenarHome() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-[1200px] px-6 py-16" aria-labelledby="arc-stack">
+        <Reveal className="flex flex-wrap items-end justify-between gap-4">
+          <h2 id="arc-stack" className="text-3xl font-medium tracking-tight sm:text-4xl">Built on Arc</h2>
+          <Link href="/arc" className="text-sm text-scribe-2 transition-colors hover:text-white">How each piece is wired →</Link>
+        </Reveal>
+        <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+          {ARC_STACK.map((a, i) => (
+            <Reveal key={a.title} delay={(i % 3) * 80} className="flex flex-col bg-[#0B0B0D] p-6">
+              <span className="font-mono text-xs text-scribe-3">{a.tag}</span>
+              <h3 className="mt-3 text-lg font-medium">{a.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-scribe-2">{a.body}</p>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
       <section className="mx-auto max-w-[1200px] px-6 pb-28 pt-8">
         <Reveal className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/10 bg-[#0B0B0D] p-8 sm:flex-row sm:items-center sm:p-10">
           <div>
             <h2 className="text-2xl font-medium tracking-tight">Building an AI agent?</h2>
             <p className="mt-2 max-w-[560px] text-sm text-scribe-2">
-              Agents buy a task&rsquo;s data over HTTP for a cent of USDC through x402, and check the file against the sale logged on Monad.
+              Agents buy a task&rsquo;s data over HTTP for a cent of USDC through x402, settled on {CHAIN_SHORT}, and check the file
+              against the sale logged there, under their ERC-8004 identity.
             </p>
           </div>
           <div className="flex gap-3">

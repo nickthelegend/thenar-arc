@@ -4,12 +4,6 @@ import { PROTOCOL_METHODS } from "@/lib/protocol-methods";
 /**
  * Every function the deployed protocol has, by selector.
  *
- * This used to be built from AXON_ABI, which is the pruned list of calls the
- * interface makes — so a settlement log resolving against it could name a call
- * the interface makes and nothing else. A third of this contract's history came
- * back "unrecognised": createTaskUntil, closeTask and submitTrajectoryFor, all
- * real functions of the deployed contract that this frontend never calls.
- *
  * Generated from the compiler's artifact by scripts/gen-abi.mjs, so it cannot
  * name a function the deployed contract does not have, and cannot miss one it
  * does.
@@ -17,21 +11,20 @@ import { PROTOCOL_METHODS } from "@/lib/protocol-methods";
 export const METHODS = PROTOCOL_METHODS;
 
 /**
- * Monad's own index of the chain, from Monadscan.
+ * Arc's own index of the chain, from its Blockscout explorer.
  *
  * Everything the app shows about a run is reconstructible from the contract,
  * but a list of every call an address made needs something that has already
- * walked the chain — plain RPC cannot answer "which transactions did this
- * address send", and on Monad plain RPC cannot even scan logs further back
- * than a hundred blocks. Monadscan is Etherscan's, reached through Etherscan's
- * multichain V2 API, and its txlist returns the method selector, gas, value
- * and whether the call reverted — so reverted calls stay visible, which no
- * event scan can show.
+ * walked the chain: plain RPC cannot answer "which transactions did this
+ * address send". Arc's explorer is Blockscout, whose Etherscan-compatible
+ * `/api?module=account&action=txlist` returns the method selector, gas and
+ * whether the call reverted, so reverted calls stay visible, which no event
+ * scan can show. It needs no key.
  *
- * It wants a key. ETHERSCAN_API_KEY is read on the server only; without it
- * this says so rather than answering with an empty history.
+ * A local fork has no explorer index; there every transaction is in the app's
+ * own /explorer, read straight off the node.
  */
-const BASE = "https://api.etherscan.io/v2/api";
+const BASE = `${appChain.blockExplorers.default.url}/api`;
 
 export class IndexUnavailable extends Error {}
 
@@ -59,8 +52,8 @@ export type Settlement = {
   at: number;
   blockNumber: number;
   gasUsed: number;
-  /** What the call cost the caller, in MON — the same currency as the payout
-   *  it bought. */
+  /** What the call cost the caller in gas, in USDC: the same dollar as the
+   *  payout it bought (gas used times price, 18-decimal native units). */
   fee: number;
 };
 
@@ -68,7 +61,7 @@ export type Settlement = {
  * The index's last answer per address, and the request already on its way.
  *
  * A task page asks for its funder's history on every load — twice under React's
- * development double effect — and a free explorer key allows a few requests a
+ * development double effect — and a public explorer API allows a few requests a
  * second. An answer is reused for thirty seconds, concurrent callers share one
  * request, and when the index refuses, the last list it did return is used if
  * it is under ten minutes old. Older than that, the refusal is passed on.
@@ -79,7 +72,7 @@ const answered = new Map<string, { at: number; value: Settlement[] }>();
 const asking = new Map<string, Promise<Settlement[]>>();
 
 /**
- * Every call this address has made to the protocol, newest first, as Monadscan
+ * Every call this address has made to the protocol, newest first, as Arc's explorer
  * recorded them. Nothing is inferred: a row exists only because the index
  * returned a transaction whose recipient is the contract.
  */
@@ -105,23 +98,15 @@ export async function settlementsFor(address: string, pages = 2): Promise<Settle
 }
 
 async function readSettlements(address: string, pages: number): Promise<Settlement[]> {
-  // A local chain has no Monadscan, key or not: say that, rather than blame a missing key.
+  // A fork has no explorer index: say that, rather than answer with an empty history.
   if (LOCALNET) {
-    throw new IndexUnavailable("Monadscan does not index this local chain. Every transaction is in the local explorer.");
-  }
-  const key = process.env.ETHERSCAN_API_KEY;
-  if (!key) {
-    throw new IndexUnavailable(
-      "Monadscan needs an Etherscan API key, and this server has none. Set ETHERSCAN_API_KEY.",
-    );
+    throw new IndexUnavailable("Arc's explorer does not index this local fork. Every transaction is in the local explorer.");
   }
   const out: Settlement[] = [];
   const offset = 100;
 
   for (let page = 1; page <= pages; page += 1) {
     const url = new URL(BASE);
-    url.searchParams.set("chainid", String(appChain.id));
-    url.searchParams.set("apikey", key);
     url.searchParams.set("module", "account");
     url.searchParams.set("action", "txlist");
     url.searchParams.set("address", address);
@@ -130,13 +115,13 @@ async function readSettlements(address: string, pages: number): Promise<Settleme
     url.searchParams.set("offset", String(offset));
 
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-    if (!res.ok) throw new Error(`Monadscan returned ${res.status}`);
+    if (!res.ok) throw new Error(`Arc's explorer returned ${res.status}`);
     const json = (await res.json()) as { status?: string; message?: string; result?: IndexedTx[] | string };
     // "No transactions found" arrives as status 0 with an empty result, which
-    // is an answer, not a failure. A refused key arrives as status 0 with the
+    // is an answer, not a failure. A refusal arrives as status 0 with the
     // reason in `result`, which is.
     if (json.status === "0" && typeof json.result === "string" && !/no transactions/i.test(json.message ?? "")) {
-      throw new IndexUnavailable(`Monadscan refused: ${json.result}`);
+      throw new IndexUnavailable(`Arc's explorer refused: ${json.result}`);
     }
     const rows = Array.isArray(json.result) ? json.result : [];
 
@@ -156,8 +141,8 @@ async function readSettlements(address: string, pages: number): Promise<Settleme
         at: Number(t.timeStamp) * 1000,
         blockNumber: Number(t.blockNumber),
         gasUsed,
-        // MON has 18 decimals, so wei-per-gas times gas is MON once divided by
-        // 10^18. Monad charges the limit, and Etherscan's gasUsed is what was charged.
+        // Gas is native USDC at 18 decimals: price times gas used, over 10^18,
+        // is dollars. Arc charges the gas used, which is what the index reports.
         fee: (gasUsed * gasPrice) / 1e18,
       });
     }

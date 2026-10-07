@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { erc20Abi, formatEther, formatUnits, getAddress, type Address } from "viem";
+import { erc20Abi, formatUnits, getAddress, type Address } from "viem";
+import { formatNative } from "@/lib/usdc";
 import { LOCALNET, appChain, CURRENCY, USDC } from "@/lib/chain";
 import { chainClient } from "@/lib/rpc";
 import { decodeCall, known } from "@/lib/server/explorer";
@@ -14,13 +15,13 @@ const client = chainClient();
 const SCAN_BLOCKS = 1_000n;
 
 /**
- * One address on the local chain: its balances, whether it is a contract,
+ * One address on the local Arc fork: its balances, whether it is a contract,
  * and the transactions it sent or received in the recent blocks, read block
  * by block from the node since nothing else indexes this chain.
  */
 export default async function AddressPage({ params }: { params: Promise<{ address: string }> }) {
   const { address: raw } = await params;
-  // Monad has Monadscan; this is for the chain nothing else indexes.
+  // Arc testnet and mainnet have Blockscout; this is for the local fork nothing else indexes.
   if (!LOCALNET || !/^0x[0-9a-fA-F]{40}$/.test(raw)) notFound();
   const address = getAddress(raw) as Address;
   const [balance, code, usdc, head] = await Promise.all([
@@ -46,9 +47,9 @@ export default async function AddressPage({ params }: { params: Promise<{ addres
       <p className="label">{appChain.name} · {code && code !== "0x" ? "contract" : "account"}</p>
       <h1 className="mt-2 break-all font-mono text-[15px] text-scribe">{address}{k ? ` · ${k.name}` : ""}</h1>
       <dl className="mt-6 grid grid-cols-[140px_1fr] gap-x-4 gap-y-2 border-y border-rule py-4 font-mono text-[13px] max-sm:grid-cols-1">
-        <dt className="label">Balance</dt>
-        <dd>{formatEther(balance)} {CURRENCY}</dd>
-        {usdc !== null ? (<><dt className="label">USDC</dt><dd>{formatUnits(usdc, 6)}</dd></>) : null}
+        <dt className="label">Native balance</dt>
+        <dd>{formatNative(balance)} {CURRENCY} <span className="text-scribe-3">(18 decimals; pays gas)</span></dd>
+        {usdc !== null ? (<><dt className="label">USDC ERC-20</dt><dd>{formatUnits(usdc, 6)} <span className="text-scribe-3">(6 decimals; the same balance)</span></dd></>) : null}
         <dt className="label">Code</dt>
         <dd>{code && code !== "0x" ? `${(code.length - 2) / 2} bytes` : "none"}</dd>
       </dl>
@@ -61,7 +62,7 @@ export default async function AddressPage({ params }: { params: Promise<{ addres
               <Link href={`/explorer/tx/${t.hash}`} className="text-probe hover:underline">{t.hash.slice(0, 18)}…</Link>
               <span className="text-scribe-3">{new Date(Number(at) * 1000).toISOString().slice(0, 19).replace("T", " ")}</span>
               <span className="text-scribe-2">{c ? `${c.contract}.${c.fn}` : t.to ? "transfer" : "create"}</span>
-              {t.value > 0n ? <span>{formatEther(t.value)} {CURRENCY}</span> : null}
+              {t.value > 0n ? <span>{formatNative(t.value)} {CURRENCY}</span> : null}
             </li>
           );
         })}

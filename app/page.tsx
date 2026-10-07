@@ -10,6 +10,7 @@ import { Tagline } from "@/components/labs/tagline";
 import { HeroVideo } from "@/components/labs/hero-video";
 import { BuiltWith } from "@/components/labs/built-with";
 import { appChain } from "@/lib/chain";
+import { fmtUsdc } from "@/lib/format";
 import { openTasks } from "@/lib/server/open-tasks";
 import { PRODUCTS } from "@/lib/products";
 import { APP_HOME, appHref } from "@/lib/site";
@@ -17,16 +18,16 @@ import { APP_HOME, appHref } from "@/lib/site";
 export const metadata: Metadata = {
   title: "ThenarLabs — we build physical AI",
   description:
-    "ThenarLabs builds robots you can print, the teleoperation that drives them, and Thenar: where people are paid on Monad for every run they record.",
+    "ThenarLabs builds robots you can print, the teleoperation that drives them, and Thenar: where people are paid in USDC on Arc for every run they record.",
 };
 
 // Figures from the chain, at most five minutes old.
 export const revalidate = 300;
 
-async function monadFigures() {
+async function chainFigures() {
   // The same reading as the app's home and the hub: open means taking runs now.
   const f = await openTasks();
-  return f ? { tasks: f.tasks.length, escrow: f.escrowMon, open: f.slotsLeft } : null;
+  return f ? { tasks: f.tasks.length, escrow: f.escrowUsdc, open: f.slotsLeft } : null;
 }
 
 const STEPS = [
@@ -38,7 +39,7 @@ const STEPS = [
   {
     n: "02",
     title: "Get paid",
-    body: "A verifier measures the run and signs its score. One Monad transaction records it and pays you, in the block that holds it.",
+    body: "A verifier measures the run and signs its score. One Arc transaction records it and pays you in USDC, final in under a second.",
   },
   {
     n: "03",
@@ -58,15 +59,15 @@ const FAQ = [
   },
   {
     q: "How are operators paid?",
-    a: "In MON on Monad, by the same transaction that records the run, from escrow the task's funder put up front. The station shows the payout and what it cost to settle.",
+    a: "In USDC on Arc, by the same transaction that records the run, from escrow the task's funder put up front. Gas is USDC too, a fraction of a cent. Withdraw to Base, Ethereum or Arbitrum whenever you like with Circle's CCTP.",
   },
   {
     q: "What stops fake runs?",
-    a: "A paid run needs a person behind the address: a passkey checked on chain through Monad's P-256 precompile. The verifier also rejects a recording whose arm never really carried the object.",
+    a: "A paid run needs a person behind the address: a passkey checked on chain through Arc's P-256 precompile. The verifier, an ERC-8004 agent with a public reputation, also rejects a recording whose arm never really carried the object.",
   },
   {
     q: "Who buys the data?",
-    a: "Robotics labs and AI agents. An agent asks for a task's corpus over HTTP, pays a cent of USDC through x402, and checks the file against the sale logged on Monad.",
+    a: "Robotics labs and AI agents. An agent asks for a task's corpus over HTTP, pays a cent of USDC through x402 on Arc, and checks the file against the sale logged there. A buyer on Base can license a whole corpus over Chainlink CCIP, and sponsors fund tasks from any chain through Circle Gateway.",
   },
   {
     q: "Is the hardware open source?",
@@ -75,7 +76,7 @@ const FAQ = [
 ];
 
 export default async function LabsHome() {
-  const figures = await monadFigures();
+  const figures = await chainFigures();
   // The animated hero, once it exists; its first frame until then.
   const heroFilm = existsSync(path.join(process.cwd(), "public", "labs", "hero.mp4"));
   // Hardware with real pictures, then the app: what a visitor can hold, and where they can earn.
@@ -100,8 +101,8 @@ export default async function LabsHome() {
           </Reveal>
           <Reveal fade delay={150}>
             <p className="mx-auto mt-6 max-w-[560px] text-base text-scribe-2 sm:text-lg">
-              Robots you can print, the rigs that drive them, and a market that pays people on Monad for every run they
-              record.
+              Robots you can print, the rigs that drive them, and a market that pays people in USDC on Arc for every run
+              they record.
             </p>
           </Reveal>
           <Reveal fade delay={300} className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -218,9 +219,16 @@ export default async function LabsHome() {
           <Reveal className="mt-4 grid gap-4 rounded-3xl border border-white/10 bg-[#0B0B0D] p-8 sm:grid-cols-3">
             <Figure value={String(figures.tasks)} label={`funded tasks on ${appChain.name}`} />
             <Figure value={String(figures.open)} label="paid runs still open to anyone" />
-            <Figure value={`${figures.escrow.toFixed(3)} MON`} label="in escrow, paid out per run" />
+            <Figure value={`${fmtUsdc(figures.escrow)} USDC`} label="in escrow, paid out per run" />
           </Reveal>
         ) : null}
+        <Reveal className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-[#0B0B0D] px-8 py-6">
+          <p className="max-w-[640px] text-sm text-scribe-2">
+            Settled on Arc, Circle&rsquo;s stablecoin chain: USDC for pay and gas, x402 for agents, ERC-8004 for the
+            verifier, CCTP to withdraw anywhere, Gateway and CCIP to fund and buy from other chains.
+          </p>
+          <Link href={appHref("/arc")} className="text-sm text-white transition-colors hover:text-lilac">The Arc stack →</Link>
+        </Reveal>
       </section>
 
       {/* FAQ. */}
@@ -247,7 +255,7 @@ export default async function LabsHome() {
         <Reveal fade>
           <h2 className="heading-glow mx-auto mt-6 max-w-[680px] text-4xl font-medium tracking-tight sm:text-6xl">Teach a robot today</h2>
           <p className="mx-auto mt-5 max-w-[520px] text-base text-scribe-2">
-            Pick a funded task, drive the arm, and be paid on Monad before the page finishes telling you so.
+            Pick a funded task, drive the arm, and be paid in USDC on Arc before the page finishes telling you so.
           </p>
           <div className="mt-8 flex justify-center">
             <Link

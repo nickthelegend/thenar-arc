@@ -1,30 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { Hex } from "viem";
-import { MonadPipeline } from "@/components/monad-pipeline";
+import { useCallback, useEffect, useState } from "react";
+import { bytesToHex, concatHex, type Hex } from "viem";
+import { ArcFinality } from "@/components/arc-finality";
 import { DimRule } from "@/components/primitives";
-import { CANONICAL, MONAD_RPC, P256_VERIFY, STAKING, callData, commissionPct, decode, monadBatch, p256Input, p256Valid } from "@/lib/monad-network";
-import { DIPPED_INTO_RESERVE, RESERVE_PRECOMPILE } from "@/lib/reserve";
-import { DEPLOYMENT } from "@/lib/deployment";
-import { LOCALNET, monadVisionAddress } from "@/lib/chain";
+import { HEARTBEAT_NAME, HEARTBEAT_RPC, rpcBatch } from "@/lib/arc-blocks";
+import { ACTIVE_DEPLOYMENT, ARC_EXTERNAL, CHAIN_SHORT, LOCALNET, RPC_ENDPOINTS, USDC, addressUrl, appChain } from "@/lib/chain";
+import { memoProbeCall, probeRevertProvesCallFrom } from "@/lib/memo";
 import { cn } from "@/lib/cn";
 
 /**
- * Monad testnet, read live by this page.
+ * Arc, read live by this page.
  *
- * What a judge can check without trusting Thenar: the chain's own consensus
- * tags, its staking and reserve-balance precompiles, a P-256 signature made in
- * this page and verified by Monad's precompile, the shared contracts every
- * Monad app can use, Monad's x402 facilitator, and Thenar's own contracts on
- * Monad. Every number is a request this page (or, where a service refuses
- * browsers, this server) made, with the time it was made. Nothing is sent and
- * nothing is signed with a wallet.
+ * What a judge can check without trusting Thenar: Arc's finality tags, a P-256
+ * signature made in this page and verified by Arc's precompile at 0x0100, the
+ * Memo extension's CallFrom answering a probe, USDC as gas (the native balance
+ * and the ERC-20 are one balance), the Circle and Chainlink contracts Thenar
+ * calls, and Thenar's own. Every number is a request this page made, with the
+ * time it was made. Nothing is sent and nothing is signed with a wallet.
+ *
+ * On a fork build, the network-level reads (finality, P-256, Memo) go to the
+ * real Arc testnet; the contract reads go to the fork the app runs on.
  */
 
 type Live<T> = { data: T | null; at: number | null; error: string | null; retryIn: number | null };
 
-/** Poll `read` every `every` ms; back off (to 30 s) while Monad's public RPC rate-limits. */
+/** Poll `read` every `every` ms; back off (to 30 s) while a public RPC rate-limits. */
 function useLive<T>(read: (signal: AbortSignal) => Promise<T>, every: number): Live<T> {
   const [s, setS] = useState<Live<T>>({ data: null, at: null, error: null, retryIn: null });
   const readRef = useRef(read);
@@ -40,8 +41,7 @@ function useLive<T>(read: (signal: AbortSignal) => Promise<T>, every: number): L
         delay = every;
         if (live) setS({ data, at: Date.now(), error: null, retryIn: null });
       } catch (e) {
-        const limited = (e as { rateLimited?: boolean }).rateLimited;
-        delay = limited ? Math.min(30_000, delay * 2) : Math.min(30_000, every * 2);
+        delay = Math.min(30_000, Math.max(delay, every) * 2);
         if (live) setS((p) => ({ ...p, error: e instanceof Error ? e.message : String(e), retryIn: Math.round(delay / 1000) }));
       }
       if (live && document.visibilityState !== "hidden") t = setTimeout(tick, delay);
@@ -75,56 +75,76 @@ function Card({ title, children, testid }: { title: string; children: React.Reac
   );
 }
 
-const RPC_HOST = new URL(MONAD_RPC).host;
+const NETWORK = HEARTBEAT_NAME ?? appChain.name;
+const RPC_HOST = new URL(HEARTBEAT_RPC).host;
+const APP_RPC = RPC_ENDPOINTS[0];
+const APP_HOST = APP_RPC.startsWith("http") ? new URL(APP_RPC).host : APP_RPC;
+const P256_VERIFY = "0x0000000000000000000000000000000000000100";
+
+/** EIP-7951 / RIP-7212 input: hash ‖ r ‖ s ‖ qx ‖ qy, 160 bytes. */
+function p256Input(hash: Uint8Array, signature: Uint8Array, publicKeyRaw: Uint8Array): Hex {
+  return concatHex([bytesToHex(hash), bytesToHex(signature), bytesToHex(publicKeyRaw.slice(1))]);
+}
+/** The precompile answers 32 bytes ending in 1 for a valid signature, and nothing for an invalid one. */
+const p256Valid = (result: unknown) => typeof result === "string" && /^0x0{63}1$/.test(result);
+
+const EXTERNAL: { name: string; address: string; use: string }[] = [
+  { name: "USDC (Circle)", address: ARC_EXTERNAL.usdc, use: "Escrow, payouts, licences, dividends, x402 payments, and gas: one token for everything (6-decimal ERC-20 view of the native balance)." },
+  { name: "Memo extension", address: ARC_EXTERNAL.memo, use: "Every payout is submitted through it, tagged with the run id, when CallFrom is live (lib/submit.ts)." },
+  { name: "ERC-8004 Identity Registry", address: ARC_EXTERNAL.identityRegistry, use: "The verifier is a registered agent; buying agents are recognised by their id." },
+  { name: "ERC-8004 Reputation Registry", address: ARC_EXTERNAL.reputationRegistry, use: "Every paid verdict is written here by ThenarVerdicts." },
+  { name: "CCTP TokenMessengerV2", address: ARC_EXTERNAL.tokenMessengerV2, use: "Operators burn earnings here to mint USDC on another chain (/portfolio)." },
+  { name: "CCTP MessageTransmitterV2", address: ARC_EXTERNAL.messageTransmitterV2, use: "Receives the CCTP half of a cross-chain licence purchase." },
+  { name: "Gateway Wallet", address: ARC_EXTERNAL.gatewayWallet, use: "A sponsor's unified USDC balance, deposited on any chain." },
+  { name: "Gateway Minter", address: ARC_EXTERNAL.gatewayMinter, use: "Mints that balance on Arc to fund a task." },
+  { name: "Chainlink CCIP Router", address: ARC_EXTERNAL.ccipRouter, use: "Carries a licence order from Base or Ethereum to ThenarCcipReceiver." },
+].filter((c) => /^0x[0-9a-fA-F]{40}$/.test(c.address));
+
+const THENAR = Object.entries(ACTIVE_DEPLOYMENT.contracts).filter(([, a]) => typeof a === "string" && /^0x[0-9a-fA-F]{40}$/.test(a)) as [string, string][];
 
 export default function NetworkPage() {
-  // latest, safe and finalized in one batch: separate calls can land on different nodes behind the load balancer.
+  // latest, safe and finalized in one batch, so all three come from the same node.
   const tags = useLive(useCallback(async (signal: AbortSignal) => {
-    const r = await monadBatch(["latest", "safe", "finalized"].map((t) => ({ method: "eth_getBlockByNumber", params: [t, false] })), signal);
-    return r.map((x) => hexNum((x.result as { number?: string } | null)?.number));
-  }, []), 3_000);
+    const r = await rpcBatch(HEARTBEAT_RPC, ["latest", "safe", "finalized"].map((t) => ({ method: "eth_getBlockByNumber", params: [t, false] })), signal);
+    return r.map((x) => hexNum((x as { number?: string } | null)?.number));
+  }, []), 2_000);
 
-  const staking = useLive(useCallback(async (signal: AbortSignal) => {
-    const [e, p, reserve] = await monadBatch([
-      { method: "eth_call", params: [{ to: STAKING, data: callData.getEpoch() }, "latest"] },
-      { method: "eth_call", params: [{ to: STAKING, data: callData.getProposerValId() }, "latest"] },
-      { method: "eth_call", params: [{ to: RESERVE_PRECOMPILE, data: DIPPED_INTO_RESERVE }, "latest"] },
+  // Memo's CallFrom: Arc runs it; a fork's node does not. The probe is the same one lib/submit.ts makes.
+  const memo = useLive(useCallback(async (signal: AbortSignal) => {
+    const c = memoProbeCall(USDC, ARC_EXTERNAL.memo);
+    const r = await fetch(HEARTBEAT_RPC, {
+      method: "POST", headers: { "content-type": "application/json" }, signal,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ from: c.from, to: c.to, data: c.data }, "latest"] }),
+    });
+    const b = (await r.json()) as { result?: string; error?: { message: string; data?: string } };
+    return { live: probeRevertProvesCallFrom(b.error?.data), answer: b.error ? `reverted ${String(b.error.data ?? b.error.message).slice(0, 18)}…` : `returned ${String(b.result).slice(0, 18)}` };
+  }, []), 60_000);
+
+  // USDC is the gas: the native balance (18 decimals) and the ERC-20 (6) are one number.
+  const gas = useLive(useCallback(async (signal: AbortSignal) => {
+    const who = (THENAR.find(([k]) => k === "protocol")?.[1] ?? ARC_EXTERNAL.gatewayWallet) as string;
+    const balanceOf = `0x70a08231${who.slice(2).toLowerCase().padStart(64, "0")}`;
+    const [native, erc20, price] = await rpcBatch(APP_RPC, [
+      { method: "eth_getBalance", params: [who, "latest"] },
+      { method: "eth_call", params: [{ to: USDC, data: balanceOf }, "latest"] },
+      { method: "eth_gasPrice", params: [] },
     ], signal);
-    const [epoch, inDelay] = decode.getEpoch(e.result as Hex);
-    const proposer = decode.getProposerValId(p.result as Hex);
-    const [v] = await monadBatch([{ method: "eth_call", params: [{ to: STAKING, data: callData.getValidator(proposer) }, "latest"] }], signal);
-    const val = decode.getValidator(v.result as Hex);
-    return {
-      epoch, inDelay, proposer,
-      auth: val[0], consensusStake: val[6], commission: commissionPct(val[4]),
-      dipped: (reserve.result as string | undefined) ?? (reserve.error ? `error: ${reserve.error.message}` : "?"),
-    };
-  }, []), 10_000);
+    return { who, native: BigInt((native as string) ?? "0x0"), erc20: BigInt((erc20 as string) || "0x0"), price: BigInt((price as string) ?? "0x0") };
+  }, []), 15_000);
 
   const code = useLive(useCallback(async (signal: AbortSignal) => {
-    const thenar = Object.entries(DEPLOYMENT.contracts).filter(([, a]) => /^0x[0-9a-fA-F]{40}$/.test(a)) as [string, string][];
-    const all = [...CANONICAL.map((c) => c.address), ...thenar.map(([, a]) => a)];
-    const r = await monadBatch(all.map((a) => ({ method: "eth_getCode", params: [a, "latest"] })), signal);
-    const bytes = (x: { result?: unknown }) => (typeof x.result === "string" ? (x.result.length - 2) / 2 : -1);
-    const [pool] = await monadBatch([{ method: "txpool_statusByAddress", params: [DEPLOYMENT.deployer] }], signal);
+    const bytes = (x: unknown) => (typeof x === "string" ? (x.length - 2) / 2 : -1);
+    const [ext, own] = await Promise.all([
+      rpcBatch(APP_RPC, EXTERNAL.map((c) => ({ method: "eth_getCode", params: [c.address, "latest"] })), signal),
+      rpcBatch(APP_RPC, THENAR.map(([, a]) => ({ method: "eth_getCode", params: [a, "latest"] })), signal),
+    ]);
     return {
-      canonical: CANONICAL.map((c, i) => ({ ...c, bytes: bytes(r[i]) })),
-      thenar: thenar.map(([name, address], i) => ({ name, address, bytes: bytes(r[CANONICAL.length + i]) })),
-      pool: pool.error ? `error: ${pool.error.message}` : JSON.stringify(pool.result),
+      external: EXTERNAL.map((c, i) => ({ ...c, bytes: bytes(ext[i]) })),
+      thenar: THENAR.map(([name, address], i) => ({ name, address, bytes: bytes(own[i]) })),
     };
   }, []), 60_000);
 
-  const offchain = useLive(useCallback(async (signal: AbortSignal) => {
-    const r = await fetch("/api/network", { signal });
-    if (!r.ok) throw new Error(`this server answered ${r.status}`);
-    return (await r.json()) as {
-      at: number;
-      facilitator: { url: string; kinds?: { scheme: string; network: string }[]; error?: string };
-      sourcify: { url: string; contracts?: { name: string; address: string; match: string | null }[]; error?: string };
-    };
-  }, []), 300_000);
-
-  // A P-256 key made in this page, its signature checked by Monad's precompile, and a tampered copy refused.
+  // A P-256 key made in this page, its signature checked by Arc's precompile, and a tampered copy refused.
   const [p256, setP256] = useState<{ ok: boolean | null; tampered: boolean | null; at: number | null; error: string | null; key: string | null }>({ ok: null, tampered: null, at: null, error: null, key: null });
   const runP256 = useCallback(async () => {
     setP256((p) => ({ ...p, ok: null, tampered: null, error: null }));
@@ -135,12 +155,12 @@ export default function NetworkPage() {
       const sig = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, kp.privateKey, msg));
       const raw = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
       const bad = hash.slice(); bad[0] ^= 1;
-      const [good, wrong] = await monadBatch([
+      const [good, wrong] = await rpcBatch(HEARTBEAT_RPC, [
         { method: "eth_call", params: [{ to: P256_VERIFY, data: p256Input(hash, sig, raw) }, "latest"] },
         { method: "eth_call", params: [{ to: P256_VERIFY, data: p256Input(bad, sig, raw) }, "latest"] },
       ]);
       const hex = Array.from(raw.slice(1, 9), (b) => b.toString(16).padStart(2, "0")).join("");
-      setP256({ ok: p256Valid(good.result as Hex), tampered: p256Valid(wrong.result as Hex), at: Date.now(), error: null, key: `04${hex}…` });
+      setP256({ ok: p256Valid(good), tampered: p256Valid(wrong), at: Date.now(), error: null, key: `04${hex}…` });
     } catch (e) {
       setP256((p) => ({ ...p, error: e instanceof Error ? e.message : String(e) }));
     }
@@ -148,61 +168,61 @@ export default function NetworkPage() {
   useEffect(() => { const t = setTimeout(() => void runP256(), 0); return () => clearTimeout(t); }, [runP256]);
 
   const [latest, safe, finalized] = tags.data ?? [NaN, NaN, NaN];
-  const st = staking.data;
-  const verified = offchain.data?.sourcify.contracts ?? [];
+  const g = gas.data;
 
   return (
     <div className="mx-auto max-w-[960px] px-5 py-10">
-      <h1 className="heading-glow text-4xl font-medium tracking-tight sm:text-5xl">Monad, read live</h1>
+      <h1 className="heading-glow text-4xl font-medium tracking-tight sm:text-5xl">Arc, read live</h1>
       <p className="mt-4 max-w-[64ch] text-base text-scribe-2 [text-wrap:pretty]">
-        The parts of Monad Thenar is built on, read from Monad testnet by this page as you watch: its consensus, its
-        precompiles, the shared contracts and Thenar&rsquo;s own. Nothing here is a figure we typed in.
-        {LOCALNET ? " This build's own transactions run on a local chain; everything on this page is the real network." : ""}
+        The parts of Arc Thenar is built on, read by this page as you watch: its finality, its P-256 precompile, the Memo
+        extension, USDC as gas, the Circle and Chainlink contracts and Thenar&rsquo;s own. Nothing here is a figure we typed in.
+        {LOCALNET ? ` This build's own transactions run on a local fork; finality, P-256 and Memo are read from the real ${NETWORK}.` : ""}
       </p>
 
-      <MonadPipeline className="mt-8" />
+      <ArcFinality className="mt-8" />
 
-      <DimRule className="mt-10" note="Consensus" />
+      <DimRule className="mt-10" note="Finality" />
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card title="latest, safe, finalized" testid="network-tags">
           <dl className="grid grid-cols-3 gap-2 font-mono">
-            {([["latest", latest, "Proposed"], ["safe", safe, "Voted"], ["finalized", finalized, "Finalized"]] as const).map(([k, n, s]) => (
+            {([["latest", latest], ["safe", safe], ["finalized", finalized]] as const).map(([k, n]) => (
               <div key={k}>
-                <dt className="font-sans text-xs text-scribe-3">{k} · {s}</dt>
+                <dt className="font-sans text-xs text-scribe-3">{k}</dt>
                 <dd className="text-base tabular-nums text-scribe">{Number.isNaN(n) ? "…" : n.toLocaleString("en-US")}</dd>
-                <dd className="text-xs tabular-nums text-scribe-3">{Number.isNaN(n) || Number.isNaN(latest) ? "" : n === latest ? "N" : `N−${latest - n}`}</dd>
+                <dd className="text-xs tabular-nums text-scribe-3">{Number.isNaN(n) || Number.isNaN(latest) ? "" : n >= latest ? "the head" : `head − ${latest - n}`}</dd>
               </div>
             ))}
           </dl>
           <p className="mt-3">
-            On Monad a block is final two slots after it is proposed, so <span className="font-mono">finalized</span> trails
-            the head by two blocks: about 600 ms. Thenar credits value only at that tag (lib/receipt-timers.ts). On Ethereum the
-            same tag trails by two epochs, about 13 minutes.
+            Arc&rsquo;s consensus is deterministic: a block is final when it is produced, so all three tags name the head (a
+            tag read a moment after the head can even be one ahead). On Ethereum <span className="font-mono">finalized</span> trails
+            by two epochs, about 13 minutes. Thenar shows a run as paid when its receipt arrives, because on Arc that is final.
           </p>
           <Stamp s={tags} source={RPC_HOST} />
         </Card>
 
-        <Card title="Staking (precompile 0x1000)" testid="network-staking">
+        <Card title="USDC is the gas" testid="network-gas">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <div><dt className="text-xs text-scribe-3">Epoch</dt><dd className="font-mono text-base tabular-nums text-scribe">{st ? String(st.epoch) : "…"}{st?.inDelay ? <span className="ml-2 text-xs text-scribe-3">in its delay period</span> : null}</dd></div>
-            <div><dt className="text-xs text-scribe-3">Proposing now</dt><dd className="font-mono text-base tabular-nums text-scribe">{st ? `validator ${st.proposer}` : "…"}</dd></div>
-            <div><dt className="text-xs text-scribe-3">Its consensus stake</dt><dd className="font-mono tabular-nums text-scribe">{st ? `${(Number(st.consensusStake / 10n ** 15n) / 1000).toLocaleString("en-US")} MON` : "…"}</dd></div>
-            <div><dt className="text-xs text-scribe-3">Its commission</dt><dd className="font-mono tabular-nums text-scribe">{st ? `${st.commission}%` : "…"}</dd></div>
+            <div><dt className="text-xs text-scribe-3">Native balance (18 dec)</dt><dd className="font-mono tabular-nums text-scribe">{g ? fmt(g.native, 18) : "…"}</dd></div>
+            <div><dt className="text-xs text-scribe-3">USDC.balanceOf (6 dec)</dt><dd className="font-mono tabular-nums text-scribe">{g ? fmt(g.erc20, 6) : "…"}</dd></div>
+            <div><dt className="text-xs text-scribe-3">Same dollars</dt><dd className={cn("font-mono tabular-nums", g ? (g.native / 10n ** 12n === g.erc20 ? "text-go" : "text-reject") : "text-scribe-3")}>{g ? (g.native / 10n ** 12n === g.erc20 ? "yes" : "no") : "…"}</dd></div>
+            <div><dt className="text-xs text-scribe-3">Gas price</dt><dd className="font-mono tabular-nums text-scribe">{g ? `${(Number(g.price) / 1e9).toFixed(2)} gwei of USDC` : "…"}</dd></div>
           </dl>
           <p className="mt-3">
-            Read with <span className="font-mono">getEpoch</span>, <span className="font-mono">getProposerValId</span> and{" "}
-            <span className="font-mono">getValidator</span>. Thenar does not stake its escrow: a funder&rsquo;s MON has to be
-            payable to an operator in the block a run is recorded, and staked MON takes an epoch to come back.
+            Read for the {g?.who ? <a href={addressUrl(g.who)} className="font-mono text-signal hover:text-signal-hi">{short(g.who)}</a> : "protocol"}{" "}
+            on {CHAIN_SHORT}. Arc&rsquo;s native balance is USDC and the ERC-20 at <span className="font-mono">0x3600…0000</span> is a
+            view of it, so an operator&rsquo;s earnings pay their gas. Arc charges the gas a transaction uses; every Thenar write sends
+            the node&rsquo;s estimate plus a fifth as its limit (lib/arc-gas.ts).
           </p>
-          <Stamp s={staking} source={RPC_HOST} />
+          <Stamp s={gas} source={APP_HOST} />
         </Card>
       </div>
 
-      <DimRule className="mt-10" note="Precompiles" />
+      <DimRule className="mt-10" note="Precompiles and extensions" />
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card title="P-256 (precompile 0x0100)" testid="network-p256">
           <p>
-            A key made in this page just now, a signature from it, and Monad&rsquo;s precompile asked to check it. Passkeys sign
+            A key made in this page just now, a signature from it, and Arc&rsquo;s precompile asked to check it. Passkeys sign
             with this curve, which is how PasskeyRegistry checks an operator&rsquo;s passkey on chain.
           </p>
           <ul className="mt-3 flex flex-col gap-1 font-mono text-xs">
@@ -216,40 +236,31 @@ export default function NetworkPage() {
           <p className={cn("mt-2 font-mono text-xs", p256.error ? "text-reject" : "text-scribe-3")}>{p256.error ?? `checked at ${time(p256.at)} on ${RPC_HOST}`}</p>
         </Card>
 
-        <Card title="Reserve balance (precompile 0x1001)" testid="network-reserve">
+        <Card title="Memo (CallFrom)" testid="network-memo">
           <p>
-            Every account keeps 10 MON that a transaction&rsquo;s value cannot dig into, because consensus runs ahead of
-            execution. A delegated (EIP-7702) account never gets the one-off exception. Thenar checks this before any write
-            that moves MON, and refuses one Monad would revert (lib/reserve.ts). Sponsored writes move none of the
-            operator&rsquo;s MON, so they never meet it.
+            Arc&rsquo;s Memo extension calls a contract as the transaction&rsquo;s own sender and logs a tag with it. Thenar submits
+            every run through it, tagged with the run id, so a payout says what it paid for. The probe wraps a USDC transfer
+            that must fail as a dead address; only a node running CallFrom returns that failure wrapped in Memo&rsquo;s
+            <span className="font-mono"> CallFailed</span>.
           </p>
           <p className="mt-3 font-mono text-xs">
-            dippedIntoReserve() as an eth_call: <span className="text-scribe">{st ? (st.dipped === "0x" + "0".repeat(64) ? "false" : st.dipped) : "…"}</span>
+            CallFrom: <span className={memo.data ? (memo.data.live ? "text-go" : "text-reject") : "text-scribe-3"}>{memo.data ? (memo.data.live ? "live" : "not live") : "…"}</span>
+            {memo.data ? <span className="text-scribe-3"> · {memo.data.answer}</span> : null}
           </p>
-          <Stamp s={staking} source={RPC_HOST} />
+          <Stamp s={memo} source={RPC_HOST} />
         </Card>
       </div>
 
-      <DimRule className="mt-10" note="Gas" />
-      <Card title="Charged on the limit" testid="network-gas">
-        <p>
-          Monad charges a transaction its whole gas limit, not the gas it uses, and a wallet whose estimate fails may fall back
-          to a large default. So every Thenar write first has the node estimate it under Monad&rsquo;s own rules; one whose
-          simulation reverts is not sent, and the rest go with the estimate plus a tenth as an explicit limit
-          (lib/monad-gas.ts). The station&rsquo;s receipt shows the limit, the gas used and what was charged.
-        </p>
-      </Card>
-
-      <DimRule className="mt-10" note="Shared contracts" />
+      <DimRule className="mt-10" note="Circle and Chainlink on Arc" />
       <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10" data-testid="network-canonical">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead><tr className="text-xs text-scribe-3"><th className="px-4 py-2 font-normal">Contract</th><th className="px-4 py-2 font-normal">Code</th><th className="px-4 py-2 font-normal">What Thenar does with it</th></tr></thead>
           <tbody>
-            {(code.data?.canonical ?? CANONICAL.map((c) => ({ ...c, bytes: null as number | null }))).map((c) => (
+            {(code.data?.external ?? EXTERNAL.map((c) => ({ ...c, bytes: null as number | null }))).map((c) => (
               <tr key={c.address} className="border-t border-white/10 align-top">
                 <td className="px-4 py-2">
                   <span className="text-scribe">{c.name}</span><br />
-                  <a href={monadVisionAddress(c.address)} target="_blank" rel="noreferrer" className="font-mono text-xs text-signal hover:text-signal-hi">{short(c.address)} &rarr;</a>
+                  <a href={addressUrl(c.address)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer" className="font-mono text-xs text-signal hover:text-signal-hi">{short(c.address)} &rarr;</a>
                 </td>
                 <td className={cn("px-4 py-2 font-mono text-xs", c.bytes && c.bytes > 0 ? "text-go" : "text-scribe-3")}>{c.bytes === null ? "…" : c.bytes > 0 ? `${c.bytes.toLocaleString("en-US")} bytes` : "none"}</td>
                 <td className="px-4 py-2 text-scribe-2">{c.use}</td>
@@ -258,44 +269,34 @@ export default function NetworkPage() {
           </tbody>
         </table>
       </div>
-      <Stamp s={code} source={RPC_HOST} />
+      <Stamp s={code} source={APP_HOST} />
 
-      <DimRule className="mt-10" note="Thenar on Monad testnet" />
+      <DimRule className="mt-10" note={`Thenar on ${CHAIN_SHORT}`} />
       <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10" data-testid="network-thenar">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead><tr className="text-xs text-scribe-3"><th className="px-4 py-2 font-normal">Contract</th><th className="px-4 py-2 font-normal">Code</th><th className="px-4 py-2 font-normal">Sourcify</th></tr></thead>
+        <table className="w-full min-w-[480px] text-left text-sm">
+          <thead><tr className="text-xs text-scribe-3"><th className="px-4 py-2 font-normal">Contract</th><th className="px-4 py-2 font-normal">Code</th></tr></thead>
           <tbody>
-            {(code.data?.thenar ?? []).map((c) => {
-              const v = verified.find((x) => x.address.toLowerCase() === c.address.toLowerCase());
-              return (
-                <tr key={c.address} className="border-t border-white/10">
-                  <td className="px-4 py-2"><span className="text-scribe">{c.name}</span> <a href={monadVisionAddress(c.address)} target="_blank" rel="noreferrer" className="font-mono text-xs text-signal hover:text-signal-hi">{short(c.address)} &rarr;</a></td>
-                  <td className={cn("px-4 py-2 font-mono text-xs", c.bytes > 0 ? "text-go" : "text-reject")}>{c.bytes > 0 ? `${c.bytes.toLocaleString("en-US")} bytes` : "none"}</td>
-                  <td className="px-4 py-2 font-mono text-xs text-scribe-3">{!offchain.data ? "…" : v?.match ? <span className="text-go">{v.match}</span> : "not verified"}</td>
-                </tr>
-              );
-            })}
+            {(code.data?.thenar ?? []).map((c) => (
+              <tr key={c.address} className="border-t border-white/10">
+                <td className="px-4 py-2"><span className="text-scribe">{c.name}</span> <a href={addressUrl(c.address)} target={LOCALNET ? undefined : "_blank"} rel="noreferrer" className="font-mono text-xs text-signal hover:text-signal-hi">{short(c.address)} &rarr;</a></td>
+                <td className={cn("px-4 py-2 font-mono text-xs", c.bytes > 0 ? "text-go" : "text-reject")}>{c.bytes > 0 ? `${c.bytes.toLocaleString("en-US")} bytes` : "none"}</td>
+              </tr>
+            ))}
+            {!THENAR.length ? <tr><td className="px-4 py-3 text-scribe-3" colSpan={2}>Not deployed on this network yet.</td></tr> : null}
           </tbody>
         </table>
       </div>
       <p className="mt-2 text-xs text-scribe-3">
-        The deployer&rsquo;s pool, from <span className="font-mono">txpool_statusByAddress</span>: <span className="font-mono">{code.data?.pool ?? "…"}</span>. Sourcify status read by this server from{" "}
-        <span className="font-mono">{offchain.data?.sourcify.url.replace("https://", "") ?? "…"}</span>{offchain.data?.sourcify.error ? `: ${offchain.data.sourcify.error}` : ""}.
+        Arc&rsquo;s explorer is Blockscout; each address above links to it{LOCALNET ? " (on a fork, to this app's own explorer, which reads the node)" : ""}.
       </p>
-
-      <DimRule className="mt-10" note="Payments" />
-      <Card title="Monad's x402 facilitator" testid="network-facilitator">
-        <p>
-          Agents pay for a task&rsquo;s corpus over x402 in USDC. On Monad the payment settles through Monad&rsquo;s own
-          facilitator{LOCALNET ? "; this local build uses a facilitator on this machine instead, since Monad's cannot see a local chain" : ""}. What it says it settles, asked just now by this server:
-        </p>
-        <ul className="mt-3 flex flex-wrap gap-2 font-mono text-xs">
-          {offchain.data?.facilitator.kinds?.map((k) => (
-            <li key={`${k.scheme}-${k.network}`} className="rounded-full border border-white/10 px-2 py-1 text-scribe">{k.scheme} · {k.network}</li>
-          )) ?? <li className="text-scribe-3">{offchain.data?.facilitator.error ?? "…"}</li>}
-        </ul>
-        <Stamp s={offchain} source={offchain.data?.facilitator.url.replace("https://", "") ?? "x402-facilitator.molandak.org"} />
-      </Card>
     </div>
   );
+}
+
+/** A base-unit amount as dollars, to six places. */
+function fmt(units: bigint, decimals: number) {
+  const s = units.toString().padStart(decimals + 1, "0");
+  const whole = s.slice(0, -decimals);
+  const frac = s.slice(-decimals).slice(0, 6);
+  return `${Number(whole).toLocaleString("en-US")}.${frac}`;
 }

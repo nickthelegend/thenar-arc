@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { SO101 } from "@/lib/so101";
 import { commandMessage, toHex } from "@/lib/robot-command";
 import { useSession } from "@/components/session";
-import type { Ed25519SigningSession } from "@category-labs/mera";
+import type { Ed25519SigningSession } from "@/lib/robot-key";
 import { leaderFromRelay, relayLeaderGone } from "@/components/station/leader";
 
 /**

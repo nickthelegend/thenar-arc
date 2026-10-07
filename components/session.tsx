@@ -5,16 +5,21 @@ import { useAccount, useBalance, useConnect, useDisconnect, useSwitchChain } fro
 import { usePrivy } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { LOCALNET, appChain } from "@/lib/chain";
-import { localSponsored } from "@/lib/local-sponsor";
+import { formatNative } from "@/lib/usdc";
 
 /**
  * The operator's wallet, as the rest of the app sees it.
  *
- * Signing in is Privy's: an email address becomes an embedded wallet on Monad, or
+ * Signing in is Privy's: an email address becomes an embedded wallet on Arc, or
  * an operator who already has a wallet connects it through the same modal. From
  * there it is wagmi as before — the address is the wallet Privy hands over, the
  * balance comes from the chain's RPC, and there is no local shadow of either. If
  * the chain says the balance is zero, the UI says zero.
+ *
+ * `balance` is USDC: Arc's native balance is USDC at 18 decimals (the same
+ * dollars the USDC ERC-20 reports at 6), so the one number is both what the
+ * wallet holds and what it has for gas. `balanceWei` is that native value
+ * unconverted (18 decimals), for comparisons that must not round.
  */
 function usePrivySession() {
   const { ready, authenticated, login, logout } = usePrivy();
@@ -32,7 +37,7 @@ function usePrivySession() {
 
   const wrongNetwork = isConnected && chainId !== appChain.id;
 
-  const balance = useMemo(() => (bal ? Number(bal.value) / 1e18 : 0), [bal]);
+  const balance = useMemo(() => (bal ? Number(formatNative(bal.value)) : 0), [bal]);
 
   return {
     address: address ?? null,
@@ -55,9 +60,10 @@ function usePrivySession() {
 }
 
 /**
- * The same session on the local chain, where there is no Privy: the local
+ * The same session on the local Arc fork, where there is no Privy: the local
  * wallet this browser holds (lib/local-wallet.ts). Signing in connects it and
- * asks the local faucet for gas, as an operator on Monad would ask Monad's.
+ * asks the fork's faucet for USDC, which is its gas and its money at once, as
+ * an operator on Arc testnet would ask Circle's faucet.
  */
 function useLocalSession(): ReturnType<typeof usePrivySession> {
   const queryClient = useQueryClient();
@@ -76,12 +82,10 @@ function useLocalSession(): ReturnType<typeof usePrivySession> {
       const { accounts } = await connectAsync({ connector });
       await fetch("/api/localnet/fund", {
         method: "POST", headers: { "content-type": "application/json" },
-        // A sponsored wallet is sent USDC only: its gas is the sponsor's.
-        body: JSON.stringify({ address: accounts[0], gas: !localSponsored() }),
+        body: JSON.stringify({ address: accounts[0] }),
       });
-      // Every balance on the page (MON here, USDC wherever it is shown) has just
-      // changed: re-read them all now rather than at the next poll, which a
-      // background tab may never reach.
+      // Every balance on the page has just changed: re-read them all now rather
+      // than at the next poll, which a background tab may never reach.
       void queryClient.invalidateQueries();
       void refetchBalance();
     } catch (e) {
@@ -89,7 +93,7 @@ function useLocalSession(): ReturnType<typeof usePrivySession> {
     }
   }, [connectors, connectAsync, refetchBalance, queryClient]);
 
-  const balance = useMemo(() => (bal ? Number(bal.value) / 1e18 : 0), [bal]);
+  const balance = useMemo(() => (bal ? Number(formatNative(bal.value)) : 0), [bal]);
 
   return {
     address: address ?? null,

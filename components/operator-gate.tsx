@@ -15,9 +15,9 @@ type Status = { address: string; passkey: boolean; operator: boolean };
  * The step between an operator and the payroll: a passkey.
  *
  * Once per address. The device makes a passkey (Face ID, a fingerprint, a
- * PIN) and its public key is registered on Monad, in PasskeyRegistry, from
+ * PIN) and its public key is registered on Arc, in PasskeyRegistry, from
  * the operator's own wallet. Then the passkey signs a one-time challenge,
- * PasskeyRegistry checks it through Monad's P-256 precompile, and the address
+ * PasskeyRegistry checks it through Arc's P-256 precompile (0x0100), and the address
  * joins the CorpusShares whitelist: from then on its runs are signed and paid,
  * and each paid run issues its share of the corpus.
  */

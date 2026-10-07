@@ -106,7 +106,7 @@ function AppTree({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The local chain: wagmi alone, with the browser-held local wallet. */
+/** The local Arc fork: wagmi alone, with the browser-held local wallet. */
 function LocalProviders({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   return (
@@ -127,8 +127,9 @@ function PrivyProviders({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={PRIVY_APP_ID!}
       config={{
-        // An email address is enough to be paid: Privy makes the wallet. An
-        // operator who already has one can still bring it.
+        // An email address is enough to be paid: Privy makes an embedded
+        // wallet on Arc, which holds USDC and pays its gas in USDC. An operator
+        // who already has a wallet can still bring it.
         loginMethods: ["email", "wallet"],
         appearance: {
           theme: dark ? "dark" : "light",
@@ -153,5 +154,5 @@ function PrivyProviders({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Chosen once, at build time: a build is for Monad or for the local chain. */
+/** Chosen once, at build time: a build is for Arc (testnet or mainnet) or for a local Arc fork. */
 export const Providers = LOCALNET ? LocalProviders : PrivyProviders;
