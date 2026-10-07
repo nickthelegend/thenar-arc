@@ -10,10 +10,10 @@
  */
 import { createPublicClient, parseAbiItem } from "viem";
 import { AXON_ABI } from "../lib/abi.ts";
-import { appChain, transport, ADDR, need } from "./monad.mjs";
+import { appChain, transport, ADDR, need } from "./arc.mjs";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
-const AXON = need(ADDR.axon, "AxonProtocolV2's address (lib/deployment.ts, or NEXT_PUBLIC_AXON_ADDRESS)");
+const AXON = need(ADDR.axon, "ThenarProtocol's address (lib/deployment.ts, or NEXT_PUBLIC_AXON_ADDRESS)");
 const pub = createPublicClient({ chain: appChain, transport: transport() });
 
 const ACCEPTED = parseAbiItem(
@@ -24,7 +24,7 @@ const ACCEPTED = parseAbiItem(
  * Every trajectory the contract holds, keyed by hash, read from storage.
  *
  * This used to walk getLogs back from the head in hundred-block windows, which
- * is the widest range Monad's public endpoints answer. Two hundred windows is
+ * was the widest range the old chain's public endpoints answered. Two hundred windows is
  * twenty thousand blocks — a couple of hours on this chain — so a run recorded
  * the day before would be reported "genuinely absent" while it sat on chain.
  * The contract keeps every trajectory in an array, with the block it was

@@ -4,14 +4,14 @@ import { chainClient } from "@/lib/rpc";
 import { logged } from "@/lib/server/log";
 import { trajectoriesForTask } from "@/lib/server/db";
 import { rootOf, proofFor } from "@/lib/merkle";
-import { appChain, CORPUS_MANIFEST } from "@/lib/chain";
+import { appChain, CORPUS_AUDIT as CORPUS_AUDIT_ADDRESS, CORPUS_MANIFEST, isAddress } from "@/lib/chain";
 
 /**
- * CorpusAudit, where the Chainlink CRE workflow in cre/corpus-audit writes
- * what its DON found. Server-side and optional: until a receiver is deployed
- * and named here, the manifest simply has no audit to report.
+ * CorpusAudit, where the audit keeper (scripts/keeper.mjs) writes what it found
+ * when it rebuilt each task's root from /api/corpus/episodes and compared it
+ * with CorpusManifest. Until it has run, the manifest has no audit to report.
  */
-const CORPUS_AUDIT = /^0x[0-9a-fA-F]{40}$/.test(process.env.CORPUS_AUDIT ?? "") ? (process.env.CORPUS_AUDIT as `0x${string}`) : null;
+const CORPUS_AUDIT = isAddress(CORPUS_AUDIT_ADDRESS) ? CORPUS_AUDIT_ADDRESS : null;
 const VERDICTS = ["uncommitted", "matches", "grown", "short", "altered"] as const;
 const AUDIT_ABI = [
   {
@@ -85,7 +85,7 @@ async function handleGET(req: Request, ctx: { params: Promise<{ id: string }> })
   let committed: { root: string; episodes: number; at: number } | null = null;
   // With no manifest contract configured there is nothing to read, and asking
   // an empty address answered as if a contract had simply never been committed to.
-  if (CORPUS_MANIFEST) {
+  if (isAddress(CORPUS_MANIFEST)) {
     try {
       const c = await client.readContract({
         address: CORPUS_MANIFEST, abi: ABI, functionName: "latest", args: [BigInt(taskId)],
@@ -98,14 +98,14 @@ async function handleGET(req: Request, ctx: { params: Promise<{ id: string }> })
     }
   }
 
-  // What a Chainlink DON last found, independently of this server's own sums.
+  // What the audit keeper last found, independently of this server's own sums.
   let audit: Record<string, unknown> | null = null;
   if (CORPUS_AUDIT) {
     try {
       const a = await client.readContract({ address: CORPUS_AUDIT, abi: AUDIT_ABI, functionName: "latest", args: [BigInt(taskId)] });
       if (a.observedAt > BigInt(0)) {
         audit = {
-          contract: CORPUS_AUDIT, by: "Chainlink CRE (cre/corpus-audit)",
+          contract: CORPUS_AUDIT, by: "audit keeper (scripts/keeper.mjs)",
           verdict: VERDICTS[a.verdict] ?? "unknown", servedRoot: a.servedRoot, committedRoot: a.committedRoot,
           served: a.served, committed: a.committed, observedAt: Number(a.observedAt), block: Number(a.blockNumber),
         };

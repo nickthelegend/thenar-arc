@@ -30,8 +30,7 @@
 export type LogRange = { fromBlock: bigint; toBlock: bigint };
 
 /** Below this a refusal is not about the range, and splitting further only
- *  multiplies requests against an endpoint that is failing for another reason.
- *  A hundred blocks is what Monad's public endpoints accept. */
+ *  multiplies requests against an endpoint that is failing for another reason. */
 const FLOOR = 100n;
 
 export async function scanLogs<T>(
@@ -56,10 +55,10 @@ export async function scanLogs<T>(
   }
 }
 
-/** How far one request is asked to reach when walking a long history. Monad's
- *  public endpoints answer a hundred blocks, which is why the app's own history
- *  is read from contract storage instead and this is kept for short windows. */
-const CHUNK = 100n;
+/** How far one request is asked to reach when walking a long history. Arc's
+ *  public RPC answers ranges of ten thousand blocks; a narrower endpoint is
+ *  handled by scanLogs halving the range, so this is a ceiling, not a guess. */
+const CHUNK = 10_000n;
 
 type Cached = { through: bigint; logs: unknown[] };
 const cache = new Map<string, Cached>();
@@ -72,9 +71,9 @@ const walking = new Map<string, Promise<unknown[]>>();
  * calls ask only for the blocks after the last one read and append them, so a
  * feed that refreshes every few seconds costs one small request a refresh
  * instead of a scan of everything since deployment. A log once read never needs
- * reading again only if its block was final when it was read: on Monad that is
- * two slots (about 600 ms) after the block was proposed, so a caller passes a
- * `toBlock` at or below the `finalized` tag, not `latest`.
+ * reading again only if its block was final when it was read. Arc's finality is
+ * deterministic: a block is final when it is produced, so `latest` is final
+ * and a caller may pass it as `toBlock`.
  *
  * Concurrent callers for the same key share one walk. A walk that fails caches
  * nothing, and the next call starts again from the last block that was read.

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /**
  * The terms an agent buys the corpus on, and every pull taken so far.
  *
- * A paid pull links to its settlement on Monadscan, so the sale is checkable
+ * A paid pull links to its settlement on Arc's explorer, so the sale is checkable
  * somewhere this server does not control. A free pull has no transaction to
  * link: nothing moved, and saying so is the record. Either kind, once logged,
  * links to its SalesLog entry with the sha256 of what was served.

@@ -78,7 +78,7 @@ async function handlePOST(req: Request) {
     // Only a person pays out. /api/verify checks this in front of the signer,
     // but the key is here, so the rule is here too: an address on the
     // CorpusShares whitelist is one whose owner signed in with a passkey that
-    // PasskeyRegistry verified on Monad, and the chain is what says so, not a
+    // PasskeyRegistry verified on Arc, and the chain is what says so, not a
     // table this service would have to trust.
     if (isAddress(CORPUS_SHARES)) {
       const human = await client.readContract({

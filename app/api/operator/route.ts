@@ -20,7 +20,7 @@ async function handleGET(req: Request) {
 
 /**
  * `challenge`: a one-time challenge for the passkey to sign.
- * `admit`: the signed challenge. Checked by PasskeyRegistry on Monad; on
+ * `admit`: the signed challenge. Checked by PasskeyRegistry on Arc; on
  * success the address joins the CorpusShares whitelist, so its runs can be
  * signed and paid.
  */

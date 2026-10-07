@@ -14,10 +14,11 @@ const MAX_TASKS = 25;
  * Every paid episode this server would sell, task by task, as bare hashes.
  *
  * /api/task/{id}/manifest says what root this server computes. This says what
- * it computes it from, so someone else can compute it: the Chainlink CRE
- * workflow in cre/corpus-audit fetches this on every node of its DON, each
- * node builds the Merkle root itself, and the DON compares the agreed root
- * with the one the verifier committed to CorpusManifest on chain. The leaves
+ * it computes it from, so someone else can compute it: the audit keeper
+ * (scripts/keeper.mjs) fetches this, builds the Merkle root itself with
+ * lib/merkle.ts, compares it with the one the verifier committed to
+ * CorpusManifest, and writes the finding to CorpusAudit on Arc. Anyone can
+ * run the same check. The leaves
  * are exactly the ones the manifest route hashes (same query, same limit,
  * sorted and deduplicated as lib/merkle.ts does).
  *

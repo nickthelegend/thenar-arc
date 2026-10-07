@@ -4,7 +4,7 @@ import { getAddress, isAddress, type Address, type Hex } from "viem";
 import { CORPUS_SHARES, PASSKEY_ADDRESS } from "@/lib/chain";
 import { CORPUS_SHARES_ABI } from "@/lib/registry-abi";
 import { PASSKEY_ABI } from "@/lib/passkey-abi";
-import { monad } from "@/lib/server/monad";
+import { arc } from "@/lib/server/arc";
 import { queryOne, run } from "@/lib/server/sql";
 import { assertionDigest, derToRs, rpIdHash } from "@/lib/webauthn";
 
@@ -16,7 +16,7 @@ import { assertionDigest, derToRs, rpIdHash } from "@/lib/webauthn";
  * is what the verifier checks before it signs a run, the passkey signs a
  * one-time challenge from this server with user verification (Face ID, a
  * fingerprint, a PIN), and the registry checks that signature on chain
- * through Monad's P-256 precompile. So the whitelist holds addresses a
+ * through Arc's P-256 precompile (0x0100). So the whitelist holds addresses a
  * person has shown up for, on a device, and the chain is the only record of
  * it.
  */
@@ -35,7 +35,7 @@ const fromB64url = (s: string) => Buffer.from(s.replace(/-/g, "+").replace(/_/g,
 /** Whether an address is on the CorpusShares whitelist: the one gate every paid run passes. */
 export async function isOperator(address: string): Promise<boolean> {
   if (!isAddress(CORPUS_SHARES) || !isAddress(address)) return false;
-  return (await monad.readContract({
+  return (await arc.readContract({
     address: CORPUS_SHARES, abi: CORPUS_SHARES_ABI, functionName: "isInControlList", args: [getAddress(address)],
   })) as boolean;
 }
@@ -43,7 +43,7 @@ export async function isOperator(address: string): Promise<boolean> {
 /** Whether an address has a passkey registered on chain. */
 export async function hasPasskey(address: string): Promise<boolean> {
   if (!isAddress(PASSKEY_ADDRESS) || !isAddress(address)) return false;
-  return (await monad.readContract({
+  return (await arc.readContract({
     address: PASSKEY_ADDRESS, abi: PASSKEY_ABI, functionName: "hasPasskey", args: [getAddress(address)],
   })) as boolean;
 }
@@ -127,9 +127,9 @@ export async function verifyAssertion(address: string, a: Assertion, requestOrig
     throw new OperatorError(e instanceof Error ? e.message : "The signature is not P-256.");
   }
   if (!(await hasPasskey(address))) throw new OperatorError("No passkey is registered on chain for this address.", 403);
-  const ok = (await monad.readContract({
+  const ok = (await arc.readContract({
     address: PASSKEY_ADDRESS, abi: PASSKEY_ABI, functionName: "verify", args: [getAddress(address) as Address, digest, r, s],
   })) as boolean;
-  if (!ok) throw new OperatorError("The registry on Monad did not accept the passkey's signature.", 403);
+  if (!ok) throw new OperatorError("The registry on Arc did not accept the passkey's signature.", 403);
   return digest;
 }

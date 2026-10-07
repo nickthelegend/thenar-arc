@@ -14,7 +14,7 @@
  *
  *   node --import ./test/register.mjs scripts/og.mjs
  *
- * The chain, the address and the ABI are the app's own — scripts/monad.mjs and
+ * The chain, the address and the ABI are the app's own — scripts/arc.mjs and
  * lib/abi.ts — so the card cannot describe a deployment the site is not
  * reading. It used to carry its own copies of all three, and every move of
  * chain meant finding them.
@@ -22,13 +22,13 @@
 import { ImageResponse } from "next/og.js";
 import React from "react";
 import { writeFileSync } from "node:fs";
-import { createPublicClient, formatEther } from "viem";
+import { createPublicClient, formatUnits } from "viem";
 import { AXON_ABI as abi } from "../lib/abi.ts";
-import { appChain as chain, transport, ADDR, need } from "./monad.mjs";
+import { appChain as chain, transport, ADDR, need } from "./arc.mjs";
 
 const h = React.createElement;
 
-const AXON = need(ADDR.axon, "AxonProtocolV2's address (lib/deployment.ts, or NEXT_PUBLIC_AXON_ADDRESS)");
+const AXON = need(ADDR.axon, "ThenarProtocol's address (lib/deployment.ts, or NEXT_PUBLIC_AXON_ADDRESS)");
 
 const pub = createPublicClient({ chain, transport: transport() });
 const [tasks, runs, policies] = await Promise.all([
@@ -38,7 +38,7 @@ const [tasks, runs, policies] = await Promise.all([
 ]);
 
 // One multicall rather than a read per task: the escrow is a sum over storage,
-// and Monad's public endpoints would rather answer one request than a hundred.
+// and a public endpoint would rather answer one request than a hundred.
 const rows = await pub.multicall({
   allowFailure: false,
   contracts: Array.from({ length: Number(tasks) }, (_, i) => ({
@@ -100,7 +100,7 @@ const el = h("div", {
     stat("a", "Tasks funded", String(tasks)),
     stat("b", "Runs paid", String(runs)),
     stat("c", "Policies", String(policies)),
-    stat("d", "Escrow", `${Number(formatEther(escrow)).toFixed(3)} ${chain.nativeCurrency.symbol}`, SIGNAL),
+    stat("d", "Escrow", `${Number(formatUnits(escrow, 6)).toFixed(3)} USDC`, SIGNAL),
   ]),
 
   h("div", {
@@ -112,4 +112,4 @@ const el = h("div", {
 const res = new ImageResponse(el, { width: 1200, height: 630 });
 const buf = Buffer.from(await res.arrayBuffer());
 writeFileSync("public/og.png", buf);
-console.log(`public/og.png — ${buf.length} bytes · ${tasks} tasks, ${runs} runs, ${policies} policies, ${formatEther(escrow)} ${chain.nativeCurrency.symbol} escrow, as of ${asOf}`);
+console.log(`public/og.png — ${buf.length} bytes · ${tasks} tasks, ${runs} runs, ${policies} policies, ${formatUnits(escrow, 6)} USDC escrow, as of ${asOf}`);

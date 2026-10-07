@@ -5,14 +5,15 @@ import {
   type Address,
   type Hash,
 } from "viem";
-import { CORPUS_SHARES, addressUrl, isAddress } from "@/lib/chain";
+import { CORPUS_SHARES, USDC, addressUrl, appChain, isAddress } from "@/lib/chain";
+import { USDC_ABI, formatUsdc } from "@/lib/usdc";
 import { CORPUS_SHARES_ABI } from "@/lib/registry-abi";
 import { SHARES_PER_RUN } from "@/lib/corpus-shares";
-import { IssuerUnavailable, issuerWallet, monad } from "@/lib/server/monad";
+import { IssuerUnavailable, issuerWallet, arc } from "@/lib/server/arc";
 import { query, run } from "@/lib/server/sql";
 
 /**
- * The corpus as shares, in CorpusShares on Monad.
+ * The corpus as shares, in CorpusShares on Arc.
  *
  * What Thenar sells is a task's recordings, so a share of the recordings is what
  * gets issued: a token whose holders are the people who drove the arm. Three
@@ -21,13 +22,13 @@ import { query, run } from "@/lib/server/sql";
  *
  *  - It is a whitelist. Only an address on its control list can hold, send or
  *    receive a share, and an address gets there only after its owner signs in
- *    with a passkey that PasskeyRegistry verifies on Monad.
+ *    with a passkey that PasskeyRegistry verifies on Arc.
  *  - Shares are issued per accepted run, in proportion to the signed score,
  *    and each issue names the run's hash.
- *  - A dividend declared from corpus sales, escrowed in MON, pays whoever held
+ *  - A dividend declared from corpus sales, escrowed in USDC, pays whoever held
  *    at the record date, pro rata, and each holder claims their own.
  *
- * On Monad an admission and an issue each settle in under a second, so the
+ * On Arc an admission and an issue are each final in under a second, so the
  * station can report the run's shares in the same panel as its payout rather
  * than promising them later.
  */
@@ -40,7 +41,7 @@ export class TokenError extends Error {
 
 function security(): Address {
   if (!isAddress(CORPUS_SHARES)) {
-    throw new TokenError("CorpusShares is not deployed yet. Run contracts/script/DeployMonad.s.sol.", 503);
+    throw new TokenError("CorpusShares is not deployed yet. Deploy it with scripts/deploy.sh.", 503);
   }
   return CORPUS_SHARES;
 }
@@ -74,11 +75,11 @@ export type TokenEvent = {
   created_at: number;
 };
 
-/** Wait for Monad to settle a write, then keep a line that points at it on Monadscan. */
+/** Wait for Arc to include a write (final on inclusion), then keep a line that points at it on the explorer. */
 async function settle(tx: Hash, kind: TokenEventKind, account: string | null, amount: string | null, detail: string) {
-  const receipt = await monad.waitForTransactionReceipt({ hash: tx, timeout: 30_000 });
+  const receipt = await arc.waitForTransactionReceipt({ hash: tx, timeout: 30_000 });
   if (receipt.status !== "success") {
-    throw new TokenError(`The ${kind} transaction reverted on Monad (${tx}).`, 502);
+    throw new TokenError(`The ${kind} transaction reverted on Arc (${tx}).`, 502);
   }
   await run(
     `INSERT INTO token_event (tx, kind, account, amount, detail, created_at)
@@ -93,13 +94,13 @@ async function settle(tx: Hash, kind: TokenEventKind, account: string | null, am
  */
 export async function admitOperator(address: Address, because: string): Promise<{ tx: Hash | null; already: boolean }> {
   const token = security();
-  const listed = await monad.readContract({
+  const listed = await arc.readContract({
     address: token, abi: CORPUS_SHARES_ABI, functionName: "isInControlList", args: [address],
   });
   if (listed) return { tx: null, already: true };
 
   const { account, wallet } = issuer();
-  const { request } = await monad.simulateContract({
+  const { request } = await arc.simulateContract({
     account, address: token, abi: CORPUS_SHARES_ABI, functionName: "addToControlList", args: [address],
   });
   const tx = await wallet.writeContract(request);
@@ -116,7 +117,7 @@ export function sharesFor(score: number): bigint {
 export async function issueShares(address: Address, units: bigint, trajHash: string): Promise<Hash> {
   const token = security();
   const { account, wallet } = issuer();
-  const { request } = await monad.simulateContract({
+  const { request } = await arc.simulateContract({
     account, address: token, abi: CORPUS_SHARES_ABI, functionName: "issue",
     args: [address, units, trajHash as `0x${string}`],
   });
@@ -135,7 +136,7 @@ export async function complianceCheck(address: Address): Promise<{ allowed: bool
   const token = security();
   const { account } = issuer();
   try {
-    await monad.simulateContract({
+    await arc.simulateContract({
       account, address: token, abi: CORPUS_SHARES_ABI, functionName: "issue",
       args: [address, BigInt(1), `0x${"00".repeat(32)}`],
     });
@@ -148,25 +149,42 @@ export async function complianceCheck(address: Address): Promise<{ allowed: bool
 }
 
 /**
- * Declare a dividend from corpus sales, escrowing `amountWei` of MON in the
- * contract.
+ * Declare a dividend from corpus sales: `amount` of USDC (6-dec base units),
+ * pulled from the issuer into the contract.
  *
+ * Two transactions: the issuer approves CorpusShares for exactly the amount
+ * (skipped when the allowance already covers it), then `setDividend` pulls it.
  * The record date has to be in the future — the contract snapshots holders
  * then — and payment opens at the execution date, when each holder claims.
  */
 export async function declareDividend(args: {
-  amountWei: bigint; recordDate: number; executionDate: number; note: string;
-}): Promise<{ tx: Hash; dividendId: bigint }> {
+  amount: bigint; recordDate: number; executionDate: number; note: string;
+}): Promise<{ tx: Hash; approval: Hash | null; dividendId: bigint }> {
   const token = security();
   const { account, wallet } = issuer();
-  const { request, result } = await monad.simulateContract({
+  if (args.amount <= BigInt(0)) throw new TokenError("A dividend must be more than zero USDC.", 400);
+  const [held, allowance] = await Promise.all([
+    arc.readContract({ address: USDC, abi: USDC_ABI, functionName: "balanceOf", args: [account.address] }),
+    arc.readContract({ address: USDC, abi: USDC_ABI, functionName: "allowance", args: [account.address, token] }),
+  ]);
+  if (held < args.amount) {
+    throw new TokenError(`The issuer holds ${formatUsdc(held)} USDC, less than the ${formatUsdc(args.amount)} USDC dividend.`, 409);
+  }
+  let approval: Hash | null = null;
+  if (allowance < args.amount) {
+    approval = await wallet.writeContract({
+      account, chain: appChain, address: USDC, abi: USDC_ABI, functionName: "approve", args: [token, args.amount],
+    });
+    const r = await arc.waitForTransactionReceipt({ hash: approval, timeout: 30_000 });
+    if (r.status !== "success") throw new TokenError(`The USDC approval reverted on Arc (${approval}).`, 502);
+  }
+  const { request, result } = await arc.simulateContract({
     account, address: token, abi: CORPUS_SHARES_ABI, functionName: "setDividend",
-    args: [BigInt(args.recordDate), BigInt(args.executionDate)],
-    value: args.amountWei,
+    args: [BigInt(args.recordDate), BigInt(args.executionDate), args.amount],
   });
   const tx = await wallet.writeContract(request);
-  await settle(tx, "dividend", null, `${args.amountWei}`, `dividend ${result} · ${args.note}`);
-  return { tx, dividendId: result };
+  await settle(tx, "dividend", null, `${args.amount}`, `dividend ${result} · ${formatUsdc(args.amount)} USDC · ${args.note}`);
+  return { tx, approval, dividendId: result };
 }
 
 export type CorpusSecurity = {
@@ -187,18 +205,18 @@ export async function corpusSecurity(): Promise<CorpusSecurity | null> {
   if (!isAddress(CORPUS_SHARES)) return null;
   const token = CORPUS_SHARES;
   const [name, symbol, issuerAddress, supply, count, dividends, members] = await Promise.all([
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "name" }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "symbol" }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "issuer" }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "totalSupply" }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "getControlListCount" }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "getDividendsCount" }),
-    monad.readContract({
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "name" }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "symbol" }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "issuer" }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "totalSupply" }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "getControlListCount" }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "getDividendsCount" }),
+    arc.readContract({
       address: token, abi: CORPUS_SHARES_ABI, functionName: "getControlListMembers", args: [BigInt(0), BigInt(50)],
     }),
   ]);
   const balances = await Promise.all(
-    members.map((m) => monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "balanceOf", args: [m] })),
+    members.map((m) => arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "balanceOf", args: [m] })),
   );
   const events = await query<TokenEvent>(
     `SELECT tx, kind, account, amount, detail, created_at FROM token_event ORDER BY created_at DESC LIMIT 50`,
@@ -221,13 +239,13 @@ export async function corpusSecurity(): Promise<CorpusSecurity | null> {
 export async function holderView(address: Address) {
   const token = security();
   const [listed, balance, count] = await Promise.all([
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "isInControlList", args: [address] }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "balanceOf", args: [address] }),
-    monad.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "getDividendsCount" }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "isInControlList", args: [address] }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "balanceOf", args: [address] }),
+    arc.readContract({ address: token, abi: CORPUS_SHARES_ABI, functionName: "getDividendsCount" }),
   ]);
   const ids = Array.from({ length: Number(count) }, (_, i) => BigInt(i + 1));
   const owed = await Promise.allSettled(
-    ids.map((id) => monad.readContract({
+    ids.map((id) => arc.readContract({
       address: token, abi: CORPUS_SHARES_ABI, functionName: "getDividendFor", args: [id, address],
     })),
   );
@@ -238,7 +256,8 @@ export async function holderView(address: Address) {
       ? [{
           id: Number(ids[i]),
           tokenBalance: r.value[0].toString(),
-          amountWei: r.value[1].toString(),
+          /** USDC base units (6 decimals). */
+          amount: r.value[1].toString(),
           recordDate: Number(r.value[2]),
           executionDate: Number(r.value[3]),
           recordDateReached: r.value[4],

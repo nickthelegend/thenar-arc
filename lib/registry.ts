@@ -10,7 +10,7 @@
  * "/contracts only", that contract has no other home in the interface yet.
  */
 
-import { ACTIVE_DEPLOYMENT as DEPLOYMENT } from "./chain";
+import { ACTIVE_DEPLOYMENT as DEPLOYMENT, ARC_EXTERNAL, PRIOR_CONTRACTS } from "./chain";
 
 export type Deployed = {
   key: string;
@@ -21,43 +21,50 @@ export type Deployed = {
   source: string;
   /** Where a visitor meets it, or "/contracts only" if nowhere else yet. */
   surface: string;
-  /** Set when the contract leans on something Monad gives it that a generic chain would not. */
-  monad?: string;
+  /** Set when the contract leans on something Arc gives it that a generic chain would not. */
+  arc?: string;
   /** The chain the contract is on, when it is not the one this app settles on. */
   chainId?: number;
 };
 
 const C = DEPLOYMENT.contracts;
-const at = (a: string) => a as `0x${string}`;
+const at = (a: string | undefined) => (a ?? "") as `0x${string}`;
 
 /**
- * Every Thenar contract on Monad testnet, read from lib/deployment.ts.
+ * Every Thenar contract on this Arc network, read from lib/deployment.ts (or
+ * the fork's deployment in .env.fork).
  *
- * The ones that hold or move value do it in MON, the chain's native value, so
- * a bounty, a payout, a pot and a treasury are one currency. Corpus sales to
- * agents are the exception: they are paid per pull in USDC over x402, and
- * SalesLog records each one.
- *
- * LicenceReceipt, PolicyAnnouncer and PolicyRegistry are not here. They attest
- * a policy through Avalanche's Warp and Teleporter, which Monad does not have,
- * and a registry row for a contract whose one function cannot succeed would be
- * the aspirational answer this list exists to avoid.
+ * Everything that holds or moves money does it in Circle's USDC ERC-20
+ * (6 decimals): a bounty's escrow, a payout, a licence fee, a dividend, an
+ * agent's x402 payment. On Arc that is also the gas token, so an operator, a
+ * sponsor and an agent each hold one currency.
  */
 export const DEPLOYED: Deployed[] = [
   {
-    key: "axon",
-    name: "AxonProtocolV2",
-    address: at(C.axon),
+    key: "protocol",
+    name: "ThenarProtocol",
+    address: at(C.protocol),
     does:
-      "Tasks, escrow, trajectories, policies and cap tables. Records a run and pays for it in one call, in MON. " +
+      "Tasks, USDC escrow, trajectories, policies and licences. Records a run and pays for it in USDC in one call. " +
       "submitTrajectoryFor is permissionless: anyone may pay the gas for someone else's run, because the " +
       "verifier signature binds the task, the contributor, the hash and the score, so relaying moves who " +
-      "pays and forges nothing.",
-    source: "contracts/src/AxonProtocolV2.sol",
-    surface: "/hub, /station, /task, /run, /leaderboard, /portfolio",
-    monad:
-      "Written for parallel execution: each operator's submit writes only its own shard of the slot counter, " +
-      "so two runs on one task do not touch the same storage and settle side by side in one block.",
+      "pays and forges nothing. createTaskWithAuthorization funds a task from a sponsor's EIP-3009 signature.",
+    source: "contracts/src/ThenarProtocol.sol",
+    surface: "/hub, /station, /task, /run, /leaderboard, /portfolio, /post",
+    arc:
+      "Escrows Circle's native USDC at 0x3600…0000 and pulls a sponsor's funding with USDC's own " +
+      "receiveWithAuthorization, so a task can be funded by a signature and relayed with gas paid in the same USDC.",
+  },
+  {
+    key: "verdicts",
+    name: "ThenarVerdicts",
+    address: at(C.verdicts),
+    does:
+      "The verifier's public record: every paid run is written to Arc's ERC-8004 Reputation Registry against " +
+      "the verifier's agent id (tag runVerdict, value = score, feedbackHash = the run id).",
+    source: "contracts/src/ThenarVerdicts.sol",
+    surface: "/agents, /contracts, /run",
+    arc: "Writes to the ERC-8004 Identity and Reputation registries Circle deployed on Arc.",
   },
   {
     key: "certificate",
@@ -81,7 +88,7 @@ export const DEPLOYED: Deployed[] = [
     address: at(C.corpusShares),
     does:
       "The corpus as shares. Only an operator admitted with a passkey can hold one; each paid run issues its share by score, " +
-      "and dividends from corpus sales pay whoever held at a record date fixed in advance.",
+      "and USDC dividends from corpus sales pay whoever held at a record date fixed in advance.",
     source: "contracts/src/CorpusShares.sol",
     surface: "/corpus-token, /station",
   },
@@ -89,60 +96,40 @@ export const DEPLOYED: Deployed[] = [
     key: "sales",
     name: "SalesLog",
     address: at(C.salesLog),
-    does: "Every corpus sale to an agent, with the sha256 of the bytes served, so a buyer can check its copy on chain.",
+    does:
+      "Every corpus sale: x402, licence or Gateway, with the sha256 of the bytes served and the buyer's ERC-8004 agent id, " +
+      "so a buyer can check its copy on chain.",
     source: "contracts/src/SalesLog.sol",
     surface: "/agents, /api/agent/sales",
-    monad:
-      "Kept in storage as well as emitted: Monad's public endpoints answer a log query only a hundred blocks wide, " +
-      "so a log that lived only in events could not be read back.",
-  },
-  {
-    key: "referrals",
-    name: "Referrals",
-    address: at(C.referrals),
-    does: "Pays MON for bringing someone who then does the work, not for signing up.",
-    source: "contracts/src/Referrals.sol",
-    surface: "/portfolio, /contracts",
-  },
-  {
-    key: "prize",
-    name: "PrizePool",
-    address: at(C.prizePool),
-    does: "A funded pot for task 1. Contributors enter themselves and it splits by work the protocol recorded.",
-    source: "contracts/src/PrizePool.sol",
-    surface: "/contracts",
-  },
-  {
-    key: "foundry",
-    name: "Foundry",
-    address: at(C.foundry),
-    does: "A MON treasury the protocol's contributors vote to spend on new tasks, weighted by work recorded.",
-    source: "contracts/src/Foundry.sol",
-    surface: "/foundry, /contracts",
-  },
-  {
-    key: "confidential",
-    name: "ConfidentialPayouts",
-    address: at(C.confidentialPayouts),
-    does: "ElGamal on secp256k1. Earnings add up on chain without the chain holding the number.",
-    source: "contracts/src/ConfidentialPayouts.sol",
-    surface: "/contracts",
-  },
-  {
-    key: "corpusAccess",
-    name: "CorpusAccess",
-    address: at(C.corpusAccess),
-    does: "Time-boxed read access to the corpus, paid in MON by the day. Sells time, not rights.",
-    source: "contracts/src/CorpusAccess.sol",
-    surface: "/corpus, /api/dataset",
   },
   {
     key: "corpusManifest",
     name: "CorpusManifest",
     address: at(C.corpusManifest),
-    does: "The published shape of the corpus a licence buys.",
+    does: "One Merkle root per task over every accepted episode, committed by the verifier, every version kept.",
     source: "contracts/src/CorpusManifest.sol",
-    surface: "/corpus",
+    surface: "/corpus, /api/task/{id}/manifest",
+  },
+  {
+    key: "corpusAudit",
+    name: "CorpusAudit",
+    address: at(C.corpusAudit),
+    does:
+      "What the audit keeper found when it rebuilt each task's root from the episodes this server serves and compared it " +
+      "with CorpusManifest: matches, grown, short or altered.",
+    source: "contracts/src/CorpusAudit.sol",
+    surface: "/corpus, /api/task/{id}/manifest",
+  },
+  {
+    key: "ccipReceiver",
+    name: "ThenarCcipReceiver",
+    address: at(C.ccipReceiver),
+    does:
+      "Corpus licences bought from Base or Ethereum: CCTP V2 burns the buyer's USDC to this contract, Chainlink CCIP carries " +
+      "the order, and it licenses the policy on the buyer's behalf.",
+    source: "contracts/src/ccip/ThenarCcipReceiver.sol",
+    surface: "/buy, /contracts",
+    arc: "Arc's CCIP lane and CCTP domain 26: the dollars and the message arrive separately and are matched here.",
   },
   {
     key: "passkey",
@@ -151,7 +138,7 @@ export const DEPLOYED: Deployed[] = [
     does: "Binds a secp256r1 public key to an address and verifies signatures through the P-256 precompile at 0x0100.",
     source: "contracts/src/PasskeyRegistry.sol",
     surface: "/passkey",
-    monad: "Monad's P-256 precompile (EIP-7951) at 0x0100 checks a browser passkey's signature on chain.",
+    arc: "Arc's P-256 precompile (EIP-7951) at 0x0100 checks a browser passkey's signature on chain.",
   },
 ];
 
@@ -162,33 +149,62 @@ export const DEPLOYED: Deployed[] = [
  */
 export const LIVE_CONTRACTS: Deployed[] = DEPLOYED.filter((d) => /^0x[0-9a-fA-F]{40}$/.test(d.address));
 
+/** The Circle and Chainlink contracts on Arc that Thenar calls. Not Thenar's; listed so every address it touches is named. */
+export const EXTERNAL_CONTRACTS: Deployed[] = [
+  {
+    key: "usdc", name: "USDC (Circle)", address: ARC_EXTERNAL.usdc,
+    does: "Arc's native gas token, seen as an ERC-20 at 6 decimals. Every Thenar amount is in it; EIP-3009 lets a signature move it.",
+    source: "Circle", surface: "everywhere",
+  },
+  {
+    key: "memo", name: "Memo (Arc)", address: ARC_EXTERNAL.memo,
+    does: "Calls a contract as the transaction's sender and logs a memo id with it, so a payout says which run it paid for.",
+    source: "Arc", surface: "/station, /api/relay/create-task",
+  },
+  {
+    key: "identityRegistry", name: "ERC-8004 IdentityRegistry", address: ARC_EXTERNAL.identityRegistry,
+    does: "Agent identities. Thenar's verifier and buying agents are registered here.",
+    source: "ERC-8004", surface: "/agents, /api/agents/verifier.json",
+  },
+  {
+    key: "reputationRegistry", name: "ERC-8004 ReputationRegistry", address: ARC_EXTERNAL.reputationRegistry,
+    does: "Feedback on agents: ThenarVerdicts writes run verdicts, buying agents rate the corpus they bought.",
+    source: "ERC-8004", surface: "/agents",
+  },
+  {
+    key: "tokenMessengerV2", name: "CCTP TokenMessengerV2", address: ARC_EXTERNAL.tokenMessengerV2,
+    does: "Burns USDC on Arc to mint it on another chain: how an operator takes earnings to Base or Ethereum.",
+    source: "Circle", surface: "/portfolio, scripts/cctp-withdraw.mjs",
+  },
+  {
+    key: "messageTransmitterV2", name: "CCTP MessageTransmitterV2", address: ARC_EXTERNAL.messageTransmitterV2,
+    does: "Mints USDC on Arc for a burn attested elsewhere: how a CCIP licence order's dollars arrive.",
+    source: "Circle", surface: "/buy",
+  },
+  {
+    key: "gatewayWallet", name: "Gateway GatewayWallet", address: ARC_EXTERNAL.gatewayWallet,
+    does: "Holds a sponsor's unified USDC balance across chains.",
+    source: "Circle", surface: "/post",
+  },
+  {
+    key: "gatewayMinter", name: "Gateway GatewayMinter", address: ARC_EXTERNAL.gatewayMinter,
+    does: "Mints a Gateway balance on Arc from Circle's attestation of a signed burn intent.",
+    source: "Circle", surface: "/post, /api/gateway/mint",
+  },
+  {
+    key: "ccipRouter", name: "CCIP Router (Chainlink)", address: ARC_EXTERNAL.ccipRouter,
+    does: "Delivers cross-chain licence orders to ThenarCcipReceiver.",
+    source: "Chainlink", surface: "/buy",
+  },
+].filter((d) => /^0x[0-9a-fA-F]{40}$/.test(d.address ?? ""));
+
 /** Deployments this protocol ran on before, kept so their runs stay explicable. */
-export const SUPERSEDED: Deployed[] = [
-  {
-    key: "shares-v1",
-    name: "CorpusShares, first deployment",
-    address: "0xd19688FafB863238D9BAf880f71A2A9b968DfCcd",
-    does:
-      "Replaced the same day. A dividend declared while no share existed could never be paid or returned, " +
-      "and 0.01 MON declared that way during testing is still in it. The current CorpusShares can reclaim one.",
-    source: "contracts/src/CorpusShares.sol",
-    surface: "/contracts only",
-  },
-  {
-    key: "axon-blitz",
-    name: "AxonProtocol v1 on Monad Testnet",
-    address: "0x89384f46e430F37DB61Afb98810eba995C0d6Ed4",
-    does: "The Monad Blitz Hyderabad deployment. Its runs are real, paid in MON, and verifiable on Monadscan.",
-    source: "contracts/src/AxonProtocol.sol",
-    surface: "/archive",
-  },
-  {
-    key: "axon-fuji",
-    chainId: 43113,
-    name: "AxonProtocolV2 on Avalanche Fuji",
-    address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
-    does: "Where the product was built out between Blitz and the move back. Its runs are real, paid in AVAX, and verifiable on Snowtrace.",
-    source: "contracts/src/AxonProtocolV2.sol",
-    surface: "/archive",
-  },
-];
+export const SUPERSEDED: Deployed[] = PRIOR_CONTRACTS.map((p) => ({
+  key: `prior-${p.address.slice(2, 8).toLowerCase()}`,
+  chainId: p.chainId,
+  name: p.label,
+  address: p.address as `0x${string}`,
+  does: p.why,
+  source: "contracts/src/AxonProtocolV2.sol (ETHOnline build)",
+  surface: "/archive",
+}));

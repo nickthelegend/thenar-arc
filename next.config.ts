@@ -1,11 +1,17 @@
 import type { NextConfig } from "next";
 
+const NETWORK = (process.env.NEXT_PUBLIC_ARC_NETWORK ?? "testnet").toLowerCase();
+const FORK = NETWORK === "fork";
+const FORK_RPC = process.env.NEXT_PUBLIC_FORK_RPC || process.env.NEXT_PUBLIC_LOCAL_RPC || "http://127.0.0.1:9000";
+const ARC_RPC = process.env.NEXT_PUBLIC_ARC_RPC;
+
 const nextConfig: NextConfig = {
-  // A local-chain build goes beside the Monad one, not over it.
+  // A fork build goes beside the testnet one (NEXT_DIST_DIR=.next-fork), not over it.
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  // Whether the server can reach Monadscan's index, so pages do not ask a
-  // question whose answer is fixed at build time. The key stays server-side.
-  env: { NEXT_PUBLIC_INDEX_CONFIGURED: process.env.ETHERSCAN_API_KEY ? "1" : "" },
+  // Whether the server can list an address's calls from Arc's Blockscout
+  // explorer, so pages do not ask a question whose answer is fixed at build
+  // time. Blockscout needs no key; only a local fork has no index.
+  env: { NEXT_PUBLIC_INDEX_CONFIGURED: FORK ? "" : "1" },
   experimental: {
     // Off on this machine: the dev cache's writes and compactions ran for a
     // minute at a time on a nearly full disk and stalled every request behind them.
@@ -31,8 +37,10 @@ const nextConfig: NextConfig = {
    * Headers a browser should get whatever else happens.
    *
    * The app loads WebGL, fonts and models from itself and talks only to the
-   * origins named in connect-src below: Monad's RPC endpoints, the Monad x402
-   * facilitator for the corpus paywall, Privy, and WalletConnect. Naming them
+   * origins named in connect-src below: Arc's RPC endpoints (or the fork's),
+   * Circle's Iris attestation service for CCTP withdrawals, the destination
+   * chains' public RPCs, Privy, and WalletConnect. x402 settles in-process on
+   * this server, so no facilitator origin is needed. Naming them
    * means a script injected into a page cannot quietly ship data somewhere else.
    * `unsafe-eval` is required by the WASM/three toolchain and `unsafe-inline`
    * by Next's own inline bootstrap, so the policy is honest about what it does
@@ -68,18 +76,17 @@ const nextConfig: NextConfig = {
         // URLs that GLTFLoader fetches. Same-document only, and without it
         // every textured model on the site loads grey or not at all.
         "blob: " +
-        // Monad testnet, in the same order as RPC_ENDPOINTS in lib/chain.ts,
-        // with the canonical host first. A host missing from this line is a
-        // host the browser refuses, and the failover that was meant to survive
-        // an outage fails on every page load instead.
-        "https://testnet-rpc.monad.xyz " +
-        // Monad's live block pipeline (monadNewHeads, monadLogs): read-only,
-        // on every build, local ones included (components/monad-pipeline.tsx).
-        "wss://testnet-rpc.monad.xyz " +
-        "https://rpc.ankr.com " +
-        "https://10143.rpc.thirdweb.com " +
-        // The corpus paywall: x402 on Monad settles through this facilitator.
-        "https://x402-facilitator.molandak.org " +
+        // Arc, in the same order as RPC_ENDPOINTS in lib/chain.ts. A host
+        // missing from this line is a host the browser refuses.
+        (FORK
+          ? `${FORK_RPC} `
+          : `https://rpc.testnet.arc.io https://rpc.mainnet.arc.io wss://rpc.testnet.arc.io wss://rpc.mainnet.arc.io ${ARC_RPC ? `${ARC_RPC} ` : ""}`) +
+        // CCTP V2: Circle's Iris attests a burn on Arc; /portfolio polls it.
+        "https://iris-api-sandbox.circle.com https://iris-api.circle.com " +
+        // Where a withdrawal is minted and a CCIP licence order is sent from:
+        // the destination chains' public RPCs, read by the browser's wallet client.
+        "https://sepolia.base.org https://mainnet.base.org https://ethereum-sepolia-rpc.publicnode.com https://ethereum-rpc.publicnode.com " +
+        "https://sepolia-rollup.arbitrum.io https://arb1.arbitrum.io " +
         // Privy: sign-in, and the relay its embedded wallets reach RPCs through.
         "https://auth.privy.io https://*.rpc.privy.systems " +
         "wss://relay.walletconnect.com wss://relay.walletconnect.org wss://www.walletlink.org " +
@@ -88,11 +95,7 @@ const nextConfig: NextConfig = {
         // the station mirrors a run onto their SO-101 through it. Loopback
         // only, so a page can reach an arm on this desk and nowhere else. Any
         // port: 8787 by default, another when it is taken (?relay=…).
-        "ws://localhost:* ws://127.0.0.1:*" +
-        // A local build talks to the local chain on this machine, and nothing else.
-        (process.env.NEXT_PUBLIC_CHAIN === "local"
-          ? ` ${process.env.NEXT_PUBLIC_LOCAL_RPC || "http://127.0.0.1:8645"}`
-          : ""),
+        "ws://localhost:* ws://127.0.0.1:*",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

@@ -5,8 +5,9 @@ import { phasesOf } from "@/lib/phases";
 import type { Sample } from "@/lib/types";
 import { queryOne } from "@/lib/server/db";
 import { taskCorpus } from "@/lib/server/corpus-export";
-import { appChain, AXON_ADDRESS, CORPUS_ACCESS } from "@/lib/chain";
-import { corpusAccess } from "@/lib/server/access";
+import { appChain, AXON_ADDRESS } from "@/lib/chain";
+import { corpusLicence } from "@/lib/server/access";
+import { AGENT_CORPUS, agentCorpusPrice } from "@/lib/agent-corpus";
 import { armForTask } from "@/lib/server/task-arm";
 import { embodimentOf } from "@/lib/embodiment";
 
@@ -106,34 +107,37 @@ export async function GET(req: Request) {
     );
   }
 
-  // Whole-corpus pulls are what a subscription is for. A single episode by
-  // hash stays open: that is the sample a buyer looks at before deciding, and
-  // charging for the look is how you end up with nobody looking.
-  // Subscription first, proof second: an address with no time on it is told
-  // so (402) before it is asked to sign for nothing, and one that has time
-  // has to show it is the one asking (401 until it does).
-  const subscriber = req.headers.get("x-subscriber");
-  const access = await corpusAccess(subscriber);
+  // A whole task's corpus is what a licence buys: ThenarProtocol.licensed(policyId, holder),
+  // on Arc or bought over CCIP. A single episode by hash stays open: that is the
+  // sample a buyer looks at before deciding. Licence first, proof second: an
+  // address with no licence is told so (402) before it is asked to sign; one
+  // that has it has to show it is the one asking (401 until it does).
+  const holder = req.headers.get("x-licensee") ?? req.headers.get("x-subscriber");
+  const access = await corpusLicence(taskId, holder);
   if (access.gated && access.unreadable) {
     return NextResponse.json(
-      { error: "The subscription contract could not be read, so nothing was served. Try again in a moment." },
+      { error: "The licence could not be read from Arc, so nothing was served. Try again in a moment." },
       { status: 503 },
     );
   }
   if (access.gated && !access.allowed) {
     return NextResponse.json(
       {
-        error: access.who
-          ? "That address has no active corpus subscription."
-          : "Pulling a whole task's corpus needs an active subscription. Send the address as x-subscriber.",
-        contract: CORPUS_ACCESS,
+        error: access.policyId === null
+          ? "This task has no policy minted, so there is no licence to hold. Buy the corpus per pull over x402."
+          : access.who
+            ? `That address holds no licence to policy #${access.policyId}.`
+            : "Pulling a whole task's corpus needs a licence to its policy. Send the address as x-licensee.",
+        protocol: AXON_ADDRESS,
+        policyId: access.policyId,
+        perPull: { endpoint: `${AGENT_CORPUS.path}?taskId=${taskId}`, price: agentCorpusPrice(), network: AGENT_CORPUS.network },
         single: "A single episode by hash is open: /api/dataset?traj=0x…",
       },
       { status: 402 },
     );
   }
   if (access.gated) {
-    const proof = await subscriberProof(subscriber, taskId, req.headers);
+    const proof = await subscriberProof(holder, taskId, req.headers);
     if (proof) return proof;
   }
 
@@ -141,7 +145,7 @@ export async function GET(req: Request) {
 }
 
 /**
- * The caller has to be the subscriber, not just name one. Returns the refusal
+ * The caller has to be the licensee, not just name one. Returns the refusal
  * to send, or null when the signature is good. Without an address at all the
  * subscription check answers, so a bare request still learns what to send.
  */
@@ -153,7 +157,7 @@ async function subscriberProof(subscriber: string | null, taskId: number, h: Hea
     return NextResponse.json(
       {
         error:
-          "Prove the subscription is yours: sign the download with that address and send the signature " +
+          "Prove the licence is yours: sign the download with that address and send the signature " +
           "as x-subscriber-signature, with x-subscriber-until.",
         message: corpusDownloadMessage(subscriber, taskId, Math.floor(Date.now() / 1000) + PROOF_WINDOW_SECONDS),
       },
@@ -175,7 +179,7 @@ async function subscriberProof(subscriber: string | null, taskId: number, h: Hea
     signature: signature as `0x${string}`,
   }).catch(() => null);
   if (!signer || signer.toLowerCase() !== subscriber.toLowerCase()) {
-    return NextResponse.json({ error: "That signature is not from the subscribing address." }, { status: 401 });
+    return NextResponse.json({ error: "That signature is not from the licensed address." }, { status: 401 });
   }
   return null;
 }

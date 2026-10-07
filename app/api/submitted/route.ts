@@ -87,7 +87,7 @@ async function handlePOST(req: Request) {
   await markSettled(hash, txHash.toLowerCase());
 
   // The run is paid by the protocol; its share of the corpus is issued by
-  // CorpusShares, a second Monad transaction that settles a moment later.
+  // CorpusShares, a second Arc transaction that settles a moment later.
   const shares = await issueRunShares(hash);
   return NextResponse.json({ ok: true, block: Number(receipt.blockNumber), shares });
 }

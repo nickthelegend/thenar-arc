@@ -1,50 +1,34 @@
 import "server-only";
-import { parseAbi } from "viem";
-import { chainClient } from "../rpc";
-import { CORPUS_ACCESS } from "@/lib/chain";
+import { getAddress } from "viem";
+import { AXON_ABI } from "@/lib/abi";
+import { AXON_ADDRESS, IS_DEPLOYED } from "@/lib/chain";
+import { arc } from "@/lib/server/arc";
 
 /**
- * Whether an address may pull the corpus right now.
+ * Whether an address may pull a task's whole corpus from /api/dataset: it
+ * holds an on-chain licence to the task's policy (`ThenarProtocol.licensed`),
+ * bought on Arc with `licensePolicy` or from Base / Ethereum over CCIP.
  *
- * Asked of the chain, every time, rather than cached: a subscription is a
- * timestamp and the only interesting moment in its life is when it stops being
- * true. A cache here would sell an extra hour to everyone whose access had
- * just lapsed, which is a small dishonesty that compounds.
- *
- * Absent configuration, everything is open. That is deliberate rather than a
- * failure mode: this corpus has always been downloadable and turning it off by
- * accident — because an environment variable went missing — would be worse
- * than the subscription not being enforced.
+ * Asked of the chain every time, never cached. A task with no policy minted
+ * has no licence to hold, so its corpus is sold per pull over x402 instead
+ * (/api/agent/corpus). An unreadable chain keeps the gate shut and says so.
  */
-const abi = parseAbi([
-  "function active(address who) view returns (bool)",
-  "function remaining(address who) view returns (uint64)",
-  "function pricePerDay() view returns (uint256)",
-]);
-
-const client = chainClient();
-
 export type Access =
   | { gated: false; reason: string }
-  | { gated: true; allowed: boolean; who: string | null; remainingSeconds: number; unreadable?: true };
+  | { gated: true; allowed: boolean; who: string | null; policyId: string | null; unreadable?: true };
 
-export async function corpusAccess(who: string | null): Promise<Access> {
-  if (!/^0x[0-9a-fA-F]{40}$/.test(CORPUS_ACCESS)) {
-    return { gated: false, reason: "no subscription contract is configured" };
-  }
-  if (!who || !/^0x[0-9a-fA-F]{40}$/.test(who)) {
-    return { gated: true, allowed: false, who: null, remainingSeconds: 0 };
-  }
+export async function corpusLicence(taskId: number, who: string | null): Promise<Access> {
+  if (!IS_DEPLOYED) return { gated: false, reason: "ThenarProtocol is not deployed on this network" };
+  const holder = who && /^0x[0-9a-fA-F]{40}$/.test(who) ? getAddress(who) : null;
   try {
-    const [ok, left] = await Promise.all([
-      client.readContract({ address: CORPUS_ACCESS, abi, functionName: "active", args: [who as `0x${string}`] }),
-      client.readContract({ address: CORPUS_ACCESS, abi, functionName: "remaining", args: [who as `0x${string}`] }),
-    ]);
-    return { gated: true, allowed: Boolean(ok), who: who.toLowerCase(), remainingSeconds: Number(left) };
+    const [minted, policyId] = await arc.readContract({
+      address: AXON_ADDRESS, abi: AXON_ABI, functionName: "policyOfTask", args: [BigInt(taskId)],
+    }) as readonly [boolean, bigint];
+    if (!minted) return { gated: true, allowed: false, who: holder?.toLowerCase() ?? null, policyId: null };
+    if (!holder) return { gated: true, allowed: false, who: null, policyId: policyId.toString() };
+    const ok = await arc.readContract({ address: AXON_ADDRESS, abi: AXON_ABI, functionName: "licensed", args: [policyId, holder] });
+    return { gated: true, allowed: Boolean(ok), who: holder.toLowerCase(), policyId: policyId.toString() };
   } catch {
-    // The chain is unreachable. This used to open the gate, so a node having
-    // a bad minute handed the whole corpus to anyone who asked during it. It
-    // stays shut and says why; the subscriber retries a moment later.
-    return { gated: true, allowed: false, who: who.toLowerCase(), remainingSeconds: 0, unreadable: true };
+    return { gated: true, allowed: false, who: holder?.toLowerCase() ?? null, policyId: null, unreadable: true };
   }
 }

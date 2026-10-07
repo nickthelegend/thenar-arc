@@ -1,5 +1,5 @@
 import "server-only";
-import { formatEther } from "viem";
+import { formatUsdc } from "@/lib/usdc";
 import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, IS_DEPLOYED } from "@/lib/chain";
 import { chainClient } from "@/lib/rpc";
@@ -9,10 +9,12 @@ export type OpenTask = {
   id: number;
   instruction: string;
   arm: "so101" | "thenar6";
-  rewardMon: number;
+  /** USDC per accepted run (decimal, from 6-dec base units). */
+  rewardUsdc: number;
   slotsLeft: number;
   slotsTotal: number;
-  escrowMon: number;
+  /** USDC left in escrow. */
+  escrowUsdc: number;
   /** Takes runs now: slots left, not closed, no policy minted, not past its deadline. */
   accepting: boolean;
 };
@@ -25,7 +27,7 @@ export type OpenTask = {
  * their deadline, and the home page said 39 runs were open while the hub,
  * reading the same contract, said 24.
  */
-export async function openTasks(): Promise<{ tasks: OpenTask[]; escrowMon: number; slotsLeft: number } | null> {
+export async function openTasks(): Promise<{ tasks: OpenTask[]; escrowUsdc: number; slotsLeft: number } | null> {
   if (!IS_DEPLOYED) return null;
   try {
     const client = chainClient();
@@ -46,16 +48,16 @@ export async function openTasks(): Promise<{ tasks: OpenTask[]; escrowMon: numbe
         id,
         instruction: instructionOf(t.name),
         arm: armOf(t.name),
-        rewardMon: Number(formatEther(t.rewardPerTrajectory)),
+        rewardUsdc: Number(formatUsdc(t.rewardPerTrajectory)),
         slotsLeft,
         slotsTotal: Number(t.slotsTotal),
-        escrowMon: Number(formatEther(t.escrow)),
+        escrowUsdc: Number(formatUsdc(t.escrow)),
         accepting: slotsLeft > 0 && !t.policyMinted && !t.closed && !expired,
       };
     });
     return {
       tasks,
-      escrowMon: tasks.reduce((n, t) => n + t.escrowMon, 0),
+      escrowUsdc: tasks.reduce((n, t) => n + t.escrowUsdc, 0),
       slotsLeft: tasks.filter((t) => t.accepting).reduce((n, t) => n + t.slotsLeft, 0),
     };
   } catch {

@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * The corpus shares, read from CorpusShares on Monad.
+ * The corpus shares, read from CorpusShares on Arc.
  *
  *   GET /api/tokenize                  the security: supply, whitelist, dividends, the log
  *   GET /api/tokenize?address=0x…      one holder: listed, shares, dividends owed, and

@@ -30,14 +30,19 @@ const ENDPOINTS = [
   { path: "/api/props/{id}", returns: "One uploaded model, as GLB." },
   { path: "/api/stats", returns: "Aggregate usage. Counts with no subject." },
   { path: "/api/health", returns: "Every condition that has to hold for a run to be recorded and paid." },
-  { path: "/api/calls/{address}", returns: "One address's calls to the protocol, from Monadscan's index, reverted ones included." },
+  { path: "/api/calls/{address}", returns: "One address's calls to the protocol, from Arc's Blockscout explorer, reverted ones included." },
   { path: "/api/space", returns: "Who is working which task right now. Presence only." },
+  { path: "/api/arc", returns: "The Arc stack, live: contracts, Memo, the verifier's ERC-8004 record, CCIP, x402, Gateway and CCTP terms." },
+  { path: "/api/agent/corpus?taskId={id}", returns: "One task's corpus over x402, 0.01 USDC on Arc." },
+  { path: "/api/gateway/balance?address={address}", returns: "A depositor's Circle Gateway balance per chain." },
+  { path: "/api/agents/verifier.json", returns: "The verifier's ERC-8004 registration file." },
+  { path: "/api/network", returns: "Arc measured: block time, finality, gas in USDC, explorer verification." },
 ];
 
 export async function GET() {
   return NextResponse.json({
     name: "Thenar",
-    what: "Crowdsourced robot manipulation data, settled on chain per run.",
+    what: "Crowdsourced robot manipulation data, paid per run in USDC on Arc, bought by agents over x402.",
     chain: { id: appChain.id, name: appChain.name, contract: AXON_ADDRESS },
     // Said plainly, because the absence of a key is a design decision and not
     // an oversight someone should feel clever for noticing.

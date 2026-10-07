@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseEther } from "viem";
+import { parseUsdc } from "@/lib/usdc";
 import { logged } from "@/lib/server/log";
 import { callerKey, rateLimit } from "@/lib/server/rate-limit";
 import { labConfig, labState, postBounty, probePolicy, PolicyRefusal } from "@/lib/server/privy-lab";
@@ -17,7 +17,7 @@ const unconfigured = () =>
   );
 
 /**
- * The lab's wallet, its balance on Monad, and its policy as Privy holds it.
+ * The lab's wallet, its USDC balance on Arc, and its policy as Privy holds it.
  *
  * Without a lab wallet the answer is a 200 that says so: not configured is a
  * state the page shows, not a failed request.
@@ -28,7 +28,7 @@ async function handleGET() {
     return NextResponse.json({
       configured: false,
       reason: LOCALNET
-        ? "Privy's server wallets sign on Monad, not on this local chain, so a local build has no lab wallet."
+        ? "Privy's server wallets sign for Arc testnet and broadcast through its public RPC, not this local fork, so a fork build has no lab wallet."
         : "No Privy lab wallet is configured. Run scripts/privy-lab.mjs, which records it in .env.local.",
     });
   }
@@ -42,12 +42,14 @@ async function handleGET() {
 /**
  * Two things a lab does with its budget.
  *
- * `post-bounty` escrows MON in a new task, signed by Privy under the policy.
+ * `post-bounty` escrows USDC in a new task (approve, then createTaskUntil),
+ * both signed by Privy under the policy. `rewardUsdc` is a decimal amount of
+ * USDC per run, e.g. 0.05.
  * The amount is deliberately not checked here against the policy's ceiling:
  * Privy is the control, and a bounty over it is refused by Privy, which is the
  * thing a lab needs to be able to watch happen.
  *
- * `test-policy` asks the wallet to send 0.01 MON to an address of the
+ * `test-policy` asks the wallet to transfer 0.01 USDC to an address of the
  * caller's choosing, which the policy does not allow.
  */
 async function handlePOST(req: Request) {
@@ -67,12 +69,12 @@ async function handlePOST(req: Request) {
 
   try {
     if (body?.action === "post-bounty") {
-      const { name, slots, rewardMon, scenario, difficulty } = body;
+      const { name, slots, rewardUsdc, scenario, difficulty } = body;
       const days = body.days ?? 7;
       if (typeof name !== "string" || name.trim().length < 3 || name.length > 96) return bad("name must be 3 to 96 characters");
       if (!int(slots, 1, 20)) return bad("slots must be a whole number from 1 to 20");
-      if (typeof rewardMon !== "number" || !(rewardMon >= 0.001) || rewardMon > 100) {
-        return bad("rewardMon must be at least 0.001");
+      if (typeof rewardUsdc !== "number" || !(rewardUsdc >= 0.001) || rewardUsdc > 100) {
+        return bad("rewardUsdc must be a number of USDC from 0.001 to 100");
       }
       if (!int(scenario, 0, SCENARIOS.length - 1)) return bad(`scenario must be 0 to ${SCENARIOS.length - 1}`);
       if (!int(difficulty, 1, 5)) return bad("difficulty must be 1 to 5");
@@ -81,7 +83,7 @@ async function handlePOST(req: Request) {
       const posted = await postBounty(lab, {
         name: name.trim(),
         slots: slots as number,
-        rewardWei: parseEther(rewardMon.toFixed(6)),
+        reward: parseUsdc(rewardUsdc.toFixed(6)),
         scenario: scenario as number,
         difficulty: difficulty as number,
         days: days as number,

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { isAddress } from "viem";
-import { funderHistory, IndexUnavailable } from "@/lib/monadscan";
+import { funderHistory, IndexUnavailable } from "@/lib/arcscan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * What has happened around a task, from Monadscan's index.
+ * What has happened around a task, from Arc's Blockscout explorer index.
  *
  * The funder is passed in rather than looked up: the contract already told the
  * page who it is, and re-reading it here would be a second RPC call to learn
@@ -28,7 +28,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return NextResponse.json({ taskId, funder, history: await funderHistory(funder) });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Monadscan is unreachable." },
+      { error: e instanceof Error ? e.message : "Arc's explorer is unreachable." },
       { status: e instanceof IndexUnavailable ? 503 : 502 },
     );
   }

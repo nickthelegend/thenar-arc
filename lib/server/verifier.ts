@@ -98,14 +98,14 @@ export type VerifyResult = {
 /**
  * The EIP-712 domain the contract verifies against.
  *
- * `name` is NOT the product name. The deployed contract hardcodes
- * keccak256("Axon"), so this has to match byte for byte or every signature is
- * rejected with BadSignature(). It does not get renamed with the brand —
- * changing it means redeploying the contract. /api/health asserts this against
- * the chain on every call so a rename can never silently break submissions.
+ * ThenarProtocol hardcodes keccak256("Thenar") and keccak256("1") in its
+ * domain separator, so this has to match byte for byte or every signature is
+ * rejected with BadSignature(). Changing it means redeploying the contract.
+ * /api/health asserts this against the chain on every call so a rename can
+ * never silently break submissions.
  */
 export function runDomain(chainId: number, verifyingContract: `0x${string}`) {
-  return { name: "Axon", version: "1", chainId, verifyingContract } as const;
+  return { name: "Thenar", version: "1", chainId, verifyingContract } as const;
 }
 
 export async function verifyAndSign(args: {

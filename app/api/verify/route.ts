@@ -111,7 +111,7 @@ async function handlePOST(req: Request) {
 
     // A run is only worth paying for if a person drove it. An operator joins
     // the CorpusShares whitelist once, by signing with a passkey the registry
-    // on Monad checks (/api/operator), and the whitelist is read here on every
+    // on Arc checks (/api/operator), and the whitelist is read here on every
     // run, before any scoring, so a script cannot get as far as a signature.
     if (!(await isOperator(contributor))) {
       return NextResponse.json(
@@ -218,6 +218,9 @@ async function handlePOST(req: Request) {
       parts: result.parts,
       signature: existing ? (existing.signature as `0x${string}`) : result.signature,
       parSeconds: result.parSeconds,
+      // The task's reward per run, USDC base units (6 decimals). `rewardWei` is the
+      // same number under its pre-Arc name, kept for clients not yet renamed.
+      reward: result.rewardWei,
       rewardWei: result.rewardWei,
       // What the verifier measured, which is not necessarily what the caller
       // sent. Returned so a client can see the figure its score was actually

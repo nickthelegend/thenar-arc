@@ -305,7 +305,7 @@ export function migrate(): Promise<void> {
 
 
         -- Every corpus an agent took: an x402 payment settled in USDC on
-        -- Monad, keyed by its transaction hash.
+        -- Arc, keyed by its transaction hash.
         CREATE TABLE IF NOT EXISTS corpus_sale (
           id         TEXT PRIMARY KEY,
           task_id    INTEGER NOT NULL,
@@ -318,7 +318,7 @@ export function migrate(): Promise<void> {
         );
 
         -- The sha256 of what each sale served, and the SalesLog entry on
-        -- Monad that logged it. A row with an error and no entry is a sale
+        -- Arc that logged it. A row with an error and no entry is a sale
         -- the log is missing, kept so the gap is visible.
         CREATE TABLE IF NOT EXISTS corpus_sale_audit (
           sale_id        TEXT PRIMARY KEY,
@@ -331,10 +331,10 @@ export function migrate(): Promise<void> {
         );
 
 
-        -- Every write this server made to CorpusShares on Monad: the
+        -- Every write this server made to CorpusShares on Arc: the
         -- control-list entry that follows a passkey sign-in, the shares a paid run
         -- earns, a dividend declared from sales. Keyed on the transaction, so
-        -- each line can be found on Monadscan.
+        -- each line can be found on the explorer.
         CREATE TABLE IF NOT EXISTS token_event (
           tx         TEXT PRIMARY KEY,
           kind       TEXT NOT NULL,
@@ -381,6 +381,8 @@ export function migrate(): Promise<void> {
         ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS chain_id INTEGER;
         ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS payload_ids TEXT;
         ALTER TABLE trajectory ADD COLUMN IF NOT EXISTS contract TEXT;
+        -- The buyer's ERC-8004 agent id, when it proved it holds one (x-erc8004-agent-id).
+        ALTER TABLE corpus_sale ADD COLUMN IF NOT EXISTS buyer_agent TEXT;
       `);
 
       // And only now the indexes that name those columns. This is the same
@@ -560,6 +562,10 @@ export function migrate(): Promise<void> {
         created_at INTEGER NOT NULL
       );
     `);
+
+    // The buyer's ERC-8004 agent id, added with the Arc port.
+    const saleCols = (db.prepare(`PRAGMA table_info(corpus_sale)`).all() as { name: string }[]).map((c) => c.name);
+    if (!saleCols.includes("buyer_agent")) db.exec(`ALTER TABLE corpus_sale ADD COLUMN buyer_agent TEXT`);
   })();
   return ready;
 }
@@ -568,7 +574,7 @@ export function migrate(): Promise<void> {
  * Give every pre-existing row the deployment it actually settled against.
  *
  * Rows written before the column existed carry no contract, and they are not
- * all the same one — this project has settled on two Monad and two Avalanche
+ * all the same one — this project has settled on Monad, Avalanche and Arc
  * deployments. The chain each row already records is enough to say which,
  * because only one contract was ever live per chain at the time. Run once,
  * touching only rows that have no contract, so it cannot rewrite a row that

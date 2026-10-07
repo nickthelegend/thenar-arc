@@ -14,8 +14,8 @@ import { embodimentOf } from "@/lib/embodiment";
  * One task's corpus, as a training set.
  *
  * Lifted out of /api/dataset when a second way of paying for it arrived. A
- * CorpusAccess subscription and a per-pull x402 payment in USDC on Monad buy
- * the same thing, so they hand over the same file from the same function
+ * licence to the task's policy (/api/dataset) and a per-pull x402 payment in
+ * USDC on Arc (/api/agent/corpus) buy the same thing, so they hand over the same file from the same function
  * rather than two exports that drift apart the first time one of them changes.
  */
 export async function taskCorpus(taskId: number): Promise<NextResponse> {

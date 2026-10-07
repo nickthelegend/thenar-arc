@@ -110,7 +110,7 @@ function spec() {
       "/api/task/{id}/notes": { get: { summary: "Signed operator notes for a task.", parameters: [taskId], responses: { "200": ok("Notes, each with the signature that proves its author.") } } },
       "/api/task/{id}/team": { get: { summary: "Who has contributed to this task.", parameters: [taskId], responses: { "200": ok("Contributors.") } } },
       "/api/task/{id}/history": {
-        get: { summary: "A funder's protocol calls, from Monadscan's index.", parameters: [taskId, { name: "funder", in: "query", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("funder must be an address."), "502": ok("Monadscan answered with an error."), "503": ok("This deployment has no key for Monadscan's index.") } },
+        get: { summary: "A funder's protocol calls, from Arc's Blockscout explorer.", parameters: [taskId, { name: "funder", in: "query", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("funder must be an address."), "502": ok("Arc's explorer answered with an error."), "503": ok("No index for this network (a local fork).") } },
       },
       "/api/trajectory/{hash}": { get: { summary: "One stored trajectory, with its samples and the hash re-derived.", parameters: [hash], responses: { "200": ok("The trajectory."), "404": ok("No trajectory with that hash.") } } },
       "/api/trajectory/{hash}/similar": { get: { summary: "The paid runs closest to this one, by path distance.", parameters: [hash], responses: { "200": ok("Neighbours, nearest first."), "400": ok("Malformed hash."), "404": ok("Unknown hash.") } } },
@@ -120,7 +120,8 @@ function spec() {
           summary: "Download a corpus, or a single episode.",
           description:
             "One episode by hash is open to anyone. A whole task's corpus needs " +
-            "an active subscription, named by the x-subscriber header, proved by a " +
+            "an on-chain licence to the task's policy (ThenarProtocol.licensed), named by the " +
+            "x-licensee header (x-subscriber also accepted), proved by a " +
             "personal_sign from that address over \"Thenar corpus download\\nsubscriber: " +
             "<address lowercase>\\ntask: <id>\\nuntil: <unix seconds, at most 600 ahead>\", " +
             "and checked on chain. The export carries phase boundaries, an " +
@@ -128,17 +129,22 @@ function spec() {
           parameters: [
             { name: "taskId", in: "query", required: false, schema: { type: "integer", minimum: 0 } },
             { name: "traj", in: "query", required: false, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{64}$" } },
-            { name: "x-subscriber", in: "header", required: false, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" }, description: "The address whose subscription to check." },
+            { name: "x-licensee", in: "header", required: false, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" }, description: "The address whose licence to check." },
             { name: "x-subscriber-signature", in: "header", required: false, schema: { type: "string" }, description: "That address's signature over the download message." },
             { name: "x-subscriber-until", in: "header", required: false, schema: { type: "integer" }, description: "The expiry named in the signed message, unix seconds." },
           ],
-          responses: { "200": ok("The corpus or the episode."), "400": ok("Neither taskId nor traj was given, or one was malformed."), "401": ok("An address was named without a valid, current signature from it."), "402": ok("No active subscription for that address."), "404": ok("Nothing recorded for that task."), "503": ok("The subscription contract could not be read; nothing was served.") },
+          responses: { "200": ok("The corpus or the episode."), "400": ok("Neither taskId nor traj was given, or one was malformed."), "401": ok("An address was named without a valid, current signature from it."), "402": ok("No licence to the task's policy for that address."), "404": ok("Nothing recorded for that task."), "503": ok("The subscription contract could not be read; nothing was served.") },
         },
       },
       "/api/dataset/summary": { get: { summary: "What a corpus contains, without downloading it.", parameters: [{ name: "taskId", in: "query", required: true, schema: { type: "integer", minimum: 0 } }], responses: { "200": ok("Summary."), "400": ok("Missing taskId.") } } },
       "/api/agent/decision": { get: { summary: "An agent's signed account of why it made one purchase: its model, the tools it called, its report and its check against SalesLog. POST stores one, only when signed by the sale's buyer.", parameters: [{ name: "sale", in: "query", required: true, schema: { type: "string" }, description: "The settlement transaction hash." }], responses: { "200": ok("The record, its signature and its signer."), "400": ok("sale is not a transaction hash."), "404": ok("No record for that sale.") } } },
       "/api/corpus/previews": { get: { summary: "Small previews of up to 60 episodes: each run's payload path from above, its six joints and its lift, thinned from the stored samples with both ends kept.", parameters: [{ name: "hashes", in: "query", required: true, schema: { type: "string" }, description: "Comma-separated run hashes." }], responses: { "200": ok("Previews by hash, and the hashes not stored."), "400": ok("No hashes, too many, or one that is not a run hash.") } } },
-      "/api/calls/{address}": { get: { summary: "One address's protocol calls, from Monadscan's index.", parameters: [{ name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("Not an address."), "502": ok("Monadscan answered with an error."), "503": ok("This deployment has no key for Monadscan's index.") } } },
+      "/api/calls/{address}": { get: { summary: "One address's protocol calls, from Arc's Blockscout explorer.", parameters: [{ name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Settlements."), "400": ok("Not an address."), "502": ok("Arc's explorer answered with an error."), "503": ok("No index for this network (a local fork).") } } },
+      "/api/arc": { get: { summary: "The Arc stack this deployment runs on, live: contracts, Circle/Chainlink externals, Memo, the verifier's ERC-8004 record, the CCIP receiver's books, x402/Gateway/CCTP terms. Amounts are USDC base units.", responses: { "200": ok("The stack."), "502": ok("Arc could not be read.") } } },
+      "/api/agent/corpus": { get: { summary: "One task's corpus over x402: 0.01 USDC on Arc (EIP-3009), settled by Thenar's in-process facilitator. Optional x-erc8004-agent-id header logs the buyer's agent id in SalesLog when the payer is that agent's wallet or owner.", parameters: [{ name: "taskId", in: "query", required: true, schema: { type: "integer", minimum: 0 } }, { name: "x-erc8004-agent-id", in: "header", required: false, schema: { type: "string" } }], responses: { "200": ok("The corpus; headers x-thenar-sha256, x-thenar-audit, x-thenar-buyer-agent."), "402": ok("The offer."), "404": ok("Nothing recorded for that task; nothing charged.") } } },
+      "/api/gateway/balance": { get: { summary: "A depositor's Circle Gateway balance per source chain.", parameters: [{ name: "address", in: "query", required: true, schema: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } }], responses: { "200": ok("Balances, USDC base units."), "400": ok("Not an address."), "502": ok("Circle's Gateway API answered with an error.") } } },
+      "/api/agents/verifier.json": { get: { summary: "The verifier's ERC-8004 registration file.", responses: { "200": ok("Registration file.") } } },
+      "/api/agents/buyer.json": { get: { summary: "A buying agent's ERC-8004 registration file.", responses: { "200": ok("Registration file.") } } },
       "/api/props": { get: { summary: "Models funders have uploaded.", responses: { "200": ok("Props.") } } },
       "/api/space": { get: { summary: "Open rooms and who is in them.", responses: { "200": ok("Rooms.") } } },
       "/api/snapshot": { get: { summary: "The most recent corpus snapshot written to object storage.", responses: {
