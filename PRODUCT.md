@@ -8,13 +8,13 @@ web
 
 ## Stack
 
-Delegated. Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4, chosen because the surface is a data-dense web app with a realtime 3D viewport and an on-chain write path. Three.js via react-three-fiber for the teleoperation station. Foundry + Solidity for contracts on Monad. Python (numpy + shapely, no CSG booleans) for the parametric robot-arm CAD kernel that exports the GLB the station renders — the same code-generated-geometry approach used in this author's `orchestrator-pad` project.
+Delegated. Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4, chosen because the surface is a data-dense web app with a realtime 3D viewport and an on-chain write path. Three.js via react-three-fiber for the teleoperation station. Foundry + Solidity for contracts on Arc, Circle's stablecoin-native L1, with USDC as both the money and the gas. Python (numpy + shapely, no CSG booleans) for the parametric robot-arm CAD kernel that exports the GLB the station renders — the same code-generated-geometry approach used in this author's `orchestrator-pad` project.
 
 ## Users
 
-**Operators (primary).** Anyone with a browser and no robotics hardware. Students, gamers, crypto-natives, gig workers. They sit down for 20–90 minutes and run manipulation tasks back to back: drive a simulated arm, pick an object, place it in a goal region, submit. The work is repetitive and skill-based — closer to a rhythm game than to data entry — and it pays per accepted run. What they need visible at all times: AVAX per trajectory, slots remaining, their quality score, elapsed time against the field, and whether the last run was accepted. They will do the same task up to five times and are penalized for sloppy repeats.
+**Operators (primary).** Anyone with a browser and no robotics hardware. Students, gamers, crypto-natives, gig workers. They sit down for 20–90 minutes and run manipulation tasks back to back: drive a simulated arm, pick an object, place it in a goal region, submit. The work is repetitive and skill-based — closer to a rhythm game than to data entry — and it pays per accepted run. What they need visible at all times: USDC per trajectory, slots remaining, their quality score, elapsed time against the field, and whether the last run was accepted. They will do the same task up to five times and are penalized for sloppy repeats.
 
-**Task funders (secondary).** Robotics teams and model labs who post a task, escrow AVAX against a slot count, and need coverage: how many scenarios, which manipulation skills, what pass rate, how fast slots are filling.
+**Task funders (secondary).** Robotics teams and model labs who post a task, escrow USDC against a slot count, and need coverage: how many scenarios, which manipulation skills, what pass rate, how fast slots are filling.
 
 **Policy licensees (secondary).** Buyers of the trained policy and its dataset. They care about provenance — which trajectories, which contributors, what quality distribution — because that is what they are paying for.
 
@@ -22,7 +22,7 @@ Delegated. Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4, chosen
 
 Physical AI is bottlenecked by data, not compute. Robot manipulation data is collected today in closed labs: slow, expensive, and too narrow to generalize. Thenar crowdsources it — anyone teleoperates a simulated arm in the browser and every accepted run becomes a training trajectory.
 
-The part that is ours: the economy settles on-chain, per run, in the same transaction that records provenance. Success is an operator finishing a task and seeing AVAX arrive before they have let go of the mouse, and a policy licence fee fanning out to every contributor who trained it.
+The part that is ours: the economy settles on-chain, per run, in the same transaction that records provenance. Success is an operator finishing a task and seeing USDC arrive before they have let go of the mouse, and a policy licence fee fanning out to every contributor who trained it.
 
 ## Positioning
 
@@ -44,7 +44,7 @@ Confirmed and shipping:
 
 - Browser teleoperation of a 6-DoF arm (THENAR-6: six revolute axes, parallel jaw at 42 mm) with inverse kinematics, keyboard and pointer control, gripper toggle
 - Trajectory recording at 20 Hz, client-side success checking against a goal region, deterministic quality score from success, time efficiency, and path smoothness
-- On-chain task bounties with escrowed AVAX, slot accounting, and a five-runs-per-account cap
+- On-chain task bounties with escrowed USDC, slot accounting, and a five-runs-per-account cap
 - `submitTrajectory` — records CID + hash + score and pays the operator in the same call
 - `mintPolicy` — snapshots the contributor cap table, weighted by cumulative quality
 - `licensePolicy` — fans a licence payment out to every contributor pro-rata in one transaction
@@ -87,13 +87,13 @@ Constraints and explicit non-capabilities. These are roadmap and must never be p
 - No mobile ego-centric capture.
 
 
-Networks: Monad testnet, chain 10143, `https://testnet-rpc.monad.xyz`. Monad mainnet, chain 143, `https://rpc.monad.xyz`.
+Networks: Arc testnet, chain 5042002, `https://rpc.testnet.arc.io`. Arc mainnet, chain 5042, `https://rpc.mainnet.arc.io`. USDC (ERC-20 `0x3600…0000`, 6 decimals) is the escrow, the payout and the gas.
 
 ## Brand Commitments
 
 Name: **Thenar** — the fiber that carries motor output away from a neuron. Lowercase in body copy, uppercase in the wordmark.
 
-Voice: industrial and exact. Machine-shop plain speech. Numbers instead of adjectives — "1,200 slots, 0.4 AVAX each, 81% pass rate," never "incredible rewards." No exclamation marks, no "seamless," "revolutionary," "unleash," "supercharge," or "the future of." Labels are imperative and literal: Run, Submit, Sign, Licence. The interface talks like a work order.
+Voice: industrial and exact. Machine-shop plain speech. Numbers instead of adjectives — "1,200 slots, 0.40 USDC each, 81% pass rate," never "incredible rewards." No exclamation marks, no "seamless," "revolutionary," "unleash," "supercharge," or "the future of." Labels are imperative and literal: Run, Submit, Sign, Licence. The interface talks like a work order.
 
 Binding anti-references. This product must not look like any of these, which are the defaults this category converges on:
 
@@ -114,7 +114,7 @@ Binding anti-references. This product must not look like any of these, which are
 Real and citable:
 
 - The incumbent network's public figures: 153,157 contributors, 3,954,581 trajectories, 3,569,236 on-chain records, 1,200-slot tasks, 81.54% pass rate on a representative task, 2:05 average completion — used only as market evidence, never as Thenar's own numbers
-- Monad network parameters above
+- Arc network parameters above
 - The event's judging rubric, which the build is scoped against
 
 Absent, and never to be fabricated: Thenar has no users, no revenue, no partners, no benchmarks, no trained policy, and no licence sales. Every number rendered in the app must come from live chain state or be visibly labeled as seeded demonstration data. Task names, scenario art, and score distributions shown before real traffic exist are synthetic and must be labeled as such.
@@ -122,7 +122,7 @@ Absent, and never to be fabricated: Thenar has no users, no revenue, no partners
 ## Product Principles
 
 1. **The viewport is the product; everything else is instrumentation.** On the station, the 3D scene leads and the chrome around it is readable without stealing focus. Nothing decorative may compete with the arm.
-2. **State the number.** Where a quantity exists — slots, AVAX, score, latency, rank, pass rate — show the quantity. Adjectives are a failure to measure.
+2. **State the number.** Where a quantity exists — slots, USDC, score, latency, rank, pass rate — show the quantity. Adjectives are a failure to measure.
 3. **Payment is the feedback.** The moment a run is accepted and paid is the emotional center of the product. It is the one place the interface is allowed to be loud.
 4. **Repetition must stay legible.** Operators run the same task five times and dozens of tasks a session. Density, consistency, and low per-run friction beat novelty everywhere outside the payout moment.
 5. **Never dress roadmap as capability.** The non-capabilities above are named in the interface as roadmap wherever a visitor could assume otherwise.

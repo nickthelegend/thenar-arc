@@ -1,6 +1,6 @@
 ---
 name: Thenar
-description: The data foundry for physical AI — teleoperate, measure, get paid on Monad.
+description: The data foundry for physical AI — teleoperate, measure, get paid in USDC on Arc.
 colors:
   ink-0: "#EFEFEE"
   ink-1: "#E4E4E2"
@@ -311,7 +311,7 @@ including the deepest panel, not merely on the page.
 | `scribe` | `#0D0D0F` | Primary text, and the fill of an inverted control |
 | `scribe-2` | `#43444A` | Secondary prose |
 | `scribe-3` | `#5A5B62` | Labels, units, captions |
-| `signal` | `#2B50E0` | **The brand. Money, value, live state** — AVAX figures, slot tally, cap-table bars |
+| `signal` | `#2B50E0` | **The brand. Money, value, live state** — USDC figures, slot tally, cap-table bars |
 | `signal-hi` | `#1B3CB8` | Primary control hover, focus ring |
 | `go` | `#0B6B41` | In tolerance |
 | `reject` | `#B60D33` | Out of tolerance |
@@ -327,7 +327,7 @@ Two measured decisions worth keeping:
 
 - **The accent is `#2B50E0`, not the poster's `#2F5BFF`.** At 74px on a hero
   the brighter blue is unimpeachable — large text owes only 3:1. But the same
-  token sets 12px AVAX figures on the hub, the floor and the leaderboard, and
+  token sets 12px USDC figures on the hub, the floor and the leaderboard, and
   there it measured **4.49:1** on the ground and less on a panel: under AA, on
   the number that tells an operator what they earned. Four per cent darker
   clears 4.5 on the ground, the panel and the deepest panel, and at poster
@@ -482,7 +482,7 @@ and scrollbars are a `rule-strong` thumb on an `ink-0` track.
 **The measurement snap** is the product's one authored motion moment. When a run
 settles, the interface does not celebrate — it takes a measurement: the verdict
 stamps in tolerance or out, the band shows where the payload actually landed,
-the three component scores print, and only then does the brass MON figure land
+the three component scores print, and only then does the brass USDC figure land
 at poster scale. Everything else in the product is still.
 
 Empty and rejected states explain the recovery in the product's own language and

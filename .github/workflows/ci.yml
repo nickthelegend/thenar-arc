@@ -1,0 +1,54 @@
+name: ci
+
+# Every suite that is deterministic on a CI runner:
+# - app: types, lint, unit tests and a production build against Arc testnet's config;
+# - contracts: the Foundry suite (unit + Chainlink Local CCIP tests).
+#
+# The Arc-fork suites (forge fork tests with `--network arc`, and the whole product end to end on
+# a fork with real signed transactions) need Circle's Arc Foundry and run locally:
+#   pnpm contracts:test:fork      ARC_FORK_TESTS=1 arc-forge test --network arc --match-path 'test/fork/*'
+#   pnpm fork && pnpm fork:app && pnpm test:fork
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm exec eslint .
+      - run: pnpm test:unit
+      - run: node scripts/projected-size.mjs
+      - name: production build (Arc testnet config)
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_ARC_NETWORK: testnet
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: forge-std, OpenZeppelin and the Chainlink packages (CCIP, Chainlink Local)
+        working-directory: contracts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: forge test (unit and Chainlink Local; fork suites skip without ARC_FORK_TESTS)
+        working-directory: contracts
+        run: forge test
