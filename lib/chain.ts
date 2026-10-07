@@ -1,229 +1,218 @@
 import { defineChain } from "viem";
 
-import { DEPLOYMENT } from "./deployment";
-import { LOCAL_DEPLOYMENT } from "./deployment-local";
+import { MAINNET_DEPLOYMENT, TESTNET_DEPLOYMENT, type Deployment } from "./deployment";
 
 /**
- * Monad testnet, where Thenar was first built at Monad Blitz Hyderabad.
+ * Arc, Circle's stablecoin-native L1, where Thenar runs.
  *
- * Four properties of this chain run through the product, and each one has a
- * place in the code that is shaped by it:
+ * Three properties of Arc run through the product, and each has a place in
+ * the code shaped by it:
  *
- *  - 300 ms blocks, final two slots (about 600 ms) after they are proposed. A
- *    run executes in the time it takes the station to say it was sent, which
- *    is why the station reports two timers, executed and final
- *    (lib/receipt-timers.ts), and shows the live pipeline
- *    (components/monad-pipeline.tsx).
- *  - Parallel execution. AxonProtocolV2 shards its slot counter so that two
- *    operators on one task do not write the same storage slot.
- *  - The P256 precompile at 0x0100. A browser passkey authorises a run and the
- *    chain checks the secp256r1 signature itself; see /passkey.
- *  - Gas charged on the limit, not on what is used. Every submit's gas limit
- *    is estimated rather than padded, and the station says what it cost.
+ *  - USDC is the gas. An operator, a sponsor and a buying agent each hold one
+ *    token, the same dollars they are paid or pay in. The native balance is
+ *    USDC at 18 decimals; the ERC-20 at 0x3600…0000 is the same balance at 6.
+ *    Contract amounts (escrow, payouts, licences) are always the ERC-20's 6.
+ *  - Deterministic sub-second finality. A run is paid in the block that
+ *    records it and that block is final when it is produced; there is no
+ *    "wait for confirmations" anywhere in the UI.
+ *  - The P-256 precompile at 0x0100. A browser passkey authorises a run and
+ *    the chain checks the secp256r1 signature itself; see /passkey.
  *
- * One constraint shapes the reads: the public endpoints answer `eth_getLogs`
- * only a hundred blocks wide, under a minute of chain. So history is read from
- * contract storage, and a transaction hash is found with a one-block query at
- * the block the contract recorded — see lib/hooks.ts.
+ * Which Arc is chosen at build time with NEXT_PUBLIC_ARC_NETWORK:
+ *  - `testnet` (default): Arc testnet, chain 5042002;
+ *  - `mainnet`: Arc mainnet, chain 5042;
+ *  - `fork`: a local fork of Arc testnet made by Circle's Arc Foundry
+ *    (scripts/arc-fork.mjs), with the real USDC, CCTP, Gateway, Memo, ERC-8004
+ *    and CCIP contracts and Thenar deployed on it. Every page of a fork build
+ *    says so (app/layout.tsx).
  */
-export const monadTestnet = defineChain({
-  id: 10143,
-  name: "Monad Testnet",
-  nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 },
-  rpcUrls: { default: { http: ["https://testnet-rpc.monad.xyz"] } },
-  blockExplorers: {
-    default: { name: "Monadscan", url: "https://testnet.monadscan.com" },
-  },
-  contracts: {
-    multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
-  },
+export type ArcNetwork = "testnet" | "mainnet" | "fork";
+
+const RAW_NETWORK = (process.env.NEXT_PUBLIC_ARC_NETWORK ?? "testnet").toLowerCase();
+export const ARC_NETWORK: ArcNetwork = RAW_NETWORK === "mainnet" ? "mainnet" : RAW_NETWORK === "fork" ? "fork" : "testnet";
+
+/** A local Arc fork. Named LOCALNET because every "this is not the public chain" branch already reads it. */
+export const LOCALNET = ARC_NETWORK === "fork";
+export const ARC_FORK = LOCALNET;
+export const IS_MAINNET = ARC_NETWORK === "mainnet";
+
+export const LOCAL_RPC = process.env.NEXT_PUBLIC_FORK_RPC || process.env.NEXT_PUBLIC_LOCAL_RPC || "http://127.0.0.1:9000";
+
+const MULTICALL3 = { address: "0xcA11bde05977b3631167028862bE2a173976CA11" as const };
+
+/** Native USDC is 18 decimals for gas; the ERC-20 interface reports the same balance at 6. */
+const NATIVE_USDC = { name: "USDC", symbol: "USDC", decimals: 18 } as const;
+
+export const arcTestnet = defineChain({
+  id: 5042002,
+  name: "Arc Testnet",
+  nativeCurrency: NATIVE_USDC,
+  rpcUrls: { default: { http: ["https://rpc.testnet.arc.io"] } },
+  blockExplorers: { default: { name: "Arc Explorer", url: "https://explorer.testnet.arc.io" } },
+  contracts: { multicall3: MULTICALL3 },
   testnet: true,
 });
 
+export const arcMainnet = defineChain({
+  id: 5042,
+  name: "Arc",
+  nativeCurrency: NATIVE_USDC,
+  rpcUrls: { default: { http: ["https://rpc.mainnet.arc.io"] } },
+  blockExplorers: { default: { name: "Arc Explorer", url: "https://explorer.arc.io" } },
+  contracts: { multicall3: MULTICALL3 },
+});
+
 /**
- * A local chain with Monad's shape, for running every flow end to end on one
- * machine: anvil with the Osaka hardfork, which has the same P-256 precompile
- * at 0x0100 that Monad has, the same contracts deployed by the same script,
- * and a USDC with Circle's EIP-3009 interface. scripts/localnet.mjs starts it.
- *
- * Chosen at build time with NEXT_PUBLIC_CHAIN=local. Transactions on it are
- * real transactions on a real chain; they are just not on Monad, and every
- * page of a local build carries a banner saying so (app/layout.tsx).
+ * The fork keeps Arc testnet's chain id, so a wallet signs for 5042002 and
+ * Circle's USDC domain separator matches. Nothing indexes it, so the app's own
+ * /explorer reads transactions and addresses straight off the node.
  */
-export const LOCALNET = process.env.NEXT_PUBLIC_CHAIN === "local";
-
-export const LOCAL_RPC = process.env.NEXT_PUBLIC_LOCAL_RPC || "http://127.0.0.1:8645";
-
 export const thenarLocalnet = defineChain({
-  id: 31337,
-  name: "Thenar Localnet",
-  nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 },
+  id: 5042002,
+  name: "Arc Testnet (local fork)",
+  nativeCurrency: NATIVE_USDC,
   rpcUrls: { default: { http: [LOCAL_RPC] } },
-  // Nothing indexes a local chain for a block explorer, so the app has its
-  // own: /explorer reads a transaction or an address straight off the node.
   blockExplorers: { default: { name: "Local explorer", url: "/explorer" } },
-  contracts: {
-    multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
-  },
+  contracts: { multicall3: MULTICALL3 },
   testnet: true,
 });
-
-/** How copy names the chain in a sentence: "registered on Monad". */
-export const CHAIN_SHORT = LOCALNET ? "the local chain" : "Monad";
-
-/** The contracts this build reads and writes: Monad's, or the local chain's. */
-export const ACTIVE_DEPLOYMENT = LOCALNET ? LOCAL_DEPLOYMENT : DEPLOYMENT;
-
-/** Circle's USDC on Monad testnet, or its local stand-in. 6 decimals. What agents pay for the corpus in. */
-export const USDC = (LOCALNET ? LOCAL_DEPLOYMENT.usdc : "0x534b2f3A21130d7a60830c2Df862319e593943A3") as `0x${string}`;
 
 /** The one place the chain is named. Everything else reads it from here. */
-export const appChain = LOCALNET ? thenarLocalnet : monadTestnet;
+export const appChain = LOCALNET ? thenarLocalnet : IS_MAINNET ? arcMainnet : arcTestnet;
+
+/** How copy names the chain in a sentence: "registered on Arc". */
+export const CHAIN_SHORT = LOCALNET ? "the Arc fork" : "Arc";
+
+/** The fork's deployment, written by scripts/arc-fork.mjs into .env.fork as one JSON value. */
+function forkDeployment(): Deployment {
+  const raw = process.env.NEXT_PUBLIC_ARC_DEPLOYMENT;
+  if (!raw) return TESTNET_DEPLOYMENT;
+  try {
+    return JSON.parse(raw) as Deployment;
+  } catch {
+    return TESTNET_DEPLOYMENT;
+  }
+}
+
+/** The contracts this build reads and writes. */
+export const ACTIVE_DEPLOYMENT: Deployment = LOCALNET ? forkDeployment() : IS_MAINNET ? MAINNET_DEPLOYMENT : TESTNET_DEPLOYMENT;
+
+const X = ACTIVE_DEPLOYMENT.external;
+
+/** Circle's USDC on Arc: the ERC-20 view of the native balance, 6 decimals. Same address on testnet and mainnet. */
+export const USDC = (X.usdc || "0x3600000000000000000000000000000000000000") as `0x${string}`;
+export const USDC_DECIMALS = 6;
 
 /**
- * Monad's RPCs, in the order reads try them.
- *
- * Each was probed for chain id and for batched calls before being written
- * down. The Foundation's own endpoint is first and is the one wallets are
- * given when they add the network; Ankr and thirdweb are there so a rate limit
- * on it costs latency instead of every figure on the site. drpc is not on the
- * list: it refuses the gas an eth_call through Multicall3 asks for.
+ * Arc's RPCs, in the order reads try them. A fork has only itself.
  */
 export const RPC_ENDPOINTS: readonly string[] = LOCALNET
   ? [LOCAL_RPC]
-  : [
-      monadTestnet.rpcUrls.default.http[0],
-      "https://rpc.ankr.com/monad_testnet",
-      "https://10143.rpc.thirdweb.com",
-    ];
+  : IS_MAINNET
+    ? [process.env.NEXT_PUBLIC_ARC_RPC || arcMainnet.rpcUrls.default.http[0]]
+    : [process.env.NEXT_PUBLIC_ARC_RPC || arcTestnet.rpcUrls.default.http[0]];
 
-/** Where an operator with no gas is sent. On the local chain, its own faucet. */
-export const FAUCET_URL = LOCALNET ? "/localnet" : "https://faucet.monad.xyz";
+/** Where a wallet with no USDC is sent: Circle's faucet has Arc testnet. On the fork, its own faucet. */
+export const FAUCET_URL = LOCALNET ? "/localnet" : IS_MAINNET ? "https://www.circle.com/usdc" : "https://faucet.circle.com";
+export const USDC_FAUCET_URL = FAUCET_URL;
 
-/** Where an agent with no USDC is sent. Circle's faucet has Monad testnet. */
-export const USDC_FAUCET_URL = LOCALNET ? "/localnet" : "https://faucet.circle.com";
+/** The ticker beside every amount. Gas, bounties, payouts and agents' payments are all USDC. */
+export const CURRENCY = "USDC";
 
-/** The ticker shown beside every amount. Hardcoding it is how a UI ends up
- *  quoting one chain's currency while settling in another's. */
-export const CURRENCY = appChain.nativeCurrency.symbol;
-
-const pick = (env: string | undefined, deployed: string) =>
+const pick = (env: string | undefined, deployed: string | undefined) =>
   ((env && env.length ? env : deployed) ?? "") as `0x${string}`;
 
 const C = ACTIVE_DEPLOYMENT.contracts;
 
-/** Time-boxed read access to the corpus. Sells time, not rights: a
- *  subscription conveys no licence and no claim on any policy. */
-export const CORPUS_ACCESS = pick(process.env.NEXT_PUBLIC_CORPUS_ACCESS, C.corpusAccess);
-
-/** Certificates naming who recorded a run. Soulbound, and they convey nothing
- *  over the data they name. */
+/** Certificates naming who recorded a run. Soulbound. */
 export const TRAJECTORY_CERTIFICATE = pick(process.env.NEXT_PUBLIC_TRAJECTORY_CERTIFICATE, C.trajectoryCertificate);
 
-/**
- * Where a task's corpus contents are committed.
- *
- * The protocol holds each episode's hash one at a time, which proves every
- * episode is real and nothing about the set. This holds one hash over the
- * whole set, so a buyer can tell a complete corpus from a corpus with an
- * episode quietly missing.
- */
+/** Where a task's corpus contents are committed: one Merkle root per task. */
 export const CORPUS_MANIFEST = pick(process.env.NEXT_PUBLIC_CORPUS_MANIFEST, C.corpusManifest);
 
-/** The corpus as shares, held only by verified humans who drove the arm. */
+/** The corpus as shares, held only by verified humans who drove the arm; dividends in USDC. */
 export const CORPUS_SHARES = pick(process.env.NEXT_PUBLIC_CORPUS_SHARES, C.corpusShares);
 
-/** Every corpus sale, with the sha256 of what was served, in storage and in events. */
+/** Every corpus sale, with the sha256 of what was served and the buyer's ERC-8004 agent id. */
 export const SALES_LOG = pick(process.env.NEXT_PUBLIC_SALES_LOG, C.salesLog);
 
-export const AXON_ADDRESS = pick(process.env.NEXT_PUBLIC_AXON_ADDRESS, C.axon);
+/** The keeper-written audit of each served corpus against its committed root. */
+export const CORPUS_AUDIT = pick(process.env.NEXT_PUBLIC_CORPUS_AUDIT, C.corpusAudit);
+
+/** ThenarProtocol: tasks, USDC escrow, runs and payouts, licences. */
+export const PROTOCOL_ADDRESS = pick(process.env.NEXT_PUBLIC_PROTOCOL_ADDRESS, C.protocol);
+/** The same address under the name most of the app already reads. */
+export const AXON_ADDRESS = PROTOCOL_ADDRESS;
+
+/** ThenarVerdicts: the verifier's ERC-8004 record of paid verdicts. */
+export const VERDICTS_ADDRESS = pick(process.env.NEXT_PUBLIC_VERDICTS_ADDRESS, C.verdicts);
+
+/** ThenarCcipReceiver: corpus licences bought from Base / Ethereum over CCIP + CCTP. */
+export const CCIP_RECEIVER = pick(process.env.NEXT_PUBLIC_CCIP_RECEIVER, C.ccipReceiver);
+
+export const ContributionRecordAddress = pick(undefined, C.contributionRecord);
 
 export const isAddress = (a: string) => /^0x[0-9a-fA-F]{40}$/.test(a);
 
 export const IS_DEPLOYED = isAddress(AXON_ADDRESS);
 
-/** The block AxonProtocolV2 was deployed in. */
-export const AXON_DEPLOY_BLOCK = BigInt(ACTIVE_DEPLOYMENT.deployBlock);
+/** The block ThenarProtocol was deployed in. */
+export const AXON_DEPLOY_BLOCK = BigInt(ACTIVE_DEPLOYMENT.deployBlock || 0);
 
 /**
- * Below this much MON a wallet cannot be relied on to pay for a submit.
- *
- * Monad charges the gas limit, not the gas used: a submit estimated at about
- * 400k and sent with that limit costs 0.04 MON at 100 gwei. This leaves room
- * for two. One number, used by every warning, so two banners cannot disagree
- * about whether the same balance is low.
+ * Below this much USDC a wallet cannot be relied on to pay for a submit.
+ * A run costs well under a cent of USDC gas on Arc; this leaves room for many.
  */
-export const LOW_GAS_BALANCE = 0.1;
+export const LOW_GAS_BALANCE = 0.01;
 
-/** The registry that binds a secp256r1 key to an address. Public, so the client
- *  can read it without the server. */
+/** The registry that binds a secp256r1 key to an address. */
 export const PASSKEY_ADDRESS = pick(process.env.NEXT_PUBLIC_PASSKEY_REGISTRY, C.passkeyRegistry);
-
 export const PASSKEY_DEPLOYED = isAddress(PASSKEY_ADDRESS);
+
+/** Circle and Chainlink contracts on this Arc, from deployments/arc-<network>.json. */
+export const ARC_EXTERNAL = {
+  usdc: USDC,
+  memo: (X.memo || "0x5294E9927c3306DcBaDb03fe70b92e01cCede505") as `0x${string}`,
+  identityRegistry: X.erc8004IdentityRegistry as `0x${string}`,
+  reputationRegistry: X.erc8004ReputationRegistry as `0x${string}`,
+  validationRegistry: X.erc8004ValidationRegistry as `0x${string}`,
+  ccipRouter: X.ccipRouter as `0x${string}`,
+  ccipChainSelector: X.ccipChainSelector,
+  tokenMessengerV2: X.cctpTokenMessengerV2 as `0x${string}`,
+  messageTransmitterV2: X.cctpMessageTransmitterV2 as `0x${string}`,
+  cctpDomain: Number(X.cctpDomain ?? 26),
+  gatewayWallet: X.gatewayWallet as `0x${string}`,
+  gatewayMinter: X.gatewayMinter as `0x${string}`,
+} as const;
 
 export const txUrl = (hash: string) => `${appChain.blockExplorers.default.url}/tx/${hash}`;
 export const addressUrl = (a: string) => `${appChain.blockExplorers.default.url}/address/${a}`;
 
 /**
- * MonadVision (BlockVision), the testnet explorer that verifies contracts
- * through Sourcify, beside Monadscan. Monad testnet only: a local chain has no
- * explorer but its own (/explorer).
+ * Chains Thenar has settled on before. None of their runs live in this
+ * deployment's storage; listed so a stored record that names one resolves on
+ * the right explorer.
  */
-export const MONADVISION = "https://testnet.monadvision.com";
-export const monadVisionTx = (hash: string) => `${MONADVISION}/tx/${hash}`;
-export const monadVisionAddress = (a: string) => `${MONADVISION}/address/${a}`;
+export const PRIOR_CHAINS: readonly { id: number; name: string; rpc: string; explorer: string; currency: string }[] = [];
 
 /**
- * Chains this deployment has settled on before.
- *
- * Thenar was built on Monad, moved to Avalanche Fuji, and came back. Runs
- * recorded on Fuji came with it as stored records: their transaction hashes
- * are real, but they resolve on Fuji's explorer, not this one, so they are
- * shown separately rather than beside runs this contract knows about.
- */
-export const PRIOR_CHAINS = [
-  {
-    id: 43113,
-    name: "Avalanche Fuji",
-    rpc: "https://api.avax-test.network/ext/bc/C/rpc",
-    explorer: "https://testnet.snowtrace.io",
-    currency: "AVAX",
-  },
-] as const;
-
-/**
- * Contracts this protocol has settled on before the current one.
- *
- * A deployment can be superseded without moving chain. The Blitz contract is
- * on this same chain and still holds the runs recorded at Hyderabad; it is
- * simply not part of what the current contract knows about, and a feed that
- * mixed them would report a count the contract would deny.
+ * Deployments this one supersedes. The ETHOnline 2026 build ran on Arc testnet
+ * too, with native-value escrow; this one escrows the USDC ERC-20 and adds the
+ * Arc stack (x402, ERC-8004, Gateway, CCTP, CCIP, Memo).
  */
 export const PRIOR_CONTRACTS = [
   {
-    address: "0x89384f46e430F37DB61Afb98810eba995C0d6Ed4",
-    chainId: 10143,
-    label: "AxonProtocol v1 on Monad Testnet",
-    why: "The Monad Blitz Hyderabad deployment. Superseded by v2, which can refund escrow, accept a relayed run, and verify a browser passkey.",
-  },
-  {
-    address: "0x909d9318d602Cb4Ba84D2851Ab9BFf60DB7077C0",
-    chainId: 43113,
-    label: "AxonProtocolV2 on Avalanche Fuji",
-    why: "Where the product was built out between Blitz and the move back to Monad.",
-  },
-  {
-    address: "0x025dB4A545FDe9d5Ba61a03f2f7776187645F3b3",
-    chainId: 43113,
-    label: "AxonProtocol v1 on Avalanche Fuji",
-    why: "Superseded by v2 on Fuji.",
+    address: "0x6D6D6D0ee86C654b69646223049D6812c0218B2f",
+    chainId: 5042002,
+    label: "AxonProtocolV2 on Arc Testnet (ETHOnline 2026)",
+    why: "The earlier Thenar-on-Arc build. Superseded by ThenarProtocol, which escrows Circle's USDC ERC-20 and reports every paid verdict to ERC-8004.",
   },
 ] as const;
 
 /** Every chain a stored run could legitimately belong to. */
 export const KNOWN_CHAINS = [
   { id: appChain.id, name: appChain.name, rpc: appChain.rpcUrls.default.http[0],
-    explorer: appChain.blockExplorers.default.url, currency: appChain.nativeCurrency.symbol },
+    explorer: appChain.blockExplorers.default.url, currency: CURRENCY },
   ...PRIOR_CHAINS,
 ] as const;
 
@@ -234,24 +223,15 @@ export const txUrlOn = (chainId: number, hash: string) =>
   `${chainMeta(chainId)?.explorer ?? appChain.blockExplorers.default.url}/tx/${hash}`;
 
 /**
- * The address that deployed the protocol and funded every task on it so far.
- *
- * Thenar has no third-party funders yet. Every task in the hub was posted by
- * this address to demonstrate the loop, and the product's own rule is that
- * anything shown before real traffic exists is labelled rather than left to
- * look like organic demand. Read off the chain, not asserted: compare a task's
- * funder to this and say so.
+ * The address that deployed the protocol and funded the seed tasks. Tasks it
+ * posted are labelled as seed bounties rather than left to look like demand.
  */
-export const SEED_FUNDER = (ACTIVE_DEPLOYMENT.deployer || "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815").toLowerCase();
+export const SEED_FUNDER = (ACTIVE_DEPLOYMENT.deployer || "0x0648aDF1967692A0c991d7715b0b588452321FBd").toLowerCase();
 
 export const isSeedFunded = (funder: string) => funder.toLowerCase() === SEED_FUNDER;
 
 /**
  * What this is not, named where a visitor could assume otherwise.
- *
- * Principle 5 of PRODUCT.md: never dress roadmap as capability. These are the
- * things a person watching an arm move in a browser would reasonably assume
- * are there.
  */
 export const NON_CAPABILITIES = [
   {

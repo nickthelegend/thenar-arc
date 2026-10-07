@@ -1,36 +1,103 @@
 /**
- * The Monad testnet deployment, as contracts/script/DeployMonad.s.sol left it.
- *
- * Written by scripts/apply-deploy.mjs from forge's broadcast record, never by
- * hand, so an address here is an address a transaction created. Public on
- * purpose: every value is on chain already, and committing it means a fresh
- * checkout and the deployed site read the same contracts without either
- * needing an env file to agree.
- *
- * An empty address means not deployed yet, which every surface already knows
- * how to say.
+ * Thenar's deployments on Arc, as contracts/script/Deploy.s.sol recorded them
+ * in deployments/arc-<network>.json. Written by scripts/apply-deploy.mjs; do
+ * not edit by hand. An empty address means not deployed yet, which every
+ * surface already knows how to say.
  *
  * No imports: scripts load this file with Node, outside the Next build.
  */
-export const DEPLOYMENT = {
-  chainId: 10143,
-  /** The block AxonProtocolV2 was created in. */
-  deployBlock: 64987386,
-  deployedAt: "2026-09-23T10:08:57.105Z",
-  deployer: "0xDf93bdA9B5de2fBf71C2201268DEFf54c1689815",
-  verifier: "0xC7D11f79514129f63427535dCB6Fdf39300F893D",
-  contracts: {
-    passkeyRegistry: "0xE344179839c9cA2101Ad930BD49268103F3945a9",
-    axon: "0x17731731c6652770CE630e29b62791DC2CED5f38",
-    trajectoryCertificate: "0x0604C7afC6E17Cbe59644040C2373C97a56439EA",
-    contributionRecord: "0xd2527d7e737A63118036164A9F1D4dB3CDc3e27E",
-    corpusAccess: "0xD0ad261D8d7a3D5a1D0Bf6Ed6EbE4BAD691b4AA1",
-    corpusManifest: "0x692190b7955821C050FFFbC7741D31a65Ecd5c48",
-    corpusShares: "0xAE1F24fE0F759BEF941eA2Df2dcb23dc3e130fc7",
-    salesLog: "0xf34A45021B8006C141E8b9CFe4B8a509a9b1fE27",
-    referrals: "0xb51CBeF22F6B68A0FBC93A3dDb3e54Fb93c4269b",
-    foundry: "0x9Fba189A0C60500c760d49C98d695861f7395311",
-    prizePool: "0xcf5E9A252d90A1D08C1909cD4022C5188CCe4E5E",
-    confidentialPayouts: "0x4CC9Dd3b85Fa3E1D69f365f26eD80c9c1068A4A0",
+export type Deployment = {
+  network: string;
+  chainId: number;
+  status: string;
+  deployBlock: number;
+  deployedAt: string;
+  deployer: string;
+  verifier: string;
+  issuer: string;
+  auditor: string;
+  treasury: string;
+  maxTaskEscrow: string;
+  contracts: Record<"passkeyRegistry" | "verdicts" | "protocol" | "trajectoryCertificate" | "contributionRecord" | "corpusManifest" | "corpusShares" | "salesLog" | "corpusAudit" | "ccipReceiver", string>;
+  external: Record<"usdc" | "erc8004IdentityRegistry" | "erc8004ReputationRegistry" | "erc8004ValidationRegistry" | "ccipRouter" | "ccipChainSelector" | "memo" | "cctpTokenMessengerV2" | "cctpMessageTransmitterV2" | "cctpDomain" | "gatewayWallet" | "gatewayMinter", string>;
+};
+
+export const TESTNET_DEPLOYMENT: Deployment = {
+  "network": "testnet",
+  "chainId": 5042002,
+  "status": "not deployed",
+  "deployBlock": 0,
+  "deployedAt": "",
+  "deployer": "",
+  "verifier": "",
+  "issuer": "",
+  "auditor": "",
+  "treasury": "",
+  "maxTaskEscrow": "",
+  "contracts": {
+    "passkeyRegistry": "",
+    "verdicts": "",
+    "protocol": "",
+    "trajectoryCertificate": "",
+    "contributionRecord": "",
+    "corpusManifest": "",
+    "corpusShares": "",
+    "salesLog": "",
+    "corpusAudit": "",
+    "ccipReceiver": ""
   },
-} as const;
+  "external": {
+    "usdc": "0x3600000000000000000000000000000000000000",
+    "erc8004IdentityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "erc8004ReputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "erc8004ValidationRegistry": "0x8004Cb1BF31DAf7788923b405b754f57acEB4272",
+    "ccipRouter": "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
+    "ccipChainSelector": "3034092155422581607",
+    "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
+    "cctpTokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+    "cctpMessageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+    "cctpDomain": "26",
+    "gatewayWallet": "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
+    "gatewayMinter": "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B"
+  }
+};
+
+export const MAINNET_DEPLOYMENT: Deployment = {
+  "network": "mainnet",
+  "chainId": 5042,
+  "status": "not deployed",
+  "deployBlock": 0,
+  "deployedAt": "",
+  "deployer": "",
+  "verifier": "",
+  "issuer": "",
+  "auditor": "",
+  "treasury": "",
+  "maxTaskEscrow": "",
+  "contracts": {
+    "passkeyRegistry": "",
+    "verdicts": "",
+    "protocol": "",
+    "trajectoryCertificate": "",
+    "contributionRecord": "",
+    "corpusManifest": "",
+    "corpusShares": "",
+    "salesLog": "",
+    "corpusAudit": "",
+    "ccipReceiver": ""
+  },
+  "external": {
+    "usdc": "0x3600000000000000000000000000000000000000",
+    "erc8004IdentityRegistry": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+    "erc8004ReputationRegistry": "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63",
+    "erc8004ValidationRegistry": "0x8004Cc8439f36fd5F9F049D9fF86523Df6dAAB58",
+    "ccipRouter": "0xB79791184973589c38e114D43Eb8E4588C283A18",
+    "ccipChainSelector": "6370580034781731079",
+    "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
+    "cctpTokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
+    "cctpMessageTransmitterV2": "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64",
+    "cctpDomain": "26",
+    "gatewayWallet": "0x77777777Dcc4d5A8B6E418Fd04D8997ef11000eE",
+    "gatewayMinter": "0x2222222d7164433c4C09B0b0D809a9b52C04C205"
+  }
+};

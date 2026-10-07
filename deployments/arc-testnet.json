@@ -1,0 +1,21 @@
+{
+  "network": "testnet",
+  "chainId": 5042002,
+  "status": "not deployed",
+  "note": "Written by contracts/script/Deploy.s.sol via scripts/deploy.sh testnet. Until then the app says the protocol is not deployed.",
+  "contracts": {},
+  "external": {
+    "usdc": "0x3600000000000000000000000000000000000000",
+    "erc8004IdentityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "erc8004ReputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "erc8004ValidationRegistry": "0x8004Cb1BF31DAf7788923b405b754f57acEB4272",
+    "ccipRouter": "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
+    "ccipChainSelector": "3034092155422581607",
+    "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
+    "cctpTokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+    "cctpMessageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+    "cctpDomain": 26,
+    "gatewayWallet": "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
+    "gatewayMinter": "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B"
+  }
+}
