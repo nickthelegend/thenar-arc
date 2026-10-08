@@ -577,7 +577,7 @@ contract ThenarProtocol is ReentrancyGuard {
         _policyOfTask[taskId] = policyId + 1;
 
         address[] storage cs = _taskContributors[taskId];
-        uint256 total;
+        uint256 total = 0;
         for (uint256 i; i < cs.length; ++i) {
             uint256 w = weightOnTask[taskId][cs[i]];
             _capTable[policyId].push(cs[i]);
@@ -611,24 +611,26 @@ contract ThenarProtocol is ReentrancyGuard {
         uint256 total = _capTotal[policyId];
         if (total == 0) revert NoPolicy();
 
-        usdc.safeTransferFrom(msg.sender, address(this), amount);
-
+        // Effects first: every cut is computed and recorded before any USDC moves.
         uint256 fee = (amount * PROTOCOL_FEE_BPS) / 10_000;
         uint256 pool = amount - fee;
         address[] storage cs = _capTable[policyId];
-        uint256 handed;
+        uint256[] memory cuts = new uint256[](cs.length);
+        uint256 handed = 0;
         for (uint256 i; i < cs.length; ++i) {
-            uint256 cut = (pool * _capWeight[policyId][cs[i]]) / total;
-            if (cut == 0) continue;
-            handed += cut;
-            emit ContributorPaid(policyId, cs[i], cut);
-            _send(cs[i], cut);
+            cuts[i] = (pool * _capWeight[policyId][cs[i]]) / total;
+            handed += cuts[i];
         }
-
         p.licencesSold += 1;
         p.distributed += uint128(handed);
         licensed[policyId][licensee] = true;
 
+        usdc.safeTransferFrom(msg.sender, address(this), amount);
+        for (uint256 i; i < cs.length; ++i) {
+            if (cuts[i] == 0) continue;
+            emit ContributorPaid(policyId, cs[i], cuts[i]);
+            _send(cs[i], cuts[i]);
+        }
         // Integer division leaves dust; it rides with the protocol fee.
         _send(treasury, fee + (pool - handed));
         emit PolicyLicensed(policyId, licensee, amount, uint32(cs.length));

@@ -111,7 +111,7 @@ contract ThenarVerdicts {
         verdicts += 1;
         scoreSum += score;
 
-        bool ok;
+        bool ok = false;
         uint256 plusOne = _agentPlusOne;
         if (plusOne != 0) {
             try reputation.giveFeedback(plusOne - 1, int128(uint128(score)), 2, TAG_VERDICT, TAG_SOURCE, "", "", trajHash) {
