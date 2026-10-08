@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { formatEther } from "viem";
 import { DimRule } from "@/components/primitives";
 import { useTaskCatalogue } from "@/components/tasks-provider";
-import { AXON_ADDRESS, CURRENCY, SCENARIOS, addressUrl, appChain, txUrl } from "@/lib/chain";
+import { AXON_ADDRESS, CURRENCY, SCENARIOS, USDC, addressUrl, appChain, txUrl } from "@/lib/chain";
 import { readableError } from "@/lib/fetch-error";
+import { formatNative, formatUsdc } from "@/lib/usdc";
 
 /**
  * A lab's data budget, in a wallet that can only fund Thenar.
@@ -14,13 +14,16 @@ import { readableError } from "@/lib/fetch-error";
  * Thenar's buyers are robotics labs, and a lab paying for demonstrations has
  * the problem every organisation has with a hot wallet: whoever holds the key
  * can spend the budget on anything. Here the budget sits in a Privy server
- * wallet with a Privy policy attached. The policy allows one kind of
- * transaction — escrowing at most 0.1 MON in AxonProtocolV2 on Monad — and Privy
- * refuses to sign anything else. So posting a bounty works, and asking the same
- * wallet to send its MON anywhere else is refused before a signature exists.
+ * wallet with a Privy policy attached. The policy allows what posting a bounty
+ * takes on Arc (a USDC approval to ThenarProtocol and the createTask call that
+ * pulls it, up to a ceiling) and Privy refuses to sign anything else. So
+ * posting a bounty works, and asking the same wallet to send its USDC anywhere
+ * else is refused before a signature exists.
  *
  * Everything on this page is live: the policy is read back from Privy, the
- * balance and the bounties from Monad.
+ * balance and the bounties from Arc. Amounts are USDC: the ERC-20's 6
+ * decimals for escrow and ceilings, and 18 for a policy's native `value`
+ * condition, which on Arc is the same USDC as gas.
  */
 
 type Rule = {
@@ -31,27 +34,43 @@ type Rule = {
 };
 type LabState = {
   wallet: { id: string; address: `0x${string}` };
-  balanceWei: string;
-  limitWei: string;
+  /** The wallet's USDC, ERC-20 base units (6 decimals). */
+  balanceUsdc?: string;
+  /** The same balance as the node's native reading (18 decimals), from older servers. */
+  balanceWei?: string;
+  /** The policy's per-bounty ceiling, USDC base units. */
+  limitUsdc?: string;
+  limitWei?: string;
   chainId: number;
   policy: { id: string; name: string; rules: Rule[] };
 };
 type Outcome =
-  | { kind: "posted"; taskId: number; hash: string; escrowWei: string }
+  | { kind: "posted"; taskId: number; hash: string; escrow: bigint }
   | { kind: "refused"; message: string; code: string }
   | { kind: "signed"; hash: string }
   | { kind: "error"; message: string };
 
-const usdc = (wei: string | bigint) => `${Number(formatEther(BigInt(wei))).toLocaleString("en-GB", { maximumFractionDigits: 4 })} ${CURRENCY}`;
+/** USDC base units (6 decimals) for display. */
+const usdc = (units: string | bigint) => `${Number(formatUsdc(BigInt(units))).toLocaleString("en-GB", { maximumFractionDigits: 6 })} ${CURRENCY}`;
+/** A native (18-decimal) amount: on Arc that is USDC too, at gas precision. */
+const native = (wei: string | bigint) => `${Number(formatNative(BigInt(wei))).toLocaleString("en-GB", { maximumFractionDigits: 6 })} ${CURRENCY}`;
+const balanceOf = (l: LabState) =>
+  l.balanceUsdc !== undefined ? usdc(l.balanceUsdc) : l.balanceWei !== undefined ? native(l.balanceWei) : "unknown";
+const ceilingOf = (l: LabState): number | null =>
+  l.limitUsdc !== undefined ? Number(formatUsdc(BigInt(l.limitUsdc)))
+  : l.limitWei !== undefined ? Number(formatNative(BigInt(l.limitWei)))
+  : null;
 const short = (s: string) => `${s.slice(0, 8)}…${s.slice(-6)}`;
 
 function describe(c: Rule["conditions"][number]): string {
   const op = { eq: "is", neq: "is not", lt: "<", lte: "≤", gt: ">", gte: "≥", in: "is one of" }[c.operator] ?? c.operator;
-  if (c.field === "value") return `value ${op} ${usdc(String(c.value))}`;
+  if (c.field === "value") return `native value ${op} ${native(String(c.value))}`;
+  if (/amount|escrow/i.test(c.field)) return `${c.field} ${op} ${usdc(String(c.value))}`;
   if (c.field === "chain_id") return `chain ${op} ${c.value === String(appChain.id) ? `${appChain.name} (${appChain.id})` : String(c.value)}`;
-  if (c.field === "to") {
+  if (c.field === "to" || c.field === "spender") {
     const v = String(c.value);
-    return `to ${op} ${v.toLowerCase() === AXON_ADDRESS.toLowerCase() ? "AxonProtocolV2" : short(v)}`;
+    const name = v.toLowerCase() === AXON_ADDRESS.toLowerCase() ? "ThenarProtocol" : v.toLowerCase() === USDC.toLowerCase() ? "USDC" : short(v);
+    return `${c.field} ${op} ${name}`;
   }
   return `${c.field} ${op} ${String(c.value)}`;
 }
@@ -65,7 +84,9 @@ async function act(payload: object): Promise<Outcome> {
   const b = await r.json();
   if (b.refused === true) return { kind: "refused", message: b.message, code: b.code };
   if (!r.ok) return { kind: "error", message: b.error ?? `the lab answered ${r.status}` };
-  if (typeof b.taskId === "number") return { kind: "posted", taskId: b.taskId, hash: b.hash, escrowWei: b.escrowWei };
+  if (typeof b.taskId === "number") {
+    return { kind: "posted", taskId: b.taskId, hash: b.hash, escrow: BigInt(b.escrowUsdc ?? b.escrow ?? b.escrowWei ?? 0) };
+  }
   return { kind: "signed", hash: b.hash };
 }
 
@@ -111,7 +132,9 @@ export default function LabPage() {
     setPosting(true);
     setPosted(null);
     try {
-      const out = await act({ action: "post-bounty", name, slots, rewardMon: reward, scenario, difficulty });
+      // The reward as a USDC decimal string too, so the server parses it to 6
+      // decimals itself rather than trusting a float.
+      const out = await act({ action: "post-bounty", name, slots, reward, rewardUsdc: reward.toFixed(6), scenario, difficulty });
       setPosted(out);
       if (out.kind === "posted") {
         refetch();
@@ -127,11 +150,11 @@ export default function LabPage() {
   /**
    * Read the catalogue again until it has the task this page just posted.
    *
-   * One refetch on the receipt is not enough on Monad: execution runs behind
-   * consensus, and the endpoint answering the read can be a block behind the
-   * one that confirmed the transaction, so the list came back without the task
-   * the line above it had just announced. Asked again each second, for at most
-   * fifteen, and stopped the moment it is there.
+   * Arc is final on inclusion, but the endpoint answering the catalogue's read
+   * can still be a block behind the one that confirmed the transaction, so the
+   * list could come back without the task the line above it had just
+   * announced. Asked again each second, for at most fifteen, and stopped the
+   * moment it is there.
    */
   const postedTaskId = posted?.kind === "posted" ? posted.taskId : null;
   const listed = postedTaskId !== null && tasks.some((t) => t.id === postedTaskId);
@@ -169,7 +192,7 @@ export default function LabPage() {
     : !(reward >= 0.001) || reward > 100 ? `Pay per run must be at least 0.001 ${CURRENCY}.`
     : !Number.isInteger(difficulty) || difficulty < 1 || difficulty > 5 ? "Difficulty must be a whole number from 1 to 5."
     : null;
-  const ceiling = ready ? Number(formatEther(BigInt(ready.limitWei))) : null;
+  const ceiling = ready ? ceilingOf(ready) : null;
   const funded = ready ? tasks.filter((t) => t.funder.toLowerCase() === ready.wallet.address.toLowerCase()) : [];
 
   return (
@@ -206,7 +229,7 @@ export default function LabPage() {
             for it exists on this machine.
           </dd>
           <dt className={label}>Balance</dt>
-          <dd className="font-mono text-[13px] text-scribe">{usdc(lab.balanceWei)}</dd>
+          <dd className="font-mono text-[13px] text-scribe">{balanceOf(lab)}</dd>
         </dl>
       )}
 
@@ -339,7 +362,7 @@ function OutcomeLine({ outcome }: { outcome: Outcome | null }) {
       <p className="mt-3 text-[14px] text-scribe-2">
         <span className="text-go">Signed by Privy, settled on {appChain.name}.</span> Task{" "}
         <Link href={`/task/${outcome.taskId}`} className="font-mono text-signal hover:text-signal-hi">#{outcome.taskId}</Link>{" "}
-        holds {usdc(outcome.escrowWei)} ·{" "}
+        holds {usdc(outcome.escrow)} ·{" "}
         <a href={txUrl(outcome.hash)} target="_blank" rel="noreferrer" className="font-mono text-signal hover:text-signal-hi">
           {short(outcome.hash)} &rarr;
         </a>

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useAcceptedScores, useObservedCost } from "@/lib/hooks";
 import { CURRENCY } from "@/lib/chain";
-import { fmtGasCost, fmtMon, fmtScore } from "@/lib/format";
+import { fmtGasCost, fmtScore } from "@/lib/format";
+import { formatUsdc } from "@/lib/usdc";
 
 /**
  * What a funder is actually signing.
@@ -17,20 +18,23 @@ import { fmtGasCost, fmtMon, fmtScore } from "@/lib/format";
  * Every accepted run on this deployment is on the chain with its score, so the
  * quote is this deployment's own record rather than a worked example.
  *
- * What happens to the rest. Nothing. AxonProtocol has no refund path: escrow
- * enters through createTask and fundTask, leaves only as a payout, and a task
- * that never fills leaves the remainder in the contract permanently. That is
- * the single most consequential fact about posting a task here and it was
- * written down nowhere a funder would look.
+ * What happens to the rest. Without a deadline, nothing: escrow enters through
+ * createTask and fundTask, leaves only as a payout, and a task that never
+ * fills leaves the remainder in the contract permanently. With one, closeTask
+ * returns it. That is the single most consequential fact about posting a task
+ * here, so it is said where the funder signs.
  *
- * And what the transaction itself costs, measured off the six real postings
- * this contract has, at the price the chain is quoting now.
+ * And what the transaction itself costs, measured off the real postings this
+ * contract has, at the price the chain is quoting now. Gas on Arc is USDC.
+ *
+ * Amounts are USDC base units (6 decimals) and stay integers until printed.
  */
 export function PostPreflight({
-  slots, rewardMon, days,
+  slots, reward, days,
 }: {
   slots: number;
-  rewardMon: number;
+  /** Reward per run, USDC base units. */
+  reward: bigint;
   /** Days until the funder may reclaim, or zero for a task that never expires. */
   days: number;
 }) {
@@ -42,14 +46,14 @@ export function PostPreflight({
   const other = useObservedCost(otherKind);
   const { data: accepted } = useAcceptedScores();
 
-  const escrow = slots * rewardMon;
-  if (escrow <= 0) return null;
+  const escrow = reward * BigInt(Math.max(0, slots));
+  if (escrow <= 0n) return null;
 
   // Score is 0..10000 on chain, and a payout is reward × score / 10000.
   // Only from runs that exist: with none scored there is no rate to project,
   // and a mean of zero read as one made the whole escrow the "shortfall".
   const mean = accepted && accepted.n > 0 ? accepted.meanScore : null;
-  const drawn = mean === null ? null : (escrow * mean) / 10_000;
+  const drawn = mean === null ? null : (escrow * BigInt(Math.round(mean))) / 10_000n;
   const left = drawn === null ? null : escrow - drawn;
 
   return (
@@ -60,7 +64,7 @@ export function PostPreflight({
         <li>
           <span className="text-scribe">The escrow is a ceiling, not a price.</span>{" "}
           A run is paid the reward scaled by its score, so only a run scoring
-          100.00 draws the full {fmtMon(rewardMon, 4)} {CURRENCY}.
+          100.00 draws the full {formatUsdc(reward)} {CURRENCY}.
           {accepted && accepted.n > 0 && drawn !== null ? (
             <>
               {" "}
@@ -68,9 +72,9 @@ export function PostPreflight({
               deployment averaged {fmtScore(Math.round(mean!))}; at that rate{" "}
               {slots} filled {slots === 1 ? "slot" : "slots"} would draw about{" "}
               <span className="font-mono tabular-nums text-scribe">
-                {fmtMon(drawn, 4)} {CURRENCY}
+                {formatUsdc(drawn)} {CURRENCY}
               </span>{" "}
-              of the {fmtMon(escrow, 4)} escrowed.
+              of the {formatUsdc(escrow)} escrowed.
             </>
           ) : null}
         </li>
@@ -89,7 +93,7 @@ export function PostPreflight({
                 <>
                   roughly{" "}
                   <span className="font-mono tabular-nums text-scribe">
-                    {fmtMon(left, 4)} {CURRENCY}
+                    {formatUsdc(left)} {CURRENCY}
                   </span>{" "}
                   of scoring shortfall above
                 </>
@@ -115,7 +119,7 @@ export function PostPreflight({
                 <>
                   roughly{" "}
                   <span className="font-mono tabular-nums text-scribe">
-                    {fmtMon(left, 4)} {CURRENCY}
+                    {formatUsdc(left)} {CURRENCY}
                   </span>{" "}
                   of scoring shortfall above
                 </>
@@ -155,7 +159,7 @@ export function PostPreflight({
             <span className="font-mono tabular-nums text-scribe">
               {fmtGasCost(cost.costMon, CURRENCY)}
             </span>{" "}
-            on top of the escrow &mdash; {cost.medianGas.toLocaleString()} gas across{" "}
+            in gas on top of the escrow &mdash; {cost.medianGas.toLocaleString()} gas across{" "}
             {cost.samples} real {cost.samples === 1 ? "posting" : "postings"} of this
             contract, at{" "}
             {Number(cost.gasPriceWei) / 1e9 < 0.001

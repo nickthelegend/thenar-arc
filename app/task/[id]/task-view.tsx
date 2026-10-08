@@ -9,7 +9,6 @@ import { TaskTeam } from "@/components/task-team";
 import { TaskNotes } from "@/components/task-notes";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { formatEther } from "viem";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { DatumScale } from "@/components/datum-scale";
 import { SKILL_LABEL } from "@/lib/skills";
@@ -19,7 +18,8 @@ import { FunderHistory } from "@/components/funder-history";
 import { TaskEscrow } from "@/components/task-escrow";
 import { txUrl, addressUrl, CURRENCY, isSeedFunded } from "@/lib/chain";
 import { cn } from "@/lib/cn";
-import { fmtMon, fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { fmtScore, fmtSeconds, shortHash } from "@/lib/format";
+import { formatUsdc } from "@/lib/usdc";
 import { useTaskCatalogue, useCatalogueTask } from "@/components/tasks-provider";
 
 type Row = {
@@ -99,8 +99,8 @@ export default function TaskView() {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
-        <Cell label="Per run" value={`${fmtMon(task.rewardMon)} ${CURRENCY}`} tone="signal" />
-        <Cell label="Escrow left" value={`${fmtMon(Number(formatEther(task.escrowWei)), 3)} ${CURRENCY}`} />
+        <Cell label="Per run" value={`${formatUsdc(task.rewardWei)} ${CURRENCY}`} tone="signal" />
+        <Cell label="Escrow left" value={`${formatUsdc(task.escrowWei)} ${CURRENCY}`} />
         <Cell label="Par" value={fmtSeconds(task.parSeconds)} />
         <Cell label="Slots" value={`${task.slotsFilled} / ${task.slotsTotal}`} />
       </div>
@@ -134,7 +134,15 @@ export default function TaskView() {
               ? "Past its deadline. It takes no more runs, whether or not its funder has closed it."
               : task.policyMinted
                 ? "Every slot is filled. Its policy has been minted."
-                : "Every slot is filled. It is ready for its policy to be minted in the Foundry."}
+                : "Every slot is filled. It is ready for its policy to be minted."}
+          {task.policyMinted || (!task.closed && !task.expired) ? (
+            <>
+              {" "}
+              <Link href="/policies#minted" className="text-signal hover:text-signal-hi">
+                {task.policyMinted ? "Licence it →" : "Mint it →"}
+              </Link>
+            </>
+          ) : null}
         </p>
       )}
 
@@ -229,8 +237,7 @@ export default function TaskView() {
             {runs!.map((r) => (
               <li key={r.traj_hash} className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-rule py-2.5 font-mono text-[12px]">
                 {/* Internal, because the operator page shows this address's
-                    whole history — runs from the ledger and every call from
-                    Monadscan's index, including the reverted ones. */}
+                    whole history, runs and calls alike. */}
                 <Link href={`/operator/${r.contributor}`} className="text-scribe-2 hover:text-probe">
                   {shortHash(r.contributor)}
                 </Link>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { payloadLabel } from "@/lib/props";
 import { useMemo, useState } from "react";
-import { formatEther } from "viem";
+import { formatUsdc } from "@/lib/usdc";
 import { Difficulty, DimRule, SlotTally, StageTrack } from "@/components/primitives";
 import { ActivityFeed } from "@/components/activity-feed";
 import { Sitting } from "@/components/sitting";
@@ -48,10 +48,10 @@ export default function HubPage() {
         (!needle || t.name.toLowerCase().includes(needle) || String(t.id) === needle),
     );
     const by: Record<SortKey, (a: TaskWithScene, b: TaskWithScene) => number> = {
-      reward: (a, b) => b.rewardMon - a.rewardMon,
+      reward: (a, b) => (b.rewardWei > a.rewardWei ? 1 : b.rewardWei < a.rewardWei ? -1 : 0),
       slots: (a, b) => b.slotsTotal - b.slotsFilled - (a.slotsTotal - a.slotsFilled),
       difficulty: (a, b) => b.difficulty - a.difficulty,
-      escrow: (a, b) => Number(b.escrowWei - a.escrowWei),
+      escrow: (a, b) => (b.escrowWei > a.escrowWei ? 1 : b.escrowWei < a.escrowWei ? -1 : 0),
     };
     return [...list].sort(by[sort]);
   }, [tasks, scenario, skill, arm, openOnly, sort, q]);
@@ -121,7 +121,8 @@ export default function HubPage() {
   const openSlots = allTasks
     .filter((t) => t.open)
     .reduce((n, t) => n + (t.slotsTotal - t.slotsFilled), 0);
-  const escrow = allTasks.reduce((n, t) => n + Number(formatEther(t.escrowWei)), 0);
+  // USDC base units (6 decimals), summed as integers.
+  const escrow = allTasks.reduce((n, t) => n + t.escrowWei, 0n);
   const scenariosPresent = useMemo(
     () => SCENARIOS.filter((s) => (tasks ?? []).some((t) => t.scenario === s)),
     [tasks],
@@ -150,7 +151,7 @@ export default function HubPage() {
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
           <Reading label="Tasks" value={isLoading ? "—" : fmtInt(totalTasks)} />
           <Reading label="Unfilled slots" value={isLoading ? "—" : fmtInt(openSlots)} />
-          <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(escrow, 3)} unit={CURRENCY} tone="signal" />
+          <Reading label="Escrow at stake" value={isLoading ? "—" : fmtMon(usd(escrow), 2)} unit={CURRENCY} tone="signal" />
           <Reading label="Cap per operator" value="5" unit="runs / task" />
           <span className="font-mono text-[12px] text-scribe-3 sm:ml-auto">
             Live from the contract on {appChain.name}
@@ -364,13 +365,13 @@ export default function HubPage() {
                   </Td>
                   <Td align="right">
                     <span className="font-mono text-[13px] tabular-nums text-scribe-2">
-                      {fmtMon(Number(formatEther(t.escrowWei)), 3)}
+                      {fmtMon(usd(t.escrowWei), 2)}
                     </span>
                   </Td>
                   <Td align="right">
                     <span className="flex flex-col items-end gap-0.5">
                       <span className="font-mono text-[15px] font-medium tabular-nums text-signal">
-                        {fmtMon(t.rewardMon)}
+                        {formatUsdc(t.rewardWei)}
                         <span className="ml-1 text-[12px] text-scribe-3">{CURRENCY}</span>
                       </span>
                       {/* Per run is not comparable across tasks that take
@@ -378,7 +379,7 @@ export default function HubPage() {
                           estimate of that, so this is the rate an operator is
                           actually choosing between. */}
                       <span className="font-mono text-[11px] tabular-nums text-scribe-3">
-                        {fmtMon((t.rewardMon * 60) / Math.max(1, t.parSeconds), 4)} / min
+                        {fmtMon((usd(t.rewardWei) * 60) / Math.max(1, t.parSeconds), 4)} / min
                       </span>
                     </span>
                   </Td>
@@ -429,7 +430,7 @@ export default function HubPage() {
                     <span className="font-mono text-[12px] capitalize text-scribe-3">{t.scenario}</span>
                   </div>
                   <span className="shrink-0 font-mono text-[16px] font-medium tabular-nums text-signal">
-                    {fmtMon(t.rewardMon)}
+                    {formatUsdc(t.rewardWei)}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center gap-4">
@@ -583,3 +584,6 @@ function closedBecause(t: TaskWithScene): string {
   if (t.policyMinted) return "Minted";
   return "Filled";
 }
+
+/** USDC base units (6 decimals) as a number of dollars, for display arithmetic only. */
+const usd = (units: bigint) => Number(formatUsdc(units));

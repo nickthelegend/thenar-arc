@@ -3,15 +3,19 @@
 import { useRouter } from "next/navigation";
 import { suggestInstructions } from "@/lib/instructions";
 import { useEffect, useState, useMemo } from "react";
-import { formatEther, parseEther } from "viem";
+import { useReadContract } from "wagmi";
 import { Button, DimRule } from "@/components/primitives";
 import { useSession } from "@/components/session";
 import { useThenarWrite } from "@/lib/write";
-import { txUrl, CURRENCY, appChain } from "@/lib/chain";
+import { txUrl, CURRENCY, appChain, AXON_ADDRESS, IS_DEPLOYED, USDC } from "@/lib/chain";
+import { AXON_ABI } from "@/lib/abi";
+import { USDC_ABI, formatUsdc, parseUsdc } from "@/lib/usdc";
+import { useEnsureUsdcAllowance } from "@/lib/usdc-approve";
+import { GaslessPost } from "@/components/gasless-post";
 import { parSecondsFor } from "@/lib/par";
 import { cn } from "@/lib/cn";
 import { PostPreflight } from "@/components/post-preflight";
-import { fmtMon, fmtSeconds, shortHash } from "@/lib/format";
+import { fmtSeconds, shortHash } from "@/lib/format";
 import { PropPicker } from "@/components/prop-picker";
 import { RoomPicker } from "@/components/room-picker";
 import { useTaskCatalogue } from "@/components/tasks-provider";
@@ -26,6 +30,24 @@ export default function PostTaskPage() {
   const s = useSession();
   const tx = useThenarWrite();
   const router = useRouter();
+  const ensureAllowance = useEnsureUsdcAllowance();
+  /** Set while the USDC approval that precedes createTask is out. */
+  const [approving, setApproving] = useState<"signing" | "pending" | null>(null);
+  const [approveError, setApproveError] = useState<string | null>(null);
+
+  // The escrow is pulled as Circle's USDC ERC-20 (6 decimals), so that is the
+  // balance that decides whether it can be paid, and the protocol's own cap
+  // is the most one task may hold.
+  const { data: usdcHeld } = useReadContract({
+    address: USDC, abi: USDC_ABI, functionName: "balanceOf",
+    args: s.address ? [s.address] : undefined,
+    query: { enabled: Boolean(s.address), refetchInterval: 6_000 },
+  });
+  const { data: cap } = useReadContract({
+    address: AXON_ADDRESS, abi: AXON_ABI, functionName: "maxTaskEscrow",
+    query: { enabled: IS_DEPLOYED },
+  });
+  const maxEscrow = cap as bigint | undefined;
 
   const [name, setName] = useState("Put the toothpaste into the drawer");
   // The scene is chosen, not inferred from prose. A funder picks the object to
@@ -106,7 +128,7 @@ export default function PostTaskPage() {
     return () => clearTimeout(t);
   }, [days]);
   const [slots, setSlots] = useState("10");
-  const [reward, setReward] = useState("0.004");
+  const [reward, setReward] = useState("0.05");
   const [scenario, setScenario] = useState(1);
   const [difficulty, setDifficulty] = useState(3);
 
@@ -116,7 +138,6 @@ export default function PostTaskPage() {
   const { tasks } = useTaskCatalogue();
 
   const slotsN = Number(slots);
-  const rewardN = Number(reward);
   const validName = instructionOf(name).length >= 8;
 
   /**
@@ -131,31 +152,33 @@ export default function PostTaskPage() {
     [payloadId, targetId, scenario, uploaded],
   );
   const validSlots = Number.isInteger(slotsN) && slotsN > 0 && slotsN <= 10_000;
-  // The escrow is counted in wei from the decimal as typed. Through a float,
-  // 0.0000001 became "1e-7", which parseEther refuses, and the click died in
-  // an unhandled rejection with nothing on the page.
-  const rewardWei = (() => {
-    if (!/^\d*\.?\d{0,18}$/.test(reward) || !/\d/.test(reward)) return 0n;
-    try { return parseEther(reward); } catch { return 0n; }
+  // The escrow is counted in USDC base units (6 decimals) from the decimal as
+  // typed, never through a float: 0.0000001 as a float is "1e-7", which no
+  // parser takes, and a seventh decimal is below what USDC can hold.
+  const rewardUnits = (() => {
+    if (!/^\d*\.?\d{0,6}$/.test(reward) || !/\d/.test(reward)) return 0n;
+    try { return parseUsdc(reward); } catch { return 0n; }
   })();
-  const validReward = rewardWei > 0n;
-  const escrowWei = validSlots && validReward ? rewardWei * BigInt(slotsN) : 0n;
-  const total = Number(formatEther(escrowWei));
+  const validReward = rewardUnits > 0n;
+  const escrowUnits = validSlots && validReward ? rewardUnits * BigInt(slotsN) : 0n;
+  const overCap = maxEscrow !== undefined && escrowUnits > maxEscrow;
 
   // Two separate gates. The definition of the task is wrong or right on its
   // own, and blocks the button whatever the wallet is doing. Affordability can
   // only be judged once a wallet is connected, so it gates only after that.
-  const formValid = validName && validSlots && validReward;
-  const affordable = total > 0 && total <= s.balance;
-  const blocked = !formValid || (s.connected && !s.wrongNetwork && !affordable);
+  const formValid = validName && validSlots && validReward && !overCap;
+  const held = usdcHeld as bigint | undefined;
+  const affordable = escrowUnits > 0n && held !== undefined && escrowUnits <= held;
+  const blocked = !formValid || (s.connected && !s.wrongNetwork && held !== undefined && !affordable);
+  const busy = tx.busy || approving !== null;
 
   return (
     <div className="mx-auto max-w-[720px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Post a task</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        A task is a funded bounty. The {CURRENCY} you escrow is what operators are paid
-        from, one accepted run at a time, and whatever is left stays yours in the
-        contract.
+        A task is a funded bounty. The {CURRENCY} you escrow on {appChain.name} is what
+        operators are paid from, one accepted run at a time, each payout final in the
+        block that records the run.
       </p>
 
       <DimRule className="mt-8" note="Definition" />
@@ -309,7 +332,7 @@ export default function PostTaskPage() {
               />
               <span className="text-[12px] text-scribe-3">{CURRENCY}</span>
             </div>
-            {!validReward ? <Err>A positive amount in {CURRENCY}.</Err> : null}
+            {!validReward ? <Err>A positive amount in {CURRENCY}, at most six decimals.</Err> : null}
           </Field>
         </div>
 
@@ -371,7 +394,7 @@ export default function PostTaskPage() {
                     setArm(t.arm);
                     setScenario(Math.max(0, SCENARIOS.indexOf(t.scenario as (typeof SCENARIOS)[number])));
                     setDifficulty(t.difficulty);
-                    setReward(String(t.rewardMon));
+                    setReward(formatUsdc(t.rewardWei));
                     setSlots(String(t.slotsTotal));
                   }}
                   className="border border-rule px-2.5 py-1 font-mono text-[12px] text-scribe-3 transition-colors hover:border-rule-strong hover:text-scribe-2"
@@ -416,37 +439,49 @@ export default function PostTaskPage() {
         <div className="flex flex-col gap-1">
           <span className="label">To escrow now</span>
           <span className="font-mono text-3xl leading-none text-signal">
-            {fmtMon(total, 4)}<span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
+            {formatUsdc(escrowUnits)}<span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
           </span>
           <span className="mt-1 font-mono text-[12px] text-scribe-3">
-            {validSlots ? slotsN : 0} {validSlots && slotsN === 1 ? "run" : "runs"} × {validReward ? fmtMon(rewardN, 4) : "0"} {CURRENCY}
+            {validSlots ? slotsN : 0} {validSlots && slotsN === 1 ? "run" : "runs"} × {validReward ? formatUsdc(rewardUnits) : "0"} {CURRENCY}
           </span>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="label">Your balance</span>
+          <span className="label">Your {CURRENCY}</span>
           {/* Not "0" before a wallet is connected: there is no balance to report yet. */}
           {s.connected ? (
-            <span className={cn("font-mono text-[15px] tabular-nums", affordable || total === 0 ? "text-scribe" : "text-reject")}>
-              {fmtMon(s.balance, 4)} {CURRENCY}
+            <span className={cn("font-mono text-[15px] tabular-nums", affordable || escrowUnits === 0n || held === undefined ? "text-scribe" : "text-reject")}>
+              {held === undefined ? "reading…" : `${formatUsdc(held)} ${CURRENCY}`}
             </span>
           ) : (
             <span className="font-mono text-[13px] text-scribe-3">no wallet connected</span>
           )}
+          <span className="font-mono text-[12px] text-scribe-3">
+            {maxEscrow !== undefined ? `at most ${formatUsdc(maxEscrow)} ${CURRENCY} per task` : "reading the cap…"}
+          </span>
         </div>
       </div>
+
+      {overCap ? (
+        <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">
+          ThenarProtocol holds at most {formatUsdc(maxEscrow!)} {CURRENCY} in one task&rsquo;s escrow
+          (<code className="font-mono text-[12px]">maxTaskEscrow</code>, fixed at deployment). Lower the
+          slots or the reward, or post it as two tasks.
+        </p>
+      ) : null}
 
       {/* What the escrow will actually draw, what happens to the rest, and what
           the transaction placing it costs. The block above priced the escrow to
           four decimals and left all three unanswered. */}
-      <PostPreflight slots={validSlots ? slotsN : 0} rewardMon={validReward ? rewardN : 0} days={days} />
+      <PostPreflight slots={validSlots ? slotsN : 0} reward={validReward ? rewardUnits : 0n} days={days} />
 
-      {s.connected && !s.wrongNetwork && total > 0 && !affordable ? (
+      {s.connected && !s.wrongNetwork && escrowUnits > 0n && held !== undefined && !affordable ? (
         <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">
-          That escrow is more than this wallet holds. Lower the slot count or the
-          reward, or top up from the faucet.
+          That escrow is more than this wallet&rsquo;s {CURRENCY}. Lower the slot count or the
+          reward, top up from the faucet, or fund it from another chain below.
         </p>
       ) : null}
 
+      {approveError ? <p role="alert" className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">{approveError}</p> : null}
       {tx.error ? <p role="alert" className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-reject">{tx.error}</p> : null}
 
       {tx.phase === "confirmed" && tx.txHash ? (
@@ -458,13 +493,28 @@ export default function PostTaskPage() {
         </p>
       ) : null}
 
-      <div className="mt-6 flex gap-3">
+      <div className="mt-6 flex flex-col gap-2">
         <Button
           variant="primary"
-          disabled={tx.busy || blocked}
+          className="self-start"
+          disabled={busy || blocked}
           onClick={async () => {
             if (!s.connected) return s.connect();
             if (s.wrongNetwork) return s.switchToChain();
+            // Two transactions, both final on inclusion. The protocol pulls the
+            // escrow with transferFrom, so it first needs an allowance for this
+            // exact amount; an existing one that covers it is reused.
+            setApproveError(null);
+            try {
+              setApproving("signing");
+              await ensureAllowance(AXON_ADDRESS, escrowUnits);
+            } catch (e) {
+              const m = e instanceof Error ? e.message : String(e);
+              setApproveError(/reject|denied/i.test(m) ? "You did not approve the USDC, so nothing was posted." : m.split("\n")[0]);
+              return;
+            } finally {
+              setApproving(null);
+            }
             // Two entry points, one for each kind of task the contract can
             // hold. createTaskUntil is not a variant of createTask with an
             // extra argument — a task with expiresAt 0 can never be closed —
@@ -474,28 +524,40 @@ export default function PostTaskPage() {
                 ? await tx.run(
                     "createTaskUntil",
                     [
-                      chainName, slotsN, rewardWei, scenario, difficulty,
+                      chainName, slotsN, rewardUnits, scenario, difficulty,
                       BigInt(Math.floor(Date.now() / 1000) + days * 86_400),
+                      escrowUnits,
                     ],
-                    escrowWei,
                   )
                 : await tx.run(
                     "createTask",
-                    [chainName, slotsN, rewardWei, scenario, difficulty],
-                    escrowWei,
+                    [chainName, slotsN, rewardUnits, scenario, difficulty, escrowUnits],
                   );
             if (r) router.push("/hub");
           }}
         >
-          {tx.phase === "signing" ? "Confirm in wallet…"
+          {approving ? `Approve ${formatUsdc(escrowUnits)} ${CURRENCY} in wallet…`
+            : tx.phase === "signing" ? "Confirm the post in wallet…"
             : tx.phase === "pending" ? "Posting…"
             : !formValid ? "Finish the definition"
             : !s.connected ? "Connect a wallet"
             : s.wrongNetwork ? `Switch to ${appChain.name}`
-            : !affordable ? "Escrow exceeds your balance"
-            : "Escrow and post"}
+            : held !== undefined && !affordable ? "Escrow exceeds your USDC"
+            : "Approve, escrow and post"}
         </Button>
+        <span className="max-w-[62ch] font-mono text-[12px] leading-relaxed text-scribe-3">
+          Two signatures: a USDC approval for exactly the escrow (skipped when one already covers it),
+          then the post. Gas is a fraction of a cent of USDC.
+        </span>
       </div>
+
+      <GaslessPost
+        valid={formValid}
+        draft={{
+          name: chainName, slots: validSlots ? slotsN : 0, rewardPerTrajectory: rewardUnits,
+          scenario, difficulty, days, amount: escrowUnits,
+        }}
+      />
     </div>
   );
 }
