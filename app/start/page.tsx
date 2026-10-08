@@ -94,7 +94,7 @@ export default function StartPage() {
       key: "gas",
       title: "USDC for gas",
       state: !s.connected ? "todo" : enoughGas ? "done" : "todo",
-      detail: <>You hold {fmtUsdc(s.balance, 4)} {CURRENCY}. Gas on Arc is USDC, the same dollars you are paid in, and a submit costs a fraction of a cent: {LOW_GAS_BALANCE} {CURRENCY} covers many.</>,
+      detail: <>You hold {fmtUsdc(s.balance, 4)} {CURRENCY}. Gas on Arc is USDC, the same dollars you are paid in, and a submit costs about a cent or two of it. The station shows the measured cost before you send.</>,
       action: <a href={FAUCET_URL} className={primary} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })}>{LOCALNET ? "Fund it from the fork's faucet" : "Get testnet USDC"}</a>,
     },
     {

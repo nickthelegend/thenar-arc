@@ -135,6 +135,7 @@ export function CctpWithdraw({ address }: { address: Address }) {
       const receipt = await client.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("The burn reverted on chain.");
       setStage({ k: "burned", hash, approval, iris: null, checkedAt: null, irisError: null });
+      setAmount("");
       void refetch();
     } catch (e) {
       setStage({ k: "error", message: explainTxError(e) });
@@ -184,9 +185,9 @@ export function CctpWithdraw({ address }: { address: Address }) {
 
       <div className="mt-5 grid gap-px border border-rule bg-rule sm:grid-cols-[1.1fr_1fr]">
         <div className="flex flex-col gap-4 bg-ink-1 p-5">
-          <label className="flex flex-col gap-1.5">
-            <span className="label">To</span>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Destination chain">
+          <div className="flex flex-col gap-1.5">
+            <span className="label" id="cctp-to">To</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-labelledby="cctp-to">
               {DESTINATIONS.map((d) => (
                 <button
                   key={d.key}
@@ -204,9 +205,9 @@ export function CctpWithdraw({ address }: { address: Address }) {
                 </button>
               ))}
             </div>
-          </label>
+          </div>
 
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="flex items-baseline justify-between">
               <span className="label">Amount</span>
               <button type="button" disabled={busy || balance === 0n} onClick={() => setAmount(formatUsdc(balance))} className="font-mono text-[12px] text-scribe-3 hover:text-probe">
@@ -225,7 +226,7 @@ export function CctpWithdraw({ address }: { address: Address }) {
               />
               <span className="px-3 font-mono text-[12px] text-scribe-3">USDC</span>
             </span>
-          </label>
+          </div>
 
           <label className="flex flex-col gap-1.5">
             <span className="label">Recipient on {destination.name}</span>
@@ -292,6 +293,12 @@ export function CctpWithdraw({ address }: { address: Address }) {
                   {destination.messageTransmitterV2.slice(0, 10)}…
                 </a>{" "}
                 on {destination.name} from any wallet with gas there{fast ? ", or wait: fast transfers are usually relayed for you" : ""}. Both values are below.
+              </>
+            ) : LOCALNET ? (
+              <>
+                On Arc, Iris would attest this burn within seconds and anyone could then call{" "}
+                <span className="font-mono">receiveMessage</span> on {destination.name}&rsquo;s MessageTransmitterV2 to mint the
+                USDC. On this fork the burn is final and the USDC is gone from the fork; nothing will be minted.
               </>
             ) : (
               <>

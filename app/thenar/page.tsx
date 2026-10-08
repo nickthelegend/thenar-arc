@@ -68,7 +68,7 @@ export default async function ThenarHome() {
         <Reveal fade>
           <p className="rounded-full border border-white/10 px-3 py-1 text-xs text-scribe-2">
             <span className="mr-2 inline-block size-1.5 rounded-full bg-go align-middle" />
-            {LOCALNET ? `Local fork of ${appChain.name}` : `Live on ${appChain.name}`}
+            {LOCALNET ? "On a local fork of Arc testnet" : `Live on ${appChain.name}`}
           </p>
         </Reveal>
         <Reveal fade delay={100}>

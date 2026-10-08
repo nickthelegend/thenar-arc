@@ -8,6 +8,7 @@ import { readableError } from "@/lib/fetch-error";
 import { LOCALNET } from "@/lib/chain";
 import type { DecisionRecord } from "@/lib/agent-decision";
 import { DecisionTrail } from "@/components/decision-trail";
+import { VerifierAgent } from "@/components/verifier-agent";
 
 /**
  * Where an agent buys the corpus, and every pull an agent has taken.
@@ -15,7 +16,7 @@ import { DecisionTrail } from "@/components/decision-trail";
  * The corpus page is for a person deciding whether to licence the data. This
  * one is for the program that fetches it: the terms it is offered in a 402,
  * what a given agent has bought, and the ledger of
- * what agents have actually taken — each paid pull linked to the Monad
+ * what agents have actually taken — each paid pull linked to the Arc
  * transaction that settled it, and each pull linked to the SalesLog entry that
  * recorded the hash of what it received.
  */
@@ -25,7 +26,7 @@ type Audit =
   | { error: string | null; sha256: string }
   | null;
 type Sale = {
-  id: string; task_id: number; method: "x402" | "agentkit"; buyer: string | null;
+  id: string; task_id: number; method: "x402" | "agentkit"; buyer: string | null; buyer_agent?: string | null;
   network: string; amount: string | null; asset: string | null; created_at: number;
   proof: string | null; audit: Audit;
   decision: { record: DecisionRecord; signature: Hex } | null;
@@ -87,8 +88,11 @@ export default function AgentsPage() {
       <p className="mt-4 max-w-[64ch] text-[15px] leading-relaxed text-scribe-2">
         An agent can take one task&apos;s corpus without a subscription. It asks for the file, is
         answered <span className="font-mono text-[13px]">402</span>, and pays {agentCorpusPrice()} on
-        {LOCALNET ? "the local chain" : "Monad"} in the request that fetches it, final about 600 ms after it lands on Monad. No account, no API key
-        and no subscription: the payment is the permission.
+        {LOCALNET ? " this machine's Arc fork" : " Arc"} in the request that fetches it, final in under a second: Arc&rsquo;s
+        finality is deterministic, so the sale is settled when the block lands. No account, no API key and no subscription:
+        the payment is the permission. An agent registered in Arc&rsquo;s ERC-8004 Identity Registry can say so with an{" "}
+        <span className="font-mono text-[13px]">x-erc8004-agent-id</span> header; when the paying wallet is that agent&rsquo;s,
+        the sale is logged on chain with its agent id.
       </p>
 
       <DimRule className="mt-10" note="The terms, as the 402 states them" />
@@ -101,20 +105,9 @@ export default function AgentsPage() {
 
         <dt className="text-[12px] text-scribe-3">Settles</dt>
         <dd className="text-scribe-2">
-          On <span className="font-mono text-[13px]">{AGENT_CORPUS.network}</span>, through{" "}
-          {LOCALNET ? (
-            <>
-              the x402 facilitator running on this machine (<span className="font-mono text-[13px]">{AGENT_CORPUS.facilitator}</span>);
-              on Monad it is{" "}
-              <a href="https://x402-facilitator.molandak.org/supported" target="_blank" rel="noreferrer" className="text-signal hover:text-signal-hi">
-                Monad&apos;s own facilitator
-              </a>
-            </>
-          ) : (
-            <a href={AGENT_CORPUS.facilitator + "/supported"} target="_blank" rel="noreferrer" className="text-signal hover:text-signal-hi">
-              Monad&apos;s x402 facilitator
-            </a>
-          )}
+          On <span className="font-mono text-[13px]">{AGENT_CORPUS.network}</span>, in Circle&apos;s USDC
+          (EIP-3009 <span className="font-mono text-[13px]">transferWithAuthorization</span>, domain &ldquo;USDC&rdquo; / &ldquo;2&rdquo;),
+          through Thenar&apos;s own facilitator running in this server (Arc has no public x402 facilitator)
           , which submits the agent&apos;s signed USDC authorisation and pays the gas. Only after the file is ready: a task with
           nothing recorded answers 404 and charges nothing.
         </dd>
@@ -147,6 +140,8 @@ export default function AgentsPage() {
         </dd>
 
       </dl>
+
+      <VerifierAgent />
 
       <DimRule className="mt-10" note="What has this agent bought?" />
       <form
@@ -219,7 +214,10 @@ export default function AgentsPage() {
                       <span className="text-scribe-3">free pull (before x402-only)</span>
                     )}
                   </td>
-                  <td className="py-2 pr-4 font-mono text-scribe-2">{s.buyer ? short(s.buyer) : "—"}</td>
+                  <td className="py-2 pr-4 font-mono text-scribe-2">
+                    {s.buyer ? short(s.buyer) : "—"}
+                    {s.buyer_agent ? <span className="ml-2 text-signal" title="ERC-8004 agent id">agent #{s.buyer_agent}</span> : null}
+                  </td>
                   <td className="py-2 pr-4">
                     {s.proof ? (
                       <a href={s.proof} target="_blank" rel="noreferrer" className="font-mono text-signal hover:text-signal-hi">

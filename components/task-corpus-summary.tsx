@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Episode } from "@/components/episode-card";
 import { fmtInt, fmtScore, shortHash } from "@/lib/format";
-import { median } from "@/lib/monad-commit";
+import { median } from "@/lib/arc-blocks";
 import { cn } from "@/lib/cn";
 
 /**

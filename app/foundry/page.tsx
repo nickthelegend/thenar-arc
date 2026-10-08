@@ -4,15 +4,15 @@ import { useEffect } from "react";
 
 import { useState } from "react";
 import Link from "next/link";
-import { parseEther } from "viem";
 import { Button, DimRule } from "@/components/primitives";
-import { Treasury } from "@/components/treasury";
+import { useEnsureUsdcAllowance } from "@/lib/usdc-approve";
+import { parseUsdc } from "@/lib/usdc";
 import { useSession } from "@/components/session";
 import { useCapTable, usePolicies, type ChainPolicy } from "@/lib/hooks";
 import { useThenarWrite } from "@/lib/write";
-import { txUrl, addressUrl, CURRENCY } from "@/lib/chain";
+import { txUrl, addressUrl, CURRENCY, AXON_ADDRESS } from "@/lib/chain";
 import { cn } from "@/lib/cn";
-import { fmtInt, fmtMon, shortHash } from "@/lib/format";
+import { fmtInt, fmtUsdc, shortHash } from "@/lib/format";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 
 export default function FoundryPage() {
@@ -20,7 +20,11 @@ export default function FoundryPage() {
   const { tasks } = useTaskCatalogue();
   const { data: policies, isLoading, isError, refetch } = usePolicies();
 
-  const mintable = (tasks ?? []).filter((t) => t.slotsFilled >= t.slotsTotal && !t.policyMinted);
+  // Only a task's funder sets its licence fee (it decides what every contributor earns), so
+  // the mint rows are the connected wallet's own filled tasks.
+  const mintable = (tasks ?? []).filter(
+    (t) => t.slotsFilled >= t.slotsTotal && !t.policyMinted && !!s.address && t.funder.toLowerCase() === s.address.toLowerCase(),
+  );
 
   return (
     <div className="mx-auto max-w-[1100px] px-5 py-8">
@@ -42,12 +46,6 @@ export default function FoundryPage() {
           </ul>
         </>
       ) : null}
-
-      {/* The treasury the contributors decide how to spend.
-          Deployed, funded, and reachable from no page — so proposal 0 passed
-          16,500 to nil, closed, and has sat unexecuted ever since. */}
-      <DimRule className="mt-10" note="Treasury" />
-      <Treasury />
 
       <DimRule className="mt-10" note="Minted policies" />
 
@@ -118,7 +116,7 @@ function MintRow({
         disabled={tx.busy || bad}
         onClick={async () => {
           if (!connected) return onConnect();
-          const r = await tx.run("mintPolicy", [BigInt(taskId), parseEther(fee)]);
+          const r = await tx.run("mintPolicy", [BigInt(taskId), parseUsdc(fee)]);
           if (r) onDone();
         }}
       >
@@ -133,6 +131,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
   const s = useSession();
   const tx = useThenarWrite();
   const { data: cap } = useCapTable(p.id);
+  const ensureAllowance = useEnsureUsdcAllowance();
 
   const top = cap?.length ? Math.max(...cap.map((c) => c.weightBps)) : 1;
 
@@ -154,13 +153,13 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
         <Cell label="Trajectories" value={fmtInt(p.trajectories)} />
         <Cell label="Contributors" value={fmtInt(cap?.length ?? 0)} />
         <Cell label="Licences sold" value={fmtInt(p.licencesSold)} />
-        <Cell label="Licence" value={`${fmtMon(p.licenceMon, 3)} ${CURRENCY}`} tone="signal" />
+        <Cell label="Licence" value={`${fmtUsdc(p.licenceUsdc, 3)} ${CURRENCY}`} tone="signal" />
       </div>
 
       <DatasetPreview taskId={p.taskId} />
 
       <div className="px-5 py-4">
-        <YourShare cap={cap} address={s.address} licenceMon={p.licenceMon} />
+        <YourShare cap={cap} address={s.address} licenceUsdc={p.licenceUsdc} />
         <DimRule note={`Cap table — ${cap?.length ?? 0} contributor${cap?.length === 1 ? "" : "s"}`} />
         {!cap?.length ? (
           <p className="mt-4 text-[13px] text-scribe-3">Reading the cap table…</p>
@@ -185,7 +184,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
                   {(c.weightBps / 100).toFixed(2)}%
                 </span>
                 <span className="w-[92px] shrink-0 text-right font-mono text-[12px] tabular-nums text-signal">
-                  {fmtMon(c.payoutMon, 4)}
+                  {fmtUsdc(c.payoutUsdc, 4)}
                 </span>
               </li>
               );
@@ -207,7 +206,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
           ) : tx.error ? (
             <span role="alert" className="text-reject">{tx.error}</span>
           ) : (
-            <>{fmtMon(p.distributedMon, 4)} {CURRENCY} distributed so far · every sale splits the same way</>
+            <>{fmtUsdc(p.distributedUsdc, 4)} {CURRENCY} distributed so far · every sale splits the same way</>
           )}
         </span>
         <Button
@@ -216,7 +215,13 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
           onClick={async () => {
             if (!s.connected) return s.connect();
             if (s.wrongNetwork) return s.switchToChain();
-            const r = await tx.run("licensePolicy", [BigInt(p.id)], p.licenceWei);
+            // The protocol pulls the fee in USDC, then fans it out to the cap table in the same call.
+            try {
+              await ensureAllowance(AXON_ADDRESS, p.licenceFee);
+            } catch {
+              return;
+            }
+            const r = await tx.run("licensePolicy", [BigInt(p.id)]);
             if (r) onDone();
           }}
         >
@@ -224,7 +229,7 @@ function PolicyCard({ policy: p, taskName, onDone }: { policy: ChainPolicy; task
             : tx.phase === "pending" ? "Paying out…"
             : !s.connected ? "Connect to licence"
             : s.wrongNetwork ? "Switch network"
-            : `Licence for ${fmtMon(p.licenceMon, 3)} ${CURRENCY}`}
+            : `Licence for ${fmtUsdc(p.licenceUsdc, 3)} ${CURRENCY}`}
         </Button>
       </footer>
     </article>
@@ -377,10 +382,10 @@ function Reading({ label, value, note }: { label: string; value: string; note?: 
  * wallet is actually in the table, because a line saying "you would receive
  * nothing" to someone who never contributed is noise, not information.
  */
-function YourShare({ cap, address, licenceMon }: {
-  cap: { address: string; weightBps: number; payoutMon: number }[] | undefined;
+function YourShare({ cap, address, licenceUsdc }: {
+  cap: { address: string; weightBps: number; payoutUsdc: number }[] | undefined;
   address: string | null | undefined;
-  licenceMon: number;
+  licenceUsdc: number;
 }) {
   if (!cap?.length || !address) return null;
   const mine = cap.find((c) => c.address.toLowerCase() === address.toLowerCase());
@@ -389,7 +394,7 @@ function YourShare({ cap, address, licenceMon }: {
   return (
     <p className="mb-3 border border-signal bg-signal-dim px-3 py-2 font-mono text-[12px] text-signal">
       Your share of this policy is {(mine.weightBps / 100).toFixed(2)}% &mdash;{" "}
-      {fmtMon(mine.payoutMon, 4)} {CURRENCY} for every {fmtMon(licenceMon, 3)}{" "}
+      {fmtUsdc(mine.payoutUsdc, 4)} {CURRENCY} for every {fmtUsdc(licenceUsdc, 3)}{" "}
       {CURRENCY} licence sold, paid in the same transaction as everyone else&rsquo;s.
     </p>
   );

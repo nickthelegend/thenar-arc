@@ -1,6 +1,6 @@
 "use client";
 
-import { useReadContract, useReadContracts } from "wagmi";
+import { useReadContract } from "wagmi";
 import { useThenarWrite } from "@/lib/write";
 import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, addressUrl, txUrl } from "@/lib/chain";
@@ -19,38 +19,29 @@ const CERT = DEPLOYED.find((d) => d.key === "certificate")!.address;
  * which is the wrong place for something that is about one specific run.
  *
  * The certificate is keyed by trajectory id and the run page only knows the
- * hash, so the id is resolved by reading the ledger and matching. That is a
- * handful of calls at the current size and it is the honest way to do it: the
- * alternative is an off-chain index that can disagree with the chain.
+ * hash; the protocol's own `trajectoryOfHash` resolves one to the other.
  */
 export function RunCertificate({ trajHash }: { trajHash: string }) {
-  const count = useReadContract({ address: AXON_ADDRESS, abi: AXON_ABI, functionName: "trajectoryCount" });
-  const n = Number((count.data as bigint | undefined) ?? 0n);
-
-  const ledger = useReadContracts({
-    contracts: Array.from({ length: n }, (_, i) => ({
-      address: AXON_ADDRESS, abi: AXON_ABI, functionName: "getTrajectory", args: [BigInt(i)],
-    })),
-    query: { enabled: n > 0 },
+  // The protocol indexes runs by hash: one read, not a walk of the ledger.
+  const lookup = useReadContract({
+    address: AXON_ADDRESS, abi: AXON_ABI, functionName: "trajectoryOfHash", args: [trajHash as `0x${string}`],
   });
-
-  const id = ledger.data?.findIndex(
-    (r) => (r.result as { trajHash?: string } | undefined)?.trajHash?.toLowerCase() === trajHash.toLowerCase(),
-  );
-  const found = typeof id === "number" && id >= 0;
+  const [exists, tid] = (lookup.data as readonly [boolean, bigint] | undefined) ?? [false, 0n];
+  const found = Boolean(exists);
+  const id = found ? Number(tid) : undefined;
 
   const minted = useReadContract({
     address: CERT, abi: TRAJECTORY_CERTIFICATE_ABI, functionName: "minted",
-    args: found ? [BigInt(id)] : undefined,
+    args: found ? [BigInt(id!)] : undefined,
     query: { enabled: found },
   });
   const owner = useReadContract({
     address: CERT, abi: TRAJECTORY_CERTIFICATE_ABI, functionName: "ownerOf",
-    args: found && minted.data ? [BigInt(id)] : undefined,
+    args: found && minted.data ? [BigInt(id!)] : undefined,
     query: { enabled: Boolean(found && minted.data) },
   });
 
-  const loading = count.isLoading || ledger.isLoading || minted.isLoading;
+  const loading = lookup.isLoading || minted.isLoading;
   const isMinted = Boolean(minted.data);
   const tx = useThenarWrite();
 

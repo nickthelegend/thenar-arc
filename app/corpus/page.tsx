@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { DimRule } from "@/components/primitives";
 import { fmtInt, fmtMon, fmtScore, fmtSeconds } from "@/lib/format";
 import { CURRENCY } from "@/lib/chain";
-import { CorpusAccessPanel } from "@/components/corpus-access";
 import { CorpusPull } from "@/components/corpus-pull";
 import { useTaskCatalogue, type TaskWithScene } from "@/components/tasks-provider";
 import { EpisodeCard, type Episode } from "@/components/episode-card";
@@ -161,7 +160,6 @@ export default function CorpusPage() {
       {typeof taskId === "number" ? <TaskCorpusSummary taskId={taskId} /> : null}
 
       {/* The gate answers 402 and, until now, pointed nowhere. */}
-      <CorpusAccessPanel taskId={taskId} />
       {typeof taskId === "number" ? <CorpusPull taskId={taskId} /> : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-rule py-3">

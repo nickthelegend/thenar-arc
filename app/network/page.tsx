@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { bytesToHex, concatHex, type Hex } from "viem";
 import { ArcFinality } from "@/components/arc-finality";
 import { DimRule } from "@/components/primitives";

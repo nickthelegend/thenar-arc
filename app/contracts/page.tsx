@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatEther } from "viem";
 import { chainClient } from "@/lib/rpc";
-import { appChain, addressUrl, AXON_ADDRESS, CURRENCY, IS_DEPLOYED, txUrl, chainMeta } from "@/lib/chain";
-import { DEPLOYED, LIVE_CONTRACTS, SUPERSEDED, type Deployed } from "@/lib/registry";
+import { appChain, addressUrl, AXON_ADDRESS, CURRENCY, IS_DEPLOYED, txUrl, chainMeta, USDC, LOCALNET } from "@/lib/chain";
+import { DEPLOYED, EXTERNAL_CONTRACTS, LIVE_CONTRACTS, SUPERSEDED, type Deployed } from "@/lib/registry";
 import {
-  CONTRIBUTION_RECORD_ABI, REFERRALS_ABI, PRIZE_POOL_ABI,
-  FOUNDRY_ABI,
+  CONTRIBUTION_RECORD_ABI, SALES_LOG_ABI, THENAR_CCIP_RECEIVER_ABI, THENAR_VERDICTS_ABI,
 } from "@/lib/registry-abi";
+import { AXON_ABI } from "@/lib/abi";
+import { USDC_ABI, formatUsdc } from "@/lib/usdc";
 import { DimRule } from "@/components/primitives";
-import { IndexUnavailable, settlementsFor, type Settlement } from "@/lib/monadscan";
+import { IndexUnavailable, settlementsFor, type Settlement } from "@/lib/arcscan";
 import { fmtGasCost } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -24,13 +24,13 @@ export const revalidate = 0;
 
 const client = chainClient();
 
-/** Balance and code size, for every entry, straight from the node. */
+/** USDC held (ERC-20, 6 decimals) and code size, for every entry, straight from the node. */
 async function presence(rows: Deployed[]) {
   return Promise.all(
     rows.map(async (r) => {
       const [code, balance] = await Promise.all([
         client.getBytecode({ address: r.address }).catch(() => null),
-        client.getBalance({ address: r.address }).catch(() => 0n),
+        client.readContract({ address: USDC, abi: USDC_ABI, functionName: "balanceOf", args: [r.address] }).catch(() => 0n) as Promise<bigint>,
       ]);
       return { ...r, bytes: code ? (code.length - 2) / 2 : 0, balance };
     }),
@@ -64,46 +64,49 @@ async function readings(): Promise<Record<string, [string, string][]>> {
       const n = Number(supply) / 10 ** Number(dec);
       return [["Work recorded", `${n.toLocaleString("en-GB", { maximumFractionDigits: 2 })} ${sym}`]];
     }),
-    safe("referrals", async () => {
-      const [bounty, remaining, paidOut, cap] = await Promise.all([
-        client.readContract({ address: at("referrals"), abi: REFERRALS_ABI, functionName: "bounty" }),
-        client.readContract({ address: at("referrals"), abi: REFERRALS_ABI, functionName: "remaining" }),
-        client.readContract({ address: at("referrals"), abi: REFERRALS_ABI, functionName: "paidOut" }),
-        client.readContract({ address: at("referrals"), abi: REFERRALS_ABI, functionName: "MAX_PER_REFERRER" }),
+    safe("protocol", async () => {
+      const [tasks, runs, policies, cap] = await Promise.all([
+        client.readContract({ address: at("protocol"), abi: AXON_ABI, functionName: "taskCount" }),
+        client.readContract({ address: at("protocol"), abi: AXON_ABI, functionName: "trajectoryCount" }),
+        client.readContract({ address: at("protocol"), abi: AXON_ABI, functionName: "policyCount" }),
+        client.readContract({ address: at("protocol"), abi: AXON_ABI, functionName: "maxTaskEscrow" }),
       ]);
       return [
-        ["Bounty per referral", `${formatEther(bounty as bigint)} ${CURRENCY}`],
-        ["Claims the pot can still pay", String(remaining)],
-        ["Paid out", `${formatEther(paidOut as bigint)} ${CURRENCY}`],
-        ["Cap per referrer", String(cap)],
+        ["Tasks", String(tasks)],
+        ["Paid runs", String(runs)],
+        ["Policies", String(policies)],
+        ["Escrow cap per task", `${formatUsdc(cap as bigint)} ${CURRENCY}`],
       ];
     }),
-    safe("prize", async () => {
-      const [taskId, entrants, weight, settled, closesAt] = await Promise.all([
-        client.readContract({ address: at("prize"), abi: PRIZE_POOL_ABI, functionName: "taskId" }),
-        client.readContract({ address: at("prize"), abi: PRIZE_POOL_ABI, functionName: "entrantCount" }),
-        client.readContract({ address: at("prize"), abi: PRIZE_POOL_ABI, functionName: "totalWeight" }),
-        client.readContract({ address: at("prize"), abi: PRIZE_POOL_ABI, functionName: "settled" }),
-        client.readContract({ address: at("prize"), abi: PRIZE_POOL_ABI, functionName: "closesAt" }),
+    safe("verdicts", async () => {
+      const [agent, verdicts, written, mean] = await Promise.all([
+        client.readContract({ address: at("verdicts"), abi: THENAR_VERDICTS_ABI, functionName: "verifierAgent" }),
+        client.readContract({ address: at("verdicts"), abi: THENAR_VERDICTS_ABI, functionName: "verdicts" }),
+        client.readContract({ address: at("verdicts"), abi: THENAR_VERDICTS_ABI, functionName: "written" }),
+        client.readContract({ address: at("verdicts"), abi: THENAR_VERDICTS_ABI, functionName: "meanScore" }),
       ]);
+      const [bound, id] = agent as readonly [boolean, bigint];
       return [
-        ["Funds task", `#${String(taskId)}`],
-        ["Entrants", String(entrants)],
-        ["Total weight", String(weight)],
-        ["Settled", settled ? "yes" : "not yet"],
-        ["Closes", new Date(Number(closesAt) * 1000).toISOString().slice(0, 10)],
+        ["Verifier agent (ERC-8004)", bound ? `#${id}` : "not bound yet"],
+        ["Verdicts", String(verdicts)],
+        ["Written to the Reputation Registry", String(written)],
+        ["Mean verdict", `${(Number(mean) / 100).toFixed(2)} / 100`],
       ];
     }),
-    safe("foundry", async () => {
-      const [count, period, minWeight] = await Promise.all([
-        client.readContract({ address: at("foundry"), abi: FOUNDRY_ABI, functionName: "proposalCount" }),
-        client.readContract({ address: at("foundry"), abi: FOUNDRY_ABI, functionName: "VOTING_PERIOD" }),
-        client.readContract({ address: at("foundry"), abi: FOUNDRY_ABI, functionName: "MIN_WEIGHT_TO_PROPOSE" }),
+    safe("sales", async () => {
+      const n = await client.readContract({ address: at("sales"), abi: SALES_LOG_ABI, functionName: "saleCount" });
+      return [["Sales logged", String(n)]];
+    }),
+    safe("ccipReceiver", async () => {
+      const [bought, pending, owed] = await Promise.all([
+        client.readContract({ address: at("ccipReceiver"), abi: THENAR_CCIP_RECEIVER_ABI, functionName: "licensesBought" }),
+        client.readContract({ address: at("ccipReceiver"), abi: THENAR_CCIP_RECEIVER_ABI, functionName: "pendingTotal" }),
+        client.readContract({ address: at("ccipReceiver"), abi: THENAR_CCIP_RECEIVER_ABI, functionName: "owedTotal" }),
       ]);
       return [
-        ["Proposals", String(count)],
-        ["Voting period", `${Number(period) / 3600} h`],
-        ["Weight to propose", String(minWeight)],
+        ["Licences bought over CCIP", String(bought)],
+        ["Awaiting the CCTP mint", `${formatUsdc(pending as bigint)} ${CURRENCY}`],
+        ["Held for buyers", `${formatUsdc(owed as bigint)} ${CURRENCY}`],
       ];
     }),
   ]);
@@ -114,7 +117,7 @@ export default async function ContractsPage() {
   const [live, prior, reads] = await Promise.all([
     presence(LIVE_CONTRACTS), SUPERSEDED, IS_DEPLOYED ? readings() : Promise.resolve({} as Record<string, [string, string][]>),
   ]);
-  const held = live.reduce((n, r) => n + Number(formatEther(r.balance)), 0);
+  const held = live.reduce((n, r) => n + Number(formatUsdc(r.balance)), 0);
   const dark = live.filter((r) => r.surface === "/contracts").length;
 
   return (
@@ -151,17 +154,17 @@ export default async function ContractsPage() {
 
             <p className="mt-2 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">{r.does}</p>
 
-            {r.monad ? (
+            {r.arc ? (
               <p className="mt-2 max-w-[74ch] border-l-2 border-signal pl-3 text-[13px] leading-relaxed text-scribe-2">
-                <span className="text-[12px] text-signal">Monad</span>{" "}
-                {r.monad}
+                <span className="text-[12px] text-signal">Arc</span>{" "}
+                {r.arc}
               </p>
             ) : null}
 
             <div className="mt-3 flex flex-wrap items-baseline gap-x-7 gap-y-1 font-mono text-[12px] text-scribe-3">
               <span>{r.bytes.toLocaleString("en-GB")} bytes</span>
-              <span className={Number(formatEther(r.balance)) > 0 ? "text-signal" : undefined}>
-                {formatEther(r.balance)} {CURRENCY}
+              <span className={r.balance > 0n ? "text-signal" : undefined}>
+                {formatUsdc(r.balance)} {CURRENCY}
               </span>
               <span>{r.source}</span>
               <span>
@@ -186,8 +189,8 @@ export default async function ContractsPage() {
 
       <DimRule className="mt-10" note="Every write, and what it cost" />
       <p className="mt-3 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">
-        Every transaction sent to the protocol contract, from Monadscan&rsquo;s
-        index rather than from anything we store &mdash; including the ones that
+        Every transaction sent to the protocol contract, from the Arc
+        explorer&rsquo;s index rather than from anything we store &mdash; including the ones that
         reverted, which a ledger of accepted runs by definition cannot show.
         The method is resolved from the selector against the deployed
         contract&rsquo;s own compiler artifact rather than against the pruned ABI
@@ -201,6 +204,23 @@ export default async function ContractsPage() {
       {IS_DEPLOYED ? <CallLog /> : (
         <p className="mt-4 font-mono text-[13px] text-scribe-3">Nothing is deployed on {appChain.name} yet, so there are no calls to list.</p>
       )}
+
+      <DimRule className="mt-10" note="Circle and Chainlink on Arc" />
+      <p className="mt-3 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">
+        The contracts Thenar calls but did not deploy: Circle&rsquo;s USDC (the escrow and the gas), Arc&rsquo;s
+        Memo, the ERC-8004 registries the verifier and buying agents are registered in, CCTP V2 and Gateway for
+        moving USDC between chains, and Chainlink&rsquo;s CCIP router. <Link href="/arc" className="text-signal hover:text-signal-hi">What each one does here &rarr;</Link>
+      </p>
+      <ul className="mt-3">
+        {EXTERNAL_CONTRACTS.map((r) => (
+          <li key={r.key} className="flex flex-wrap items-baseline justify-between gap-x-6 border-b border-rule py-2.5">
+            <span className="text-[14px] text-scribe">{r.name}</span>
+            <a href={addressUrl(r.address)} target="_blank" rel="noreferrer" className="font-mono text-[12px] text-scribe-3 hover:text-signal">
+              {r.address} &rarr;
+            </a>
+          </li>
+        ))}
+      </ul>
 
       <DimRule className="mt-10" note="Superseded" />
 
@@ -216,8 +236,6 @@ export default async function ContractsPage() {
           </div>
           <p className="mt-2 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">{r.does}</p>
           <div className="mt-3 flex flex-wrap gap-x-7 gap-y-1 font-mono text-[12px] text-scribe-3">
-            {/* Read on its own chain or not at all: this page's node is Monad's, and a
-                Monad reading of an address on another chain says 0 bytes and 0 held. */}
             <span>on {chainMeta(r.chainId ?? appChain.id)?.name ?? appChain.name}</span>
             <span>{r.source}</span>
           </div>
@@ -225,8 +243,8 @@ export default async function ContractsPage() {
       ))}
 
       <p className="mt-8 max-w-[74ch] font-mono text-[12px] leading-relaxed text-scribe-3">
-        Source for every entry is in this repository and verified on Sourcify as{" "}
-        <code className="text-scribe-2">exact_match</code>. The ABI the app calls is
+        Source for every entry is in this repository (<code className="text-scribe-2">contracts/src</code>)
+        {LOCALNET ? ", deployed on this machine's Arc fork" : ", verified on the Arc explorer at deployment"}. The ABI the app calls is
         generated from the compiler&rsquo;s own artifacts by{" "}
         <code className="text-scribe-2">scripts/gen-abi.mjs</code>, so it cannot describe
         a function the deployed contract does not have.{" "}
@@ -259,7 +277,7 @@ async function CallLog() {
   try {
     calls = await settlementsFor(AXON_ADDRESS);
   } catch (e) {
-    failed = e instanceof IndexUnavailable ? e.message : "Monadscan did not answer.";
+    failed = e instanceof IndexUnavailable ? e.message : e instanceof Error ? e.message : "The Arc explorer did not answer.";
   }
 
   if (failed) {

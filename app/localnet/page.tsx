@@ -58,8 +58,8 @@ export default function LocalnetPage() {
         This build of Thenar runs on a fork of Arc testnet on this machine, made by Circle&rsquo;s Arc Foundry: the
         real USDC (native gas and the ERC-20 at <span className="font-mono">0x3600…0000</span>), CCTP, Gateway, Memo,
         ERC-8004 and CCIP contracts, the P-256 precompile, and Thenar deployed beside them. Transactions here are
-        real and signed; they are not on Arc. The fork&rsquo;s node does not run Memo&rsquo;s CallFrom, so runs here
-        are sent as plain calls.
+        real and signed; they are not on Arc. Whether the node runs Memo&rsquo;s CallFrom is probed, not assumed:
+        when it does, runs here are Memo-tagged exactly as on Arc.
       </p>
       <dl className="mt-6 grid grid-cols-[140px_1fr] gap-x-4 gap-y-2 border-y border-rule py-4 font-mono text-[13px] max-sm:grid-cols-1">
         <dt className="label">Chain</dt><dd>{appChain.name} · {appChain.id}</dd>

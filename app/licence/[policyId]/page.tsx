@@ -6,12 +6,14 @@ import { DimRule } from "@/components/primitives";
 import { usePolicies, useCapTable } from "@/lib/hooks";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { addressUrl, AXON_ADDRESS, CURRENCY, appChain } from "@/lib/chain";
-import { fmtInt, fmtMon, shortHash } from "@/lib/format";
+import { fmtInt, fmtUsdc, shortHash } from "@/lib/format";
+import { LicenceCrossChain } from "@/components/licence-cross-chain";
 
 /**
  * What one licence bought, and who it paid.
  *
- * The foundry is where a licence is purchased; this is the receipt for it — a
+ * The foundry is where a licence is purchased on Arc (or, from Base and
+ * Ethereum, over CCIP + CCTP: see LicenceCrossChain); this is the receipt — a
  * link a buyer can keep and anyone can open. Every figure is read from the
  * contract at load: the fee, the number sold, the amount distributed, and the
  * cap table it was distributed across. Nothing is stored on our side, so the
@@ -68,7 +70,7 @@ export default function LicencePage() {
     );
   }
 
-  const perLicence = cap?.reduce((n, c) => n + c.payoutMon, 0) ?? 0;
+  const perLicence = cap?.reduce((n, c) => n + c.payoutUsdc, 0) ?? 0;
 
   return (
     <div className="mx-auto max-w-[900px] px-5 py-8">
@@ -97,13 +99,13 @@ export default function LicencePage() {
       <div className="mt-6 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
         <Cell label="From task" value={`#${policy.taskId}`} />
         <Cell label="Trajectories" value={fmtInt(policy.trajectories)} />
-        <Cell label="Licence fee" value={`${fmtMon(policy.licenceMon, 3)} ${CURRENCY}`} tone />
+        <Cell label="Licence fee" value={`${fmtUsdc(policy.licenceUsdc, 3)} ${CURRENCY}`} tone />
         <Cell label="Licences sold" value={fmtInt(policy.licencesSold)} />
       </div>
       <div className="mt-px grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
         <Cell label="Contributors" value={fmtInt(cap?.length ?? 0)} />
-        <Cell label="Distributed" value={`${fmtMon(policy.distributedMon, 4)} ${CURRENCY}`} tone />
-        <Cell label="Per licence" value={`${fmtMon(perLicence, 4)} ${CURRENCY}`} />
+        <Cell label="Distributed" value={`${fmtUsdc(policy.distributedUsdc, 4)} ${CURRENCY}`} tone />
+        <Cell label="Per licence" value={`${fmtUsdc(perLicence, 4)} ${CURRENCY}`} />
         <Cell label="Minted" value={new Date(policy.mintedAt).toLocaleDateString()} />
       </div>
 
@@ -140,12 +142,14 @@ export default function LicencePage() {
                 {(c.weightBps / 100).toFixed(2)}%
               </span>
               <span className="w-[96px] text-right font-mono text-[13px] tabular-nums text-signal">
-                {fmtMon(c.payoutMon, 4)}
+                {fmtUsdc(c.payoutUsdc, 4)}
               </span>
             </li>
           ))}
         </ol>
       )}
+
+      <LicenceCrossChain policyId={policy.id} fee={policy.licenceFee} />
 
       <DimRule className="mt-10" note="What this licence delivers" />
       <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed text-scribe-2">
@@ -168,12 +172,11 @@ export default function LicencePage() {
         </a>
       </div>
       <p className="mt-3 max-w-[64ch] font-mono text-[12px] leading-relaxed text-scribe-3">
-        The bulk download needs an active subscription on{" "}
-        <Link href="/contracts" className="text-signal hover:text-signal-hi">CorpusAccess</Link>{" "}
-        and a signature from the subscribing wallet, which the corpus page asks
-        for when you download; without a subscription it answers 402 — it sells
-        time, not rights. The summary is open, and so is any single episode by
-        hash, so a buyer can see what they would be getting before paying for it.
+        The bulk download needs this policy&rsquo;s licence, held on Arc by the
+        wallet that signs the download (ThenarProtocol.licensed); without one it
+        answers 402. Agents can also buy a single task&rsquo;s corpus per request
+        over x402 for a cent of USDC. The summary is open, and so is any single
+        episode by hash, so a buyer can see what they would be getting before paying for it.
       </p>
 
       <p className="mt-8 font-mono text-[12px] text-scribe-3">

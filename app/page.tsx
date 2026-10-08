@@ -59,7 +59,7 @@ const FAQ = [
   },
   {
     q: "How are operators paid?",
-    a: "In USDC on Arc, by the same transaction that records the run, from escrow the task's funder put up front. Gas is USDC too, a fraction of a cent. Withdraw to Base, Ethereum or Arbitrum whenever you like with Circle's CCTP.",
+    a: "In USDC on Arc, by the same transaction that records the run, from escrow the task's funder put up front. Gas is USDC too, about a cent or two a run, and the station shows the measured cost before you send. Withdraw to Base, Ethereum or Arbitrum whenever you like with Circle's CCTP.",
   },
   {
     q: "What stops fake runs?",

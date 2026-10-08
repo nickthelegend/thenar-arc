@@ -492,7 +492,7 @@ export default function StationPage() {
   // Practice is forced when there is nothing to pay for, and chosen when a
   // first-time operator would rather not spend a slot learning the controls.
   const practice = !task.open || capped || chosePractice || policyOn || repeatOn;
-  // Gas on Arc is USDC, and a submit costs a fraction of a cent of it. The
+  // Gas on Arc is USDC, and a submit costs a cent or two of it. The
   // floor is LOW_GAS_BALANCE, the same one every banner uses, so the station
   // and the header cannot disagree about the same wallet.
   const thinOnGas = s.connected && !s.wrongNetwork && s.balance < LOW_GAS_BALANCE;
@@ -1037,7 +1037,7 @@ function MeasurementSnap({
           {thinOnGas && !done ? (
             <p className="border border-signal bg-signal-dim px-3 py-2 text-[13px] leading-relaxed text-signal">
               Your balance is {fmtUsdc(s.balance, 4)} {CURRENCY}. Gas on {CHAIN_SHORT} is paid in USDC, and a submit
-              needs a little on hand (about {LOW_GAS_BALANCE} {CURRENCY} covers many).{" "}
+              needs a cent or two of it on hand; the measured cost is above.{" "}
               <a href={FAUCET_URL} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })} className="underline">
                 {LOCALNET ? "Fund it from the fork's faucet" : "Top up"}
               </a>

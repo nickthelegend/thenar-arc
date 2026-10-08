@@ -1,17 +1,19 @@
 "use client";
 
+import { formatUsdc } from "@/lib/usdc";
+
 import { useEffect, useState } from "react";
 import { CURRENCY, addressUrl, txUrl } from "@/lib/chain";
 import { readableError } from "@/lib/fetch-error";
 
 /**
- * The corpus as shares on Monad.
+ * The corpus as shares on Arc, with dividends in USDC.
  *
  * Every recording on Thenar was made by a person driving the arm, and this is
  * where that shows up as ownership: CorpusShares, a whitelisted token whose
  * holders are the operators. The page reads the contract itself — its supply,
  * its whitelist, its dividends — and the log of every write this server made
- * to it, each linked to Monadscan.
+ * to it, each linked to the Arc explorer.
  */
 
 type Security = {
@@ -31,7 +33,7 @@ type Holder = {
   address: string;
   listed: boolean;
   shares: string;
-  dividends: { id: number; tokenBalance: string; amountWei: string; recordDate: number; executionDate: number; recordDateReached: boolean; claimed: boolean }[];
+  dividends: { id: number; tokenBalance: string; amount: string; recordDate: number; executionDate: number; recordDateReached: boolean; claimed: boolean }[];
   compliance: { allowed: boolean; rule: string | null };
 };
 
@@ -86,9 +88,9 @@ export default function CorpusTokenPage() {
     <div className="mx-auto max-w-[900px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none">Corpus shares</h1>
       <p className="mt-3 max-w-[640px] text-[15px] leading-relaxed text-scribe-2">
-        The recordings are owned by the people who made them. Thenar&rsquo;s corpus is a token on Monad
+        The recordings are owned by the people who made them. Thenar&rsquo;s corpus is a token on Arc
         that only a whitelisted address can hold, send or receive, and Thenar adds an address only after
-        its owner signs in with a passkey that the registry on Monad verifies. Every paid run issues its share, scaled by its score, and corpus
+        its owner signs in with a passkey that the registry on Arc verifies through the P-256 precompile. Every paid run issues its share, scaled by its score, and corpus
         sales are paid out to holders as dividends in {CURRENCY}, snapshotted at a record date set in advance.
       </p>
 
@@ -97,7 +99,7 @@ export default function CorpusTokenPage() {
           <span className="label">The shares</span>
         </div>
         {security === null ? (
-          <p className="px-4 py-4 text-[13px] text-scribe-3">Reading the shares from Monad&hellip;</p>
+          <p className="px-4 py-4 text-[13px] text-scribe-3">Reading the shares from Arc&hellip;</p>
         ) : !s ? (
           <p className="px-4 py-4 text-[13px] text-scribe-2">{"error" in security ? security.error : ""}</p>
         ) : (
@@ -108,7 +110,7 @@ export default function CorpusTokenPage() {
             <Fact label="Whitelisted holders" value={String(s.whitelistCount)} />
             <Fact label="Dividends declared" value={String(s.dividends)} />
             <div className="flex flex-col gap-0.5">
-              <dt className="label">On Monadscan</dt>
+              <dt className="label">On the Arc explorer</dt>
               <dd>
                 <a
                   href={s.url}
@@ -201,7 +203,7 @@ export default function CorpusTokenPage() {
               {holder.dividends.map((d) => (
                 <span key={d.id} className="text-scribe-3">
                   Dividend {d.id}: {d.recordDateReached
-                    ? `${d.tokenBalance} shares at the record date · ${Number(d.amountWei) / 1e18} ${CURRENCY} owed${d.claimed ? ", claimed" : ""}`
+                    ? `${d.tokenBalance} shares at the record date · ${formatUsdc(d.amount)} ${CURRENCY} owed${d.claimed ? ", claimed" : ""}`
                     : "record date not reached yet"}
                 </span>
               ))}
