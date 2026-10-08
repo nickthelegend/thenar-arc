@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { clearTally, meanScore, minutes, readTally, type Tally } from "@/lib/session-tally";
 import { CURRENCY } from "@/lib/chain";
-import { fmtMon, fmtScore } from "@/lib/format";
+import { fmtUsdc, fmtScore } from "@/lib/format";
 
 /**
  * The sitting you just came out of, carried to the page you left for.
@@ -39,7 +39,7 @@ export function Sitting({ className }: { className?: string }) {
         <Cell label="Paid" value={String(tally.paid)} />
         <Cell label="Best" value={tally.best ? fmtScore(tally.best) : "—"} tone />
         <Cell label="Mean" value={tally.measured ? fmtScore(Math.round(meanScore(tally))) : "—"} />
-        <Cell label="Earned" value={`${fmtMon(tally.earned, 4)} ${CURRENCY}`} tone />
+        <Cell label="Earned" value={`${fmtUsdc(tally.earned, 4)} ${CURRENCY}`} tone />
         <Cell label="At the bench" value={`${mins.toFixed(0)} min`} />
 
         <span className="ml-auto flex items-center gap-4">

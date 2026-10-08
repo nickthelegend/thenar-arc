@@ -1,10 +1,9 @@
 "use client";
 
 import { useReadContracts } from "wagmi";
-import { formatEther } from "viem";
 import { AXON_ABI } from "@/lib/abi";
 import { AXON_ADDRESS, IS_DEPLOYED, addressUrl, CURRENCY, appChain } from "@/lib/chain";
-import { fmtInt, fmtMon, shortHash } from "@/lib/format";
+import { fmtInt, fmtUsdc, shortHash } from "@/lib/format";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 
 /** What the contract actually holds right now. Nothing here is a fixture. */
@@ -20,7 +19,7 @@ export function NetworkStats() {
   });
 
   const n = (i: number) => Number((data?.[i]?.result as bigint | undefined) ?? 0n);
-  const escrow = (tasks ?? []).reduce((a, t) => a + Number(formatEther(t.escrowWei)), 0);
+  const escrow = (tasks ?? []).reduce((a, t) => a + t.escrowUsdc, 0);
   const openSlots = (tasks ?? []).reduce((a, t) => a + (t.slotsTotal - t.slotsFilled), 0);
 
   if (!IS_DEPLOYED) return null;
@@ -32,7 +31,7 @@ export function NetworkStats() {
         <Reading label="Trajectories recorded" value={fmtInt(n(1))} />
         <Reading label="Policies minted" value={fmtInt(n(2))} />
         <Reading label="Open slots" value={fmtInt(openSlots)} />
-        <Reading label="Escrowed" value={fmtMon(escrow, 3)} unit={CURRENCY} tone="signal" />
+        <Reading label="Escrowed" value={fmtUsdc(escrow, 2)} unit={CURRENCY} tone="signal" />
       </div>
       <a
         href={addressUrl(AXON_ADDRESS)}

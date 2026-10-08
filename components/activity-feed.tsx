@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { useActivity } from "@/lib/hooks";
 import { txUrl, CURRENCY } from "@/lib/chain";
-import { fmtMon, fmtScore, shortHash } from "@/lib/format";
+import { fmtUsdc, fmtScore, shortHash } from "@/lib/format";
 import { DimRule } from "./primitives";
 
 /** Every accepted run on the network, read from TrajectoryAccepted logs. */
@@ -40,7 +40,7 @@ export function ActivityFeed({ limit = 12 }: { limit?: number }) {
               </Link>
               <span className="text-scribe-3">task {e.taskId}</span>
               <span className="text-scribe">{fmtScore(e.score)}</span>
-              <span className="text-signal tabular-nums">{fmtMon(e.paidMon)} {CURRENCY}</span>
+              <span className="text-signal tabular-nums">{fmtUsdc(e.paidUsdc, 4)} {CURRENCY}</span>
               {e.txHash ? (
                 <a
                   href={txUrl(e.txHash)}
