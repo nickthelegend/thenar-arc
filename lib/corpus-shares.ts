@@ -1,5 +1,5 @@
 /**
- * The corpus as shares on Monad: what a run earns, and where the token lives.
+ * The corpus as shares on Arc: what a run earns, and where the token lives.
  *
  * No imports, on purpose: scripts/shares.mjs loads this file with Node,
  * outside the Next build.

@@ -13,7 +13,7 @@ import { cn } from "@/lib/cn";
  * - the episodes, under every outcome, from the corpus index;
  * - the Merkle root this server computes over the paid episodes, and the one
  *   the verifier committed on chain (CorpusManifest), with whether they agree,
- *   plus the Chainlink CRE audit's verdict when one has been written;
+ *   plus the audit keeper's verdict when one has been written;
  * - how many times agents have bought this task's file, from the sales the
  *   ledger records against SalesLog.
  */
@@ -96,7 +96,7 @@ export function TaskCorpusSummary({ taskId }: { taskId: number }) {
           {m?.committed ? <> ({fmtInt(m.committed.episodes)} of {fmtInt(m.episodes)} episode{m.episodes === 1 ? "" : "s"} committed)</> : null}
         </span>
         {m?.audit ? (
-          <span>Chainlink CRE audit: <span className={m.audit.verdict === "matches" ? "text-go" : "text-scribe-2"}>{m.audit.verdict}</span></span>
+          <span>Audit: <span className={m.audit.verdict === "matches" ? "text-go" : "text-scribe-2"}>{m.audit.verdict}</span></span>
         ) : null}
         {ready?.failed ? <span className="text-reject">The corpus index could not be read for this task.</span> : null}
       </div>

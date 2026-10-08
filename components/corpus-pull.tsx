@@ -14,9 +14,9 @@ type Bought = { name: string; kb: number; tx: string | null; sha256: string | nu
  * One task's corpus, bought from this page the way an agent buys it.
  *
  * The same x402 offer /api/agent/corpus makes to an agent: a cent of USDC, as
- * an EIP-3009 authorisation the wallet signs and the facilitator settles on
- * Monad, paying the gas itself. Here the signer is the operator's own wallet,
- * the embedded one Privy made at sign-in, so a person needs no MON and no
+ * an EIP-3009 authorisation the wallet signs and Thenar's in-process
+ * facilitator settles on Arc, paying the gas (in USDC) itself. Here the signer
+ * is the person's own wallet, so they need only the cent of USDC and no
  * subscription to take one file. The sale is recorded and logged to SalesLog
  * like any other, and the file's SHA-256 is the one the log holds.
  */
@@ -48,7 +48,7 @@ export function CorpusPull({ taskId }: { taskId: number }) {
       );
       const payer = x402Client.fromConfig({
         schemes: [{ network: AGENT_CORPUS.network, client: new ExactEvmScheme(signer) }],
-        // Monad testnet USDC is not one of x402's default assets. Allowed here,
+        // Arc's USDC is not one of x402's default assets. Allowed here,
         // and never for more than the price this page states.
         spendControls: {
           allowedAssets: [{ network: AGENT_CORPUS.network, asset: AGENT_CORPUS.asset, maxAmountPerPayment: AGENT_CORPUS.amount }],

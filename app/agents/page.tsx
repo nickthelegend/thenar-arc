@@ -26,7 +26,7 @@ type Audit =
   | { error: string | null; sha256: string }
   | null;
 type Sale = {
-  id: string; task_id: number; method: "x402" | "agentkit"; buyer: string | null; buyer_agent?: string | null;
+  id: string; task_id: number; method: "x402"; buyer: string | null; buyer_agent?: string | null;
   network: string; amount: string | null; asset: string | null; created_at: number;
   proof: string | null; audit: Audit;
   decision: { record: DecisionRecord; signature: Hex } | null;
@@ -208,11 +208,7 @@ export default function AgentsPage() {
                   <td className="py-2 pr-4 text-scribe-2">{when(s.created_at)}</td>
                   <td className="py-2 pr-4 font-mono text-scribe">#{s.task_id}</td>
                   <td className="py-2 pr-4">
-                    {s.method === "x402" && s.amount ? (
-                      <span className="text-signal">paid {usdc(s.amount)}</span>
-                    ) : (
-                      <span className="text-scribe-3">free pull (before x402-only)</span>
-                    )}
+                    {s.amount ? <span className="text-signal">paid {usdc(s.amount)}</span> : <span className="text-scribe-3">—</span>}
                   </td>
                   <td className="py-2 pr-4 font-mono text-scribe-2">
                     {s.buyer ? short(s.buyer) : "—"}

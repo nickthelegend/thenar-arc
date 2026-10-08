@@ -41,11 +41,11 @@ export const PRODUCTS: Product[] = [
     name: "Thenar",
     kind: "The data foundry",
     status: "Live",
-    line: "People teach robots, and get paid on Monad for every run they record.",
+    line: "People teach robots, and get paid in USDC on Arc for every run they record.",
     body:
-      "An operator drives a robot arm on a task someone funded. A verifier measures the run against the goal and signs the score, and one Monad transaction records the trajectory and pays the operator in the same block. Every paid run issues the operator a share of the corpus, and AI agents buy each task's data over x402, with every sale logged on chain beside the hash of what was served.",
-    facts: ["Live on Monad testnet", "Passkeys checked by the P-256 precompile", "Agents pay per pull over x402", "12 contracts, read live"],
-    repo: "nickthelegend/thenar-monad",
+      "An operator drives a robot arm on a task someone funded. A verifier measures the run against the goal and signs the score, and one Arc transaction records the trajectory and pays the operator in USDC, final in under a second. Every paid run issues the operator a share of the corpus, and AI agents buy each task's data over x402, with every sale logged on chain beside the hash of what was served.",
+    facts: ["Built for Arc testnet", "USDC escrow, USDC gas", "Agents pay per pull over x402", "Passkeys checked by the P-256 precompile"],
+    repo: "nickthelegend/thenar-arc",
     href: "/",
     hrefLabel: "Open the app",
     images: [
@@ -63,7 +63,7 @@ export const PRODUCTS: Product[] = [
     body:
       "Every task's station opens in the headset. In mixed reality the bench sits on your real table; take hold of the arm with the grip, close the jaws with the trigger, and the tool follows your hand millimetre for millimetre. The run records in the same shape as one driven from a keyboard or from a leader arm.",
     facts: ["WebXR, no app to install", "Hand tracking or controllers", "Same recording as the browser"],
-    repo: "nickthelegend/thenar-monad",
+    repo: "nickthelegend/thenar-arc",
     repoPath: "components/station",
     href: "/station/0",
     hrefLabel: "Open a station",

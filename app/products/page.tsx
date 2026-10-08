@@ -10,7 +10,7 @@ import { PRODUCTS } from "@/lib/products";
 export const metadata: Metadata = {
   title: "Products — ThenarLabs",
   description:
-    "Everything ThenarLabs has built and is building: Thenar on Monad, Thenar Quest, the Thenar Arms SO-101 pair, the JX1 and JX0 humanoids and the Thenar Duck.",
+    "Everything ThenarLabs has built and is building: Thenar on Arc, Thenar Quest, the Thenar Arms SO-101 pair, the JX1 and JX0 humanoids and the Thenar Duck.",
 };
 
 /** Which models and posters are actually in public/, so the page never offers a 3D view it cannot load. */
@@ -34,7 +34,7 @@ export default function ProductsPage() {
             live and in progress
           </h1>
           <p className="mt-6 max-w-[600px] text-base text-scribe-2 sm:text-lg">
-            Software you can use today on Monad, and robots whose CAD, print files and firmware are open on GitHub.
+            Software you can use today on Arc, and robots whose CAD, print files and firmware are open on GitHub.
           </p>
         </Reveal>
       </section>

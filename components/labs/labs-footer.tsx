@@ -17,7 +17,7 @@ const COLUMNS = [
       { href: APP_HOME, label: "Open the app" },
       { href: appHref("/hub"), label: "Find a task" },
       { href: appHref("/agents"), label: "For AI agents" },
-      { href: appHref("/contracts"), label: "Contracts on Monad" },
+      { href: appHref("/contracts"), label: "Contracts on Arc" },
     ],
   },
   {
@@ -63,7 +63,7 @@ export function LabsFooter() {
         </div>
       </div>
       <p className="mx-auto mt-16 max-w-[1200px] text-xs text-scribe-3">
-        © 2026 ThenarLabs. Built on Monad. The hero film was made with Google Veo, and the glass renders with ChatGPT.
+        © 2026 ThenarLabs. Built on Arc, paid in USDC. The hero film was made with Google Veo, and the glass renders with ChatGPT.
       </p>
     </footer>
   );

@@ -13,7 +13,7 @@ pragma solidity ^0.8.24;
  * (scripts/keeper.mjs) does it for everyone, on a schedule: it fetches the
  * episodes Thenar would sell from the public API, builds the root itself,
  * reads the committed root from CorpusManifest, and writes the verdict here.
- * Chainlink CRE did this on Monad; CRE is not on Arc mainnet, so the auditor
+ * Chainlink CRE is not on Arc mainnet, so instead of a DON the auditor
  * is a key fixed at deployment that is neither the verifier nor the seller,
  * and anyone can re-run the same check from the public API and the chain.
  *

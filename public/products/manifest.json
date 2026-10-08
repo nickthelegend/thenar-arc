@@ -13,7 +13,7 @@
       "compression": "meshopt (EXT_meshopt_compression + KHR_mesh_quantization)",
       "heightM": 0.2579,
       "source": {
-        "repo": "nickthelegend/thenar-monad",
+        "repo": "nickthelegend/thenar-arc",
         "path": "public/models/so101-mg996r.glb",
         "commit": "057162fe5b372f15e483aa0f82fc1078fd758396"
       },

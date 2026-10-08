@@ -180,11 +180,11 @@ export interface BurnIntent {
 
 /** An input error, with the parameter it is about. */
 export class GatewayInputError extends Error {
-  constructor(
-    message: string,
-    readonly param: string,
-  ) {
+  // A plain field, not a parameter property: Node's type stripping (scripts, tests) cannot run those.
+  readonly param: string;
+  constructor(message: string, param: string) {
     super(message);
+    this.param = param;
     this.name = "GatewayInputError";
   }
 }

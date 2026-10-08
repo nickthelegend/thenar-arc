@@ -48,18 +48,25 @@ const GATEWAY = gatewayFor(ARC_NETWORK);
  * signed intent and minted on Arc to the sponsor's own address, then the same
  * EIP-3009 post spends it. Two signatures, no chain switch, no gas anywhere.
  */
+/**
+ * Circle Gateway funding is opt-in (NEXT_PUBLIC_FEATURE_GATEWAY=1): its last
+ * step, Circle's attestation of a real unified balance, can only be exercised
+ * by a sponsor with one, so it is off by default and nothing else depends on it.
+ */
+const GATEWAY_ON = process.env.NEXT_PUBLIC_FEATURE_GATEWAY === "1";
+
 export function GaslessPost({ draft, valid }: { draft: DraftTask; valid: boolean }) {
   const [mode, setMode] = useState<"relay" | "gateway">("relay");
+  const tabs = GATEWAY_ON
+    ? ([["relay", "From your Arc USDC"], ["gateway", "Fund from any chain"]] as const)
+    : ([["relay", "From your Arc USDC"]] as const);
 
   return (
     <section className="mt-8 border border-rule" aria-labelledby="gasless-title">
       <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-rule px-5 py-3">
         <h2 id="gasless-title" className="font-display text-[20px] font-600 leading-tight">Or post it without gas</h2>
         <div role="tablist" aria-label="How to fund it" className="flex gap-px bg-rule">
-          {([
-            ["relay", "From your Arc USDC"],
-            ["gateway", "Fund from any chain"],
-          ] as const).map(([k, label]) => (
+          {tabs.map(([k, label]) => (
             <button
               key={k}
               type="button"
@@ -76,7 +83,7 @@ export function GaslessPost({ draft, valid }: { draft: DraftTask; valid: boolean
           ))}
         </div>
       </div>
-      {mode === "relay" ? <RelayPanel draft={draft} valid={valid} /> : <GatewayPanel draft={draft} valid={valid} />}
+      {mode === "relay" || !GATEWAY_ON ? <RelayPanel draft={draft} valid={valid} /> : <GatewayPanel draft={draft} valid={valid} />}
     </section>
   );
 }

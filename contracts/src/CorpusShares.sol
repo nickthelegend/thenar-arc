@@ -15,7 +15,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
  *
  *  - It is a whitelist. Only an address on the control list can hold a share,
  *    send one or receive one, and an address gets there only after the issuer
- *    has seen a World ID proof that a live human stands behind it. A bot farm
+ *    has seen the holder sign in with a passkey registered on chain (P-256). A bot farm
  *    can record runs; it cannot own the corpus.
  *  - Shares are issued per accepted run, and each issue names the run's hash,
  *    so the cap table reads as the contribution record.

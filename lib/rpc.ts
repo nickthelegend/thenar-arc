@@ -19,6 +19,10 @@ import { appChain, RPC_ENDPOINTS } from "./chain";
 export function chainClient() {
   return createPublicClient({
     chain: appChain,
+    // Arc produces a block in well under a second and it is final when it is
+    // produced; viem's default four-second poll would add seconds to every
+    // receipt wait (an x402 settlement, a SalesLog write) for nothing.
+    pollingInterval: 500,
     transport: fallback(
       RPC_ENDPOINTS.map((url) => http(url, { retryCount: 2, retryDelay: 400 })),
       { rank: false },
