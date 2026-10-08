@@ -27,10 +27,12 @@
     "fork:app": "node scripts/fork-app.mjs",
     "test:fork": "NEXT_PUBLIC_ARC_NETWORK=fork BASE=http://localhost:9010 node --import ./test/register.mjs test/live-fork.mjs",
     "test:e2e:fork": "NEXT_PUBLIC_ARC_NETWORK=fork BASE=http://localhost:9010 node --import ./test/register.mjs test/e2e.mjs",
-    "keeper": "node --import ./test/register.mjs scripts/keeper.mjs"
+    "keeper": "node --import ./test/register.mjs scripts/keeper.mjs",
+    "e2e:core": "NEXT_PUBLIC_ARC_NETWORK=fork node --import ./test/register.mjs scripts/e2e-core.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",
+    "@noble/curves": "^2.4.0",
     "@privy-io/node": "^0.34.0",
     "@privy-io/react-auth": "^3.42.0",
     "@privy-io/wagmi": "^4.0.17",
@@ -55,7 +57,6 @@
     "wagmi": "^2.16.9"
   },
   "devDependencies": {
-    "@noble/curves": "^2.4.0",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20",

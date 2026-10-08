@@ -161,9 +161,9 @@ export const AXON_DEPLOY_BLOCK = BigInt(ACTIVE_DEPLOYMENT.deployBlock || 0);
 
 /**
  * Below this much USDC a wallet cannot be relied on to pay for a submit.
- * A run costs well under a cent of USDC gas on Arc; this leaves room for many.
+ * A submit uses about 600k gas, around 0.015 USDC at Arc testnet's fees; this leaves room for a few.
  */
-export const LOW_GAS_BALANCE = 0.01;
+export const LOW_GAS_BALANCE = 0.05;
 
 /** The registry that binds a secp256r1 key to an address. */
 export const PASSKEY_ADDRESS = pick(process.env.NEXT_PUBLIC_PASSKEY_REGISTRY, C.passkeyRegistry);

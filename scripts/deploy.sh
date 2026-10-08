@@ -11,7 +11,7 @@
 #   THENAR_AUDITOR_ADDRESS    the audit keeper (default: the issuer)
 #   THENAR_TREASURY           licence fees (default: the deployer)
 #   THENAR_MAX_TASK_ESCROW    per-task cap in USDC base units (default 1000 USDC; 100 USDC on mainnet)
-#   THENAR_SEED_REWARD        seed tasks' reward per run in base units (default 20000 = 0.02 USDC; 0 = none)
+#   THENAR_SEED_REWARD        seed tasks reward per run in base units (default 50000 = 0.05 USDC; 0 = none)
 #   DEPLOYER_ENV          file defining DEPLOYER_PRIVATE_KEY (default ../.deployer/deployer.env);
 #                         sourced inside the command, never echoed
 #   ARC_RPC_URL           override the RPC (testnet https://rpc.testnet.arc.io, mainnet https://rpc.mainnet.arc.io)

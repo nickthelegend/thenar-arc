@@ -26,7 +26,7 @@ import {ArcConfig} from "./ArcConfig.sol";
  *   THENAR_AUDITOR_ADDRESS            the audit keeper (CorpusAudit); default: the issuer
  *   THENAR_TREASURY                   licence fees and x402 sales; default: the deployer
  *   THENAR_MAX_TASK_ESCROW            per-task cap in USDC base units (6 dec); default 1,000 USDC (100 on mainnet)
- *   THENAR_SEED_REWARD                seed tasks' reward per perfect run, base units; default 0.02 USDC; 0 = no seeding
+ *   THENAR_SEED_REWARD                seed tasks' reward per perfect run, base units; default 0.05 USDC; 0 = no seeding
  *   THENAR_CONFIRM_MAINNET=1          required for NETWORK=mainnet
  *   THENAR_DEPLOYMENT_OUT             output path (default ../deployments/arc-<network>.json)
  *
@@ -70,7 +70,7 @@ contract Deploy is Script {
         r.auditor = vm.envOr("THENAR_AUDITOR_ADDRESS", r.issuer);
         r.treasury = vm.envOr("THENAR_TREASURY", r.deployer);
         r.maxTaskEscrow = uint128(vm.envOr("THENAR_MAX_TASK_ESCROW", mainnet ? uint256(100e6) : uint256(1_000e6)));
-        r.seedReward = uint128(vm.envOr("THENAR_SEED_REWARD", uint256(20_000)));
+        r.seedReward = uint128(vm.envOr("THENAR_SEED_REWARD", uint256(50_000)));
         require(r.verifier != address(0) && r.issuer != address(0), "Deploy: verifier and issuer are required");
 
         if (mainnet) {
