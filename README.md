@@ -81,9 +81,9 @@ Then open http://localhost:9010/localnet, sign in with the local wallet, take te
 Tests:
 
 ```bash
-pnpm contracts:test          # forge: unit + Chainlink Local
+pnpm contracts:test          # forge: 156 pass, 0 fail, 2 fork suites (17 tests) skipped without Arc Foundry
 pnpm contracts:test:fork     # forge --network arc against Arc testnet (ARC_FORK_TESTS=1)
-pnpm test:unit               # app unit tests
+pnpm test:unit               # app unit tests: 141 pass, 0 fail, 1 skipped (passkey precompile, needs the fork)
 pnpm typecheck && pnpm lint && pnpm build
 ```
 

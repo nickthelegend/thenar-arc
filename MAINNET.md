@@ -53,8 +53,8 @@ line ~150k.
 `NEXT_PUBLIC_ARC_NETWORK=mainnet`, `NEXT_PUBLIC_SITE_ORIGIN`, `PUBLIC_ORIGIN`, `VERIFIER_PRIVATE_KEY`,
 `VERIFIER_AGENT_ID`, `CORPUS_ISSUER_PRIVATE_KEY`, `AUDITOR_PRIVATE_KEY`, `X402_FACILITATOR_PRIVATE_KEY`,
 `RELAYER_PRIVATE_KEY`, `CORPUS_TREASURY`, `DATABASE_URL` (Postgres; SQLite is used when unset),
-`NEXT_PUBLIC_PRIVY_APP_ID` / `PRIVY_APP_ID` / `PRIVY_APP_SECRET` (optional: without Privy the app offers an injected
-wallet), `NEXT_PUBLIC_FEATURE_GATEWAY=1` only if Gateway funding should be offered. Full list: `.env.example`.
+`NEXT_PUBLIC_PRIVY_APP_ID` / `PRIVY_APP_ID` / `PRIVY_APP_SECRET` (optional: without Privy the app still builds and serves
+public pages and practice, and shows sign-in as unavailable), `NEXT_PUBLIC_FEATURE_GATEWAY=1` only if Gateway funding should be offered. Full list: `.env.example`.
 
 ## 5. Services
 
