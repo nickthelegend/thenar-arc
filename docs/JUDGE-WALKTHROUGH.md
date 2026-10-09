@@ -31,7 +31,7 @@ https://faucet.circle.com.
 ## 2. An agent buys the corpus (30 seconds)
 
 ```bash
-node --import ./test/register.mjs scripts/agent-buy.mjs http://localhost:9010 0
+NEXT_PUBLIC_ARC_NETWORK=fork node --import ./test/register.mjs scripts/agent-buy.mjs http://localhost:9010 0
 ```
 
 The agent asks `GET /api/agent/corpus?taskId=0`, is answered `402` (0.01 USDC on `eip155:5042002`), signs an EIP-3009
