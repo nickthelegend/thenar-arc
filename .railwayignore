@@ -1,0 +1,16 @@
+.git
+.env*
+node_modules
+.next*
+.data*
+contracts/node_modules
+contracts/lib
+contracts/out
+contracts/cache
+contracts/broadcast
+.fork
+*.log
+*.tsbuildinfo
+.claude
+.codex
+.vercel

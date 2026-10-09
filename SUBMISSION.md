@@ -1,7 +1,7 @@
 # Thenar on Arc — Arc Microgrants submission
 
-**Supersedes** the earlier Thenar-on-Arc testnet build made for ETHOnline 2026 (native-value escrow, x402 on Hedera,
-World AgentKit). That build mixed three chains and its Hedera half broke; this one is Arc only.
+**Supersedes** the earlier Thenar build made for ETHOnline 2026 (native-value escrow, several chains). This one is Arc
+only and USDC throughout.
 
 ## Description (≤150 words)
 

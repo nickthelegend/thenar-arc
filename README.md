@@ -15,7 +15,7 @@ confirmations to wait for); and an agent can pay for data in the request that fe
 | **Money** | Circle's USDC ERC-20 at `0x3600…0000` (6 decimals) for escrow, payouts, licences and dividends; native USDC for gas. |
 | **Contracts** | [`contracts/src`](contracts/src), deployed by [`contracts/script/Deploy.s.sol`](contracts/script/Deploy.s.sol) into [`deployments/arc-<network>.json`](deployments). |
 | **Status** | Built and verified end to end on an Arc testnet fork (Circle's Arc Foundry). The testnet deploy is waiting on the shared deployer being funded. |
-| **Supersedes** | The ETHOnline 2026 Thenar-on-Arc build (native-value escrow, Hedera x402, World AgentKit): this repo is Arc-only. |
+| **Supersedes** | The earlier ETHOnline 2026 Thenar build, which escrowed the native coin and mixed several chains. This repo is Arc-only, USDC throughout. |
 
 ## Arc stack
 
@@ -97,6 +97,11 @@ THENAR_CONFIRM_MAINNET=1 pnpm deploy:mainnet   # see MAINNET.md
 ## Stated plainly
 
 - **Testnet deploy pending:** the shared deployer has no testnet USDC yet; everything above ran on an Arc testnet fork.
+- **Sign-in configuration:** a public-chain build without `NEXT_PUBLIC_PRIVY_APP_ID` still builds and serves public
+  pages and browser practice. It shows “Sign-in is unavailable” and uses a disconnected wagmi configuration with no
+  connectors or persisted wallet storage. It cannot authenticate an operator or submit paid runs. Set a real Privy
+  app id from `.env.example` and rebuild to enable sign-in; no placeholder credentials are supplied. Configured Privy
+  behavior and the explicit local-fork wallet/faucet flow remain unchanged.
 - **User-run cross-chain steps:** CCTP attestations, CCIP sends from Base/Ethereum and Gateway mints need funds on
   other chains; they are covered by fork and Chainlink Local tests and by scripts the user runs.
 - **Kinematic, not rigid-body physics.** The station solves inverse kinematics and grasps analytically. No trained policy exists.
@@ -106,3 +111,11 @@ THENAR_CONFIRM_MAINNET=1 pnpm deploy:mainnet   # see MAINNET.md
 MIT ([LICENSE](LICENSE)). Built with Next.js, viem/wagmi, Privy, x402 (`@x402/*`), three.js, MuJoCo, Chainlink CCIP
 contracts and Chainlink Local, OpenZeppelin. Poly Haven props (CC0) are credited in `public/props/index.json`. Most of
 the code was written with Claude Code, directed and reviewed by the author.
+
+### Container (not deployed from this repo's phase)
+
+`Dockerfile` + `railway.json` package the app for a container host: default Arc testnet, Gateway off, SQLite on a
+mounted `/data` (`AXON_DB_PATH=/data/axon.db`), runs as a non-root user. `/api/live` is a liveness probe; `/api/health`
+reports signer, database, RPC and deployment readiness. The public web container must not hold `VERIFIER_PRIVATE_KEY`:
+run a separate signer service and point `SIGNER_ORIGIN` at it. The Linux image build has not been run in this
+environment.
