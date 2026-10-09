@@ -4,8 +4,10 @@
  * A real P-256 key signs a correctly shaped WebAuthn assertion (the bytes an
  * authenticator signs, ES256, DER). lib/webauthn.ts turns it into the digest
  * and (r, s) the precompile takes. Offline, Node's own P-256 verify must agree
- * with that arithmetic. With LIVE=1, the deployed PasskeyRegistry on Monad
- * checks it through the precompile at 0x0100, and must refuse a tampered one.
+ * with that arithmetic. With LIVE=1, the deployed PasskeyRegistry on Arc (the
+ * network scripts/arc.mjs names; NEXT_PUBLIC_ARC_NETWORK=fork for the local
+ * fork) checks it through the P-256 precompile at 0x0100, and must refuse a
+ * tampered one.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -41,16 +43,17 @@ test("(r, s) from DER, and x, y from SPKI, are the key and signature Node verifi
   }
 });
 
-test("Monad's PasskeyRegistry verifies the assertion through the P-256 precompile, and refuses a tampered one", { skip: !process.env.LIVE }, async () => {
-  const { createPublicClient, http, parseAbi } = await import("viem");
-  const { DEPLOYMENT } = await import("../lib/deployment.ts");
-  const client = createPublicClient({ transport: http("https://testnet-rpc.monad.xyz") });
+test("Arc's PasskeyRegistry verifies the assertion through the P-256 precompile, and refuses a tampered one", { skip: !process.env.LIVE }, async () => {
+  const { createPublicClient, parseAbi } = await import("viem");
+  const { ADDR, appChain, transport } = await import("../scripts/arc.mjs");
+  const client = createPublicClient({ chain: appChain, transport: transport() });
   const abi = parseAbi(["function verifyWithKey(bytes32 digest, bytes32 r, bytes32 s, bytes32 x, bytes32 y) view returns (bool)"]);
   const a = assertion({ rpId: "thenar.io" });
   const digest = await assertionDigest(a.authData, a.clientData);
   const { r, s } = derToRs(a.der);
   const { x, y } = coordsOfSpki(a.spki);
-  const address = DEPLOYMENT.contracts.passkeyRegistry;
+  const address = ADDR.passkeys;
+  assert.ok(address, "no PasskeyRegistry is deployed on this network");
   assert.equal(await client.readContract({ address, abi, functionName: "verifyWithKey", args: [digest, r, s, x, y] }), true);
   const tampered = await assertionDigest(a.authData, Buffer.from(a.clientData.toString().replace("thenar.io", "evil.example")));
   assert.equal(await client.readContract({ address, abi, functionName: "verifyWithKey", args: [tampered, r, s, x, y] }), false);

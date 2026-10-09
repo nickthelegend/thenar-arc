@@ -2,7 +2,7 @@
 /**
  * Commit a task's corpus contents to the chain.
  *
- *     node --import ./test/register.mjs scripts/commit-manifest.mjs <taskId> [baseUrl]
+ *     NEXT_PUBLIC_ARC_NETWORK=fork node --import ./test/register.mjs scripts/commit-manifest.mjs <taskId> [baseUrl]
  *
  * The protocol records each accepted run's hash as it happens, which proves
  * every episode is real and says nothing about the set. This commits one hash
@@ -17,10 +17,10 @@
 import { createPublicClient, createWalletClient, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { rootOf, proofFor, verifyProof } from "../lib/merkle.ts";
-import { appChain as chain, transport, ADDR, env, need, txUrl } from "./monad.mjs";
+import { appChain as chain, transport, ADDR, env, need, txUrl } from "./arc.mjs";
 
 const TASK = Number(process.argv[2] ?? 0);
-const BASE = process.argv[3] ?? "http://localhost:3222";
+const BASE = process.argv[3] ?? env("LOCAL_APP_URL") ?? "http://localhost:9010";
 
 // The manifest the app reads, from lib/deployment.ts unless .env.local or the
 // environment says otherwise. MANIFEST_ADDRESS stays as an override for
@@ -63,13 +63,10 @@ if (already > 0n) {
   }
 }
 
-// Monad charges for the gas limit, not the gas used, so a flat ceiling picked
-// to be safe is paid in full every time. Ask what this commit costs and leave
-// a fifth over for the state to move between the estimate and the block.
+// The node estimates the gas; Arc charges the gas used, in USDC.
 const call = { address: MANIFEST, abi, functionName: "commit", args: [BigInt(TASK), root, hashes.length] };
-const estimate = await pub.estimateContractGas({ ...call, account: verifier });
-const hash = await w.writeContract({ ...call, gas: (estimate * 12n) / 10n });
-const rec = await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
+const hash = await w.writeContract(call);
+const rec = await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
 console.log(`  committed: ${rec.status} | ${txUrl(hash)}`);
 
 // The cross-check that matters: a proof built by lib/merkle.ts, verified by the

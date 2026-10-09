@@ -4,34 +4,35 @@
  *   node --import ./test/register.mjs scripts/close-lab-tasks.mjs 7 8 9 10
  *   node --import ./test/register.mjs scripts/close-lab-tasks.mjs --check 7 8 9 10
  *
- * The lab's budget is a Privy server wallet whose policy allows one thing: a
- * transaction to AxonProtocolV2 on Monad carrying at most 0.1 MON. closeTask
- * carries none, so Privy signs it under that policy without a new rule; this
- * broadcasts it and waits for Monad's receipt.
+ * The lab's budget is a Privy server wallet whose policy (scripts/privy-lab.mjs)
+ * allows a USDC approval of ThenarProtocol up to a cap, ThenarProtocol's
+ * createTaskUntil, and closeTask — all on Arc, carrying no native value.
+ * closeTask returns the escrow to its funder (the lab wallet) and nobody else;
+ * this broadcasts it and waits for Arc's receipt (final on inclusion).
  *
  * Each id is read from the contract first and skipped, with the reason, unless
  * the lab wallet funded it, it is still open, and its deadline has passed —
- * AxonProtocolV2 refuses anything else with NotExpired or NotFunder, and there
+ * ThenarProtocol refuses anything else with NotExpired or NotFunder, and there
  * is no reason to spend gas learning that. --check reads and reports only.
  */
 import {
-  createPublicClient, encodeFunctionData, formatEther, parseAbi, toHex,
+  createPublicClient, encodeFunctionData, formatUnits, parseAbi, toHex,
 } from "viem";
-import { ADDR, monadTestnet, need, readEnvFile, transport, txUrl } from "./monad.mjs";
+import { ADDR, appChain, need, readEnvFile, transport, txUrl } from "./arc.mjs";
 
 const local = readEnvFile(".env.local");
 const APP = need(local.PRIVY_APP_ID, "PRIVY_APP_ID");
 const SECRET = need(local.PRIVY_APP_SECRET, "PRIVY_APP_SECRET");
 const WALLET_ID = need(local.PRIVY_LAB_WALLET_ID, "PRIVY_LAB_WALLET_ID");
 const LAB = need(local.PRIVY_LAB_WALLET_ADDRESS, "PRIVY_LAB_WALLET_ADDRESS");
-const AXON = need(ADDR.axon, "AxonProtocolV2's address");
+const AXON = need(ADDR.protocol, "ThenarProtocol's address");
 
 const args = process.argv.slice(2);
 const checkOnly = args.includes("--check");
 const ids = args.filter((a) => /^\d+$/.test(a)).map(Number);
 if (!ids.length) need(null, "at least one task id");
 
-const pub = createPublicClient({ chain: monadTestnet, transport: transport() });
+const pub = createPublicClient({ chain: appChain, transport: transport() });
 const abi = parseAbi([
   "function closeTask(uint256 taskId) returns (uint256 refunded)",
   "function getTask(uint256 taskId) view returns ((string name, address funder, uint128 rewardPerTrajectory, uint128 escrow, uint32 slotsTotal, uint32 slotsFilled, uint8 scenario, uint8 difficulty, bool policyMinted, uint64 expiresAt, bool closed, uint64 createdBlock))",
@@ -45,7 +46,7 @@ async function privy(path, body) {
       authorization: `Basic ${Buffer.from(`${APP}:${SECRET}`).toString("base64")}`,
       "privy-app-id": APP,
       "content-type": "application/json",
-      "user-agent": "thenar-monad/0.1 (+https://github.com/nickthelegend/thenar-monad)",
+      "user-agent": "thenar-arc/0.1",
     },
     body: JSON.stringify(body),
   });
@@ -74,7 +75,7 @@ for (const id of ids) {
     continue;
   }
   if (checkOnly) {
-    console.log(`ready ${label}: ${formatEther(t.escrow)} MON would come back`);
+    console.log(`ready ${label}: ${formatUnits(t.escrow, 6)} USDC would come back`);
     continue;
   }
 
@@ -88,9 +89,8 @@ for (const id of ids) {
     method: "eth_signTransaction",
     params: {
       transaction: {
-        to: AXON, value: toHex(0n), chain_id: monadTestnet.id, nonce, type: 2,
-        // Monad charges the limit, not the gas used, so the margin is kept thin.
-        gas_limit: toHex((gas * 11n) / 10n),
+        to: AXON, value: toHex(0n), chain_id: appChain.id, nonce, type: 2,
+        gas_limit: toHex((gas * 12n) / 10n),
         max_fee_per_gas: toHex(fees.maxFeePerGas),
         max_priority_fee_per_gas: toHex(fees.maxPriorityFeePerGas),
         data,
@@ -110,7 +110,7 @@ for (const id of ids) {
     continue;
   }
   const after = await pub.readContract({ address: AXON, abi, functionName: "getTask", args: [BigInt(id)] });
-  console.log(`closed ${label}: ${formatEther(t.escrow)} MON back to the lab, closed=${after.closed}  ${txUrl(hash)}`);
+  console.log(`closed ${label}: ${formatUnits(t.escrow, 6)} USDC back to the lab, closed=${after.closed}  ${txUrl(hash)}`);
 }
 
 process.exit(failures ? 1 : 0);

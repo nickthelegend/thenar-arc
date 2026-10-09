@@ -7,20 +7,20 @@
  * must answer, the invariants that must hold between the ledger and the chain,
  * and the edge cases that must fail in a specific way rather than with a 500.
  *
- *     npm run test:e2e                          # against http://localhost:3222
- *     BASE=https://your-host npm run test:e2e
+ *     pnpm test:e2e:fork                        # against the fork app on http://localhost:9010
+ *     BASE=https://your-host pnpm test:e2e
  *
  * It reads only. Nothing here writes to the chain or the database, so it is
  * safe to run against any deployment.
  *
- * Ported to Monad testnet. The chain id, the endpoint and the CorpusAccess
- * address come from scripts/monad.mjs, which reads lib/deployment.ts — the
- * record the deploy script writes — so the suite follows a redeploy without
- * being edited. RPC in the environment still overrides the endpoint.
+ * On Arc. The chain id and the endpoint come from scripts/arc.mjs, which reads
+ * lib/deployment.ts (or .env.fork on the fork) — the record the deploy script
+ * writes — so the suite follows a redeploy without being edited. RPC in the
+ * environment still overrides the endpoint.
  */
-import { appChain, RPC_ENDPOINTS, ADDR } from "../scripts/monad.mjs";
+import { appChain, RPC_ENDPOINTS, LOCALNET } from "../scripts/arc.mjs";
 
-const BASE = process.env.BASE ?? "http://localhost:3222";
+const BASE = process.env.BASE ?? "http://localhost:9010";
 const RPC = process.env.RPC ?? RPC_ENDPOINTS[0];
 const CHAIN_ID = appChain.id;
 /**
@@ -62,70 +62,6 @@ async function json(path) {
   return r.json();
 }
 
-/** eth_call against an arbitrary contract, for the ones that are not AxonProtocol. */
-async function callAt(to, data) {
-  const r = await fetch(RPC, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
-    signal: AbortSignal.timeout(30_000),
-  });
-  return (await r.json()).result ?? "0x";
-}
-
-/**
- * An address that holds corpus access *right now*, discovered rather than
- * pinned.
- *
- * This assertion used to name one address and expect 200 from it forever.
- * CorpusAccess sells time, so that subscription lapsed and the check went red
- * on a schedule — the endpoint was correct and the test was wrong. So the
- * current holder is looked up and `active` is confirmed on chain before
- * anything is asserted about the API.
- *
- * On Arc the lookup read every Subscribed event since deployment. Monad's
- * public endpoints answer a hundred blocks of logs per request and a day here
- * is about two hundred thousand blocks, so that walk would be thousands of
- * requests. The contract keeps `until` per address and no list of who, so the
- * candidates come from where subscribers actually are: E2E_SUBSCRIBER if the
- * caller names one, whoever subscribed in the last SUBSCRIBER_WINDOW blocks
- * (read a hundred at a time), and the addresses the feed has paid. A
- * subscriber older than the window and outside the feed is missed, and the
- * positive half then reports itself unverifiable rather than failing.
- */
-const SUBSCRIBER_WINDOW = Number(process.env.SUBSCRIBER_WINDOW ?? 2_000);
-async function findSubscriber(candidates = []) {
-  const CORPUS = ADDR.corpusAccess;
-  if (!CORPUS) return null;
-  // The event's topic hash is not assumed — the log is fetched by address and
-  // the indexed subscriber read out of topic 1.
-  const rpc = (method, params) => fetch(RPC, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(30_000),
-  }).then((x) => x.json());
-  const latest = Number((await rpc("eth_blockNumber", [])).result);
-  const logs = [];
-  for (let from = Math.max(0, latest - SUBSCRIBER_WINDOW + 1); from <= latest; from += 100) {
-    const to = Math.min(latest, from + 99);
-    const page = await rpc("eth_getLogs", [{ address: CORPUS, fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16) }]);
-    logs.push(...(page.result ?? []));
-  }
-  const recent = logs.map((l) => l.topics?.[1]).filter(Boolean).map((t) => "0x" + t.slice(26));
-  const seen = [...new Set([
-    process.env.E2E_SUBSCRIBER,
-    ...recent.reverse(),
-    ...candidates,
-  ].filter((a) => /^0x[0-9a-fA-F]{40}$/.test(a ?? "")).map((a) => a.toLowerCase()))];
-  for (const who of seen) {
-    // active(address) — selector from the verified ABI.
-    const out = await callAt(CORPUS, "0x9fd0506d" + who.slice(2).padStart(64, "0"));
-    if (BigInt(out === "0x" ? "0x0" : out) === 1n) return who;
-  }
-  return null;
-}
-
 async function ethCall(data) {
   const r = await fetch(RPC, {
     method: "POST",
@@ -142,29 +78,54 @@ console.log(`\n  thenar e2e — ${BASE}\n`);
 // --- every page answers -----------------------------------------------------
 const PAGES = [
   "/", "/hub", "/space", "/inventory", "/post", "/leaderboard", "/portfolio",
-  "/foundry", "/spec", "/archive", "/passkey", "/status", "/changelog", "/corpus", "/policies",
-  "/task/0", "/station/4", "/start", "/thenar", "/network",
+  "/spec", "/archive", "/passkey", "/status", "/changelog", "/corpus", "/policies",
+  "/task/0", "/station/4", "/start", "/thenar", "/network", "/agents", "/arc",
 ];
 for (const p of PAGES) check(`page ${p}`, (await status(p)) === 200);
 
-// The reads about Monad a browser cannot make: the facilitator's offer and Sourcify's verification.
+// Arc, measured: block time, finality, gas in USDC, the in-process x402 terms.
 try {
   const n = await json("/api/network");
-  check("/api/network reports Monad's x402 facilitator", typeof n.facilitator?.url === "string" && (Array.isArray(n.facilitator.kinds) || typeof n.facilitator.error === "string"));
-  check("/api/network reports Sourcify for every Monad contract", Array.isArray(n.sourcify?.contracts) ? n.sourcify.contracts.length >= 10 : typeof n.sourcify?.error === "string");
+  check("/api/network measures Arc", n.chainId === CHAIN_ID && n.rpcChainId === CHAIN_ID && typeof n.blockTime?.seconds === "number",
+    `${n.blockTime?.seconds}s over ${n.blockTime?.over} blocks`);
+  check("/api/network says finality is deterministic", /final on inclusion/.test(n.finality ?? ""));
+  check("/api/network prices gas in USDC", n.gas?.token === "USDC" && Number(n.gas?.runCostUsdc) > 0, `${n.gas?.runCostUsdc} USDC a run`);
 } catch (e) {
   check("/api/network", false, String(e));
 }
 
-// The live Monad pipeline: rendered on the landing, and allowed to reach Monad's socket.
+// The Arc stack, live, and the routes that serve it.
+try {
+  const a = await json("/api/arc");
+  check("/api/arc names the chain and the deployment", a.chainId === CHAIN_ID && a.deployed === true && /^0x/.test(a.contracts?.protocol ?? ""));
+  check("/api/arc: x402 is USDC on Arc, settled in-process", a.x402?.network === `eip155:${CHAIN_ID}` && a.x402.price === "10000" && a.x402.facilitator === "in-process");
+  check("/api/arc: the verifier is an ERC-8004 agent bound to ThenarVerdicts", a.verifier?.bound === true && /^\d+$/.test(a.verifier?.agentId ?? ""), `agent #${a.verifier?.agentId}`);
+  check("/api/arc: Memo is probed, not assumed", typeof a.memo?.live === "boolean", `live=${a.memo?.live}`);
+  check("/api/arc: CCTP domain 26, Gateway and CCIP lanes listed", a.cctp?.domain === 26 && a.gateway?.sources?.length > 0 && a.ccip?.lanes?.length > 0);
+  const card = await json("/api/agents/verifier.json");
+  check("/api/agents/verifier.json is an ERC-8004 registration file",
+    card.type === "https://eips.ethereum.org/EIPS/eip-8004#registration-v1" && card.supportedTrust?.includes("reputation")
+      && card.registrations?.[0]?.agentRegistry?.startsWith(`eip155:${CHAIN_ID}:`));
+  check("/api/agents/buyer.json is an ERC-8004 registration file", (await json("/api/agents/buyer.json")).type?.endsWith("#registration-v1"));
+  const offer = await fetch(`${BASE}/api/agent/corpus?taskId=0`, { headers: { accept: "application/json" } });
+  const o = await offer.json().catch(() => ({}));
+  check("/api/agent/corpus offers 0.01 USDC on Arc over x402", offer.status === 402 && o.accepts?.[0]?.network === `eip155:${CHAIN_ID}`
+    && o.accepts[0].amount === "10000" && o.accepts[0].asset?.toLowerCase() === "0x3600000000000000000000000000000000000000");
+  const relay = await fetch(`${BASE}/api/relay/create-task`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  check("/api/relay/create-task refuses a body with no authorization (400)", relay.status === 400);
+  const mint = await fetch(`${BASE}/api/gateway/mint`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  check("/api/gateway/mint refuses a body with no burn intent (400)", mint.status === 400);
+} catch (e) {
+  check("/api/arc", false, String(e));
+}
+
+// Every RPC a page reaches is in the CSP; on a fork, the fork's own.
 try {
   const r = await fetch(`${BASE}/thenar`, { signal: AbortSignal.timeout(30_000) });
-  const html = await r.text();
-  check("the landing carries the live Monad pipeline", html.includes('data-testid="monad-pipeline"'));
-  check("the CSP lets a page reach Monad's WebSocket",
-    (r.headers.get("content-security-policy") ?? "").includes("wss://testnet-rpc.monad.xyz"));
+  const csp = r.headers.get("content-security-policy") ?? "";
+  check("the CSP lets a page reach Arc's RPC", csp.includes(new URL(RPC_ENDPOINTS[0]).host) || csp.includes("rpc.testnet.arc.io"));
 } catch (e) {
-  check("the landing carries the live Monad pipeline", false, String(e));
+  check("the CSP lets a page reach Arc's RPC", false, String(e));
 }
 
 // A licence page exists only for a minted policy: /licence/0 is a page while
@@ -215,8 +176,8 @@ try {
   // exactly what it was for. A script that needs an address to have recorded
   // work should go through /api/verify like an operator does; signing straight
   // to the contract is faster and it leaves a payout with nothing behind it.
-  // That was the Avalanche deployment. Monad starts from a fresh contract, and
-  // every payout on it is meant to go through /api/verify, so every run on
+  // That was an earlier deployment. ThenarProtocol on Arc starts from a fresh
+  // contract, and every payout on it is meant to go through /api/verify, so every run on
   // chain should have its samples stored and the pin starts at zero.
   const UNBACKED = 0;
   check(`exactly ${UNBACKED} run${UNBACKED === 1 ? "" : "s"} on chain with no stored trajectory`,
@@ -294,8 +255,8 @@ const health = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(3
 // is that nothing is failing except the one fault that is known, explained and
 // unrepairable: a payout on chain whose trajectory was never stored, left by my
 // own proof of the relayed submission path. Anything else failing is new.
-// That payout is on Fuji; on Monad there is no such payout, so nothing is
-// excused.
+// That payout was on an earlier chain; on Arc there is no such payout, so
+// nothing is excused.
 const KNOWN_BAD = new Set();
 const failing = Object.entries(health?.checks ?? {}).filter(([, v]) => !v.ok).map(([k]) => k);
 const unexpected = failing.filter((k) => !KNOWN_BAD.has(k));
@@ -425,34 +386,20 @@ if (health) {
       JSON.stringify(sum.trainable));
   }
 
-  // The subscription is enforced against the chain, not against a flag. The
-  // assertion that matters is the pair: an address that paid gets the corpus
-  // and an address that did not is refused, from the same endpoint.
-  const SUBSCRIBER = await findSubscriber((feed?.runs ?? []).map((r) => r.contributor));
-  const unpaid = await fetch(`${BASE}/api/dataset?taskId=0`, {
-    headers: { "x-subscriber": "0x000000000000000000000000000000000000dEaD" },
+  // A whole corpus is what an on-chain licence buys (ThenarProtocol.licensed);
+  // an address without one is refused, and per-pull x402 terms are offered.
+  const unlicensed = await fetch(`${BASE}/api/dataset?taskId=0`, {
+    headers: { "x-licensee": "0x000000000000000000000000000000000000dEaD" },
   });
-  check("no subscription, no corpus", unpaid.status === 402, String(unpaid.status));
-
-  if (SUBSCRIBER) {
-    // Naming a subscriber is not being one: without its signature the
-    // download is refused, whoever's address it is.
-    const named = await fetch(`${BASE}/api/dataset?taskId=0`, { headers: { "x-subscriber": SUBSCRIBER } });
-    check("a subscriber's address alone does not download", named.status === 401,
-      `${named.status} for ${SUBSCRIBER}`);
-  } else {
-    // Not a pass and not a failure: there is nothing subscribed to assert
-    // against. Saying so is the honest result; asserting 200 from an address
-    // whose time has run out would be testing the fixture, not the product.
-    console.log("  ----  a corpus subscription is honoured — no address currently holds " +
-                "access on CorpusAccess, so the positive half is unverifiable right now");
-  }
+  const why = await unlicensed.json().catch(() => ({}));
+  check("no licence, no corpus", unlicensed.status === 402, String(unlicensed.status));
+  check("the refusal points at the x402 per-pull terms", typeof why.perPull?.endpoint === "string");
 
   // And the sample a buyer looks at before deciding stays open, or nobody
   // ever gets as far as deciding.
   if (newestRun) {
     const oneEpisode = await fetch(`${BASE}/api/dataset?traj=${newestRun.traj_hash}`);
-    check("a single episode needs no subscription", oneEpisode.status === 200, String(oneEpisode.status));
+    check("a single episode needs no licence", oneEpisode.status === 200, String(oneEpisode.status));
   }
 
   const signGet = await fetch(`${BASE}/api/sign`);
@@ -470,7 +417,7 @@ if (health) {
 // --- archived runs stay archived --------------------------------------------
 const archive = await json("/api/archive").catch(() => null);
 // Whether the store carries runs from an earlier chain depends on what the
-// Monad deployment was seeded with, so the archive answering is the
+// deployment was seeded with, so the archive answering is the
 // assertion, not its having runs.
 check("archive answers", archive !== null, `${archive?.total ?? 0} runs`);
 if (archive?.chains?.length) {
@@ -528,7 +475,7 @@ if (feed?.runs?.length) {
     broken.length === 0, broken.join(" "));
   // On the chains before this one the oldest serialisation had settled payouts
   // behind it, and its continued presence was asserted. The feed is scoped to
-  // the live contract, and a Monad deployment that began after version 2 has
+  // the live contract, and a deployment that began after version 2 has
   // no version 1 runs to keep — so their absence here is reported, not failed.
   // The re-hash above is what protects them wherever they do exist.
   if (seen[1] > 0) check("version 1 runs are still on file", true, `${seen[1]}`);

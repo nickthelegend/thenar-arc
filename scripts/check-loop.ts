@@ -78,7 +78,7 @@ const run = (devMm: number, secs: number, jerky = false) => {
 console.log("\nscoring");
 const dead = run(0.4, 96);
 check("a near-perfect run is accepted", dead.success, `score ${(dead.score / 100).toFixed(2)}`);
-check("a near-perfect run pays close to full rate", dead.payoutMon > 0.3, `${dead.payoutMon.toFixed(4)} MON`);
+check("a near-perfect run pays close to full rate", dead.payoutMon > 0.3, `${dead.payoutMon.toFixed(4)} of the reward`);
 
 const edge = run(TOLERANCE_MM - 1, 120);
 check("a run just inside tolerance is accepted", edge.success, `score ${(edge.score / 100).toFixed(2)}`);

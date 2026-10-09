@@ -1,15 +1,15 @@
 /**
- * Drive CorpusShares through its lifecycle on Monad testnet.
+ * Drive CorpusShares through its lifecycle on Arc (testnet, mainnet or the fork).
  *
  * The station issues shares and the passkey step whitelists operators on
  * their own; this is for the operations the issuer performs by hand, and for showing
  * each one working against the real contract rather than describing it.
  *
- *   node --import ./test/register.mjs scripts/shares.mjs state
+ *   NEXT_PUBLIC_ARC_NETWORK=fork node --import ./test/register.mjs scripts/shares.mjs state
  *       supply, whitelist, dividends
  *   ... compliance 0x…        would the contract accept a share for this address?
  *                             asked by simulation, sends nothing
- *   ... dividend 0.01         declare a dividend of 0.01 MON, escrowed in the contract;
+ *   ... dividend 0.01         declare a dividend of 0.01 USDC: approve, then setDividend pulls it;
  *                             record date in two minutes, payment two minutes after
  *   ... holder 0x…            one holder's shares and what each dividend owes them
  *   ... reclaim 1             take back dividend 1 if no share existed at its record date
@@ -18,11 +18,13 @@
  * contract lets admit, issue or declare.
  */
 import {
-  BaseError, ContractFunctionRevertedError, createPublicClient, createWalletClient, formatEther, getAddress, parseEther,
+  BaseError, ContractFunctionRevertedError, createPublicClient, createWalletClient, formatUnits, getAddress, parseAbi, parseUnits,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { CORPUS_SHARES_ABI } from "../lib/registry-abi.ts";
-import { ADDR, env, appChain, need, transport, txUrl } from "./monad.mjs";
+import { ADDR, ARC, env, appChain, need, transport, txUrl } from "./arc.mjs";
+
+const usd = (u) => `${formatUnits(u, 6)} USDC`;
 
 const [command, ...args] = process.argv.slice(2);
 const shares = getAddress(need(ADDR.corpusShares, "CorpusShares' address (deploy, then scripts/apply-deploy.mjs)"));
@@ -45,9 +47,9 @@ function refusal(e) {
   return null;
 }
 
-/** Simulate, send, wait — and print the transaction as Monadscan shows it. */
-async function write(functionName, fnArgs, value) {
-  const { request, result } = await client.simulateContract({ ...token, account, functionName, args: fnArgs, value });
+/** Simulate, send, wait — and print the transaction's explorer link. */
+async function write(functionName, fnArgs) {
+  const { request, result } = await client.simulateContract({ ...token, account, functionName, args: fnArgs });
   const tx = await wallet.writeContract(request);
   const t0 = Date.now();
   const receipt = await client.waitForTransactionReceipt({ hash: tx, timeout: 30_000 });
@@ -84,10 +86,16 @@ switch (command) {
   }
 
   case "dividend": {
-    const amount = parseEther(args[0] ?? fail("usage: dividend <MON, e.g. 0.01>"));
+    const amount = parseUnits(args[0] ?? fail("usage: dividend <USDC, e.g. 0.01>"), 6);
+    const erc20 = parseAbi(["function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)"]);
+    if ((await client.readContract({ address: ARC.usdc, abi: erc20, functionName: "allowance", args: [account.address, shares] })) < amount) {
+      const a = await wallet.writeContract({ address: ARC.usdc, abi: erc20, functionName: "approve", args: [shares, amount] });
+      await client.waitForTransactionReceipt({ hash: a });
+      console.log(`  approve ✓ CorpusShares may pull ${usd(amount)}  ${txUrl(a)}`);
+    }
     const now = Math.floor(Date.now() / 1000);
-    const id = await write("setDividend", [BigInt(now + 120), BigInt(now + 240)], amount);
-    console.log(`  dividend ${id}: ${formatEther(amount)} MON, holders snapshotted at ${new Date((now + 120) * 1000).toISOString()}`);
+    const id = await write("setDividend", [BigInt(now + 120), BigInt(now + 240), amount]);
+    console.log(`  dividend ${id}: ${usd(amount)}, holders snapshotted at ${new Date((now + 120) * 1000).toISOString()}`);
     break;
   }
 
@@ -97,7 +105,7 @@ switch (command) {
     console.log(`  ${who}: ${listed ? "listed" : "not listed"}, ${balance} shares`);
     for (let id = 1n; id <= count; id += 1n) {
       const [held, owed, , , reached, claimed] = await read("getDividendFor", [id, who]);
-      console.log(`    dividend ${id}: ${reached ? `${held} shares at record, ${formatEther(owed)} MON owed${claimed ? ", claimed" : ""}` : "record date not reached"}`);
+      console.log(`    dividend ${id}: ${reached ? `${held} shares at record, ${usd(owed)} owed${claimed ? ", claimed" : ""}` : "record date not reached"}`);
     }
     break;
   }
@@ -105,10 +113,10 @@ switch (command) {
   case "reclaim": {
     const id = BigInt(args[0] ?? fail("usage: reclaim <dividend id>"));
     const amount = await write("reclaimDividend", [id]);
-    console.log(`  dividend ${id}: ${formatEther(amount)} MON back to the issuer`);
+    console.log(`  dividend ${id}: ${usd(amount)} back to the issuer`);
     break;
   }
 
   default:
-    fail("usage: node --import ./test/register.mjs scripts/shares.mjs state | compliance 0x… | dividend <MON> | holder 0x… | reclaim <id>");
+    fail("usage: node --import ./test/register.mjs scripts/shares.mjs state | compliance 0x… | dividend <USDC> | holder 0x… | reclaim <id>");
 }

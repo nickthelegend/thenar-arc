@@ -1,10 +1,11 @@
 /**
- * Live, on the local chain: the buyer agent, on Qwen and on Kimi.
+ * Live, on the local Arc fork: the buyer agent, on Qwen and on Kimi.
  *
- *   BASE=http://localhost:3336 NEXT_PUBLIC_CHAIN=local node --import ./test/register.mjs test/live-agent.mjs
+ *   BASE=http://localhost:9010 NEXT_PUBLIC_ARC_NETWORK=fork node --import ./test/register.mjs test/live-agent.mjs
  *
- * Needs the local chain, the local build, the local x402 facilitator and a
- * task with paid episodes (test/live-localnet.mjs leaves one).
+ * Needs the fork (scripts/arc-fork.mjs), the app against it (scripts/fork-app.mjs;
+ * it settles x402 in-process) and a task with paid episodes
+ * (scripts/arc-run.mjs or test/live-fork.mjs leaves one).
  *
  * The model is a test double (test/llm-double.mjs): this test starts it and
  * points QWEN_BASE_URL or KIMI_BASE_URL at it. The double scripts the choices
@@ -12,8 +13,9 @@
  * reach it on its own. Everything else is the real agent:
  * - it lists the tasks from the chain and the app;
  * - it pays a cent of USDC over x402 with its own key;
- * - the facilitator settles that on the local chain;
- * - it checks the bytes against SalesLog;
+ * - Thenar's in-process facilitator settles that on the fork, in Circle's USDC;
+ * - it names itself with x-erc8004-agent-id, and SalesLog records its agent id;
+ * - it checks the bytes against SalesLog, and rates the verifier on ERC-8004;
  * - it signs its decision record and publishes it, and the server keeps it only
  *   because the signer is the sale's buyer (a forged one is refused below).
  * The real models are run outside this test: Qwen 3 on Ollama, with
@@ -25,22 +27,20 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createPublicClient, erc20Abi, http, recoverMessageAddress } from "viem";
 import { decisionMessage } from "../lib/agent-decision.ts";
-import { LOCAL_DEPLOYMENT } from "../lib/deployment-local.ts";
-import { readEnvFile } from "../scripts/monad.mjs";
+import { ARC, LOCAL_RPC, env } from "../scripts/arc.mjs";
 import { startDouble } from "./llm-double.mjs";
 
-const BASE = process.env.BASE ?? "http://localhost:3336";
-const RPC = process.env.NEXT_PUBLIC_LOCAL_RPC ?? "http://127.0.0.1:8645";
-const agent = readEnvFile(".env.localnet").AGENT_ADDRESS;
-const chain = createPublicClient({ transport: http(RPC) });
-const usdc = () => chain.readContract({ address: LOCAL_DEPLOYMENT.usdc, abi: erc20Abi, functionName: "balanceOf", args: [agent] });
+const BASE = process.env.BASE ?? "http://localhost:9010";
+const agent = env("AGENT_ADDRESS");
+const chain = createPublicClient({ transport: http(LOCAL_RPC) });
+const usdc = () => chain.readContract({ address: ARC.usdc, abi: erc20Abi, functionName: "balanceOf", args: [agent] });
 
 /** Run the agent once; resolve with its exit code and output. */
 function runAgent(env) {
   return new Promise((done) => {
     const p = spawn(process.execPath, ["--import", "./test/register.mjs", "scripts/qwen-agent.mjs", BASE], {
       // Keys a developer has exported are cleared: each run sets exactly the endpoint and key it means.
-      env: { ...process.env, NEXT_PUBLIC_CHAIN: "local", DASHSCOPE_API_KEY: "", MOONSHOT_API_KEY: "", ...env },
+      env: { ...process.env, NEXT_PUBLIC_ARC_NETWORK: "fork", DASHSCOPE_API_KEY: "", MOONSHOT_API_KEY: "", ...env },
     });
     let out = "";
     p.stdout.on("data", (d) => (out += d));
@@ -69,7 +69,12 @@ for (const provider of ["qwen", "kimi"]) {
   assert.ok(verify, "the agent checked its purchase on chain");
   assert.equal(JSON.parse(verify[1]).verified, true, "SalesLog records the sha256 of the bytes it received");
   assert.match(out, /ledger\s+spent 0\.01 USDC/);
-  assert.equal(before - (await usdc()), 10_000n, "one cent of USDC left the agent's wallet");
+  // A cent for the corpus, plus the gas of its ERC-8004 rating: on Arc gas is the same USDC.
+  const spent = before - (await usdc());
+  assert.ok(spent >= 10_000n && spent < 1_000_000n, `a cent of USDC and a little gas left the agent's wallet (${spent})`);
+  assert.match(out, /^rated\s+task \d+: verifier agent #\d+ 100\/100 "corpusQuality"/m, "the agent rated the verifier on ERC-8004");
+  const sold = (await (await fetch(`${BASE}/api/agent/sales`)).json()).sales[0];
+  if (env("AGENT_ID")) assert.equal(sold.buyer_agent, env("AGENT_ID"), "the sale is recorded against the agent's ERC-8004 id");
   assert.match(report, /matches the bytes received/);
 
   // The decision record: published, kept beside the sale, and signed by the key that paid.

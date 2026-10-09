@@ -3,27 +3,27 @@
  *
  * The business case: a lab wants demonstrations recorded and does not want the
  * key that pays for them on anyone's laptop. The budget sits in a Privy server
- * wallet under a Privy policy with one allowed action — a transaction to
- * AxonProtocolV2 on Monad testnet worth at most 0.1 MON. Posting a bounty is
- * that action. Anything else the wallet is asked to sign, including sending its
- * MON to an address that is not the protocol, is refused by Privy's policy
- * engine before a signature exists.
- *
- * Privy signs; Monad's RPC broadcasts. The policy is enforced at signing —
- * which is where it has to be, because a signature is all anyone needs to spend.
+ * wallet under a Privy policy that allows, on Arc and with no native value:
+ *  - USDC.approve(ThenarProtocol, amount ≤ 10 USDC) (lib/server/privy-lab.ts LAB_LIMIT);
+ *  - ThenarProtocol.createTaskUntil(…, amount ≤ 10 USDC), which pulls that approval into escrow;
+ *  - ThenarProtocol.closeTask, which returns unspent escrow to the funder (the lab).
+ * Anything else the wallet is asked to sign — a USDC transfer anywhere, an
+ * approval of another spender — is refused by Privy's policy engine before a
+ * signature exists. On Arc the budget and its gas are the same USDC.
  *
  * Creates the policy and the wallet once (recorded in .env.local), tops the
- * wallet up from the deployer on Monad, posts one bounty through Privy, then
+ * wallet up with USDC from the deployer, posts one bounty through Privy, then
  * asks it to sign something the policy forbids and prints the refusal.
  *
  *   node --import ./test/register.mjs scripts/privy-lab.mjs ["task name"]
+ *
+ * Testnet or mainnet only: Privy signs for Arc's chain id and the transaction
+ * is broadcast through this script's RPC, but a fork has no lab wallet funding.
  */
 import { appendFileSync } from "node:fs";
-import {
-  createPublicClient, createWalletClient, encodeFunctionData, formatEther, parseAbi, parseEther, toHex,
-} from "viem";
+import { createPublicClient, createWalletClient, encodeFunctionData, formatUnits, parseAbi, parseEventLogs, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { ADDR, monadTestnet, need, readEnvFile, transport, txUrl } from "./monad.mjs";
+import { ADDR, ARC, appChain, need, readEnvFile, transport, txUrl } from "./arc.mjs";
 
 const local = readEnvFile(".env.local");
 const deployer = readEnvFile(".env.deployer");
@@ -31,10 +31,23 @@ const APP = local.PRIVY_APP_ID;
 const SECRET = local.PRIVY_APP_SECRET;
 if (!APP || !SECRET) throw new Error("PRIVY_APP_ID and PRIVY_APP_SECRET are required in .env.local");
 
-const monad = monadTestnet;
-const AXON = need(ADDR.axon, "AxonProtocolV2's address (deploy, then scripts/apply-deploy.mjs)");
-/** The most one transaction from the lab's wallet may carry, in MON wei. Mirrors LAB_LIMIT_WEI. */
-const LIMIT = parseEther("0.1");
+const PROTOCOL = need(ADDR.protocol, "ThenarProtocol's address (deploy, then scripts/apply-deploy.mjs)");
+const USDC = ARC.usdc;
+/** The most one approval or one bounty may be, USDC base units. Mirrors LAB_LIMIT in lib/server/privy-lab.ts. */
+const LIMIT = 10_000_000n;
+
+const ERC20 = parseAbi([
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+]);
+const PROTOCOL_ABI = parseAbi([
+  "function createTaskUntil(string name, uint32 slots, uint128 rewardPerTrajectory, uint8 scenario, uint8 difficulty, uint64 expiresAt, uint256 amount) returns (uint256)",
+  "function closeTask(uint256 taskId) returns (uint256)",
+  "event TaskCreated(uint256 indexed taskId, address indexed funder, string name, uint32 slots, uint128 rewardPerTrajectory, uint8 scenario, uint8 difficulty)",
+]);
+const abiJson = (abi, name) => abi.filter((x) => x.type === "function" && x.name === name);
 
 async function privy(path, body) {
   const res = await fetch(`https://api.privy.io/v1${path}`, {
@@ -43,7 +56,7 @@ async function privy(path, body) {
       authorization: `Basic ${Buffer.from(`${APP}:${SECRET}`).toString("base64")}`,
       "privy-app-id": APP,
       "content-type": "application/json",
-      "user-agent": "thenar-monad/0.1 (+https://github.com/nickthelegend/thenar-monad)",
+      "user-agent": "thenar-arc/0.1",
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -53,25 +66,36 @@ async function privy(path, body) {
   return { status: res.status, ok: res.ok, json };
 }
 
-const allowFunding = (method) => ({
-  name: `Fund Thenar tasks on Monad (${method})`,
-  method,
-  action: "ALLOW",
-  conditions: [
-    { field_source: "ethereum_transaction", field: "to", operator: "eq", value: AXON },
-    { field_source: "ethereum_transaction", field: "chain_id", operator: "eq", value: String(monad.id) },
-    { field_source: "ethereum_transaction", field: "value", operator: "lte", value: LIMIT.toString() },
-  ],
-});
+const tx = (field, operator, value) => ({ field_source: "ethereum_transaction", field, operator, value });
+const call = (abi, field, operator, value) => ({ field_source: "ethereum_calldata", field, abi, operator, value });
+const onArc = [tx("chain_id", "eq", String(appChain.id)), tx("value", "eq", "0")];
+const rules = (method) => [
+  {
+    name: `Approve Thenar, 10 USDC max (${method})`, method, action: "ALLOW",
+    conditions: [...onArc, tx("to", "eq", USDC),
+      call(abiJson(ERC20, "approve"), "approve.spender", "eq", PROTOCOL),
+      call(abiJson(ERC20, "approve"), "approve.amount", "lte", LIMIT.toString())],
+  },
+  {
+    name: `Post a Thenar bounty (${method})`, method, action: "ALLOW",
+    conditions: [...onArc, tx("to", "eq", PROTOCOL),
+      call(abiJson(PROTOCOL_ABI, "createTaskUntil"), "createTaskUntil.amount", "lte", LIMIT.toString())],
+  },
+  {
+    name: `Close a Thenar bounty (${method})`, method, action: "ALLOW",
+    conditions: [...onArc, tx("to", "eq", PROTOCOL),
+      call(abiJson(PROTOCOL_ABI, "closeTask"), "closeTask.taskId", "gte", "0")],
+  },
+];
 
 let policyId = local.PRIVY_LAB_POLICY_ID;
 if (!policyId) {
   const r = await privy("/policies", {
     version: "1.0",
     // Privy refuses a policy name of 50 characters or more.
-    name: "Thenar lab: fund Monad tasks, 0.1 MON max",
+    name: "Thenar lab: fund Arc tasks, 10 USDC max",
     chain_type: "ethereum",
-    rules: [allowFunding("eth_sendTransaction"), allowFunding("eth_signTransaction")],
+    rules: [...rules("eth_sendTransaction"), ...rules("eth_signTransaction")],
   });
   if (!r.ok) {
     console.log(`policy   refused ${r.status} ${JSON.stringify(r.json)}`);
@@ -100,62 +124,61 @@ if (!walletId) {
   console.log(`wallet   ${walletId}  ${walletAddress}  already recorded`);
 }
 
-const pub = createPublicClient({ chain: monad, transport: transport() });
-const funder = createWalletClient({ account: privateKeyToAccount(deployer.DEPLOYER_PRIVATE_KEY), chain: monad, transport: transport() });
+const pub = createPublicClient({ chain: appChain, transport: transport() });
+const usdcOf = (a) => pub.readContract({ address: USDC, abi: ERC20, functionName: "balanceOf", args: [a] });
 
-let balance = await pub.getBalance({ address: walletAddress });
-if (balance < parseEther("0.1")) {
-  const h = await funder.sendTransaction({ to: walletAddress, value: parseEther("0.15") });
+let balance = await usdcOf(walletAddress);
+if (balance < 200_000n && deployer.DEPLOYER_PRIVATE_KEY) {
+  const funder = createWalletClient({ account: privateKeyToAccount(deployer.DEPLOYER_PRIVATE_KEY), chain: appChain, transport: transport() });
+  const h = await funder.writeContract({ address: USDC, abi: ERC20, functionName: "transfer", args: [walletAddress, 500_000n] });
   await pub.waitForTransactionReceipt({ hash: h });
-  balance = await pub.getBalance({ address: walletAddress });
-  console.log(`topped   +0.15 MON from the deployer  ${txUrl(h)}`);
+  balance = await usdcOf(walletAddress);
+  console.log(`topped   +0.5 USDC from the deployer  ${txUrl(h)}`);
 }
-console.log(`balance  ${formatEther(balance)} MON`);
+console.log(`balance  ${formatUnits(balance, 6)} USDC (the budget and its gas)`);
 
-/** A complete EIP-1559 transaction for Privy to sign, priced and nonced from Monad. */
-async function prepare(to, value, data) {
+/** A complete EIP-1559 transaction for Privy to sign, priced and nonced from Arc. Never carries native value. */
+async function prepare(to, data) {
   const [nonce, gas, fees] = await Promise.all([
     pub.getTransactionCount({ address: walletAddress, blockTag: "pending" }),
-    pub.estimateGas({ account: walletAddress, to, value, data }),
+    pub.estimateGas({ account: walletAddress, to, data }),
     pub.estimateFeesPerGas(),
   ]);
   return {
-    to, value: toHex(value), chain_id: monad.id, nonce, type: 2,
-    // Monad charges the limit, not the gas used, so the margin is kept thin.
-    gas_limit: toHex((gas * 11n) / 10n),
+    to, value: "0x0", chain_id: appChain.id, nonce, type: 2,
+    gas_limit: toHex((gas * 12n) / 10n),
     max_fee_per_gas: toHex(fees.maxFeePerGas),
     max_priority_fee_per_gas: toHex(fees.maxPriorityFeePerGas),
-    ...(data ? { data } : {}),
+    data,
   };
 }
-
-const sign = (transaction) =>
-  privy(`/wallets/${walletId}/rpc`, { method: "eth_signTransaction", params: { transaction } });
-
-const abi = parseAbi([
-  "function createTaskUntil(string name, uint32 slots, uint128 rewardPerTrajectory, uint8 scenario, uint8 difficulty, uint64 expiresAt) payable returns (uint256)",
-  "function taskCount() view returns (uint256)",
-]);
+const sign = (transaction) => privy(`/wallets/${walletId}/rpc`, { method: "eth_signTransaction", params: { transaction } });
+async function send(to, data, what) {
+  const signed = await sign(await prepare(to, data));
+  if (!signed.ok) {
+    console.log(`${what.padEnd(8)} Privy refused to sign: ${signed.status} ${JSON.stringify(signed.json)}`);
+    process.exit(1);
+  }
+  const hash = await pub.sendRawTransaction({ serializedTransaction: signed.json.data.signed_transaction });
+  const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
+  console.log(`${what.padEnd(8)} signed by Privy, ${receipt.status} on ${appChain.name}  ${txUrl(hash)}`);
+  return receipt;
+}
 
 const name = process.argv[2] ?? "Lab bounty: steady the crate and place the battery inside";
 const slots = 2;
-const reward = parseEther("0.004");
-const data = encodeFunctionData({
-  abi, functionName: "createTaskUntil",
-  args: [name, slots, reward, 4, 3, BigInt(Math.floor(Date.now() / 1000) + 7 * 86400)],
-});
-
-const before = await pub.readContract({ address: AXON, abi, functionName: "taskCount" });
-const signed = await sign(await prepare(AXON, reward * BigInt(slots), data));
-if (!signed.ok) {
-  console.log(`bounty   Privy refused to sign: ${signed.status} ${JSON.stringify(signed.json)}`);
-  process.exit(1);
+const reward = 40_000n; // 0.04 USDC a run
+const amount = reward * BigInt(slots);
+const allowance = await pub.readContract({ address: USDC, abi: ERC20, functionName: "allowance", args: [walletAddress, PROTOCOL] });
+if (allowance < amount) {
+  await send(USDC, encodeFunctionData({ abi: ERC20, functionName: "approve", args: [PROTOCOL, amount] }), "approve");
 }
-const hash = await pub.sendRawTransaction({ serializedTransaction: signed.json.data.signed_transaction });
-const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
-const after = await pub.readContract({ address: AXON, abi, functionName: "taskCount" });
-console.log(`bounty   signed by Privy, ${receipt.status} on Monad; task #${after - 1n} (${before} -> ${after})`);
-console.log(`         ${formatEther(reward * BigInt(slots))} MON escrowed  ${txUrl(hash)}`);
+const receipt = await send(PROTOCOL, encodeFunctionData({
+  abi: PROTOCOL_ABI, functionName: "createTaskUntil",
+  args: [name, slots, reward, 4, 3, BigInt(Math.floor(Date.now() / 1000) + 7 * 86400), amount],
+}), "bounty");
+const [created] = parseEventLogs({ abi: PROTOCOL_ABI, logs: receipt.logs, eventName: "TaskCreated" });
+console.log(`         task #${created?.args.taskId}: ${formatUnits(amount, 6)} USDC escrowed`);
 
-const refused = await sign(await prepare(deployer.DEPLOYER_ADDRESS, parseEther("0.01")));
-console.log(`forbid   send 0.01 MON to the deployer -> ${refused.status} ${JSON.stringify(refused.json)}`);
+const refused = await sign(await prepare(USDC, encodeFunctionData({ abi: ERC20, functionName: "transfer", args: [deployer.DEPLOYER_ADDRESS ?? PROTOCOL, 10_000n] })));
+console.log(`forbid   transfer 0.01 USDC out of the budget -> ${refused.status} ${JSON.stringify(refused.json)}`);

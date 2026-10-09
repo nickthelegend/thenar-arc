@@ -2,86 +2,61 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { noteSynced, trackReceipt } from "../lib/receipt-timers.ts";
 
-const HASH = "0x" + "ab".repeat(32);
-
 /**
- * A chain that answers on a script. Its clock advances 100 ms per request, so
- * the timers come out in whole steps and the order of events is what is tested.
+ * One timer on Arc: send to receipt is send to final. The `finalized` tag is
+ * read right after to check that claim; on Arc it covers the receipt's block,
+ * on a fork it trails.
  */
-function chain({ receiptAfter = 2, finalAfter = 4, blockHash = "0xb1", finalHashes = {}, txpool } = {}) {
-  let t = 0;
-  let calls = 0;
-  const step = () => { t += 100; calls += 1; };
-  const receipt = (bh = blockHash, n = 7n) => ({ transactionHash: HASH, blockNumber: n, blockHash: bh, status: "success" });
-  let receiptReads = 0;
-  const client = {
-    async request({ method }) {
-      step();
-      if (method !== "txpool_statusByHash") throw new Error(method);
-      return txpool ? txpool(calls) : { status: "Unknown tx hash" };
-    },
-    async waitForTransactionReceipt() {
-      receiptReads += 1;
-      // Polls for the receipt, in real time, so a txpool check can run beside it.
-      for (let i = 0; i < receiptAfter; i++) { step(); await new Promise((r) => setTimeout(r, 60)); }
-      return receiptReads === 1 ? receipt() : receipt("0xb2", 8n);
-    },
-    async getTransactionReceipt() { step(); return receipt(); },
-    async getBlockNumber() { step(); return 11n; },
-    async getBlock({ blockTag, blockNumber }) {
-      step();
-      if (blockTag === "finalized") {
-        const n = calls >= finalAfter ? 9n : 6n;
-        return { number: n, hash: "0xf" };
-      }
-      return { number: blockNumber, hash: finalHashes[String(blockNumber)] ?? blockHash };
-    },
+function fakeClient({ receiptBlock = 100n, finalized = 100n, head = 100n, delayMs = 20 } = {}) {
+  const calls = [];
+  const receipt = { blockNumber: receiptBlock, status: "success", transactionHash: "0xab" };
+  return {
+    calls,
+    waitForTransactionReceipt: async (a) => { calls.push(["wait", a]); await new Promise((r) => setTimeout(r, delayMs)); return receipt; },
+    getTransactionReceipt: async () => { calls.push(["get"]); return receipt; },
+    getBlock: async ({ blockTag }) => { calls.push(["block", blockTag]); return { number: finalized }; },
+    getBlockNumber: async () => head,
   };
-  return { client, now: () => t };
 }
 
-test("executed comes before final, both from the moment the transaction was sent", async () => {
-  const { client, now } = chain();
-  const updates = [];
-  const tracked = await trackReceipt(client, HASH, { sentAt: 0, where: "local", now, onUpdate: (u) => updates.push(u) });
-  assert.equal(tracked.timers.finalMs, undefined, "the receipt comes back before finality");
-  const { timers } = await tracked.final;
+test("on Arc the receipt is final: one timer, and the finalized tag covers its block", async () => {
+  let t = 1_000;
+  const c = fakeClient();
+  const { receipt, timers } = await trackReceipt(c, "0x01", { sentAt: 1_000, where: "arc", now: () => (t += 250) });
+  assert.equal(receipt.blockNumber, 100n);
+  assert.equal(timers.where, "arc");
   assert.equal(timers.via, "eth_getTransactionReceipt");
-  assert.equal(timers.finalizedLag, 5, "the gap between the head and the finalized tag is measured");
-  assert.ok(timers.executedMs > 0);
-  assert.ok(timers.finalMs > timers.executedMs);
-  assert.equal(timers.blockNumber, 7n);
-  assert.equal(timers.moved, undefined);
-  assert.ok(updates[0].executedMs !== undefined && updates[0].finalMs === undefined, "executed is reported before final");
+  assert.equal(timers.finalMs, 250);
+  assert.equal(timers.finalizedTagCovers, true);
+  assert.equal(timers.finalizedLag, 0);
+  // Polled faster than Arc's block time, and given a bound.
+  const wait = c.calls.find((x) => x[0] === "wait")[1];
+  assert.ok(wait.pollingInterval <= 500 && wait.timeout > 0);
 });
 
-test("a receipt whose block lost to another proposal is read again before it is called final", async () => {
-  const { client, now } = chain({ finalHashes: { 7: "0xother", 8: "0xb2" }, blockHash: "0xb1" });
-  const { receipt, timers } = await (await trackReceipt(client, HASH, { sentAt: 0, where: "monad", now })).final;
-  assert.equal(timers.moved, true);
-  assert.equal(receipt.blockHash, "0xb2");
-  assert.equal(timers.blockNumber, 8n);
-  assert.ok(timers.finalMs !== undefined);
-});
-
-test("on Monad the node is asked whether it holds the transaction while the receipt is outstanding", async () => {
-  const { client, now } = chain({ receiptAfter: 6, txpool: (n) => (n > 2 ? { status: "pending" } : "Unknown tx hash") });
-  const { timers } = await (await trackReceipt(client, HASH, { sentAt: 0, where: "monad", now })).final;
-  assert.equal(timers.seen?.status, "pending");
-  assert.ok(timers.seen.ms <= timers.executedMs);
+test("on a fork the finalized tag trails the head, and the timer says so", async () => {
+  const c = fakeClient({ receiptBlock: 120n, finalized: 88n, head: 121n });
+  const { timers } = await trackReceipt(c, "0x02", { sentAt: 0, where: "fork", now: () => 400 });
+  assert.equal(timers.where, "fork");
+  assert.equal(timers.finalizedTagCovers, false);
+  assert.equal(timers.finalizedLag, 33);
 });
 
 test("a receipt the wallet already got from eth_sendRawTransactionSync is timed by the wallet", async () => {
-  const { client, now } = chain();
-  noteSynced(HASH, 1000, 1004);
-  const { timers } = await trackReceipt(client, HASH, { sentAt: 50_000, where: "local", now: () => now() + 1000 });
+  noteSynced("0xAbC", 5_000, 5_420);
+  const c = fakeClient();
+  const { timers } = await trackReceipt(c, "0xabc", { sentAt: 0, where: "arc", now: () => 99_999 });
   assert.equal(timers.via, "eth_sendRawTransactionSync");
-  assert.equal(timers.executedMs, 4);
+  assert.equal(timers.finalMs, 420);
+  assert.ok(!c.calls.some((x) => x[0] === "wait"), "no polling for a receipt already in hand");
 });
 
-test("a block that never finalizes is reported as such, not as final", async () => {
-  const { client, now } = chain({ finalAfter: Infinity });
-  const { timers } = await (await trackReceipt(client, "0x" + "cd".repeat(32), { sentAt: 0, where: "local", now, finalWithinMs: 600 })).final;
-  assert.equal(timers.timedOut, true);
-  assert.equal(timers.finalMs, undefined);
+test("a node without the finalized tag still gives the timer", async () => {
+  const c = fakeClient();
+  c.getBlock = async () => { throw new Error("unknown block tag"); };
+  const updates = [];
+  const { timers } = await trackReceipt(c, "0x03", { sentAt: 0, where: "arc", now: () => 300, onUpdate: (u) => updates.push(u) });
+  assert.equal(timers.finalMs, 300);
+  assert.equal(timers.finalizedTagCovers, undefined);
+  assert.ok(updates.length >= 1);
 });

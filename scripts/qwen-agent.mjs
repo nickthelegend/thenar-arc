@@ -1,12 +1,14 @@
 /**
  * An LLM agent (Qwen or Kimi) that shops for robot training data, and pays for it itself.
  *
- *   node --import ./test/register.mjs scripts/qwen-agent.mjs [baseUrl] ["what to buy"]
+ *   NEXT_PUBLIC_ARC_NETWORK=fork node --import ./test/register.mjs scripts/qwen-agent.mjs [baseUrl] ["what to buy"]
  *
  * The model reads the task list and each task's datasheet, asks what a corpus
  * costs, decides what is worth buying within its budget, pays for it over
- * x402 (an EIP-3009 USDC authorisation its own key signs), checks what it
- * received against SalesLog on chain, and explains its choice. The model
+ * x402 on Arc (an EIP-3009 USDC authorisation its own key signs, settled by
+ * Thenar's in-process facilitator), checks what it received against SalesLog
+ * on chain, rates the verifier on the ERC-8004 Reputation Registry for each
+ * corpus it verified, and explains its choice. The model
  * decides; the code only carries its decisions out, and holds the budget
  * where the model cannot talk its way past it.
  *
@@ -19,8 +21,9 @@
  * speaks its API. Without the provider's key the agent does not start: it
  * says which key it needs and exits.
  *
- * AGENT_PRIVATE_KEY is the agent's wallet. AGENT_BUDGET_USDC caps what it
- * may spend in one session (default 0.05).
+ * AGENT_PRIVATE_KEY is the agent's wallet and AGENT_ID its ERC-8004 agent id,
+ * sent as `x-erc8004-agent-id` so SalesLog records the sale against it.
+ * AGENT_BUDGET_USDC caps what it may spend in one session (default 0.05).
  *
  * After each purchase it publishes its decision record to the server: the
  * model, every tool it called and what came back, its report and its check
@@ -28,19 +31,23 @@
  * /agents shows it beside the sale.
  */
 import { createHash } from "node:crypto";
-import { createPublicClient, formatUnits, parseAbi } from "viem";
+import { createPublicClient, createWalletClient, formatUnits, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { decodePaymentResponseHeader, wrapFetchWithPayment, x402Client } from "@x402/fetch";
 import { ExactEvmScheme } from "@x402/evm/exact/client";
 import { toClientEvmSigner } from "@x402/evm";
-import { AGENT_CORPUS } from "../lib/agent-corpus.ts";
+import { REPUTATION_REGISTRY_ABI, TAG_CORPUS_QUALITY, TAG_SOURCE } from "../lib/erc8004.ts";
 import { decisionMessage, MAX_STEPS as MAX_RECORD_STEPS } from "../lib/agent-decision.ts";
 import { SALES_LOG_ABI } from "../lib/registry-abi.ts";
 import { AXON_ABI } from "../lib/abi.ts";
 import { armOf } from "../lib/scan.ts";
-import { ADDR, appChain, env, need, transport, txUrl } from "./monad.mjs";
+import { ADDR, ARC, appChain, env, need, transport, txUrl } from "./arc.mjs";
 
-const BASE = process.argv[2] ?? "http://localhost:3336";
+/** The x402 terms on Arc, as lib/agent-corpus.ts states them (built from scripts/arc.mjs so the network is the script's). */
+const AGENT_CORPUS = { path: "/api/agent/corpus", network: `eip155:${appChain.id}`, asset: ARC.usdc, amount: "10000", decimals: 6, symbol: "USDC" };
+const AGENT_ID = env("AGENT_ID");
+
+const BASE = process.argv[2] ?? env("LOCAL_APP_URL") ?? "http://localhost:9010";
 const GOAL = process.argv[3] ??
   "Find the robot manipulation corpus with the most accepted episodes and buy it, then check on chain that what you received is what was sold.";
 
@@ -150,7 +157,9 @@ const TOOLS = {
       if (bought.has(task_id)) return { error: "already bought this session", ...bought.get(task_id).summary };
       const price = BigInt(AGENT_CORPUS.amount);
       if (spent + price > BUDGET) return { error: `refused: ${usdc(price)} would exceed the budget (${usdc(BUDGET - spent)} left)` };
-      const res = await fetchPaid(`${BASE}${AGENT_CORPUS.path}?taskId=${task_id}`, { headers: { accept: "application/json" } });
+      const res = await fetchPaid(`${BASE}${AGENT_CORPUS.path}?taskId=${task_id}`, {
+        headers: { accept: "application/json", ...(AGENT_ID ? { "x-erc8004-agent-id": AGENT_ID } : {}) },
+      });
       const bytes = Buffer.from(await res.arrayBuffer());
       if (!res.ok) return { error: `HTTP ${res.status}: ${bytes.toString("utf8").slice(0, 300)}` };
       const receipt = res.headers.get("PAYMENT-RESPONSE");
@@ -163,6 +172,7 @@ const TOOLS = {
         sha256, server_sha256_agrees: res.headers.get("x-thenar-sha256") === sha256,
         paid: settled?.success ? usdc(price) : "nothing", payment_tx: settled?.transaction ?? null,
         audit: res.headers.get("x-thenar-audit"),
+        buyer_agent: res.headers.get("x-thenar-buyer-agent"),
       };
       bought.set(task_id, { body, sha256, audit: summary.audit, summary });
       return summary;
@@ -331,6 +341,27 @@ for (const [id, b] of bought) {
   console.log(r.ok
     ? `decision  task ${id}: signed and published, ${BASE}/agents#why-${body.sale}`
     : `decision  task ${id}: not published (${r.status}): ${body.error ?? "no answer"}`);
+}
+
+// Rate the verifier for each corpus that checked out against SalesLog (ERC-8004 corpusQuality).
+let verifierId = env("VERIFIER_AGENT_ID");
+if (!verifierId) verifierId = (await fetch(`${BASE}/api/arc`).then((r) => r.json()).catch(() => null))?.verifier?.agentId ?? null;
+if (verifierId && ARC.reputationRegistry) {
+  const rater = createWalletClient({ account: wallet, chain: appChain, transport: transport() });
+  for (const [id, b] of bought) {
+    if (!b.verified) continue;
+    const rating = b.verified.matches ? 100n : 0n;
+    try {
+      const hash = await rater.writeContract({
+        address: ARC.reputationRegistry, abi: REPUTATION_REGISTRY_ABI, functionName: "giveFeedback",
+        args: [BigInt(verifierId), rating, 0, TAG_CORPUS_QUALITY, TAG_SOURCE, AGENT_CORPUS.path, "", `0x${b.sha256}`],
+      });
+      await chain.waitForTransactionReceipt({ hash });
+      console.log(`rated     task ${id}: verifier agent #${verifierId} ${rating}/100 "${TAG_CORPUS_QUALITY}"  ${txUrl(hash)}`);
+    } catch (e) {
+      console.log(`rated     task ${id}: not written (${e.shortMessage ?? e.message?.split("\n")[0]})`);
+    }
+  }
 }
 
 if (!bought.size && /\bbought\b|\bpurchased\b/i.test(report) && !/not|nothing|no /i.test(report.slice(0, 80))) {
