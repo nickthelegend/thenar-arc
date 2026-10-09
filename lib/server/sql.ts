@@ -574,8 +574,8 @@ export function migrate(): Promise<void> {
  * Give every pre-existing row the deployment it actually settled against.
  *
  * Rows written before the column existed carry no contract, and they are not
- * all the same one — this project has settled on Monad, Avalanche and Arc
- * deployments. The chain each row already records is enough to say which,
+ * all the same one — this project has settled on more than one
+ * deployment. The chain each row already records is enough to say which,
  * because only one contract was ever live per chain at the time. Run once,
  * touching only rows that have no contract, so it cannot rewrite a row that
  * already knows its own answer.

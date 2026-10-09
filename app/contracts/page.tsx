@@ -30,9 +30,9 @@ async function presence(rows: Deployed[]) {
     rows.map(async (r) => {
       const [code, balance] = await Promise.all([
         client.getBytecode({ address: r.address }).catch(() => null),
-        client.readContract({ address: USDC, abi: USDC_ABI, functionName: "balanceOf", args: [r.address] }).catch(() => 0n) as Promise<bigint>,
+        client.readContract({ address: USDC, abi: USDC_ABI, functionName: "balanceOf", args: [r.address] }).catch(() => null) as Promise<bigint | null>,
       ]);
-      return { ...r, bytes: code ? (code.length - 2) / 2 : 0, balance };
+      return { ...r, bytes: code === null ? null : code ? (code.length - 2) / 2 : 0, balance };
     }),
   );
 }
@@ -117,7 +117,7 @@ export default async function ContractsPage() {
   const [live, prior, reads] = await Promise.all([
     presence(LIVE_CONTRACTS), SUPERSEDED, IS_DEPLOYED ? readings() : Promise.resolve({} as Record<string, [string, string][]>),
   ]);
-  const held = live.reduce((n, r) => n + Number(formatUsdc(r.balance)), 0);
+  const held = live.some(r => r.balance === null) ? null : live.reduce((n, r) => n + Number(formatUsdc(r.balance!)), 0);
   const dark = live.filter((r) => r.surface === "/contracts").length;
 
   return (
@@ -133,7 +133,7 @@ export default async function ContractsPage() {
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3 font-mono text-[13px]">
         <span><span className="text-scribe-3">Deployed</span> <span className="tabular-nums text-scribe">{live.length}</span></span>
         <span><span className="text-scribe-3">Superseded</span> <span className="tabular-nums text-scribe">{prior.length}</span></span>
-        <span><span className="text-scribe-3">Held on chain</span> <span className="tabular-nums text-signal">{held.toFixed(6)}</span> <span className="text-scribe-3">{CURRENCY}</span></span>
+        <span><span className="text-scribe-3">Held on chain</span> <span className="tabular-nums text-signal">{held === null ? "Unavailable" : held.toFixed(6)}</span> <span className="text-scribe-3">{CURRENCY}</span></span>
         <span><span className="text-scribe-3">Reachable only here</span> <span className="tabular-nums text-scribe">{dark}</span></span>
       </div>
 
@@ -162,9 +162,9 @@ export default async function ContractsPage() {
             ) : null}
 
             <div className="mt-3 flex flex-wrap items-baseline gap-x-7 gap-y-1 font-mono text-[12px] text-scribe-3">
-              <span>{r.bytes.toLocaleString("en-GB")} bytes</span>
-              <span className={r.balance > 0n ? "text-signal" : undefined}>
-                {formatUsdc(r.balance)} {CURRENCY}
+              <span>{r.bytes === null ? "Code unavailable" : `${r.bytes.toLocaleString("en-GB")} bytes`}</span>
+              <span className={r.balance !== null && r.balance > 0n ? "text-signal" : undefined}>
+                {r.balance === null ? "Balance unavailable" : `${formatUsdc(r.balance)} ${CURRENCY}`}
               </span>
               <span>{r.source}</span>
               <span>

@@ -9,13 +9,11 @@ export function corpusTreasury(): string | null {
 }
 
 export type CorpusSale = {
-  /** The settlement tx hash for a paid pull; `agentkit:<nonce>` for a free one. */
+  /** The settlement tx hash of the x402 payment. */
   id: string;
   task_id: number;
-  /** Every sale is x402; "agentkit" survives only on rows from before World's
-   *  free-pull path was removed. */
-  method: "x402" | "agentkit";
-  /** The paying address for a payment, the agent's address for a free pull. */
+  method: "x402";
+  /** The address that paid. */
   buyer: string | null;
   network: string;
   /** Atomic units of `asset`. Null for a free pull, which moved nothing. */

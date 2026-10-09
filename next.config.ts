@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   // time. Blockscout needs no key; only a local fork has no index.
   env: { NEXT_PUBLIC_INDEX_CONFIGURED: FORK ? "" : "1" },
   experimental: {
+    cpus: 2,
     // Off on this machine: the dev cache's writes and compactions ran for a
     // minute at a time on a nearly full disk and stalled every request behind them.
     turbopackFileSystemCacheForDev: false,

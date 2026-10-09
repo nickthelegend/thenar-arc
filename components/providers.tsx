@@ -11,20 +11,10 @@ import { ModelStageProvider } from "@/components/model-stage";
 import { Palette } from "@/components/palette";
 import { Tour } from "@/components/tour";
 import { wagmiConfig } from "@/lib/wagmi";
+import { PRIVY_APP_ID, PRIVY_CONFIGURED } from "@/lib/auth-config";
+import { readonlyWagmiConfig } from "@/lib/wagmi-readonly";
 import { localWagmiConfig } from "@/lib/wagmi-local";
 import { LOCALNET, appChain } from "@/lib/chain";
-
-/**
- * The Privy app operators sign in through.
- *
- * Required rather than optional. Without it nobody can sign in, and a site that
- * rendered anyway would show a Connect button that does nothing — so a missing
- * id fails loudly here instead of quietly everywhere.
- */
-const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-if (!PRIVY_APP_ID && !LOCALNET) {
-  throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is not set. Operators sign in through Privy; see .env.example.");
-}
 
 /**
  * Which ground the sign-in modal should be drawn on.
@@ -154,5 +144,20 @@ function PrivyProviders({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Chosen once, at build time: a build is for Arc (testnet or mainnet) or for a local Arc fork. */
-export const Providers = LOCALNET ? LocalProviders : PrivyProviders;
+/** Browse and practice without credentials; connector-free wagmi keeps payments unavailable. */
+function ReadonlyProviders({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PlainWagmiProvider config={readonlyWagmiConfig as unknown as typeof wagmiConfig} reconnectOnMount={false}>
+        <div role="status" className="border-b border-rule bg-ink-1 px-5 py-2 text-center text-sm text-scribe-2">
+          Sign-in is unavailable. You can browse and practice; paid submissions require sign-in.
+        </div>
+        <AppTree>{children}</AppTree>
+      </PlainWagmiProvider>
+    </QueryClientProvider>
+  );
+}
+
+/** Chosen at build time; configured Privy and local-fork behavior are preserved. */
+export const Providers = LOCALNET ? LocalProviders : PRIVY_CONFIGURED ? PrivyProviders : ReadonlyProviders;

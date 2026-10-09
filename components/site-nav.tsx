@@ -194,10 +194,10 @@ export function SiteNav({ force = false }: { force?: boolean } = {}) {
             ) : (
               <button
                 onClick={s.connect}
-                disabled={s.connecting}
+                disabled={s.connecting || !s.available}
                 className="rounded-lg bg-lilac px-4 py-2 text-sm font-semibold text-black transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-white active:scale-[0.98] disabled:opacity-60"
               >
-                {s.connecting ? "Signing in…" : "Sign in"}
+                {!s.available ? "Sign-in unavailable" : s.connecting ? "Signing in…" : "Sign in"}
               </button>
             )}
           </div>

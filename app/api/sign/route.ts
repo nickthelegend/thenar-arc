@@ -9,8 +9,8 @@ import { AXON_ADDRESS, CORPUS_SHARES, IS_DEPLOYED, appChain } from "@/lib/chain"
 import { CORPUS_SHARES_ABI } from "@/lib/registry-abi";
 import { validateSamples, validatePayloadIds, verifyAndSign, VerifyError } from "@/lib/server/verifier";
 import { parSecondsFor } from "@/lib/par";
-import { canonicalise } from "@/lib/canonical";
-import { isAddress, keccak256, toHex } from "viem";
+import { canonicalShape } from "@/lib/server/canonical-shape";
+import { isAddress } from "viem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -204,13 +204,3 @@ export async function GET() {
   }
 }
 
-/** A fixed sample run through this build's canonicaliser. Two services that
- *  agree on this agree on every hash they will ever produce. */
-export function canonicalShape(): string {
-  const probe = [{
-    t: 0, q: [0, 0, 0, 0, 0, 0], grip: 42,
-    object: [0, 0, 0], object2: [0, 0, 0],
-    q2: [0, 0, 0, 0, 0, 0], grip2: 42,
-  }] as unknown as Parameters<typeof canonicalise>[2];
-  return keccak256(toHex(canonicalise(0, "0x0000000000000000000000000000000000000000", probe, ["a"])));
-}

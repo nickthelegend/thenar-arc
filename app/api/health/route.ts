@@ -4,8 +4,9 @@ import { chainClient } from "@/lib/rpc";
 import { AXON_ADDRESS, IS_DEPLOYED, appChain } from "@/lib/chain";
 import { AXON_ABI } from "@/lib/abi";
 import { countTrajectories, countByChain, ENGINE } from "@/lib/server/db";
-import { canonicalShape } from "@/app/api/sign/route";
+import { canonicalShape } from "@/lib/server/canonical-shape";
 import { runDomain } from "@/lib/server/verifier";
+import { fetchSignerHealth } from "@/lib/server/signer-health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,8 +35,7 @@ export async function GET() {
         : "the web service holds no signing key",
     };
     try {
-      const r = await fetch(`${signerOrigin}/api/sign`, { cache: "no-store" });
-      const b = (await r.json()) as { holdsKey?: boolean; verifier?: string; canonical?: string };
+      const b = await fetchSignerHealth(signerOrigin);
       const expected = process.env.VERIFIER_ADDRESS?.toLowerCase();
       const same = !expected || b.verifier?.toLowerCase() === expected;
       checks.signer = {

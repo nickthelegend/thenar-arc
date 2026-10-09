@@ -6,7 +6,7 @@ import { query, run, migrate, count } from "@/lib/server/sql";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const MAX_BODY = 500;
+const MAX_BODY = 500;
 /** Per address, per task. Enough for a correction and a second thought. */
 const MAX_PER_TASK = 5;
 
@@ -26,7 +26,7 @@ const MAX_PER_TASK = 5;
  * without that is a claim about who wrote something, which is exactly the
  * thing a comment section usually cannot back up.
  */
-export function noteMessage(taskId: number, body: string) {
+function noteMessage(taskId: number, body: string) {
   // The task id is inside the signed text so a note signed for one task cannot
   // be replayed onto another, which an address-and-body-only message allows.
   return `Thenar note\ntask: ${taskId}\n\n${body}`;

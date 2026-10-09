@@ -5,6 +5,7 @@ import { useAccount, useBalance, useConnect, useDisconnect, useSwitchChain } fro
 import { usePrivy } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { LOCALNET, appChain } from "@/lib/chain";
+import { PRIVY_CONFIGURED } from "@/lib/auth-config";
 import { formatNative } from "@/lib/usdc";
 
 /**
@@ -40,6 +41,7 @@ function usePrivySession() {
   const balance = useMemo(() => (bal ? Number(formatNative(bal.value)) : 0), [bal]);
 
   return {
+    available: true,
     address: address ?? null,
     balance,
     balanceWei: bal?.value ?? 0n,
@@ -96,6 +98,7 @@ function useLocalSession(): ReturnType<typeof usePrivySession> {
   const balance = useMemo(() => (bal ? Number(formatNative(bal.value)) : 0), [bal]);
 
   return {
+    available: true,
     address: address ?? null,
     balance,
     balanceWei: bal?.value ?? 0n,
@@ -111,5 +114,17 @@ function useLocalSession(): ReturnType<typeof usePrivySession> {
   };
 }
 
-/** Chosen once, at build time, so every render calls the same hooks. */
-export const useSession = LOCALNET ? useLocalSession : usePrivySession;
+/** An unconfigured deployment never restores a wallet or presents a payable session. */
+function useUnavailableSession(): ReturnType<typeof usePrivySession> {
+  const { refetch } = useBalance({ query: { enabled: false } });
+  return {
+    available: false, address: null, balance: 0, balanceWei: BigInt(0),
+    connected: false, connecting: false, connectError: null,
+    wrongNetwork: false, switching: false,
+    connect: () => { if (typeof window !== "undefined") window.alert("Sign-in is unavailable. You can browse and practice."); },
+    disconnect: () => {}, switchToChain: () => {}, refetchBalance: refetch,
+  };
+}
+
+/** Chosen once at build time, so every render calls the same hooks. */
+export const useSession = LOCALNET ? useLocalSession : PRIVY_CONFIGURED ? usePrivySession : useUnavailableSession;

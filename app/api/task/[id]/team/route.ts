@@ -29,7 +29,7 @@ const client = chainClient();
  * later without trusting this server, which is the only property that makes a
  * roster worth showing.
  */
-export function teamMessage(taskId: number, member: string, role: string) {
+function teamMessage(taskId: number, member: string, role: string) {
   // The task id is inside the signed text so a roster entry signed for one
   // task cannot be replayed onto another, and the role is inside it so a
   // signature naming someone a reviewer cannot be reused to name them funder.
