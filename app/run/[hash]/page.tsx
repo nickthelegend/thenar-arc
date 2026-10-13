@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import RunView from "./run-view";
-import { getTrajectory } from "@/lib/server/db";
+import { getTrajectory, trajectoryByTx } from "@/lib/server/db";
 
 /**
  * Say 404 when the run is not there.
@@ -44,11 +44,30 @@ async function stored(hash: string): Promise<boolean | null> {
   }
 }
 
+/** The run a settlement transaction paid for, or null. Asked of the backend behind Vercel, as `stored` is. */
+async function runForTx(tx: string): Promise<string | null> {
+  const backend = process.env.BACKEND_ORIGIN?.replace(/\/$/, "");
+  try {
+    if (backend) {
+      const r = await fetch(`${backend}/api/trajectory/by-tx/${tx.toLowerCase()}`, { next: { revalidate: 60 } });
+      return r.ok ? ((await r.json()) as { trajHash: string }).trajHash : null;
+    }
+    return await trajectoryByTx(tx);
+  } catch {
+    return null;
+  }
+}
+
 export default async function RunPage({ params }: { params: Promise<{ hash: string }> }) {
   const { hash } = await params;
   if (!HASH.test(hash)) notFound();
   // Only a definite "not stored" is a 404. A store that did not answer is not
   // evidence of absence; the view says so in its own words.
-  if ((await stored(hash)) === false) notFound();
+  if ((await stored(hash)) === false) {
+    // A link may name the run by the transaction that paid for it: send it to the run.
+    const run = await runForTx(hash);
+    if (run) redirect(`/run/${run}`);
+    notFound();
+  }
   return <RunView />;
 }

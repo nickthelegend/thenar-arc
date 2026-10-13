@@ -253,6 +253,13 @@ export async function samplesFor(hashes: string[]) {
   );
 }
 
+/** The run a settlement transaction paid for, by its tx hash. */
+export async function trajectoryByTx(txHash: string) {
+  await db();
+  const rows = await query<{ traj_hash: string }>(`SELECT traj_hash FROM trajectory WHERE lower(tx_hash) = ? LIMIT 1`, [txHash.toLowerCase()]);
+  return rows[0]?.traj_hash ?? null;
+}
+
 /** The runs a buyer would want as negative examples: scored, recorded, and
  *  below the floor that pays. Never mixed into the paid corpus. */
 export async function failedTrajectories(taskId: number, floor: number, limit = 200) {
