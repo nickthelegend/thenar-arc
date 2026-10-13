@@ -80,7 +80,8 @@ const nextConfig: NextConfig = {
         // Arc, in the same order as RPC_ENDPOINTS in lib/chain.ts. A host
         // missing from this line is a host the browser refuses.
         (FORK
-          ? `${FORK_RPC} `
+          // A fork build still reads the real testnet for the finality strip, P-256 and Memo probes.
+          ? `${FORK_RPC} https://rpc.testnet.arc.io wss://rpc.testnet.arc.io ${ARC_RPC ? `${ARC_RPC} ` : ""}`
           : `https://rpc.testnet.arc.io https://rpc.mainnet.arc.io wss://rpc.testnet.arc.io wss://rpc.mainnet.arc.io ${ARC_RPC ? `${ARC_RPC} ` : ""}`) +
         // CCTP V2: Circle's Iris attests a burn on Arc; /portfolio polls it.
         "https://iris-api-sandbox.circle.com https://iris-api.circle.com " +

@@ -17,7 +17,7 @@
  */
 import { NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import { dedup, flatten, getBounds, join, prune, simplify, textureCompress, weld, quantize } from "@gltf-transform/functions";
+import { dedup, flatten, getBounds, prune, simplify, textureCompress, weld, quantize } from "@gltf-transform/functions";
 import { MeshoptSimplifier } from "meshoptimizer";
 import sharp from "sharp";
 

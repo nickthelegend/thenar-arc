@@ -31,7 +31,7 @@
  * /agents shows it beside the sale.
  */
 import { createHash } from "node:crypto";
-import { createPublicClient, createWalletClient, formatUnits, parseAbi } from "viem";
+import { createPublicClient, createWalletClient, formatUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { decodePaymentResponseHeader, wrapFetchWithPayment, x402Client } from "@x402/fetch";
 import { ExactEvmScheme } from "@x402/evm/exact/client";

@@ -5,7 +5,7 @@ import { useThenarWrite } from "@/lib/write";
 import { CONTRIBUTION_RECORD_ABI } from "@/lib/registry-abi";
 import { DEPLOYED } from "@/lib/registry";
 import { txUrl } from "@/lib/chain";
-import { fmtInt, fmtScore, shortHash } from "@/lib/format";
+import { fmtScore, shortHash } from "@/lib/format";
 
 const RECORD = DEPLOYED.find((d) => d.key === "contribution")!.address;
 
