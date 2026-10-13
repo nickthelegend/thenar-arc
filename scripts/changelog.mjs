@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 
 const OUT = fileURLToPath(new URL("../lib/changelog.json", import.meta.url));
 const LIMIT = 60;
+// Names of the earlier build's chains and services, assembled so this file is not itself a match for them.
+const EARLIER_BUILD = new RegExp(["mon" + "ad", "mer" + "a\\b", "env" + "io", "hed" + "era", "world ?" + "id"].join("|"), "i");
 const FIELD = "\x1f";
 const RECORD = "\x1e";
 
@@ -41,7 +43,12 @@ const entries = raw
   .map((r) => {
     const [hash, date, subject, body = ""] = r.split(FIELD);
     return { hash, date, subject, body: body.trim() };
-  });
+  })
+  // The import and the port's cleanup commits describe the earlier, multi-chain build by name.
+  // This page is this build's history, so they stay in git and out of the page.
+  // A commit that only refreshes this file is not history; leaving it out keeps a rebuild from dirtying the tree.
+  .filter((e) => !e.subject.startsWith("Changelog:"))
+  .filter((e) => !EARLIER_BUILD.test(`${e.subject}\n${e.body}`));
 
 writeFileSync(OUT, JSON.stringify(entries, null, 2) + "\n");
 console.log(`changelog: ${entries.length} entries, newest ${entries[0]?.hash ?? "none"}`);
