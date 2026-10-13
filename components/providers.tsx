@@ -14,7 +14,7 @@ import { wagmiConfig } from "@/lib/wagmi";
 import { PRIVY_APP_ID, PRIVY_CONFIGURED } from "@/lib/auth-config";
 import { readonlyWagmiConfig } from "@/lib/wagmi-readonly";
 import { localWagmiConfig } from "@/lib/wagmi-local";
-import { LOCALNET, appChain } from "@/lib/chain";
+import { LOCALNET, appChain, txUrl } from "@/lib/chain";
 
 /**
  * Which ground the sign-in modal should be drawn on.
@@ -144,6 +144,9 @@ function PrivyProviders({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The payout of the run recorded in docs/E2E-TESTNET.md (step 4): submitTrajectoryFor on Arc testnet. */
+const RECORDED_PAYOUT_TX = "0xa5214ce03c81b1fd91a799ae90beeb0de756e641691b9ae3999e5cc5fe0c95ed";
+
 /** Browse and practice without credentials; connector-free wagmi keeps payments unavailable. */
 function ReadonlyProviders({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
@@ -152,6 +155,14 @@ function ReadonlyProviders({ children }: { children: React.ReactNode }) {
       <PlainWagmiProvider config={readonlyWagmiConfig as unknown as typeof wagmiConfig} reconnectOnMount={false}>
         <div role="status" className="border-b border-rule bg-ink-1 px-5 py-2 text-center text-sm text-scribe-2">
           Sign-in is unavailable. You can browse and practice; paid submissions require sign-in.
+          {appChain.id === 5042002 ? (
+            <>
+              {" "}A run already paid on Arc testnet:{" "}
+              <a href={txUrl(RECORDED_PAYOUT_TX)} target="_blank" rel="noreferrer" className="text-probe underline">its payout transaction</a>
+              {" · "}
+              <a href="/arc" className="text-probe underline">what has been run live</a>
+            </>
+          ) : null}
         </div>
         <AppTree>{children}</AppTree>
       </PlainWagmiProvider>
