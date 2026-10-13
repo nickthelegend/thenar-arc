@@ -78,8 +78,18 @@ broadcast() {
     NETWORK=$NETWORK THENAR_DEPLOYMENT_OUT=$PENDING \
     "$ARC_FORGE" script script/Deploy.s.sol:Deploy ${NET_FLAG[@]+"${NET_FLAG[@]}"} \
       --rpc-url "$RPC" --broadcast --slow \
-      --with-gas-price "${ARC_MAX_FEE:-60gwei}" --priority-gas-price "${ARC_PRIORITY_FEE:-2gwei}" \
-      ${VERIFY[@]+"${VERIFY[@]}"} )
+      --with-gas-price "${ARC_MAX_FEE:-60gwei}" --priority-gas-price "${ARC_PRIORITY_FEE:-2gwei}" )
+}
+
+# Explorer verification runs after the record is in place, and never fails the deploy: a broadcast
+# that landed must always produce deployments/arc-<network>.json, even if Blockscout is down.
+verify() {
+  [ ${#VERIFY[@]} -gt 0 ] || return 0
+  ( set -a; . "$DEPLOYER_ENV"; set +a
+    NETWORK=$NETWORK THENAR_DEPLOYMENT_OUT=/dev/null \
+    "$ARC_FORGE" script script/Deploy.s.sol:Deploy ${NET_FLAG[@]+"${NET_FLAG[@]}"} \
+      --rpc-url "$RPC" --resume "${VERIFY[@]}" ) >/dev/null 2>&1 \
+    && echo "verified on the explorer" || echo "explorer verification failed (non-fatal); retry with THENAR_VERIFY=1 later"
 }
 
 if [ "${THENAR_NO_LOCK:-}" = 1 ]; then
@@ -92,6 +102,7 @@ fi
 
 mv "$PENDING" "$FINAL"
 echo "record: $FINAL"
+verify
 
 # Gas actually used by the broadcast, and what it cost in USDC (native USDC has 18 decimals).
 CHAIN_ID=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1])).chainId)' "$FINAL")

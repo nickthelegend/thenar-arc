@@ -1,21 +1,40 @@
 {
-  "network": "testnet",
+  "auditor": "0xd9CDb1bbc2Fb252906ef009013d7783445a67E9E",
   "chainId": 5042002,
-  "status": "not deployed",
-  "note": "Written by contracts/script/Deploy.s.sol via scripts/deploy.sh testnet. Until then the app says the protocol is not deployed.",
-  "contracts": {},
+  "contracts": {
+    "ccipReceiver": "0x9bC7A8F90e8B26ca1135358938A5542cD9334b92",
+    "contributionRecord": "0x9e38cA5E04c8135e6676D2C6633f9cB5747bE578",
+    "corpusAudit": "0x69b02DA6F64a2d5962Ef0b4710bAFd85D76e5bC0",
+    "corpusManifest": "0x9cAF33dEcfab291D63D451e934eae410a09B0012",
+    "corpusShares": "0x4E8f310ffc70C9DcaA64f5CaDb5F20a50cE8482d",
+    "passkeyRegistry": "0x3a9D0CA0029905dc32f8036BA28DFF33080AC254",
+    "protocol": "0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619",
+    "salesLog": "0x8095Ea4D12620B4EC116F951C954702832fA6845",
+    "trajectoryCertificate": "0x49082C4AB554003f9b517146a8265E208Ef5067B",
+    "verdicts": "0xe3A583c613B075E61e18da4bFB82b94888721a8e"
+  },
+  "deployBlock": 67015623,
+  "deployer": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
   "external": {
-    "usdc": "0x3600000000000000000000000000000000000000",
+    "ccipChainSelector": "3034092155422581607",
+    "ccipRouter": "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
+    "cctpDomain": 26,
+    "cctpMessageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+    "cctpTokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     "erc8004IdentityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
     "erc8004ReputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
     "erc8004ValidationRegistry": "0x8004Cb1BF31DAf7788923b405b754f57acEB4272",
-    "ccipRouter": "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
-    "ccipChainSelector": "3034092155422581607",
-    "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
-    "cctpTokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
-    "cctpMessageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
-    "cctpDomain": 26,
+    "gatewayMinter": "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B",
     "gatewayWallet": "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
-    "gatewayMinter": "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B"
-  }
+    "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
+    "usdc": "0x3600000000000000000000000000000000000000"
+  },
+  "issuer": "0xd9CDb1bbc2Fb252906ef009013d7783445a67E9E",
+  "maxTaskEscrow": 1000000000,
+  "network": "testnet",
+  "seededTasks": 5,
+  "status": "deployed",
+  "timestamp": 1791908215,
+  "treasury": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+  "verifier": "0xdfbAF44dd5531371582AFEF222494f01ab227494"
 }

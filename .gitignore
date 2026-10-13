@@ -71,3 +71,4 @@ contracts/node_modules/
 # The object detector's runtime, copied from @mediapipe/tasks-vision on install.
 /public/vision/wasm/
 /.next-*/
+contracts/broadcast/
