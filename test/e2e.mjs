@@ -18,7 +18,7 @@
  * writes — so the suite follows a redeploy without being edited. RPC in the
  * environment still overrides the endpoint.
  */
-import { appChain, RPC_ENDPOINTS, LOCALNET } from "../scripts/arc.mjs";
+import { appChain, RPC_ENDPOINTS } from "../scripts/arc.mjs";
 
 const BASE = process.env.BASE ?? "http://localhost:9010";
 const RPC = process.env.RPC ?? RPC_ENDPOINTS[0];
@@ -117,6 +117,30 @@ try {
   check("/api/gateway/mint refuses a body with no burn intent (400)", mint.status === 400);
 } catch (e) {
   check("/api/arc", false, String(e));
+}
+
+// One front door: on a host that is neither thenar.io nor app.* (this machine, a preview), "/" is the
+// product and the company's home is /labs.
+try {
+  const root = await (await fetch(`${BASE}/`, { signal: AbortSignal.timeout(30_000) })).text();
+  check("the root is the product, not the company page", root.includes('data-testid="arc-finality"'));
+  const labs = await fetch(`${BASE}/labs`, { signal: AbortSignal.timeout(30_000) });
+  const labsHtml = await labs.text();
+  check("the company's home is at /labs", labs.status === 200 && labsHtml.includes("We build") && !labsHtml.includes('data-testid="arc-finality"'));
+} catch (e) {
+  check("the root is the product", false, String(e));
+}
+
+// A link to a run by its paying transaction lands on the run, or 404s honestly.
+try {
+  const bad = await fetch(`${BASE}/api/trajectory/by-tx/nothing`);
+  check("/api/trajectory/by-tx refuses what is not a transaction hash (400)", bad.status === 400);
+  const none = await fetch(`${BASE}/api/trajectory/by-tx/0x${"ab".repeat(32)}`);
+  check("/api/trajectory/by-tx answers 404 for a transaction that paid no run", none.status === 404);
+  const page = await fetch(`${BASE}/run/0x${"ab".repeat(32)}`, { redirect: "manual" });
+  check("/run/<unknown hash> is a 404, not a soft page", page.status === 404);
+} catch (e) {
+  check("/api/trajectory/by-tx", false, String(e));
 }
 
 // Every RPC a page reaches is in the CSP; on a fork, the fork's own.
