@@ -35,6 +35,8 @@ import { fmtGasCost, fmtUsdc, fmtScore, fmtSeconds, shortHash } from "@/lib/form
 import type { Sample, Verdict } from "@/lib/types";
 import { ArcHeartbeat } from "@/components/arc-finality";
 import { ReceiptTimers } from "@/components/receipt-timers";
+import { Details } from "@/components/details";
+import { RacePanel, useBestRun } from "@/components/station/race-panel";
 
 const StationViewport = dynamic(
   () => import("@/components/station/viewport").then((m) => m.StationViewport),
@@ -96,6 +98,9 @@ export default function StationPage() {
   const [tel, setTel] = useState<Telemetry | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // Race the task's best paid run: a translucent arm in step with this one (SO-101 tasks). Off until switched on.
+  const [raceOn, setRaceOn] = useState(false);
+  const best = useBestRun(task?.id ?? -1, raceOn && task?.arm === "so101");
   /** Bumped on every run so the viewport resets its payload and arm. */
   // The objects the instruction names, so the viewport renders the task rather
   // than an anonymous puck.
@@ -515,7 +520,7 @@ export default function StationPage() {
         <div className="hidden items-center gap-5 border-l border-rule px-4 md:flex">
           <Stat label="Elapsed" value={fmtSeconds(elapsed)} />
           <Stat label="Par" value={fmtSeconds(task.parSeconds)} tone="dim" />
-          <Stat label="Your runs" value={`${myRuns ?? 0} / 5`} tone={capped ? "warn" : "dim"} />
+          <Stat label="Your paid runs" value={`${myRuns ?? 0} of 5 max`} tone={capped ? "warn" : "dim"} />
         </div>
       </header>
 
@@ -537,6 +542,17 @@ export default function StationPage() {
             <p className="mb-3 text-xs text-scribe-3">Drive with</p>
             <DriveWith taskId={task.id} so101={task.arm === "so101"} />
           </div>
+
+          {task.arm === "so101" ? (
+            <RacePanel
+              on={raceOn}
+              onToggle={() => setRaceOn((v) => !v)}
+              best={best}
+              elapsed={elapsed}
+              running={phase === "running"}
+              measuredSeconds={phase === "measured" && verdict ? verdict.raw.seconds : null}
+            />
+          ) : null}
 
           <details className="group mt-auto rounded-xl border border-white/10 p-4">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm text-scribe-2 hover:text-white">
@@ -592,6 +608,8 @@ export default function StationPage() {
             environmentUrl={room.url}
             lighting={lightingFor(room.id)}
             ghosts={ghosts}
+            race={raceOn ? best?.race ?? null : null}
+            raceElapsed={elapsed}
           />
           )}
 
@@ -1013,6 +1031,8 @@ function MeasurementSnap({
                   <Link href="/portfolio" className="underline">your portfolio</Link>.
                 </span>
               ) : null}
+              {/* Gas is fine print: one tap away. */}
+              <Details label="Gas, paid in USDC">
               <span>
                 gas <span className="text-scribe-2 tabular-nums">{fmtGasCost(tx.gasUsdc ?? 0, CURRENCY)}</span>, paid in USDC
                 {tx.gasUsed !== undefined ? (
@@ -1021,6 +1041,7 @@ function MeasurementSnap({
                   </>
                 ) : null}
               </span>
+              </Details>
               {tx.memo ? (
                 tx.memo.tagged ? (
                   <span data-testid="run-memo">

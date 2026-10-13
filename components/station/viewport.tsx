@@ -12,6 +12,7 @@ import { poseAt } from "@/lib/teach";
 import { REACH_MAX, solve, solveAt, toolPositionAt } from "@/lib/kinematics";
 import { SO101_REACH } from "@/lib/so101";
 import { So101Arm } from "@/components/station/so101-arm";
+import { RaceGhost, type Race } from "@/components/station/race-ghost";
 import type { ArmKind } from "@/lib/scan";
 import type { Sample } from "@/lib/types";
 import { ARM_B_BASE, GOAL_R, TOLERANCE_M, SEAT_OFFSET, seatFor, startPoses as benchStart } from "@/lib/bench";
@@ -139,6 +140,11 @@ type ViewportProps = {
   /** Other operators working this same task, right now. Presence only: none of
    *  this is scored, and a run measures identically with the room empty. */
   ghosts?: { id: string; tool: [number, number, number]; held: boolean }[];
+  /** The task's best paid run, drawn as a translucent arm in step with this run.
+   *  Drawn only: it is not scored or recorded. SO-101 tasks only. */
+  race?: Race | null;
+  /** The station run clock: ghost seeking stays in sync on pause and resume. */
+  raceElapsed?: number;
 };
 
 useGLTF.preload("/models/thenar-6.glb");
@@ -1200,7 +1206,7 @@ export function StationViewport(props: ViewportProps) {
   // Everything except presence goes to Rig: it must not re-render six times a
   // second just because somebody else moved.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { ghosts: _presence, ...rigProps } = props;
+  const { ghosts: _presence, race: _race, raceElapsed: _raceElapsed, ...rigProps } = props;
 
   // A lost context leaves a black rectangle and no error anyone can see. Catch
   // it, tell the operator, and let the browser hand the context back.
@@ -1276,6 +1282,8 @@ export function StationViewport(props: ViewportProps) {
       {/* Ghosts tick six times a second; Rig must not re-render with them,
           or the whole scene reconciles on every presence update. */}
       <Rig key={props.runId} {...rigProps} />
+      {/* Keyed on the run too: each run starts the ghost from the beginning. */}
+      {props.arm === "so101" && props.race ? <RaceGhost key={`race-${props.runId}`} race={props.race} elapsed={props.raceElapsed ?? 0} /> : null}
       <Ghosts ghosts={props.ghosts ?? []} />
       <XRControls />
     </Canvas>
