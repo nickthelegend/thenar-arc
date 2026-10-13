@@ -21,7 +21,7 @@ confirmations to wait for); and an agent can pay for data in the request that fe
 
 | Piece | What it does in Thenar | Contract / file | How it was verified |
 |---|---|---|---|
-| **USDC gas + sub-second finality** | One token for everything. `submitTrajectory` records a run and pays the operator in the same call; the station reports the measured time to a final receipt. | `ThenarProtocol`, `lib/chain.ts`, `lib/submit.ts`, `components/arc-finality.tsx` | Core-loop e2e on the Arc fork (`pnpm e2e:core`, tx hashes in [docs/e2e-core.log](docs/e2e-core.log)); 17 Arc-fork forge tests on Circle's real USDC |
+| **USDC gas + sub-second finality** | One token for everything. `submitTrajectory` records a run and pays the operator in the same call; the station reports the measured time to a final receipt. | `ThenarProtocol`, `lib/chain.ts`, `lib/submit.ts`, `components/arc-finality.tsx` | Core-loop e2e on the public Arc testnet (`pnpm e2e:testnet`, explorer links in [docs/E2E-TESTNET.md](docs/E2E-TESTNET.md)) and on the Arc fork (`pnpm e2e:core`, [docs/e2e-core.log](docs/e2e-core.log)); 17 Arc-fork forge tests on Circle's real USDC |
 | **x402 in USDC** | Agents buy one task's corpus per request: `402` → EIP-3009 `transferWithAuthorization` (domain `"USDC"/"2"`) → file. Settled by an in-process facilitator (Arc has no public one); every sale goes to `SalesLog` with the sha256 served. | `app/api/agent/corpus/route.ts`, `lib/server/x402-facilitator.ts`, `SalesLog` | Core-loop e2e on the fork (real EIP-3009 settlement, SalesLog line, sha256 match) |
 | **ERC-8004** | The verifier is an agent in Arc's Identity Registry; `ThenarVerdicts` writes every paid verdict to the Reputation Registry (`runVerdict`, feedbackHash = run id), isolated from the payout. Buyer agents send `x-erc8004-agent-id`, are logged by agent id, and rate the verifier (`corpusQuality`). | `ThenarVerdicts`, `lib/server/erc8004.ts`, `/agents` | 13 unit tests; fork tests against Arc testnet's real registries (register, bind, feedback read back with `getSummary`) |
 | **Arc Memo** | A run is sent through the Memo predeploy with `memoId` = the run id, so the payout says what it paid for; `CallFrom` keeps the operator as `msg.sender`. Probed per session; sent plain where a node doesn't run CallFrom. | `lib/memo.ts`, `lib/submit.ts` | Fork test (`--network arc`): Memo event with memoId = trajHash, operator paid; browser run on the fork showed the tag |
@@ -73,7 +73,8 @@ cp .env.example .env.local                 # fill in for testnet; the fork write
 export ARC_ANVIL="/path/to/arcfoundry/anvil" ARC_FORGE="/path/to/arcfoundry/forge"   # quote paths that contain spaces
 pnpm fork -- --detach                      # forks Arc testnet on :9000, deploys, registers ERC-8004 agents
 pnpm fork:app                              # builds and serves the app on :9010 against the fork
-pnpm e2e:core                              # the zero-mock core loop, printing every tx hash
+pnpm e2e:core                              # the zero-mock core loop on the fork, printing every tx hash
+pnpm e2e:testnet                           # the same loop on the public Arc testnet (needs .env.local keys)
 ```
 
 Then open http://localhost:9010/localnet, sign in with the local wallet, take test USDC from the faucet, and drive

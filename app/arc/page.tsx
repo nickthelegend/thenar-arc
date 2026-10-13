@@ -64,14 +64,14 @@ export default function ArcStackPage() {
       does: "Bounties, payouts, licences and gas are one token. A run is paid in the transaction that records it, and Arc's deterministic finality makes that payout final when the block lands — the station shows the measured time.",
       where: [{ label: "USDC (ERC-20 view, 6 dec)", address: a(X.usdc) }, { label: "ThenarProtocol", address: a(C.protocol) }],
       live: <ArcFinalityLine />,
-      verified: "Fork e2e: the operator's USDC balanceOf rises by the payout net of gas in one tx; 17 Arc-fork forge tests on Circle's real USDC.",
+      verified: "Live on Arc testnet and on a fork: the operator's USDC balanceOf rises by the payout in one tx (docs/E2E-TESTNET.md); 17 Arc-fork forge tests on Circle's real USDC.",
     },
     {
       piece: "x402 in USDC",
       does: "An AI agent asks for a task's corpus, is answered 402, signs an EIP-3009 transferWithAuthorization (\"USDC\"/\"2\") and gets the file in the same request. Thenar settles it with an in-process facilitator; every sale goes to SalesLog with the sha256 served.",
       where: [{ label: "GET /api/agent/corpus", href: "/agents" }, { label: "SalesLog", address: a(C.salesLog) }],
       live: reading(data?.x402 ? `${formatUsdc(data.x402.price)} USDC per corpus on ${data.x402.network}` : "—"),
-      verified: "Fork e2e: an agent pays over x402 with a real EIP-3009 settlement and SalesLog records it.",
+      verified: "Live on Arc testnet and on a fork: an agent pays over x402 with a real EIP-3009 settlement and SalesLog records it (docs/E2E-TESTNET.md).",
     },
     {
       piece: "ERC-8004",

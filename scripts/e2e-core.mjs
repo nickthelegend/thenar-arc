@@ -3,6 +3,9 @@
  * the Arc fork, Circle's real USDC, the app's real routes.
  *
  *   pnpm e2e:core [baseUrl]          (default http://localhost:9010; the fork app)
+ *   pnpm e2e:testnet [baseUrl]       the same loop on the public Arc testnet (NEXT_PUBLIC_ARC_NETWORK=testnet;
+ *                                    keys from .env.local; no faucet, so the operator starts empty and the
+ *                                    relayer pays its gas; output goes to docs/e2e-testnet.log)
  *
  *  1. A fresh operator key is funded from the app's fork faucet (POST /api/localnet/fund)
  *     and admitted to the CorpusShares whitelist by the corpus issuer (a script has no passkey).
@@ -29,22 +32,22 @@ import { toClientEvmSigner } from "@x402/evm";
 import { AXON_ABI } from "../lib/abi.ts";
 import { CORPUS_SHARES_ABI, SALES_LOG_ABI } from "../lib/registry-abi.ts";
 import { COHERENT_MM, heldDistanceMm, makeRun } from "./recorded-run.mjs";
-import { ADDR, ARC, LOCALNET, appChain, env, need, transport } from "./arc.mjs";
+import { ADDR, ARC, LOCALNET, NETWORK, appChain, env, need, transport } from "./arc.mjs";
 
 const BASE = (process.argv[2] ?? env("LOCAL_APP_URL") ?? "http://localhost:9010").replace(/\/$/, "");
 const lines = [];
 const log = (k, v = "") => { const l = `${k.padEnd(10)}${v}`; lines.push(l); console.log(l); };
 const save = () => {
   mkdirSync("docs", { recursive: true });
-  writeFileSync("docs/e2e-core.log", `# pnpm e2e:core, ${new Date().toISOString()}, ${BASE}\n${lines.join("\n")}\n`);
+  writeFileSync(LOCALNET ? "docs/e2e-core.log" : "docs/e2e-testnet.log", `# pnpm ${LOCALNET ? "e2e:core" : "e2e:testnet"}, ${new Date().toISOString()}, ${BASE}\n${lines.join("\n")}\n`);
 };
 function check(ok, what) {
   log(ok ? "  ok" : "  FAIL", what);
   if (!ok) { save(); process.exit(1); }
 }
 
-if (!LOCALNET) {
-  console.error("  e2e:core runs against the local Arc fork (NEXT_PUBLIC_ARC_NETWORK=fork). It spends real USDC elsewhere.");
+if (NETWORK === "mainnet") {
+  console.error("  e2e:core runs on the Arc fork (NEXT_PUBLIC_ARC_NETWORK=fork) or Arc testnet. It will not run on mainnet.");
   process.exit(1);
 }
 const PROTOCOL = need(ADDR.protocol, "ThenarProtocol's address (.env.fork)");
@@ -53,7 +56,7 @@ const SALES = need(ADDR.salesLog, "SalesLog's address");
 const USDC = ARC.usdc;
 const ERC20 = parseAbi(["function balanceOf(address) view returns (uint256)"]);
 
-const pub = createPublicClient({ chain: appChain, transport: transport(), pollingInterval: 250 });
+const pub = createPublicClient({ chain: appChain, transport: transport(), pollingInterval: LOCALNET ? 250 : 1000 });
 const walletOf = (key) => createWalletClient({ account: privateKeyToAccount(key), chain: appChain, transport: transport() });
 const issuer = walletOf(need(env("CORPUS_ISSUER_PRIVATE_KEY"), "CORPUS_ISSUER_PRIVATE_KEY"));
 const relayer = walletOf(need(env("RELAYER_PRIVATE_KEY"), "RELAYER_PRIVATE_KEY"));
@@ -70,7 +73,7 @@ const mined = async (hash, what) => {
 
 log("e2e:core", `${appChain.name} (${appChain.id}) via ${BASE}; protocol ${PROTOCOL}`);
 const health = await fetch(`${BASE}/api/health`).then((r) => r.json()).catch(() => null);
-check(Boolean(health?.checks?.rpc?.ok), `the app answers and reaches the fork (${health?.checks?.rpc?.detail ?? "no answer"})`);
+check(Boolean(health?.checks?.rpc?.ok), `the app answers and reaches the chain (${health?.checks?.rpc?.detail ?? "no answer"})`);
 
 // --- the task: the first that takes a run and can pay one
 const count = Number(await pub.readContract({ address: PROTOCOL, abi: AXON_ABI, functionName: "taskCount" }));
@@ -87,9 +90,13 @@ const taskBefore = await pub.readContract({ address: PROTOCOL, abi: AXON_ABI, fu
 // --- 1. operator: faucet + admission
 const op = privateKeyToAccount(generatePrivateKey());
 log("operator", op.address);
-const fund = await fetch(`${BASE}/api/localnet/fund`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: op.address }) }).then((r) => r.json());
-check(fund.funded === true && /^0x[0-9a-f]{64}$/i.test(fund.usdc), `the fork faucet sent ${formatUnits(BigInt(fund.amount ?? 0), 6)} USDC`);
-log("tx", `faucet transfer: ${fund.usdc}`);
+if (LOCALNET) {
+  const fund = await fetch(`${BASE}/api/localnet/fund`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: op.address }) }).then((r) => r.json());
+  check(fund.funded === true && /^0x[0-9a-f]{64}$/i.test(fund.usdc), `the fork faucet sent ${formatUnits(BigInt(fund.amount ?? 0), 6)} USDC`);
+  log("tx", `faucet transfer: ${fund.usdc}`);
+} else {
+  log("operator", "starts with 0 USDC: the relayer pays the gas, the escrow pays the operator");
+}
 await mined(await issuer.writeContract({ address: SHARES, abi: CORPUS_SHARES_ABI, functionName: "addToControlList", args: [op.address] }), "issuer admits the operator to CorpusShares");
 
 // --- 2. verify

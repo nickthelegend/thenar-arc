@@ -1,0 +1,33 @@
+# pnpm e2e:testnet, 2026-10-13T16:46:18.099Z, http://localhost:9010
+e2e:core  Arc Testnet (5042002) via http://localhost:9010; protocol 0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619
+  ok      the app answers and reaches the chain (block 67019083)
+  ok      found a task that takes a run (#0)
+operator  0x6A5A43886bBA2C4150bbfD8f470c8f731024E118
+operator  starts with 0 USDC: the relayer pays the gas, the escrow pays the operator
+tx        issuer admits the operator to CorpusShares: 0xb5bb9309d2aadcf80314248e50ca0857a594e9d018562dff0ad69ab542543e22 (block 67019087, success)
+  ok      issuer admits the operator to CorpusShares succeeded
+  ok      the recorded run is coherent (arm and payload describe one event)
+  ok      the verifier scored and signed it (200: score 92.14)
+tx        submitTrajectoryFor (records the run and pays the operator): 0xa5214ce03c81b1fd91a799ae90beeb0de756e641691b9ae3999e5cc5fe0c95ed (block 67019091, success)
+  ok      submitTrajectoryFor (records the run and pays the operator) succeeded
+  ok      TrajectoryAccepted names the operator
+payout    0.04607 USDC; operator 0 -> 0.04607 USDC
+  ok      the operator's USDC balanceOf rose by exactly the payout, in the same transaction
+  ok      the payout came out of task #0's escrow (0.25625 -> 0.21018 USDC)
+  ok      the app recorded the settled run (200)
+tx        CorpusShares issue: 0x83533e0aeef1aa612a8dbdd01505f17af04eb34b49780fe62fe3799b0af6d19e (92 shares)
+  ok      the corpus treasury is 0x0648aDF1967692A0c991d7715b0b588452321FBd
+  ok      the unpaid request is a 402 offering 0.01 USDC on eip155:5042002
+  ok      the paid request returned the corpus (200)
+  ok      the x402 payment settled on chain
+tx        x402 settlement (USDC transferWithAuthorization): 0xd706dc4eee242dc78fb77fa11d80676ccb7aa5bbbf4ac45d25d0893fad67f19b (block 67019101, success)
+  ok      x402 settlement (USDC transferWithAuthorization) succeeded
+  ok      the corpus contains the run just paid for
+  ok      exactly 0.01 USDC left the agent (0.19 -> 0.18)
+  ok      and reached the corpus treasury
+  ok      SalesLog.saleCount 1 -> 2
+  ok      SalesLog #2 records the sha256 of the bytes received (0xc416747b538e3239…)
+  ok      keyed by the settlement, for this task, on x402 terms
+buyer     not an ERC-8004 agent
+tx        SalesLog.logSale: 0xb57f6c65468665b6543df1f19e31900d3ecbccab2078cb70e0cc2a5a5100f7e3 (0x8095Ea4D12620B4EC116F951C954702832fA6845#2)
+PASS      operator paid in USDC in one transaction; agent bought the corpus over x402; SalesLog agrees
