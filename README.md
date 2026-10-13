@@ -70,6 +70,7 @@ pnpm install && (cd contracts && npm ci)
 cp .env.example .env.local                 # fill in for testnet; the fork writes its own .env.fork
 
 # Everything on a local fork of Arc testnet (real USDC, Memo, ERC-8004, CCTP, CCIP contracts):
+export ARC_ANVIL="/path/to/arcfoundry/anvil" ARC_FORGE="/path/to/arcfoundry/forge"   # quote paths that contain spaces
 pnpm fork -- --detach                      # forks Arc testnet on :9000, deploys, registers ERC-8004 agents
 pnpm fork:app                              # builds and serves the app on :9010 against the fork
 pnpm e2e:core                              # the zero-mock core loop, printing every tx hash
@@ -83,7 +84,7 @@ Tests:
 ```bash
 pnpm contracts:test          # forge: 156 pass, 0 fail, 2 fork suites (17 tests) skipped without Arc Foundry
 pnpm contracts:test:fork     # forge --network arc against Arc testnet (ARC_FORK_TESTS=1)
-pnpm test:unit               # app unit tests: 141 pass, 0 fail, 1 skipped (passkey precompile, needs the fork)
+pnpm test:unit               # app unit tests: 144 pass, 0 fail, 1 skipped (passkey precompile, needs the fork)
 pnpm typecheck && pnpm lint && pnpm build
 ```
 
@@ -104,6 +105,9 @@ THENAR_CONFIRM_MAINNET=1 pnpm deploy:mainnet   # see MAINNET.md
   behavior and the explicit local-fork wallet/faucet flow remain unchanged.
 - **User-run cross-chain steps:** CCTP attestations, CCIP sends from Base/Ethereum and Gateway mints need funds on
   other chains; they are covered by fork and Chainlink Local tests and by scripts the user runs.
+- **Optional extras are off by default.** The station's “Race the best run” ghost arm (a translucent replay of the
+  task's best paid run, drawn only, never scored) is a switch the operator turns on; Circle Gateway funding needs
+  `NEXT_PUBLIC_FEATURE_GATEWAY=1`. Neither is on the core loop's path.
 - **Kinematic, not rigid-body physics.** The station solves inverse kinematics and grasps analytically. No trained policy exists.
 
 ## Licence and attribution

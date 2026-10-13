@@ -1,34 +1,34 @@
-# pnpm e2e:core, 2026-10-08T04:11:42.568Z, http://localhost:9020
-e2e:core  Arc Testnet (local fork) (5042002) via http://localhost:9020; protocol 0x80d0ff7CC08d4D756Ad21D2a0566bee191864641
-  ok      the app answers and reaches the fork (block 66048571)
+# pnpm e2e:core, 2026-10-13T15:18:20.637Z, http://localhost:9010
+e2e:core  Arc Testnet (local fork) (5042002) via http://localhost:9010; protocol 0xBEE947C7efb01172b53644F22e98ADf93E47BcC3
+  ok      the app answers and reaches the fork (block 67008577)
   ok      found a task that takes a run (#0)
-operator  0x7E7B1709e1D6A41eA12DdA3d4106f5AA46590DF9
+operator  0x8fF7812D0cF47D103C8a6ECcA5E62130d9093eCC
   ok      the fork faucet sent 20 USDC
-tx        faucet transfer: 0xb1949d686857e7887c74230be30ba171e7e8d1cf19c66ae2c4725a14bd745715
-tx        issuer admits the operator to CorpusShares: 0xa6391eaa7665c2c19e3b958675e45a92d1e01b622c349440795bd92ddcb76a52 (block 66048574, success)
+tx        faucet transfer: 0xeccf04254b259814b3960e83bcee5be103b7fe0bc3869598d4d2c6680c177f16
+tx        issuer admits the operator to CorpusShares: 0x43678aa878c40cbd91382fab7d25df41137c6a590aa7559c63c4ecf32a742aab (block 67008580, success)
   ok      issuer admits the operator to CorpusShares succeeded
   ok      the recorded run is coherent (arm and payload describe one event)
-  ok      the verifier scored and signed it (200: score 91.65)
-tx        submitTrajectoryFor (records the run and pays the operator): 0xcb07767c33dbe68595a4ffa83de7fbce683faa97486b8ae1662372002963731d (block 66048576, success)
+  ok      the verifier scored and signed it (200: score 90.28)
+tx        submitTrajectoryFor (records the run and pays the operator): 0x05073b5d4f51ccc8ca95134c767ddcc249015d51a6c254108979c518d50f93b1 (block 67008583, success)
   ok      submitTrajectoryFor (records the run and pays the operator) succeeded
   ok      TrajectoryAccepted names the operator
-payout    0.01833 USDC; operator 20 -> 20.01833 USDC
+payout    0.04514 USDC; operator 20 -> 20.04514 USDC
   ok      the operator's USDC balanceOf rose by exactly the payout, in the same transaction
-  ok      the payout came out of task #0's escrow (0.082708 -> 0.064378 USDC)
+  ok      the payout came out of task #0's escrow (0.3 -> 0.25486 USDC)
   ok      the app recorded the settled run (200)
-tx        CorpusShares issue: 0x05965341f9b605cd4491be480978ca241ec94223eaab08214b77019b42974c8d (92 shares)
+tx        CorpusShares issue: 0x1f7aaf685cb6ed600fc9ae75ebede63e505deafc0eac542b2198e7a1738408b1 (90 shares)
   ok      the corpus treasury is 0x3dD5834fC8b628a869D67c40033845B98D44aa72
   ok      the unpaid request is a 402 offering 0.01 USDC on eip155:5042002
   ok      the paid request returned the corpus (200)
   ok      the x402 payment settled on chain
-tx        x402 settlement (USDC transferWithAuthorization): 0xc794dde3a7bcab35e5a0ccac391cd28777a71ebab38ae5c6dbaa55f5b28e0bfa (block 66048579, success)
+tx        x402 settlement (USDC transferWithAuthorization): 0xcedd4f67a3057da55f1728f52b47fe697579bc9371dd463ecd12400b55ede173 (block 67008585, success)
   ok      x402 settlement (USDC transferWithAuthorization) succeeded
   ok      the corpus contains the run just paid for
-  ok      exactly 0.01 USDC left the agent (9999.880014 -> 9999.870014)
+  ok      exactly 0.01 USDC left the agent (9999.996267 -> 9999.986267)
   ok      and reached the corpus treasury
-  ok      SalesLog.saleCount 3 -> 4
-  ok      SalesLog #4 records the sha256 of the bytes received (0x1afd17b54185d1ac…)
+  ok      SalesLog.saleCount 0 -> 1
+  ok      SalesLog #1 records the sha256 of the bytes received (0x85d188bc66255ce0…)
   ok      keyed by the settlement, for this task, on x402 terms
-buyer     ERC-8004 agent #897154
-tx        SalesLog.logSale: 0x32fb1b00c6858ff37f2ed4e133d9d1875174fc7f9692e60078a914c16ce656d1 (0x5B104573f73Bb9c6f215d886E2fcAf3C2610402E#4)
+buyer     ERC-8004 agent #897268
+tx        SalesLog.logSale: 0xbb5a4426a9ada0c6b1cdbbb56ddc8edc6a52befa09bee164ff08dc99d560e3ab (0x084251C04e533B16e57EDa98fA74B7179Efde752#1)
 PASS      operator paid in USDC in one transaction; agent bought the corpus over x402; SalesLog agrees

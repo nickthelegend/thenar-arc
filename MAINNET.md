@@ -36,7 +36,7 @@ NETWORK=mainnet SOURCE=base THENAR_CONFIRM_MAINNET=1 forge script script/AllowSe
 
 ## 3. Gas (measured on the Arc testnet fork)
 
-The deploy is 17 transactions and **13.1M gas**. At Arc's 20 gwei base fee that is **0.26 USDC** (the script caps the
+The deploy is 17 transactions and **13.2M gas**. At Arc's 20 gwei base fee that is **0.26 USDC** (the script caps the
 fee at 60 gwei, so at most 0.8 USDC). A paid run is about 600k gas (~0.012 USDC), an x402 settlement ~80k, a SalesLog
 line ~150k.
 

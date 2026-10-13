@@ -17,15 +17,23 @@ Open the app (a build with no environment variables set loads fine; sign-in then
 
 ## 1. The paid loop (60 seconds): local fork or deployed Arc
 
-On the fork: `pnpm fork -- --detach && pnpm fork:app` (needs Circle's Arc Foundry), open http://localhost:9010/localnet,
-connect the local wallet and take test USDC from the faucet. On a deployed Arc, sign in with Privy and fund from
-https://faucet.circle.com.
+On the fork (needs Circle's Arc Foundry; quote its path if it contains a space):
+
+```bash
+export ARC_ANVIL="/path/to/arcfoundry/anvil" ARC_FORGE="/path/to/arcfoundry/forge"
+pnpm fork -- --detach && pnpm fork:app     # fork on :9000, app on :9010
+```
+
+Open http://localhost:9010/localnet, connect the local wallet and take test USDC from the faucet. On a deployed Arc,
+sign in with Privy and fund from https://faucet.circle.com.
 
 1. `/station/0`, drive the arm to the goal, stop, **submit**. The verifier replays the run and signs a score
    (EIP-712). One Arc transaction then records the trajectory and pays `reward × score` in USDC from the task's escrow.
 2. The station shows the score, the USDC that arrived and the measured time to a final receipt. Arc finality is
    deterministic: the payout is final when its block lands.
-3. `/portfolio`: the operator's USDC, runs and certificates. `/task/0` shows the run, with its Arc Memo tag where the node
+3. Optional: switch on **Race the best run** in the station's left panel to replay the task's best paid run as a
+   translucent arm beside yours (off by default; drawn only, never scored).
+4. `/portfolio`: the operator's USDC, runs and certificates. `/task/0` shows the run, with its Arc Memo tag where the node
    runs Arc's CallFrom precompile.
 
 ## 2. An agent buys the corpus (30 seconds)
@@ -43,7 +51,8 @@ buyer's ERC-8004 agent id, read from the `SalesLog` contract rather than our dat
 - `pnpm e2e:core` does steps 1 and 2 with real signed transactions and asserts the balances: the operator's USDC rose by
   exactly the payout, from the escrow, in one transaction; one cent left the agent and reached the treasury. A
   recorded run with every tx hash is in [E2E-FORK.md](E2E-FORK.md).
-- `pnpm contracts:test` (156 pass) and `pnpm test:unit` (141 pass, 1 skipped).
+- `pnpm contracts:test` (156 pass, 2 fork suites skipped without Arc Foundry), `pnpm test:unit` (144 pass, 1 skipped) and
+  `pnpm test:e2e:fork` (93 checks against the running app).
 
 ## What is deliberately not in the two minutes
 
