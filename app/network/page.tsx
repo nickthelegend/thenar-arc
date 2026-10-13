@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bytesToHex, concatHex, type Hex } from "viem";
 import { ArcFinality } from "@/components/arc-finality";
+import { Details } from "@/components/details";
 import { DimRule } from "@/components/primitives";
 import { HEARTBEAT_NAME, HEARTBEAT_RPC, rpcBatch } from "@/lib/arc-blocks";
 import { ACTIVE_DEPLOYMENT, ARC_EXTERNAL, CHAIN_SHORT, LOCALNET, RPC_ENDPOINTS, USDC, addressUrl, appChain } from "@/lib/chain";
@@ -174,9 +175,7 @@ export default function NetworkPage() {
     <div className="mx-auto max-w-[960px] px-5 py-10">
       <h1 className="heading-glow text-4xl font-medium tracking-tight sm:text-5xl">Arc, read live</h1>
       <p className="mt-4 max-w-[64ch] text-base text-scribe-2 [text-wrap:pretty]">
-        The parts of Arc Thenar is built on, read by this page as you watch: its finality, its P-256 precompile, the Memo
-        extension, USDC as gas, the Circle and Chainlink contracts and Thenar&rsquo;s own. Nothing here is a figure we typed in.
-        {LOCALNET ? ` This build's own transactions run on a local fork; finality, P-256 and Memo are read from the real ${NETWORK}.` : ""}
+        {NETWORK}, read by this page as you watch.{LOCALNET ? ` This build's own transactions run on a local fork; finality, P-256 and Memo are read from the real ${NETWORK}.` : ""}
       </p>
 
       <ArcFinality className="mt-8" />
@@ -193,11 +192,13 @@ export default function NetworkPage() {
               </div>
             ))}
           </dl>
-          <p className="mt-3">
+          <Details className="mt-3">
+            <p>
             Arc&rsquo;s consensus is deterministic: a block is final when it is produced, so all three tags name the head (a
             tag read a moment after the head can even be one ahead). On Ethereum <span className="font-mono">finalized</span> trails
             by two epochs, about 13 minutes. Thenar shows a run as paid when its receipt arrives, because on Arc that is final.
           </p>
+          </Details>
           <Stamp s={tags} source={RPC_HOST} />
         </Card>
 
@@ -208,12 +209,14 @@ export default function NetworkPage() {
             <div><dt className="text-xs text-scribe-3">Same dollars</dt><dd className={cn("font-mono tabular-nums", g ? (g.native / 10n ** 12n === g.erc20 ? "text-go" : "text-reject") : "text-scribe-3")}>{g ? (g.native / 10n ** 12n === g.erc20 ? "yes" : "no") : "…"}</dd></div>
             <div><dt className="text-xs text-scribe-3">Gas price</dt><dd className="font-mono tabular-nums text-scribe">{g ? `${(Number(g.price) / 1e9).toFixed(2)} gwei of USDC` : "…"}</dd></div>
           </dl>
-          <p className="mt-3">
+          <Details className="mt-3">
+            <p>
             Read for the {g?.who ? <a href={addressUrl(g.who)} className="font-mono text-signal hover:text-signal-hi">{short(g.who)}</a> : "protocol"}{" "}
             on {CHAIN_SHORT}. Arc&rsquo;s native balance is USDC and the ERC-20 at <span className="font-mono">0x3600…0000</span> is a
             view of it, so an operator&rsquo;s earnings pay their gas. Arc charges the gas a transaction uses; every Thenar write sends
             the node&rsquo;s estimate plus a fifth as its limit (lib/arc-gas.ts).
           </p>
+          </Details>
           <Stamp s={gas} source={APP_HOST} />
         </Card>
       </div>
@@ -221,10 +224,12 @@ export default function NetworkPage() {
       <DimRule className="mt-10" note="Precompiles and extensions" />
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card title="P-256 (precompile 0x0100)" testid="network-p256">
-          <p>
+          <Details className="mt-3">
+            <p>
             A key made in this page just now, a signature from it, and Arc&rsquo;s precompile asked to check it. Passkeys sign
             with this curve, which is how PasskeyRegistry checks an operator&rsquo;s passkey on chain.
           </p>
+          </Details>
           <ul className="mt-3 flex flex-col gap-1 font-mono text-xs">
             <li>key <span className="text-scribe">{p256.key ?? "…"}</span></li>
             <li data-key="valid">signature: <span className={p256.ok ? "text-go" : p256.ok === false ? "text-reject" : "text-scribe-3"}>{p256.ok === null ? "checking…" : p256.ok ? "valid (the precompile returned 1)" : "refused"}</span></li>
@@ -237,12 +242,14 @@ export default function NetworkPage() {
         </Card>
 
         <Card title="Memo (CallFrom)" testid="network-memo">
-          <p>
+          <Details className="mt-3">
+            <p>
             Arc&rsquo;s Memo extension calls a contract as the transaction&rsquo;s own sender and logs a tag with it. Thenar submits
             every run through it, tagged with the run id, so a payout says what it paid for. The probe wraps a USDC transfer
             that must fail as a dead address; only a node running CallFrom returns that failure wrapped in Memo&rsquo;s
             <span className="font-mono"> CallFailed</span>.
           </p>
+          </Details>
           <p className="mt-3 font-mono text-xs">
             CallFrom: <span className={memo.data ? (memo.data.live ? "text-go" : "text-reject") : "text-scribe-3"}>{memo.data ? (memo.data.live ? "live" : "not live") : "…"}</span>
             {memo.data ? <span className="text-scribe-3"> · {memo.data.answer}</span> : null}

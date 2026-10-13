@@ -3,6 +3,7 @@
 import type { Timers } from "@/lib/receipt-timers";
 import { useArcHeartbeat } from "@/lib/arc-blocks";
 import { cn } from "@/lib/cn";
+import { Chip, Details } from "@/components/details";
 
 /**
  * The one timer for a transaction this page sent: send to final.
@@ -40,23 +41,26 @@ export function ReceiptTimers({ timers, className }: { timers?: Timers; classNam
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)} data-testid="receipt-timers" data-where={timers.where}>
-      <dl className="flex flex-wrap items-baseline gap-x-3">
-        <dt className="w-[108px] shrink-0 text-scribe-3">Final</dt>
-        <dd className="w-[64px] shrink-0 tabular-nums text-scribe" data-key="final">
-          {timers.timedOut ? "not seen" : ms(timers.finalMs)}
-        </dd>
-        <dd className="w-full min-w-0 text-scribe-3 [overflow-wrap:anywhere] sm:w-auto sm:flex-1">{note}</dd>
-      </dl>
-      <p className="leading-relaxed text-scribe-3">
-        {fork ? (
-          <>
-            Timed on the local Arc fork, not on Arc: the fork&rsquo;s node mines on demand.
-            {beat.intervalMs !== null ? <> Arc testnet right now makes a block every {ms(beat.intervalMs)}, and a block is final when it is made.</> : null}
-          </>
-        ) : (
-          <>Measured in this browser on {"Arc"}, from the moment the wallet sent the transaction to its receipt. Arc is final on inclusion, so that is the whole wait.</>
-        )}
-      </p>
+      {/* One line: the time, and whose chain it is. The method and caveats sit under Details. */}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className="text-scribe-3">
+          Final <span className="text-sm tabular-nums text-go" data-key="final">{timers.timedOut ? "not seen" : ms(timers.finalMs)}</span>
+        </span>
+        {fork ? <Chip>local fork</Chip> : <Chip tone="go">Arc</Chip>}
+      </div>
+      <Details>
+        <p className="[overflow-wrap:anywhere]">{note}</p>
+        <p>
+          {fork ? (
+            <>
+              Timed on the local Arc fork, not on Arc: the fork&rsquo;s node mines on demand.
+              {beat.intervalMs !== null ? <> Arc testnet right now makes a block every {ms(beat.intervalMs)}, and a block is final when it is made.</> : null}
+            </>
+          ) : (
+            <>Measured in this browser on Arc, from the moment the wallet sent the transaction to its receipt. Arc is final on inclusion, so that is the whole wait.</>
+          )}
+        </p>
+      </Details>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { HEARTBEAT_NAME, useArcHeartbeat, type Head, type Heartbeat } from "@/lib/arc-blocks";
 import { LOCALNET, appChain } from "@/lib/chain";
 import { cn } from "@/lib/cn";
+import { Details } from "@/components/details";
 
 /**
  * Arc's finality, live: each new block as it lands, already final, with the
@@ -101,13 +102,15 @@ export function ArcFinality({ className }: { className?: string }) {
         <Stat label="Gas paid in" value="USDC" k="gas" />
       </dl>
 
-      <p className="mt-4 text-xs leading-relaxed text-scribe-3">
-        Read live from {NETWORK}&rsquo;s public RPC. The interval is measured from the chain&rsquo;s own timestamps over the
-        last {b.window || "few dozen"} blocks; each read also asks for the <span className="font-mono">finalized</span> block and
-        compares it with the head. Arc&rsquo;s finality is deterministic: a block is final when it is made, so a run is paid
-        and settled in the block that records it, with nothing to wait for after.
-        {LOCALNET ? " This build's own transactions are on a local fork; this strip is the real network." : ""}
-      </p>
+      <Details className="mt-4">
+        <p>
+          Read live from {NETWORK}&rsquo;s public RPC. The interval is measured from the chain&rsquo;s own timestamps over the
+          last {b.window || "few dozen"} blocks; each read also asks for the <span className="font-mono">finalized</span> block and
+          compares it with the head. Arc&rsquo;s finality is deterministic: a block is final when it is made, so a run is paid
+          and settled in the block that records it, with nothing to wait for after.
+          {LOCALNET ? " This build's own transactions are on a local fork; this strip is the real network." : ""}
+        </p>
+      </Details>
     </section>
   );
 }

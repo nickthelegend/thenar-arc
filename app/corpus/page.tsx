@@ -151,10 +151,7 @@ export default function CorpusPage() {
     <div className="mx-auto max-w-[900px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none">The corpus</h1>
       <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-scribe-3">
-        Every recording this deployment holds, across every task — the ones that
-        were paid for, the ones that scored too low, and the ones whose operator
-        never signed. Each links to the run it came from, where the hash can be
-        re-derived and checked against the chain.
+        Every recorded run, paid or not. Each card opens its replay and its on-chain proof.
       </p>
 
       {typeof taskId === "number" ? <TaskCorpusSummary taskId={taskId} /> : null}
