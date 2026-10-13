@@ -41,11 +41,11 @@ export const metadata: Metadata = {
   // silently emits no og:image at all — the card looked configured and
   // unfurled to nothing.
   metadataBase: new URL("https://thenar.io"),
-  title: "ThenarLabs — we build physical AI",
+  title: { default: "Thenar — robot data, paid per run in USDC on Arc", template: "%s · Thenar" },
   description:
     "ThenarLabs builds robots, the teleoperation that drives them, and Thenar: the data foundry where people are paid in USDC on Arc for every run they record.",
   openGraph: {
-    title: "ThenarLabs — we build physical AI",
+    title: "Thenar — robot data, paid per run in USDC on Arc",
     description:
       "Drive a robot arm, get measured against the datum, and get paid in USDC on Arc in the transaction that records the run.",
     type: "website",
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ThenarLabs — we build physical AI",
+    title: "Thenar — robot data, paid per run in USDC on Arc",
     description:
       "Drive a robot arm, get measured against the datum, and get paid in USDC on Arc in the transaction that records the run.",
     images: ["/og.png"],
