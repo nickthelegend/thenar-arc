@@ -30,10 +30,12 @@ export default function FoundryPage() {
     <div className="mx-auto max-w-[1100px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Foundry</h1>
       <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-scribe-2">
-        When a task fills its slots, the policy trained on it is minted with the
+        When a task fills its slots, a policy for it can be minted with the
         contributor list attached — every operator who produced a trajectory,
         weighted by the quality it measured. Buying a licence pays that list
         directly, in one transaction. Nobody claims later; the split is the payment.
+        Minting trains nothing: no model has been trained on this data yet, and the
+        licence buys the corpus behind the policy.
       </p>
 
       {mintable.length > 0 ? (

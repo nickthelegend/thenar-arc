@@ -8,7 +8,7 @@ Raw output: [e2e-testnet.log](e2e-testnet.log). Run on 2026-10-13 (16:46Z).
 
 Setup: a gitignored `.env.local` holds `NEXT_PUBLIC_ARC_NETWORK=testnet`, the verifier key (signer), the corpus issuer/auditor
 key, and three fresh throwaway wallets (relayer, x402 facilitator, buying agent) funded from the deployer with 0.2 to 0.4
-USDC each. Privy needs an app id we do not have, so sign-in shows "unavailable" (the app's documented fallback); the loop
+USDC each. Privy needs an app id this repo does not ship, so sign-in shows "unavailable" (the app's documented fallback); the loop
 below drives the real routes (`/api/verify`, `/api/submitted`, `/api/agent/corpus`) from a script instead of a browser wallet,
 as the fork proof does. The operator is a fresh key with 0 USDC: the relayer pays its gas.
 
@@ -55,7 +55,19 @@ Production build, headless Chromium, 1440x900; screenshots in [screens/testnet](
 | `/arc` | 200; deployed addresses, x402 terms on `eip155:5042002` |
 | `/run/<tx>` | 307 to `/run/<trajectory hash>` (by design), 200; "Integrity verified", score 87.50, certificate mintable |
 
+## See the recorded runs in the app (no wallet)
+
+`pnpm seed:proof` ([scripts/seed-proof.mjs](../scripts/seed-proof.mjs)) stores the two runs above in a checkout's own run store
+from [proof/testnet-runs.json](proof/testnet-runs.json), re-reading each paying transaction from Arc testnet first (it must be
+successful and carry `TrajectoryAccepted` for that run). Then `/run/<hash>` shows the replay and "Integrity verified" (the run
+hash recomputed from the stored samples). Run hashes: `0x842bcb0fe0cf501035104614264a793836dc4d376c44f207642169bec538e99b`
+(score 92.14, paid by [0xa5214c…95ed](https://explorer.testnet.arc.io/tx/0xa5214ce03c81b1fd91a799ae90beeb0de756e641691b9ae3999e5cc5fe0c95ed))
+and `0x4a1efdd8f4c06c0bbd565657a2c776b65fc1f2d95b5d1768faa3ffa0776f4462` (score 87.50, paid by
+[0x047247…e96e](https://explorer.testnet.arc.io/tx/0x0472476c046151a6d51f2183df793c4cc3e7316efab1139f93bb3253d022e96e)).
+Verified from a fresh database against the public testnet on 2026-10-13; a payout costs 509,221 gas at 25 gwei (0.0127 USDC).
+
 ## Not covered
 
-- Browser sign-in and a passkey/embedded-wallet submission: needs a Privy app id. The scripted path above uses the same routes and contracts.
+- Browser sign-in and a passkey/embedded-wallet submission: needs a Privy app id (`.env.local` here has none; sign-in shows "unavailable"). The scripted path above uses the same routes and contracts.
+- Arc Memo tags, ERC-8004 verdicts, CCTP, CCIP, Gateway and gasless posting: not part of this loop (fork or not run; see `/arc`).
 - The ERC-8004 agent registrations (verifier, buyer): `bindVerifier` is permanent and takes an agentURI, so it should be done once with the production origin, not localhost. Until then the buyer is logged as "not an ERC-8004 agent".

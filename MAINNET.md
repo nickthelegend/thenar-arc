@@ -34,11 +34,12 @@ SOURCE=base THENAR_CONFIRM_MAINNET=1 forge script script/DeploySender.s.sol --rp
 NETWORK=mainnet SOURCE=base THENAR_CONFIRM_MAINNET=1 forge script script/AllowSender.s.sol --rpc-url https://rpc.mainnet.arc.io --broadcast
 ```
 
-## 3. Gas (measured on the Arc testnet fork)
+## 3. Gas (measured on the Arc testnet fork; the live testnet run agrees)
 
 The deploy is 17 transactions and **13.2M gas**. At Arc's 20 gwei base fee that is **0.26 USDC** (the script caps the
 fee at 60 gwei, so at most 0.8 USDC). A paid run is about 600k gas (~0.012 USDC), an x402 settlement ~80k, a SalesLog
-line ~150k.
+line ~150k. On the public testnet the paid run in docs/E2E-TESTNET.md used 509,221 gas at 25 gwei (0.0127 USDC) and the x402
+settlement 91,621 gas (0.0023 USDC).
 
 | | USDC |
 |---|---|

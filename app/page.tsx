@@ -59,15 +59,15 @@ const FAQ = [
   },
   {
     q: "How are operators paid?",
-    a: "In USDC on Arc, by the same transaction that records the run, from escrow the task's funder put up front. Gas is USDC too, about a cent or two a run, and the station shows the measured cost before you send. Withdraw to Base, Ethereum or Arbitrum whenever you like with Circle's CCTP.",
+    a: "In USDC on Arc, by the same transaction that records the run, from escrow the task's funder put up front. Gas is USDC too, about a cent or two a run, and the station shows the measured cost before you send. Withdrawal to Base, Ethereum or Arbitrum uses Circle's CCTP; the burn on Arc has been run on a fork, the attestation and mint on the other chain have not.",
   },
   {
     q: "What stops fake runs?",
-    a: "A paid run needs a person behind the address: a passkey checked on chain through Arc's P-256 precompile. The verifier, an ERC-8004 agent with a public reputation, also rejects a recording whose arm never really carried the object.",
+    a: "The verifier signs only for an address a person has admitted with a passkey, registered on chain and checked through Arc's P-256 precompile. It also rejects a recording whose arm never really carried the object.",
   },
   {
     q: "Who buys the data?",
-    a: "Robotics labs and AI agents. An agent asks for a task's corpus over HTTP, pays a cent of USDC through x402 on Arc, and checks the file against the sale logged there. A buyer on Base can license a whole corpus over Chainlink CCIP, and sponsors fund tasks from any chain through Circle Gateway.",
+    a: "Robotics labs and AI agents. An agent asks for a task's corpus over HTTP, pays a cent of USDC through x402 on Arc, and checks the file against the sale logged there. A licence bought from Base over Chainlink CCIP is built and tested in Chainlink Local and on a fork, and Circle Gateway funding is switched off; neither has been run between live chains.",
   },
   {
     q: "Is the hardware open source?",
@@ -224,8 +224,8 @@ export default async function LabsHome() {
         ) : null}
         <Reveal className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-[#0B0B0D] px-8 py-6">
           <p className="max-w-[640px] text-sm text-scribe-2">
-            Settled on Arc, Circle&rsquo;s stablecoin chain: USDC for pay and gas, x402 for agents, ERC-8004 for the
-            verifier, CCTP to withdraw anywhere, Gateway and CCIP to fund and buy from other chains.
+            Settled on Arc, Circle&rsquo;s stablecoin chain: USDC for pay and gas and x402 for agents have run on the
+            public testnet. ERC-8004, CCTP, CCIP and passkeys have run on a fork; Gateway has not been run.
           </p>
           <Link href={appHref("/arc")} className="text-sm text-white transition-colors hover:text-lilac">The Arc stack →</Link>
         </Reveal>

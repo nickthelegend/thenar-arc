@@ -5,6 +5,7 @@ import { ArcFinality } from "@/components/arc-finality";
 import { Reveal } from "@/components/labs/reveal";
 import { SiteNav } from "@/components/site-nav";
 import { CHAIN_SHORT, LOCALNET, appChain } from "@/lib/chain";
+import { ARC_STATUS, STATUS_HELP, STATUS_LABEL } from "@/lib/arc-status";
 import { fmtUsdc } from "@/lib/format";
 import { openTasks } from "@/lib/server/open-tasks";
 import { labsHref } from "@/lib/site";
@@ -42,19 +43,19 @@ const WAYS = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Set up your passkey", body: "Once. Face ID, a fingerprint or a PIN; Arc checks it on chain through its P-256 precompile, so paid runs come from a person." },
+  { n: "01", title: "Set up your passkey", body: "Once. Face ID, a fingerprint or a PIN; the passkey is registered on chain and checked through Arc's P-256 precompile, so paid runs come from an address a person has admitted." },
   { n: "02", title: "Do the task", body: "Pick the payload up and place it in the goal ring. The station measures the run as you finish." },
-  { n: "03", title: "Get paid", body: "The verifier, an ERC-8004 agent on Arc, signs the score, and one Arc transaction records the run and pays you in USDC, final in under a second. Take it to any chain with CCTP." },
+  { n: "03", title: "Get paid", body: "The verifier signs the score, and one Arc transaction records the run and pays you in USDC, final in under a second. CCTP can then carry it to Base, Ethereum or Arbitrum (run on a fork so far)." },
 ];
 
 /** What Thenar uses Arc for, one line each; /arc has the contracts and how each was verified. */
 const ARC_STACK = [
-  { tag: "USDC", title: "Paid per run, in USDC", body: "Escrow, payouts, licences and dividends are Circle's USDC. Gas is USDC too, so an operator holds one token." },
-  { tag: "Finality", title: "Final in under a second", body: "Arc's finality is deterministic: the block that records a run is final when it is made. No confirmations to wait for." },
-  { tag: "x402", title: "Agents pay per request", body: "An AI agent buys a task's corpus over HTTP with an EIP-3009 USDC authorisation, settled on Arc." },
-  { tag: "ERC-8004", title: "The verifier is an agent", body: "The scorer is registered in Arc's Identity Registry, and every paid verdict is written to its Reputation Registry." },
-  { tag: "CCTP V2", title: "Withdraw to any chain", body: "Operators burn their Arc earnings with CCTP and mint native USDC on Base, Ethereum or Arbitrum." },
-  { tag: "Gateway · CCIP", title: "Funded and bought from anywhere", body: "Sponsors fund tasks from any chain through Circle Gateway; buyers on Base license a corpus over Chainlink CCIP." },
+  { tag: "USDC", status: ARC_STATUS.usdc, title: "Paid per run, in USDC", body: "Escrow, payouts, licences and dividends are Circle's USDC. Gas is USDC too, so an operator holds one token." },
+  { tag: "Finality", status: ARC_STATUS.finality, title: "Final in under a second", body: "Arc's finality is deterministic: the block that records a run is final when it is made. No confirmations to wait for." },
+  { tag: "x402", status: ARC_STATUS.x402, title: "Agents pay per request", body: "An AI agent buys a task's corpus over HTTP with an EIP-3009 USDC authorisation, settled on Arc." },
+  { tag: "ERC-8004", status: ARC_STATUS.erc8004, title: "The verifier can be an agent", body: "Built to register the scorer in Arc's Identity Registry and write each paid verdict to its Reputation Registry. The verifier is not registered on testnet yet." },
+  { tag: "CCTP V2", status: ARC_STATUS.cctp, title: "Withdraw to another chain", body: "Operators can burn Arc earnings with CCTP and mint native USDC on Base, Ethereum or Arbitrum. The burn runs on a fork; the attestation and mint are user-run." },
+  { tag: "Gateway · CCIP", status: "none", title: "Fund and buy from other chains", body: "Gateway funding is off by default and unrun; a CCIP licence purchase from Base runs in Chainlink Local and on a fork. Neither has been sent between live chains." },
 ] as const;
 
 export default async function ThenarHome() {
@@ -181,7 +182,10 @@ export default async function ThenarHome() {
         <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
           {ARC_STACK.map((a, i) => (
             <Reveal key={a.title} delay={(i % 3) * 80} className="flex flex-col bg-[#0B0B0D] p-6">
-              <span className="font-mono text-xs text-scribe-3">{a.tag}</span>
+              <span className="flex items-center justify-between gap-3 font-mono text-xs text-scribe-3">
+                {a.tag}
+                <span title={STATUS_HELP[a.status]} className={a.status === "live" ? "text-signal" : ""}>{STATUS_LABEL[a.status]}</span>
+              </span>
               <h3 className="mt-3 text-lg font-medium">{a.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-scribe-2">{a.body}</p>
             </Reveal>
@@ -195,7 +199,7 @@ export default async function ThenarHome() {
             <h2 className="text-2xl font-medium tracking-tight">Building an AI agent?</h2>
             <p className="mt-2 max-w-[560px] text-sm text-scribe-2">
               Agents buy a task&rsquo;s data over HTTP for a cent of USDC through x402, settled on {CHAIN_SHORT}, and check the file
-              against the sale logged there, under their ERC-8004 identity.
+              against the sale logged there.
             </p>
           </div>
           <div className="flex gap-3">

@@ -43,7 +43,7 @@ const GROUPS: { label: string; items: { href: string; label: string; hint: strin
   {
     label: "Protocol",
     items: [
-      { href: "/foundry", label: "Model foundry", hint: "Models trained on the data, and who gets paid" },
+      { href: "/foundry", label: "Policy foundry", hint: "Policies minted from filled tasks, and who gets paid" },
       { href: "/spec/so101", label: "The arms", hint: "The SO-101 and the THENAR-6, drivable" },
       { href: "/arc", label: "The Arc stack", hint: "USDC gas, x402, ERC-8004, CCTP, Gateway, CCIP, Memo — live" },
       { href: "/network", label: "Arc, live", hint: "Blocks and finality, read as you watch" },

@@ -181,7 +181,12 @@ export function CctpWithdraw({ address }: { address: Address }) {
           deployed on Arc testnet, but Circle&rsquo;s Iris only attests burns on the real chain, so this one will never be
           attested or minted anywhere.
         </p>
-      ) : null}
+      ) : (
+        <p className="mt-3 max-w-[64ch] border border-rule px-3 py-2 text-[13px] leading-relaxed text-scribe-3">
+          Status: the burn on Arc has been run on a fork. Circle&rsquo;s attestation and the mint on the other chain have not
+          been run end to end by this project, so treat a first withdrawal as a test and start small.
+        </p>
+      )}
 
       <div className="mt-5 grid gap-px border border-rule bg-rule sm:grid-cols-[1.1fr_1fr]">
         <div className="flex flex-col gap-4 bg-ink-1 p-5">

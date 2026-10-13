@@ -208,8 +208,8 @@ export default async function ContractsPage() {
       <DimRule className="mt-10" note="Circle and Chainlink on Arc" />
       <p className="mt-3 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">
         The contracts Thenar calls but did not deploy: Circle&rsquo;s USDC (the escrow and the gas), Arc&rsquo;s
-        Memo, the ERC-8004 registries the verifier and buying agents are registered in, CCTP V2 and Gateway for
-        moving USDC between chains, and Chainlink&rsquo;s CCIP router. <Link href="/arc" className="text-signal hover:text-signal-hi">What each one does here &rarr;</Link>
+        Memo, the ERC-8004 registries, CCTP V2 and Gateway for moving USDC between chains, and Chainlink&rsquo;s CCIP
+        router. Only USDC and x402 have been exercised on the public testnet; the rest ran on a fork. <Link href="/arc" className="text-signal hover:text-signal-hi">What each one does here &rarr;</Link>
       </p>
       <ul className="mt-3">
         {EXTERNAL_CONTRACTS.map((r) => (

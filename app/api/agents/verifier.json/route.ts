@@ -14,7 +14,7 @@ export async function GET() {
       name: "Thenar verifier",
       description:
         "Scores robot-arm teleoperation recordings and signs the EIP-712 verdict ThenarProtocol pays against, in USDC on Arc. " +
-        "Every paid verdict is written to the ERC-8004 Reputation Registry (tag runVerdict) by ThenarVerdicts; " +
+        "Once this agent is registered and bound, every paid verdict is written to the ERC-8004 Reputation Registry (tag runVerdict) by ThenarVerdicts; " +
         "buying agents rate the corpus they bought (tag corpusQuality).",
       agentId: v?.agentId ?? process.env.VERIFIER_AGENT_ID,
       services: [

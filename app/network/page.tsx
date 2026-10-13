@@ -91,14 +91,14 @@ const p256Valid = (result: unknown) => typeof result === "string" && /^0x0{63}1$
 
 const EXTERNAL: { name: string; address: string; use: string }[] = [
   { name: "USDC (Circle)", address: ARC_EXTERNAL.usdc, use: "Escrow, payouts, licences, dividends, x402 payments, and gas: one token for everything (6-decimal ERC-20 view of the native balance)." },
-  { name: "Memo extension", address: ARC_EXTERNAL.memo, use: "Every payout is submitted through it, tagged with the run id, when CallFrom is live (lib/submit.ts)." },
-  { name: "ERC-8004 Identity Registry", address: ARC_EXTERNAL.identityRegistry, use: "The verifier is a registered agent; buying agents are recognised by their id." },
-  { name: "ERC-8004 Reputation Registry", address: ARC_EXTERNAL.reputationRegistry, use: "Every paid verdict is written here by ThenarVerdicts." },
-  { name: "CCTP TokenMessengerV2", address: ARC_EXTERNAL.tokenMessengerV2, use: "Operators burn earnings here to mint USDC on another chain (/portfolio)." },
-  { name: "CCTP MessageTransmitterV2", address: ARC_EXTERNAL.messageTransmitterV2, use: "Receives the CCTP half of a cross-chain licence purchase." },
-  { name: "Gateway Wallet", address: ARC_EXTERNAL.gatewayWallet, use: "A sponsor's unified USDC balance, deposited on any chain." },
-  { name: "Gateway Minter", address: ARC_EXTERNAL.gatewayMinter, use: "Mints that balance on Arc to fund a task." },
-  { name: "Chainlink CCIP Router", address: ARC_EXTERNAL.ccipRouter, use: "Carries a licence order from Base or Ethereum to ThenarCcipReceiver." },
+  { name: "Memo extension", address: ARC_EXTERNAL.memo, use: "A browser submission is sent through it, tagged with the run id, when CallFrom answers (lib/submit.ts). Run on a fork; not part of the testnet proof." },
+  { name: "ERC-8004 Identity Registry", address: ARC_EXTERNAL.identityRegistry, use: "Where the verifier or a buyer is registered, it is recognised by its id. The verifier is not registered on testnet yet." },
+  { name: "ERC-8004 Reputation Registry", address: ARC_EXTERNAL.reputationRegistry, use: "ThenarVerdicts writes each paid verdict here once the verifier is registered (run on a fork)." },
+  { name: "CCTP TokenMessengerV2", address: ARC_EXTERNAL.tokenMessengerV2, use: "Operators can burn earnings here to mint USDC on another chain (/portfolio). Burn run on a fork; mint not run." },
+  { name: "CCTP MessageTransmitterV2", address: ARC_EXTERNAL.messageTransmitterV2, use: "Receives the CCTP half of a cross-chain licence purchase (not run live)." },
+  { name: "Gateway Wallet", address: ARC_EXTERNAL.gatewayWallet, use: "A sponsor's unified USDC balance, deposited on any chain (Gateway funding is off by default and not run)." },
+  { name: "Gateway Minter", address: ARC_EXTERNAL.gatewayMinter, use: "Would mint that balance on Arc to fund a task (not run)." },
+  { name: "Chainlink CCIP Router", address: ARC_EXTERNAL.ccipRouter, use: "Carries a licence order from Base or Ethereum to ThenarCcipReceiver (run in Chainlink Local and on a fork; no live send)." },
 ].filter((c) => /^0x[0-9a-fA-F]{40}$/.test(c.address));
 
 const THENAR = Object.entries(ACTIVE_DEPLOYMENT.contracts).filter(([, a]) => typeof a === "string" && /^0x[0-9a-fA-F]{40}$/.test(a)) as [string, string][];
