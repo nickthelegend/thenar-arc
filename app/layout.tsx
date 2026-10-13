@@ -5,6 +5,7 @@ import { Pulse } from "@/components/pulse";
 import { DM_Mono, Poppins } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteNav } from "@/components/site-nav";
+import { AppFooter } from "@/components/app-footer";
 import { Conditions } from "@/components/conditions";
 import { LOCALNET, appChain } from "@/lib/chain";
 import "./globals.css";
@@ -107,6 +108,7 @@ export default function RootLayout({
             <Pulse />
             <InstallShell />
             <main id="main">{children}</main>
+            <AppFooter />
           </LocaleReady>
         </Providers>
       </body>

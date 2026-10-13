@@ -38,21 +38,17 @@ const GROUPS: { label: string; items: { href: string; label: string; hint: strin
       { href: "/corpus", label: "Buy the data", hint: "Every recorded run, ready for training" },
       { href: "/agents", label: "For AI agents", hint: "Agents pay per task, in USDC on Arc" },
       { href: "/corpus-token", label: "Owner shares", hint: "People who record the data own it" },
-      { href: "/inventory", label: "Object library", hint: "Every object and room a task can use" },
-      { href: "/space", label: "Live floor", hint: "Who is working on what, right now" },
     ],
   },
   {
     label: "Protocol",
     items: [
-      { href: "/lab", label: "Labs", hint: "A research lab's budget, spent only on tasks" },
       { href: "/foundry", label: "Model foundry", hint: "Models trained on the data, and who gets paid" },
       { href: "/spec/so101", label: "The arms", hint: "The SO-101 and the THENAR-6, drivable" },
       { href: "/arc", label: "The Arc stack", hint: "USDC gas, x402, ERC-8004, CCTP, Gateway, CCIP, Memo — live" },
       { href: "/network", label: "Arc, live", hint: "Blocks and finality, read as you watch" },
       { href: "/contracts", label: "Contracts", hint: "Every contract on Arc, read live" },
       { href: "/status", label: "Status", hint: "Is everything working" },
-      { href: "/changelog", label: "Changelog", hint: "What changed, from the git history" },
     ],
   },
 ];
@@ -82,7 +78,7 @@ export function SiteNav({ force = false }: { force?: boolean } = {}) {
   // their own nav, and the station is a full-screen instrument.
   // The app's home renders this nav itself (force): on app.thenar.io its path
   // is "/", the same as the company's home, which carries its own.
-  if (!force && (pathname === "/" || pathname === "/thenar" || pathname?.startsWith("/products"))) return null;
+  if (!force && (pathname === "/" || pathname === "/thenar" || pathname === "/labs" || pathname?.startsWith("/products"))) return null;
   if (pathname?.startsWith("/station/")) return null;
 
   const item = (i: (typeof GROUPS)[number]["items"][number]) => {

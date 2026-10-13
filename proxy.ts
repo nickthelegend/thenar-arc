@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { singleOriginHost } from "@/lib/site";
 
 /**
  * Two sites from one build.
@@ -8,15 +9,24 @@ import { NextResponse, type NextRequest } from "next/server";
  * the company host the app's pages move to the app host once
  * NEXT_PUBLIC_APP_ORIGIN names it, so an old link to thenar.io/hub still lands
  * on the task list.
+ *
+ * On a host that serves both from one origin (this machine: `pnpm demo`), the
+ * app is the front door too: "/" is the app's home and the company's home is
+ * /labs (app/labs/page.tsx). A judge's first page is the product, not the company.
  */
 const APP_ORIGIN = (process.env.NEXT_PUBLIC_APP_ORIGIN ?? "").replace(/\/$/, "");
 
 /** The company site's own pages. Everything else is the app's. */
-const LABS = /^\/(products(\/.*)?)?$/;
+const LABS = /^\/((products|labs)(\/.*)?)?$/;
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").toLowerCase();
   const { pathname, search } = req.nextUrl;
+
+  if (singleOriginHost(host)) {
+    if (pathname === "/") return NextResponse.rewrite(new URL(`/thenar${search}`, req.url));
+    return NextResponse.next();
+  }
 
   if (host.startsWith("app.")) {
     if (pathname === "/") return NextResponse.rewrite(new URL(`/thenar${search}`, req.url));

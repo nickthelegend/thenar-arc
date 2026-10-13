@@ -6,6 +6,7 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { ThenarWordmark } from "@/components/brand";
 import { APP_HOME, GITHUB } from "@/lib/site";
+import { useLabsHome } from "@/components/labs/labs-home";
 
 const LINKS = [
   { href: "/", label: "Home" },
@@ -21,23 +22,26 @@ const LINKS = [
 export function LabsNav() {
   const pathname = usePath();
   const [open, setOpen] = useState(false);
+  // "/" on thenar.io; /labs where one origin serves the app and the company.
+  const home = useLabsHome();
+  const hrefOf = (h: string) => (h === "/" ? home : h);
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4">
       <nav
         aria-label="ThenarLabs"
         className="glass mx-auto flex h-14 backdrop-blur-xl backdrop-saturate-150 max-w-[1100px] items-center justify-between gap-4 rounded-2xl px-4 sm:px-5"
       >
-        <Link href="/" className="flex items-center gap-3" aria-label="ThenarLabs home">
+        <Link href={home} className="flex items-center gap-3" aria-label="ThenarLabs home">
           <ThenarWordmark labs />
           <span className="hidden rounded-full border border-white/10 px-2 py-0.5 text-xs text-scribe-3 md:inline">Physical AI lab</span>
         </Link>
         <ul className="hidden items-center gap-1 sm:flex">
           {LINKS.map((l) => {
-            const active = !l.external && pathname === l.href;
+            const active = !l.external && pathname === hrefOf(l.href);
             return (
               <li key={l.label}>
                 <Link
-                  href={l.href}
+                  href={hrefOf(l.href)}
                   target={l.external ? "_blank" : undefined}
                   rel={l.external ? "noreferrer" : undefined}
                   aria-current={active ? "page" : undefined}
@@ -76,7 +80,7 @@ export function LabsNav() {
           <ul className="flex flex-col gap-2 px-8 pt-28">
             {LINKS.map((l, i) => (
               <li key={l.label} className="animate-[labs-rise_700ms_cubic-bezier(0.32,0.72,0,1)_both]" style={{ animationDelay: `${100 + i * 50}ms` }}>
-                <Link href={l.href} className="block py-2 text-3xl text-white" onClick={() => setOpen(false)}>
+                <Link href={hrefOf(l.href)} className="block py-2 text-3xl text-white" onClick={() => setOpen(false)}>
                   {l.label}
                 </Link>
               </li>

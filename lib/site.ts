@@ -18,3 +18,12 @@ export const LABS_ORIGIN = (process.env.NEXT_PUBLIC_LABS_ORIGIN ?? "").replace(/
 export const labsHref = (path: string) => (LABS_ORIGIN ? `${LABS_ORIGIN}${path}` : path);
 
 export const GITHUB = "https://github.com/nickthelegend";
+
+/**
+ * A host that serves the app and the company from one origin: this machine, a
+ * preview or any host that is neither thenar.io (the company) nor app.* (the
+ * app). There "/" is the app's front door and the company's home is /labs, so
+ * a judge who opens the build lands on the product (proxy.ts).
+ */
+export const singleOriginHost = (host: string) =>
+  !/^(www\.)?thenar\.io(:\d+)?$/i.test(host) && !host.toLowerCase().startsWith("app.");

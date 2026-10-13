@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ThenarWordmark } from "@/components/brand";
 import { APP_HOME, GITHUB, appHref } from "@/lib/site";
+import { LabsHomeLink } from "@/components/labs/labs-home";
 
 const COLUMNS = [
   {
@@ -47,6 +48,10 @@ export function LabsFooter() {
               <ul className="mt-4 flex flex-col gap-3">
                 {c.links.map((l) => (
                   <li key={l.label}>
+                    {/* The company's home follows the host: "/" on thenar.io, /labs on one origin. */}
+                    {l.href === "/" ? (
+                      <LabsHomeLink className="text-sm text-scribe-3 transition-colors hover:text-white">{l.label}</LabsHomeLink>
+                    ) : (
                     <Link
                       href={l.href}
                       target={"external" in l && l.external ? "_blank" : undefined}
@@ -55,6 +60,7 @@ export function LabsFooter() {
                     >
                       {l.label}
                     </Link>
+                    )}
                   </li>
                 ))}
               </ul>
