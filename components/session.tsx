@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { createContext, useContext, useCallback, useMemo } from "react";
 import { useAccount, useBalance, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { usePrivy } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { LOCALNET, appChain } from "@/lib/chain";
-import { PRIVY_CONFIGURED } from "@/lib/auth-config";
 import { formatNative } from "@/lib/usdc";
 
 /**
@@ -82,7 +81,7 @@ function useLocalSession(): ReturnType<typeof usePrivySession> {
     const connector = connectors.find((c) => c.id === "thenarLocal") ?? connectors[0];
     try {
       const { accounts } = await connectAsync({ connector });
-      await fetch("/api/localnet/fund", {
+      if (LOCALNET) await fetch("/api/localnet/fund", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ address: accounts[0] }),
       });
@@ -127,4 +126,26 @@ function useUnavailableSession(): ReturnType<typeof usePrivySession> {
 }
 
 /** Chosen once at build time, so every render calls the same hooks. */
-export const useSession = LOCALNET ? useLocalSession : PRIVY_CONFIGURED ? usePrivySession : useUnavailableSession;
+const SessionContext = createContext<ReturnType<typeof usePrivySession> | null>(null);
+export type SessionMode = "privy" | "local" | "dev" | "readonly";
+function PrivySession({ children }: { children: React.ReactNode }) {
+  const session = usePrivySession();
+  return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
+}
+function BrowserSession({ children }: { children: React.ReactNode }) {
+  const session = useLocalSession();
+  return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
+}
+function ReadonlySession({ children }: { children: React.ReactNode }) {
+  const session = useUnavailableSession();
+  return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
+}
+export function SessionProvider({ mode, children }: { mode: SessionMode; children: React.ReactNode }) {
+  const Provider = mode === "privy" ? PrivySession : mode === "readonly" ? ReadonlySession : BrowserSession;
+  return <Provider>{children}</Provider>;
+}
+export function useSession() {
+  const session = useContext(SessionContext);
+  if (!session) throw new Error("SessionProvider is required");
+  return session;
+}

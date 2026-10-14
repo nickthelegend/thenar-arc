@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import type { Metadata, Viewport } from "next";
 import { InstallShell } from "@/components/install";
 import { LocaleReady } from "@/components/locale-ready";
@@ -73,9 +74,10 @@ export const viewport: Viewport = {
   themeColor: "#000000",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const devWallet = (await cookies()).get("thenar-dev-wallet")?.value === "1";
   return (
     <html
       lang="en"
@@ -89,7 +91,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <Providers>
+        <Providers devWallet={devWallet}>
           <LocaleReady>
             <SiteNav />
             {/* The copy across the site names Arc, where Thenar runs. A fork

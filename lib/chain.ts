@@ -239,8 +239,8 @@ export const NON_CAPABILITIES = [
     body: "The station solves inverse kinematics and grasps analytically. There is no contact simulation, no friction, and no way for the payload to topple something else.",
   },
   {
-    title: "No trained policy exists",
-    body: "Nothing here autonomously attempts a task. A minted policy is a cap table over the trajectories that would train one, not a model that has been trained.",
+    title: "Practice policy only",
+    body: "A small behaviour-cloned policy can drive practice runs. A minted policy is a contributor cap table, not proof that a model was trained on these Arc runs.",
   },
   {
     title: "No domain randomisation",

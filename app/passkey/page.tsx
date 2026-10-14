@@ -62,9 +62,7 @@ export default function PasskeyPage() {
     <div className="mx-auto max-w-[760px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Your passkey</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
-        A paid run has to come from a person. On Thenar that person is a passkey: your device makes it,
-        unlocked with Face ID, a fingerprint or a PIN, and Arc checks its signature directly. There is no
-        seed phrase, and nothing about you leaves your device.
+        A passkey authenticates your device using Face ID, a fingerprint or a PIN. Arc checks its signature before operator admission. Your wallet address and public key are public; this is not proof of unique human identity or of who drove a run.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3 font-mono text-[13px]">

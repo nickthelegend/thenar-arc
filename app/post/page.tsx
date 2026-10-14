@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { parseEventLogs } from "viem";
 import { suggestInstructions } from "@/lib/instructions";
 import { useEffect, useState, useMemo } from "react";
 import { useReadContract } from "wagmi";
@@ -29,7 +30,7 @@ import { EMBODIMENTS } from "@/lib/embodiment";
 export default function PostTaskPage() {
   const s = useSession();
   const tx = useThenarWrite();
-  const router = useRouter();
+  const [createdTask, setCreatedTask] = useState<number | null>(null);
   const ensureAllowance = useEnsureUsdcAllowance();
   /** Set while the USDC approval that precedes createTask is out. */
   const [approving, setApproving] = useState<"signing" | "pending" | null>(null);
@@ -114,7 +115,7 @@ export default function PostTaskPage() {
    * Zero is the contract's own "never", which is what this form has always
    * created. It stays available and it is no longer the only option.
    */
-  const [days, setDays] = useState(0);
+  const [days, setDays] = useState(7);
   /** The deadline as a date, resolved on the client where the clock is. */
   const [closesOn, setClosesOn] = useState<string | null>(null);
   useEffect(() => {
@@ -174,7 +175,7 @@ export default function PostTaskPage() {
 
   return (
     <div className="mx-auto max-w-[720px] px-5 py-8">
-      <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Post a task</h1>
+      <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Create a task</h1>
       <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-scribe-2">
         A task is a funded bounty. The {CURRENCY} you escrow on {appChain.name} is what
         operators are paid from, one accepted run at a time, each payout final in the
@@ -345,7 +346,7 @@ export default function PostTaskPage() {
             the page said so. */}
         <Field
           label="Deadline"
-          hint="After this you can close the task and take back whatever was never paid out. Leave it empty and the escrow can never come back."
+          hint="After this you can close the task and take back whatever was never paid out. Without a deadline, you can reclaim only once all slots fill."
         >
           <div className="flex flex-wrap items-center gap-2">
             {DEADLINES.map((d) => (
@@ -372,7 +373,7 @@ export default function PostTaskPage() {
                 ? closesOn
                   ? `closes ${closesOn} — you can reclaim after that`
                   : `closes in ${days} days — you can reclaim after that`
-                : "no deadline — the escrow can never be returned"}
+                : "no deadline — reclaim only when all slots fill"}
             </span>
           </div>
         </Field>
@@ -486,18 +487,29 @@ export default function PostTaskPage() {
 
       {tx.phase === "confirmed" && tx.txHash ? (
         <p className="mt-3 max-w-[62ch] text-[13px] text-go">
-          Task posted ·{" "}
+          Task created on {appChain.name} ·{" "}
           <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="font-mono text-probe hover:underline">
             {shortHash(tx.txHash)}
           </a>
         </p>
       ) : null}
 
+      {createdTask !== null ? (
+        <div role="status" data-testid="task-created" data-task-id={createdTask} className="mt-5 border border-rule p-4">
+          <h2 className="text-xl">Task #{createdTask} is funded</h2>
+          <p className="mt-2">Share the station with an operator. The reward comes from your escrow.</p>
+          <div className="mt-3 flex flex-wrap gap-4">
+            <Link href={`/station/${createdTask}`} className="text-probe underline">Run task #{createdTask}</Link>
+            <Link href={`/task/${createdTask}`} className="text-probe underline">View task and payouts</Link>
+            <Link href={`/corpus?task=${createdTask}`} className="text-probe underline">Buy this task’s data</Link>
+          </div>
+        </div>
+      ) : null}
       <div className="mt-6 flex flex-col gap-2">
         <Button
           variant="primary"
           className="self-start"
-          disabled={busy || blocked}
+          disabled={busy || blocked || createdTask !== null}
           onClick={async () => {
             if (!s.connected) return s.connect();
             if (s.wrongNetwork) return s.switchToChain();
@@ -533,7 +545,10 @@ export default function PostTaskPage() {
                     "createTask",
                     [chainName, slotsN, rewardUnits, scenario, difficulty, escrowUnits],
                   );
-            if (r) router.push("/hub");
+            if (r) {
+              const event = parseEventLogs({ abi: AXON_ABI, logs: r.logs, eventName: "TaskCreated" })[0];
+              if (event) setCreatedTask(Number(event.args.taskId));
+            }
           }}
         >
           {approving ? `Approve ${formatUsdc(escrowUnits)} ${CURRENCY} in wallet…`
@@ -543,11 +558,11 @@ export default function PostTaskPage() {
             : !s.connected ? "Connect a wallet"
             : s.wrongNetwork ? `Switch to ${appChain.name}`
             : held !== undefined && !affordable ? "Escrow exceeds your USDC"
-            : "Approve, escrow and post"}
+            : createdTask !== null ? "Task created" : "Approve, escrow and post"}
         </Button>
         <span className="max-w-[62ch] font-mono text-[12px] leading-relaxed text-scribe-3">
           Two signatures: a USDC approval for exactly the escrow (skipped when one already covers it),
-          then the post. Gas is a fraction of a cent of USDC.
+          then the post. Keep extra test USDC in your wallet for gas; escrow does not cover transaction fees.
         </span>
       </div>
 
@@ -563,7 +578,7 @@ export default function PostTaskPage() {
 }
 
 const inputCls =
-  "w-full border border-rule bg-ink-2 px-3 py-2 font-mono text-[13px] text-scribe placeholder:text-scribe-3 focus:border-rule-strong focus:outline-none";
+  "w-full border border-rule bg-ink-2 px-3 py-2 font-mono text-base text-scribe placeholder:text-scribe-3 focus:border-rule-strong focus:outline-none";
 
 
 /**

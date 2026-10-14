@@ -122,11 +122,11 @@ export function CorpusPull({ taskId }: { taskId: number }) {
       </div>
       {bought ? (
         <div className="mt-3 space-y-1 font-mono text-[12px]" role="status">
-          <p className="text-go">Paid and saved {bought.name}, {bought.kb.toFixed(0)} KB.</p>
+          <p className="text-go">Payment settled · download started: {bought.name}, {bought.kb.toFixed(0)} KB.</p>
           {bought.tx ? (
             <p className="text-scribe-3">
               settlement{" "}
-              <a href={explorerTx(bought.tx)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
+              <a data-testid="purchase-explorer" href={explorerTx(bought.tx)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
                 {shortHash(bought.tx)}
               </a>
             </p>

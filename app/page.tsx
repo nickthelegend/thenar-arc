@@ -63,7 +63,7 @@ const FAQ = [
   },
   {
     q: "What stops fake runs?",
-    a: "The verifier signs only for an address a person has admitted with a passkey, registered on chain and checked through Arc's P-256 precompile. It also rejects a recording whose arm never really carried the object.",
+    a: "The verifier requires operator admission and checks recording geometry. Passkeys authenticate a device on Arc; the issuer can also admit addresses. These checks do not prove human authorship, and scripted test runs are labelled in the proof report.",
   },
   {
     q: "Who buys the data?",

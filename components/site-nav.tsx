@@ -26,7 +26,7 @@ const GROUPS: { label: string; items: { href: string; label: string; hint: strin
     items: [
       { href: "/start", label: "Start earning", hint: "Five steps to your first paid run" },
       { href: "/hub", label: "Find a task", hint: "Do a task with a robot arm and get paid" },
-      { href: "/post", label: "Post a task", hint: "Fund a task for others to record" },
+      { href: "/post", label: "Create a task", hint: "Fund a task for others to record" },
       { href: "/portfolio", label: "My earnings", hint: "Your runs and what they paid" },
       { href: "/leaderboard", label: "Top operators", hint: "Who has earned the most" },
       { href: "/passkey", label: "Your passkey", hint: "The one-time step before you can earn" },
@@ -45,7 +45,7 @@ const GROUPS: { label: string; items: { href: string; label: string; hint: strin
     items: [
       { href: "/foundry", label: "Policy foundry", hint: "Policies minted from filled tasks, and who gets paid" },
       { href: "/spec/so101", label: "The arms", hint: "The SO-101 and the THENAR-6, drivable" },
-      { href: "/arc", label: "The Arc stack", hint: "USDC gas, x402, ERC-8004, CCTP, Gateway, CCIP, Memo — live" },
+      { href: "/arc", label: "The Arc stack", hint: "Live testnet, fork-only and untested integrations" },
       { href: "/network", label: "Arc, live", hint: "Blocks and finality, read as you watch" },
       { href: "/contracts", label: "Contracts", hint: "Every contract on Arc, read live" },
       { href: "/status", label: "Status", hint: "Is everything working" },

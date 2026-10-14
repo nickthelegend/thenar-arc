@@ -1,6 +1,6 @@
-import { createConfig, http } from "wagmi";
+import { createConfig, http, type Transport } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { LOCAL_RPC, thenarLocalnet } from "./chain";
+import { RPC_ENDPOINTS, appChain } from "./chain";
 import { localWallet } from "./local-wallet";
 
 /**
@@ -9,8 +9,8 @@ import { localWallet } from "./local-wallet";
  * chain on this machine.
  */
 export const localWagmiConfig = createConfig({
-  chains: [thenarLocalnet],
+  chains: [appChain],
   connectors: [localWallet(), injected()],
-  transports: { [thenarLocalnet.id]: http(LOCAL_RPC, { batch: true }) },
+  transports: { [appChain.id]: http(RPC_ENDPOINTS[0], { batch: true }) } as Record<typeof appChain.id, Transport>,
   ssr: true,
 });

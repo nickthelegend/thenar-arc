@@ -83,9 +83,9 @@ export function PostPreflight({
           {days > 0 ? (
             <>
               <span className="text-scribe">
-                What is not drawn comes back to you after the deadline.
+                Reclaim unspent escrow after the deadline or when all slots fill.
               </span>{" "}
-              A task with a deadline can be closed by its funder once it passes,
+              A task with a deadline can be closed by its funder once it passes or all slots fill,
               and{" "}
               <code className="font-mono text-[12px] text-scribe">closeTask</code>{" "}
               returns whatever was never paid out &mdash; including the{" "}
@@ -100,12 +100,12 @@ export function PostPreflight({
               ) : (
                 "difference between the ceiling and what runs actually score"
               )}
-              . Only you, only after the deadline, and only once.
+              . Only you, after expiry or full completion, and only once.
             </>
           ) : (
             <>
               <span className="text-reject">
-                With no deadline, what is not drawn stays in the contract for good.
+                With no deadline, reclaiming requires every slot to fill.
               </span>{" "}
               Escrow enters through{" "}
               <code className="font-mono text-[12px] text-scribe">createTask</code>{" "}
@@ -113,8 +113,7 @@ export function PostPreflight({
               <code className="font-mono text-[12px] text-scribe">fundTask</code>,
               and the only other way out is{" "}
               <code className="font-mono text-[12px] text-scribe">closeTask</code>,
-              which a task without a deadline can never reach. So a task nobody
-              finishes keeps its remainder, and so does the{" "}
+              which a task without a deadline reaches only when all slots fill. Until then the contract retains the{" "}
               {left !== null ? (
                 <>
                   roughly{" "}

@@ -109,7 +109,7 @@ export function OperatorGate({ onAdmitted }: { onAdmitted?: () => void }) {
   if (status?.operator) {
     return (
       <div className="flex flex-col gap-1.5 border border-rule p-3">
-        <span className="text-[12px] text-signal">Passkey set · you can earn</span>
+        <span className="text-[12px] text-signal">{status.passkey ? "Passkey registered · you can earn" : "Issuer admitted · you can earn"}</span>
         <span className="text-[13px] leading-relaxed text-scribe-3">
           Your runs are signed and paid, and each paid run issues your share of the corpus.
         </span>
@@ -129,8 +129,7 @@ export function OperatorGate({ onAdmitted }: { onAdmitted?: () => void }) {
       <span className="text-[12px] text-scribe">One step before you earn</span>
       <span className="text-[13px] leading-relaxed text-scribe-2">
         Use Face ID, your fingerprint or a PIN to create a passkey. Its public key is registered on {CHAIN_SHORT}{" "}
-        and checked there, so paid runs always come from a person. No seed phrase, and nothing about you
-        leaves your device.
+        and checked there. A passkey proves device authentication; it does not prove a unique human or human-recorded data. Your public key and wallet address are public.
       </span>
       {!passkeysAvailable() ? (
         <span className="text-[13px] text-reject">This browser cannot make passkeys. Try Chrome, Safari or Edge.</span>

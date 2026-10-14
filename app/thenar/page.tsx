@@ -43,7 +43,7 @@ const WAYS = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Set up your passkey", body: "Once. Face ID, a fingerprint or a PIN; the passkey is registered on chain and checked through Arc's P-256 precompile, so paid runs come from an address a person has admitted." },
+  { n: "01", title: "Set up your passkey", body: "Once. Face ID, a fingerprint or a PIN; the passkey is registered on chain and checked through Arc's P-256 precompile, to authenticate your device before operator admission." },
   { n: "02", title: "Do the task", body: "Pick the payload up and place it in the goal ring. The station measures the run as you finish." },
   { n: "03", title: "Get paid", body: "The verifier signs the score, and one Arc transaction records the run and pays you in USDC, final in under a second. CCTP can then carry it to Base, Ethereum or Arbitrum (run on a fork so far)." },
 ];

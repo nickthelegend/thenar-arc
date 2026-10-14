@@ -148,6 +148,7 @@ export default function HubPage() {
     <div className="mx-auto max-w-[1400px] px-5 py-8">
       <div className="flex flex-col gap-4">
         <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Open work</h1>
+        <Link href="/post" className="self-start border border-signal bg-signal px-4 py-2 text-sm text-ink-0">Create a task · sponsor operators</Link>
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">
           <Reading label="Tasks" value={isLoading ? "—" : fmtInt(totalTasks)} />
           <Reading label="Unfilled slots" value={isLoading ? "—" : fmtInt(openSlots)} />

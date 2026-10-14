@@ -1,5 +1,7 @@
 "use client";
 
+import { SessionProvider } from "@/components/session";
+import { TestnetWalletBanner } from "@/components/testnet-wallet";
 import { Suspense, useEffect, useState } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,7 +16,7 @@ import { wagmiConfig } from "@/lib/wagmi";
 import { PRIVY_APP_ID, PRIVY_CONFIGURED } from "@/lib/auth-config";
 import { readonlyWagmiConfig } from "@/lib/wagmi-readonly";
 import { localWagmiConfig } from "@/lib/wagmi-local";
-import { LOCALNET, appChain, txUrl } from "@/lib/chain";
+import { ARC_NETWORK, LOCALNET, appChain, txUrl } from "@/lib/chain";
 
 /**
  * Which ground the sign-in modal should be drawn on.
@@ -103,7 +105,7 @@ function LocalProviders({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {/* wagmi's Register names the Privy config's type; the chains differ, the hooks do not. */}
       <PlainWagmiProvider config={localWagmiConfig as unknown as typeof wagmiConfig}>
-        <AppTree>{children}</AppTree>
+        <SessionProvider mode={LOCALNET ? "local" : "dev"}><AppTree><TestnetWalletBanner dev={!LOCALNET} />{children}</AppTree></SessionProvider>
       </PlainWagmiProvider>
     </QueryClientProvider>
   );
@@ -137,7 +139,7 @@ function PrivyProviders({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <WagmiProvider config={wagmiConfig}>
           <PreferEmbeddedWallet />
-          <AppTree>{children}</AppTree>
+          <SessionProvider mode="privy"><AppTree><TestnetWalletBanner dev={false} />{children}</AppTree></SessionProvider>
         </WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
@@ -164,11 +166,15 @@ function ReadonlyProviders({ children }: { children: React.ReactNode }) {
             </>
           ) : null}
         </div>
-        <AppTree>{children}</AppTree>
+        <SessionProvider mode="readonly"><AppTree><TestnetWalletBanner dev={false} />{children}</AppTree></SessionProvider>
       </PlainWagmiProvider>
     </QueryClientProvider>
   );
 }
 
 /** Chosen at build time; configured Privy and local-fork behavior are preserved. */
-export const Providers = LOCALNET ? LocalProviders : PRIVY_CONFIGURED ? PrivyProviders : ReadonlyProviders;
+export function Providers({ children, devWallet = false }: { children: React.ReactNode; devWallet?: boolean }) {
+  const dev = ARC_NETWORK === "testnet" && devWallet;
+  const Provider = LOCALNET || dev ? LocalProviders : PRIVY_CONFIGURED ? PrivyProviders : ReadonlyProviders;
+  return <Provider>{children}</Provider>;
+}

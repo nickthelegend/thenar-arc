@@ -87,7 +87,7 @@ export default function StartPage() {
         ? <>Signed in as <span className="font-mono">{shortHash(address)}</span> on {appChain.name}.</>
         : LOCALNET
           ? "A wallet this browser makes and keeps, on the local Arc fork. The fork's faucet sends it USDC."
-          : "With an email address or a wallet you already have. Privy makes you a wallet on Arc; there is no seed phrase to write down.",
+          : "With an email address or a wallet you already have. Privy makes you a wallet on Arc. If sign-in is unavailable, use the testnet dev-wallet option above.",
       action: <button type="button" onClick={() => void s.connect()} className={primary}>{LOCALNET ? "Sign in with the local wallet" : "Sign in"}</button>,
     },
     {
@@ -103,7 +103,7 @@ export default function StartPage() {
       state: !address ? "todo" : !operator ? "checking" : "error" in operator ? "todo" : operator.passkey ? "done" : "todo",
       detail: operator && "error" in operator
         ? <span className="text-reject">{operator.error}</span>
-        : <>Face ID, a fingerprint or a PIN. Its public key goes into PasskeyRegistry (<span className="font-mono">{shortHash(PASSKEY_ADDRESS)}</span>), and Arc&rsquo;s P-256 precompile at <span className="font-mono">0x0100</span> checks its signatures, so a paid run comes from a person.</>,
+        : <>Face ID, a fingerprint or a PIN. Its public key goes into PasskeyRegistry (<span className="font-mono">{shortHash(PASSKEY_ADDRESS)}</span>), and Arc&rsquo;s P-256 precompile at <span className="font-mono">0x0100</span> checks its signatures, to authenticate your device. This does not prove unique human identity.</>,
       action: <Link href="/passkey" className={primary}>Set up your passkey</Link>,
     },
     {

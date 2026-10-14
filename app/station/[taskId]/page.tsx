@@ -19,6 +19,7 @@ import { TeachPanel } from "@/components/station/teach-panel";
 import { DriveWith } from "@/components/station/drive-with";
 import { TaskChips } from "@/components/task-chips";
 import type { Skill } from "@/lib/teach";
+import { TouchControls } from "@/components/station/touch-controls";
 import { useSubmitRun } from "@/lib/submit";
 import { OperatorGate } from "@/components/operator-gate";
 import { SHARES_SYMBOL } from "@/lib/corpus-shares";
@@ -478,7 +479,7 @@ export default function StationPage() {
     tx.phase === "verifying" ? "Verifying the run."
     : tx.phase === "signing" ? "Waiting for you to confirm in your wallet."
     : tx.phase === "pending" ? "Transaction sent. Waiting for the block that makes it final."
-    : tx.phase === "confirmed" ? `Run recorded and paid. ${fmtUsdc(tx.paidUsdc ?? 0)} ${CURRENCY}.`
+    : tx.phase === "confirmed" ? `Run recorded. ${tx.deferred ? "Claimable" : "Paid"}: ${fmtUsdc(tx.paidUsdc ?? 0)} ${CURRENCY}.`
     : tx.phase === "error" ? `Submission failed. ${tx.error ?? ""}`
     : verdict ? `Measurement taken. ${verdict.success ? "In tolerance" : "Out of tolerance"}, score ${fmtScore(verdict.score)}.`
     : null;
@@ -613,8 +614,9 @@ export default function StationPage() {
           />
           )}
 
+          {phase === "running" && !policyOn && !repeatOn && !inHeadset ? <TouchControls /> : null}
           {tel && phase !== "brief" ? (
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-center gap-x-6 gap-y-1 border-t border-rule bg-ink-1/92 px-4 py-2 font-mono text-[12px] tabular-nums">
+            <div data-testid="station-telemetry" data-tool={tel.tool.join(",")} data-held={String(tel.held)} className="pointer-events-none absolute bottom-0 left-0 right-0 flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-rule bg-ink-1/92 px-4 py-2 font-mono text-[12px] tabular-nums">
               <span className="text-scribe-3">X <span className="text-scribe">{tel.tool[0].toFixed(3)}</span></span>
               <span className="text-scribe-3">Y <span className="text-scribe">{tel.tool[1].toFixed(3)}</span></span>
               <span className="text-scribe-3">Z <span className="text-scribe">{tel.tool[2].toFixed(3)}</span></span>
@@ -780,6 +782,7 @@ export default function StationPage() {
 
           {phase === "measured" && verdict ? (
             <MeasurementSnap
+              taskId={task.id}
               verdict={verdict}
               accepted={accepted}
               practice={practice}
@@ -869,8 +872,9 @@ export default function StationPage() {
 /* ------------------------------------------------------------------------ */
 
 function MeasurementSnap({
-  verdict, accepted, practice, rewardUsdc, parSeconds, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
+  taskId, verdict, accepted, practice, rewardUsdc, parSeconds, session: s, tx, thinOnGas, onSubmit, onAgain, onLeave,
 }: {
+  taskId: number;
   verdict: Verdict;
   accepted: boolean;
   /** The chain will not pay this one, and said so before it started. */
@@ -899,8 +903,8 @@ function MeasurementSnap({
     : "Submit and get paid";
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-y-auto bg-ink-0/88 px-6 py-6">
-      <div className="w-full max-w-[460px] border border-rule-strong bg-ink-1">
+    <div className="absolute inset-0 flex items-start justify-center overflow-y-auto bg-ink-0/88 px-6 py-6">
+      <div className="my-auto w-full max-w-[460px] border border-rule-strong bg-ink-1">
         <div className={cn(
           "flex items-baseline justify-between border-b px-5 py-3",
           accepted ? "border-go bg-go-dim" : "border-reject bg-reject-dim",
@@ -982,10 +986,10 @@ function MeasurementSnap({
 
 
           {accepted ? (
-            <div className="flex items-end justify-between border-t border-rule pt-4">
-              <span className="label">{done ? "Paid to your wallet" : "Payable on submit"}</span>
+            <div data-testid="run-reward" role="status" className="flex flex-wrap items-end justify-between gap-3 border-t border-rule pt-4">
+              <span className="label">{done ? tx.deferred ? "Claimable in your portfolio" : "Paid to your wallet" : practice ? "Practice estimate · no payout" : "Payable on submit"}</span>
               <span className="font-mono text-4xl font-medium leading-none tracking-[-0.02em] text-signal">
-                {done ? <CountUp to={tx.paidUsdc ?? verdict.payoutMon} /> : fmtUsdc(verdict.payoutMon, 4)}
+                {done ? <CountUp to={tx.paidUsdc ?? 0} /> : fmtUsdc(verdict.payoutMon, 4)}
                 <span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
               </span>
             </div>
@@ -1019,8 +1023,8 @@ function MeasurementSnap({
           {done && tx.txHash ? (
             <div className="flex flex-col gap-1.5 border-t border-rule pt-3 font-mono text-[12px] text-scribe-3">
               <span>
-                Recorded and paid in one transaction ·{" "}
-                <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
+                {tx.deferred ? "Recorded · payout deferred" : "Recorded and paid in one transaction"} ·{" "}
+                <a data-testid="payout-explorer" href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
                   {shortHash(tx.txHash)}
                 </a>
               </span>
@@ -1131,6 +1135,7 @@ function MeasurementSnap({
               </Button>
             )
           ) : null}
+          {done ? <Link data-testid="buy-run-data" href={`/corpus?task=${taskId}`} className="basis-full bg-ink-1 px-4 py-3 text-center text-sm text-probe underline">Buy this task’s data over x402</Link> : null}
           <Button variant="secondary" className="flex-1" disabled={busy} onClick={onAgain}>Run again</Button>
           <Button variant="ghost" className="flex-1 bg-ink-1" disabled={busy} onClick={onLeave}>Back to hub</Button>
         </div>

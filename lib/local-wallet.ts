@@ -6,30 +6,19 @@ import {
   type Address, type EIP1193Provider, type Hex,
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { LOCAL_RPC, thenarLocalnet } from "@/lib/chain";
+import { ARC_NETWORK, RPC_ENDPOINTS, appChain } from "@/lib/chain";
 import { noteSynced } from "@/lib/receipt-timers";
 
-/**
- * The wallet a person uses on the local Arc fork.
- *
- * On Arc an operator signs in through Privy, which makes them an embedded
- * wallet from an email address. Privy knows nothing of a fork on this
- * machine, so on a fork build the wallet is a key this browser makes and
- * keeps, the way a local development chain is usually driven. It signs every
- * transaction and message itself and sends them to the fork's node, so what
- * reaches the chain is a real signed transaction from a real key, with USDC
- * as its gas exactly as on Arc, only one with no value anywhere but here.
- * /localnet's faucet sends it USDC, which is both its gas and its money.
- *
- * Built only into NEXT_PUBLIC_ARC_NETWORK=fork builds. A browser wallet
- * (MetaMask, Rabby) pointed at the fork works as well, through wagmi's
- * injected connector beside this one.
+/** Opt-in browser-held testnet wallet, also used by local forks.
+ * Keys never leave browser storage. Mainnet is rejected before key access.
+ * Testnet writes and payment signatures require explicit confirmation.
  */
-const KEY = "thenar:localnet:key";
-const CONNECTED = "thenar:localnet:connected";
+const KEY = ARC_NETWORK === "testnet" ? "thenar:testnet:dev-key" : "thenar:localnet:key";
+const CONNECTED = ARC_NETWORK === "testnet" ? "thenar:testnet:dev-connected" : "thenar:localnet:connected";
 
 let memoryKey: Hex | null = null;
 function privateKey(): Hex {
+  if (ARC_NETWORK === "mainnet") throw new Error("Browser dev wallets are disabled on mainnet.");
   try {
     let k = localStorage.getItem(KEY) as Hex | null;
     if (!k) {
@@ -66,7 +55,7 @@ const big = (h?: Hex) => (h === undefined ? undefined : hexToBigInt(h));
 
 function provider(): EIP1193Provider {
   const account = privateKeyToAccount(privateKey());
-  const wallet = createWalletClient({ account, chain: thenarLocalnet, transport: http(LOCAL_RPC) });
+  const wallet = createWalletClient({ account, chain: appChain, transport: http(RPC_ENDPOINTS[0]) });
 
   const request = async ({ method, params }: { method: string; params?: unknown }) => {
     const p = (params ?? []) as unknown[];
@@ -75,24 +64,29 @@ function provider(): EIP1193Provider {
       case "eth_requestAccounts":
         return [account.address];
       case "eth_chainId":
-        return numberToHex(thenarLocalnet.id);
+        return numberToHex(appChain.id);
       case "wallet_switchEthereumChain": {
         const id = Number((p[0] as { chainId: Hex }).chainId);
-        if (id !== thenarLocalnet.id) throw Object.assign(new Error(`This wallet is on chain ${thenarLocalnet.id} only.`), { code: 4902 });
+        if (id !== appChain.id) throw Object.assign(new Error(`This wallet is on chain ${appChain.id} only.`), { code: 4902 });
         return null;
       }
       case "personal_sign":
+        if (ARC_NETWORK === "testnet" && !window.confirm("Testnet dev wallet: sign this message?")) throw new Error("User rejected signature");
         return account.signMessage({ message: { raw: p[0] as Hex } });
       case "eth_signTypedData_v4": {
         const raw = p[1];
         const t = (typeof raw === "string" ? JSON.parse(raw) : raw) as {
           domain: Record<string, unknown>; types: Record<string, unknown>; primaryType: string; message: Record<string, unknown>;
         };
-        const { EIP712Domain: _, ...types } = t.types;
+        if (t.domain.chainId !== undefined && Number(t.domain.chainId) !== 5042002) throw new Error("Dev wallet signs only for Arc testnet.");
+        if (ARC_NETWORK === "testnet" && !window.confirm(`Testnet dev wallet: sign ${t.primaryType} for ${String(t.domain.verifyingContract ?? "this app")}? This may authorise a USDC payment.`)) throw new Error("User rejected signature");
+        const types = { ...t.types };
+        delete types.EIP712Domain;
         return account.signTypedData({ domain: t.domain, types, primaryType: t.primaryType, message: t.message } as never);
       }
       case "eth_sendTransaction": {
         const tx = p[0] as TxParams;
+        if (ARC_NETWORK === "testnet" && !window.confirm(`Send a real Arc TESTNET transaction to ${tx.to}? Gas is paid in test USDC.`)) throw new Error("User rejected transaction");
         // Prepared and signed here, then sent with eth_sendRawTransactionSync
         // (EIP-7966) where the node serves it: the node answers with the
         // receipt itself, so there is no polling and the send is the only thing
@@ -127,11 +121,11 @@ export function localWallet() {
   const address = () => privateKeyToAccount(privateKey()).address;
   return createConnector<EIP1193Provider>((config) => ({
     id: "thenarLocal",
-    name: "Local wallet",
+    name: ARC_NETWORK === "testnet" ? "Testnet dev wallet" : "Local wallet",
     type: "thenarLocal",
     async connect() {
       remember(true);
-      return { accounts: [address()], chainId: thenarLocalnet.id } as never;
+      return { accounts: [address()], chainId: appChain.id } as never;
     },
     async disconnect() {
       remember(false);
@@ -140,7 +134,7 @@ export function localWallet() {
       return [address()];
     },
     async getChainId() {
-      return thenarLocalnet.id;
+      return appChain.id;
     },
     async getProvider() {
       return (p ??= provider());
@@ -149,8 +143,8 @@ export function localWallet() {
       return remembered();
     },
     async switchChain({ chainId }) {
-      if (chainId !== thenarLocalnet.id) throw new Error(`This wallet is on chain ${thenarLocalnet.id} only.`);
-      return thenarLocalnet;
+      if (chainId !== appChain.id) throw new Error(`This wallet is on chain ${appChain.id} only.`);
+      return appChain;
     },
     onAccountsChanged() {},
     onChainChanged() {},

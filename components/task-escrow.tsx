@@ -39,18 +39,17 @@ export function TaskEscrow({ task }: { task: ChainTask }) {
   // Escrow is USDC base units (6 decimals) on chain; printed, never floated.
   const left = task.escrowWei;
   const mine = s.address?.toLowerCase() === task.funder.toLowerCase();
-  const fundable = !task.closed && !task.policyMinted && !task.expired;
+  const filled = task.slotsFilled >= task.slotsTotal;
+  const fundable = !task.closed && !task.policyMinted && !task.expired && !filled;
 
-  if (task.expiresAt === null && !task.closed) {
+  if (task.expiresAt === null && !task.closed && !filled) {
     return (
       <>
         <p className="mt-4 max-w-[64ch] font-mono text-[12px] leading-relaxed text-scribe-3">
           {/* Said from the task's own state, not a guess at the call: createTask and
               createTaskUntil with a zero deadline both leave expiresAt at zero. */}
           No deadline. This task&rsquo;s{" "}
-          <code className="text-scribe-2">expiresAt</code> is zero — so it can never
-          be closed and the {formatUsdc(left)} {CURRENCY} still escrowed can only
-          leave as a payout to an operator.
+          <code className="text-scribe-2">expiresAt</code> is zero. The {formatUsdc(left)} {CURRENCY} remaining is reclaimable only after every slot fills.
         </p>
         {fundable ? <TopUp task={task} /> : null}
       </>
@@ -66,7 +65,7 @@ export function TaskEscrow({ task }: { task: ChainTask }) {
             ? "closed — the escrow went back to the funder"
             : task.expired
               ? `passed ${new Date(task.expiresAt!).toLocaleDateString()}`
-              : `${new Date(task.expiresAt!).toLocaleString()}`}
+              : filled ? "All slots filled" : `${new Date(task.expiresAt!).toLocaleString()}`}
         </span>
         <span className="font-mono text-[13px] tabular-nums text-scribe-2">
           {formatUsdc(left)} {CURRENCY} left
@@ -75,13 +74,13 @@ export function TaskEscrow({ task }: { task: ChainTask }) {
 
       <p className="mt-2 max-w-[64ch] text-[13px] leading-relaxed text-scribe-3">
         {task.closed
-          ? "Its funder called closeTask after the deadline and took back what was never paid out. Nothing further can be run on it."
-          : task.expired
+          ? "Its funder closed the task and took back unspent escrow. Nothing further can be run on it."
+          : filled ? "Every slot is filled. The sponsor can reclaim the unspent escrow now." : task.expired
             ? "Past its deadline, so it takes no more runs and its funder may reclaim what is left."
-            : "Until then it takes runs. After it, the funder may close it and reclaim whatever was never paid out — only them, only once."}
+            : "Until then it takes runs. After it, or once every slot fills, the funder may close it and reclaim whatever was never paid out — only them, only once."}
       </p>
 
-      {mine && task.expired && !task.closed && left > 0n ? (
+      {mine && (task.expired || filled) && !task.closed && left > 0n ? (
         <>
           <button
             type="button"
@@ -96,23 +95,25 @@ export function TaskEscrow({ task }: { task: ChainTask }) {
           {tx.error ? (
             <p role="alert" className="mt-2 text-[13px] text-reject">{tx.error}</p>
           ) : null}
+
+        </>
+      ) : null}
+
           {tx.phase === "confirmed" && tx.txHash ? (
             <p className="mt-2 font-mono text-[12px] text-go">
               Closed ·{" "}
-              <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
+              <a data-testid="refund-explorer" href={txUrl(tx.txHash)} target="_blank" rel="noreferrer" className="text-probe hover:underline">
                 {shortHash(tx.txHash)}
               </a>
             </p>
           ) : null}
-        </>
-      ) : null}
 
       <p className="mt-3 font-mono text-[11px] leading-relaxed text-scribe-3">
         Enforced by the contract, not by this page:{" "}
         <Link href="/contracts" className="text-signal hover:text-signal-hi">
           {shortHash(AXON_ADDRESS)}
         </Link>{" "}
-        refuses a close from anyone but the funder, before the deadline, or twice.
+        allows only the funder to close, after expiry or when all slots fill, and only once.
       </p>
       {fundable ? <TopUp task={task} /> : null}
     </div>
