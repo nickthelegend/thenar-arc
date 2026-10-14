@@ -1,0 +1,128 @@
+{
+  "project": "thenar",
+  "chainId": 5042,
+  "url": "https://thenar-arc.vercel.app",
+  "renderedAt": "2026-10-14T18:57:50.014Z",
+  "transactions": [
+    {
+      "hash": "0xf9582458f8b22d7b938bb4ca73b8509d7143edfd57041c7f0936b846896f4192",
+      "action": "Fund rotating demo wallet 0.4 USDC",
+      "status": "success",
+      "feeWei": "441000000000000",
+      "blockNumber": "25954657",
+      "url": "https://explorer.arc.io/tx/0xf9582458f8b22d7b938bb4ca73b8509d7143edfd57041c7f0936b846896f4192"
+    },
+    {
+      "hash": "0x1acbfd5f5fe1a911dc119e49194e11e8c36b1cef35d1f78c283d2bd3b278f032",
+      "action": "Fund rotating demo wallet 0.2 USDC",
+      "status": "success",
+      "feeWei": "441000000000000",
+      "blockNumber": "25954668",
+      "url": "https://explorer.arc.io/tx/0x1acbfd5f5fe1a911dc119e49194e11e8c36b1cef35d1f78c283d2bd3b278f032"
+    },
+    {
+      "hash": "0x3af79208d257d7fd37c5a30ca47c0be7cd6a0a9a3f4c9f46664b5ec733316293",
+      "action": "Fund rotating demo wallet 0.03 USDC",
+      "status": "success",
+      "feeWei": "441000000000000",
+      "blockNumber": "25954675",
+      "url": "https://explorer.arc.io/tx/0x3af79208d257d7fd37c5a30ca47c0be7cd6a0a9a3f4c9f46664b5ec733316293"
+    },
+    {
+      "hash": "0xf3d1f4ee7dd19aba623453c74a3f218cfe3d9e2106bf358b95d489b45c4f6f85",
+      "action": "Approve escrow",
+      "status": "success",
+      "feeWei": "1163946000000000",
+      "blockNumber": "25954812",
+      "url": "https://explorer.arc.io/tx/0xf3d1f4ee7dd19aba623453c74a3f218cfe3d9e2106bf358b95d489b45c4f6f85"
+    },
+    {
+      "hash": "0x79e2e39d647c7107687c3a45f8ca37ab6fddc1116df1d64721f2c02b0778623a",
+      "action": "Fund task",
+      "status": "success",
+      "feeWei": "4233264000000000",
+      "blockNumber": "25954828",
+      "url": "https://explorer.arc.io/tx/0x79e2e39d647c7107687c3a45f8ca37ab6fddc1116df1d64721f2c02b0778623a"
+    },
+    {
+      "hash": "0x4ba8bf028854dc229e483255d452e8b00980fbe98e1ac0b48a7060e1d3081b98",
+      "action": "Register passkey",
+      "status": "success",
+      "feeWei": "1903356000000000",
+      "blockNumber": "25954893",
+      "url": "https://explorer.arc.io/tx/0x4ba8bf028854dc229e483255d452e8b00980fbe98e1ac0b48a7060e1d3081b98"
+    },
+    {
+      "hash": "0x4c6997ca8cf96590343579f7d8bfc2678a7f924f8c187c98a9a47ccddcf4a861",
+      "action": "Admit operator",
+      "status": "success",
+      "feeWei": "1793960119926226",
+      "blockNumber": "25954910",
+      "url": "https://explorer.arc.io/tx/0x4c6997ca8cf96590343579f7d8bfc2678a7f924f8c187c98a9a47ccddcf4a861"
+    },
+    {
+      "hash": "0x01598967de54b0d4756f05f8bb31c7046f56dcd02e074145f093711bc3850bf2",
+      "action": "Record + payout in one receipt",
+      "status": "success",
+      "feeWei": "14300013000000000",
+      "blockNumber": "25955119",
+      "url": "https://explorer.arc.io/tx/0x01598967de54b0d4756f05f8bb31c7046f56dcd02e074145f093711bc3850bf2"
+    },
+    {
+      "hash": "0x2a234ce1b52ad2384a98f92f5946ec129b346f9c6a4d9f5a77cd9d19de1649c9",
+      "action": "Issue corpus shares",
+      "status": "success",
+      "feeWei": "3250660217306621",
+      "blockNumber": "25955144",
+      "url": "https://explorer.arc.io/tx/0x2a234ce1b52ad2384a98f92f5946ec129b346f9c6a4d9f5a77cd9d19de1649c9"
+    },
+    {
+      "hash": "0x488c0c932f3e534080d6307790ce600d40c2404c02c787e5dbee5c8d5804f926",
+      "action": "x402 corpus payment",
+      "status": "success",
+      "feeWei": "1833060122540061",
+      "blockNumber": "25955282",
+      "url": "https://explorer.arc.io/tx/0x488c0c932f3e534080d6307790ce600d40c2404c02c787e5dbee5c8d5804f926"
+    },
+    {
+      "hash": "0x895537723d9f85fdc79bef081abe7f843e0e6d43e79cfae9d2c8800e5d2b6eb2",
+      "action": "Record corpus hash",
+      "status": "success",
+      "feeWei": "5042860337115191",
+      "blockNumber": "25955296",
+      "url": "https://explorer.arc.io/tx/0x895537723d9f85fdc79bef081abe7f843e0e6d43e79cfae9d2c8800e5d2b6eb2"
+    },
+    {
+      "hash": "0xbf3ff9f93f5cbbf3c9fd88ae70483226f6619f31ab58cdf05ac90f6381427099",
+      "action": "Browser transaction",
+      "status": "success",
+      "feeWei": "1520799000000000",
+      "blockNumber": "25955645",
+      "url": "https://explorer.arc.io/tx/0xbf3ff9f93f5cbbf3c9fd88ae70483226f6619f31ab58cdf05ac90f6381427099"
+    },
+    {
+      "hash": "0xe5cfdac0465a8b4763dd9ef58cfbe72d0c6dbbd68cdf39aec5e046b2435e9df9",
+      "action": "Sweep controlled wallet to deployer",
+      "status": "success",
+      "feeWei": "441000000000000",
+      "blockNumber": "25955753",
+      "url": "https://explorer.arc.io/tx/0xe5cfdac0465a8b4763dd9ef58cfbe72d0c6dbbd68cdf39aec5e046b2435e9df9"
+    },
+    {
+      "hash": "0x51e7910485e483755a7956f219083554dbafefc9f7e9d6f01e8590e801653351",
+      "action": "Sweep controlled wallet to deployer",
+      "status": "success",
+      "feeWei": "441000000000000",
+      "blockNumber": "25955763",
+      "url": "https://explorer.arc.io/tx/0x51e7910485e483755a7956f219083554dbafefc9f7e9d6f01e8590e801653351"
+    },
+    {
+      "hash": "0x3d165923a1a1a592845a5d20e4c98d5daaf40c87c767fe7e22c75ae1e3d3cd40",
+      "action": "Sweep controlled wallet to deployer",
+      "status": "success",
+      "feeWei": "441000000000000",
+      "blockNumber": "25955772",
+      "url": "https://explorer.arc.io/tx/0x3d165923a1a1a592845a5d20e4c98d5daaf40c87c767fe7e22c75ae1e3d3cd40"
+    }
+  ]
+}
