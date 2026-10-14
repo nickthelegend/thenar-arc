@@ -31,13 +31,13 @@
     "address": "0x45C77c430AC6e23E2561b15b8c4C9e1275DAF7E6",
     "agentId": "2427",
     "bound": true,
-    "verdicts": 1,
-    "written": 1,
-    "meanScore": 92.23,
+    "verdicts": 2,
+    "written": 2,
+    "meanScore": 89.98,
     "reputation": {
       "runVerdict": {
-        "count": 1,
-        "average": 92.23
+        "count": 2,
+        "average": 89.98
       },
       "corpusQuality": {
         "count": 0,

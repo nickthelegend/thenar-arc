@@ -32,7 +32,8 @@
     "seed:proof": "NEXT_PUBLIC_ARC_NETWORK=testnet node --env-file-if-exists=.env.local --conditions=react-server --import ./test/register.mjs scripts/seed-proof.mjs",
     "e2e:testnet": "NEXT_PUBLIC_ARC_NETWORK=testnet node --import ./test/register.mjs scripts/e2e-core.mjs",
     "e2e:browser:thenar": "NEXT_PUBLIC_ARC_NETWORK=testnet node --import ./test/register.mjs scripts/e2e-browser-thenar.mjs",
-    "dryrun:mainnet": "node --import ./scripts/dryrun-loader.mjs scripts/dryrun-mainnet.mjs"
+    "dryrun:mainnet": "node --import ./scripts/dryrun-loader.mjs scripts/dryrun-mainnet.mjs",
+    "seed:proof:mainnet": "NEXT_PUBLIC_ARC_NETWORK=mainnet NEXT_PUBLIC_ARC_RPC=https://rpc.mainnet.arc.io MONGODB_DB=arc_thenar_mainnet DATABASE_URL= node --env-file-if-exists=.env.local --conditions=react-server --import ./test/register.mjs scripts/seed-proof.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",

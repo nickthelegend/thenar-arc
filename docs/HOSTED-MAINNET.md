@@ -17,8 +17,16 @@ The previous production artifacts were retained at `https://thenar-arc-testnet.v
 
 This migration performs reads only: no wallet connection, signature, deposit, payment, withdrawal or chain broadcast. Mainnet contract/deployment transaction evidence is recorded separately in the repository. Local executors remain an on-demand demo requirement, not an always-on hosting service provisioned here.
 
-Current backend check: `/api/health` returns 503 because the durable database is unavailable from Vercel; chain, signer and signing-domain checks pass.
+Previous database access failure resolved; see final polish results below.
 
 Production environment: NEXT_PUBLIC_ARC_NETWORK=mainnet; NEXT_PUBLIC_ARC_RPC=https://rpc.mainnet.arc.io; MONGODB_DB=arc_thenar_mainnet; VERIFIER_ADDRESS and verifier/issuer/auditor/relayer/facilitator keys from mainnet roles.
 
 Verified: 27 routes returned HTTP 200 with no rendered testnet wording, wrong Arc explorer link or uncaught page exception. Network APIs and RPC reported chain 5042; expected mainnet contract bytecode was present. Screenshots and machine-readable results are saved beside this report.
+
+## Final hosted polish — 2026-10-15
+
+MongoDB now contains both original mainnet artifacts (1,701-frame scripted smoke and 377-frame keyboard video). Every hash, contributor, task, score and successful payout was checked before insertion; read-after-write and hosted integrity checks passed. `/api/health` is ok:true. Privy modal opens without origin errors. `pnpm seed:proof:mainnet` is idempotent and performs chain reads plus Mongo writes only.
+
+Re-run: `node scripts/e2e-browser-hosted-mainnet.mjs`. Also run `node scripts/e2e-browser-hosted-proof.mjs` for artifact visibility and applicable sign-in checks.
+
+No mainnet broadcasts or paid API calls. Live mainnet reads and DB writes only; fork transactions and complete wallet sign-ins: Not run.

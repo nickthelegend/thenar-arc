@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-14T20:32:13.444Z",
+  "results": [
+    {
+      "run": "0x47540d473e3a6b21a8894c46a8f89a64ea7c29dade6f4d991cd467436656cb3f",
+      "integrity": true
+    },
+    {
+      "run": "0xee6c747e85c7fd889ff67ccdf962134f15d033b717128c87266413d9adc8283b",
+      "integrity": true
+    },
+    {
+      "privyModal": true,
+      "originErrors": [],
+      "failedPrivyRequests": []
+    },
+    {
+      "consoleErrors": [],
+      "ok": true
+    }
+  ]
+}

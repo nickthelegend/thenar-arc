@@ -1,22 +1,8 @@
 {
-  "at": "2026-10-14T16:16:33.270Z",
+  "at": "2026-10-14T20:35:44.370Z",
   "base": "https://thenar-arc.vercel.app",
   "readOnly": true,
-  "consoleErrors": [
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 503 ()",
-    "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 500 ()"
-  ],
+  "consoleErrors": [],
   "results": [
     {
       "route": "/",
@@ -163,7 +149,7 @@
       "ok": true
     },
     {
-      "route": "/run/0x842bcb0fe0cf501035104614264a793836dc4d376c44f207642169bec538e99b",
+      "route": "/run/0xee6c747e85c7fd889ff67ccdf962134f15d033b717128c87266413d9adc8283b",
       "status": 200,
       "bodyPresent": true,
       "testnetWording": [],
@@ -276,7 +262,7 @@
     },
     {
       "mainnetVisible": true,
-      "explorerLinks": 55,
+      "explorerLinks": 62,
       "ok": true
     },
     {
