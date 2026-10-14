@@ -45,7 +45,7 @@ const GROUPS: { label: string; items: { href: string; label: string; hint: strin
     items: [
       { href: "/foundry", label: "Policy foundry", hint: "Policies minted from filled tasks, and who gets paid" },
       { href: "/spec/so101", label: "The arms", hint: "The SO-101 and the THENAR-6, drivable" },
-      { href: "/arc", label: "The Arc stack", hint: "Live testnet, fork-only and untested integrations" },
+      { href: "/arc", label: "The Arc stack", hint: "Current network reads, fork checks and untested integrations" },
       { href: "/network", label: "Arc, live", hint: "Blocks and finality, read as you watch" },
       { href: "/contracts", label: "Contracts", hint: "Every contract on Arc, read live" },
       { href: "/status", label: "Status", hint: "Is everything working" },

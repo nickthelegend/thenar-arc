@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { DimRule } from "@/components/primitives";
+import { IS_MAINNET } from "@/lib/chain";
 import entries from "@/lib/changelog.json";
 
 export const metadata: Metadata = {
   title: "Changelog — Thenar",
-  description: "Every change to this project, from its own git history.",
+  description: "Changes from this project’s git history.",
 };
 
 type Entry = { hash: string; date: string; subject: string; body: string };
@@ -22,16 +23,13 @@ const day = (iso: string) => iso.slice(0, 10);
  * so anything here can be checked against the repository.
  */
 export default function ChangelogPage() {
-  const log = entries as Entry[];
+  const log = (entries as Entry[]).filter((entry) => !IS_MAINNET || !/testnet|5042002/i.test(`${entry.subject} ${entry.body}`));
 
   return (
     <div className="mx-auto max-w-[820px] px-5 py-8">
       <h1 className="font-display text-4xl font-600 leading-none tracking-[-0.01em]">Changelog</h1>
       <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-scribe-2">
-        Generated from this project&rsquo;s own git history at build time, not
-        written alongside it. A changelog kept by hand is a second account of the
-        work that quietly stops matching the first; this one cannot, and every
-        entry carries the commit it came from.
+        Generated from this project&rsquo;s git history. Production omits earlier-network entries from this view; every entry keeps its commit hash. <a href="https://github.com/nickthelegend/thenar-arc/commits/main" className="underline">Read the complete history</a>.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-rule py-3">

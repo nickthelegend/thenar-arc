@@ -1,6 +1,6 @@
 # Thenar on Arc — Arc Microgrants submission
 
-**Hosting:** [Live Arc testnet frontend and API](https://thenar-arc.vercel.app). Privy origin approval remains a lead action; testnet dev-wallet access is available. See [hosted checks](docs/HOSTED.md).
+Live: https://thenar-arc.vercel.app (Arc mainnet, chain 5042)
 
 **Supersedes** the earlier Thenar build made for ETHOnline 2026 (native-value escrow, several chains). This one is Arc
 only and USDC throughout.
@@ -23,7 +23,7 @@ CCTP withdrawals and CCIP licences are built and tested on a fork; they have not
   P-256 passkeys, EIP-3009 gasless posting, audit keeper.
 - **Not run**: Circle Gateway funding (off by default); CCTP attestation and mint; any live CCIP send.
 - The verifier is **not** registered as an ERC-8004 agent on testnet yet.
-- Vercel URL pending verification. The former Railway deployment was deleted; local browser checks are documented in `docs/BROWSER-ROUND2.md`.
+- Production is on Vercel; current read-only browser evidence is in `docs/HOSTED-MAINNET.md`.
 
 ## What it uses Arc for
 
@@ -62,3 +62,7 @@ Testnet **5042002: Live**; [testnet deployment](deployments/arc-testnet.json) an
 
 Mainnet smoke: [Smoke: verified recorded trajectory, seed reward <=0.05 USDC](https://explorer.arc.io/tx/0xe3c2d8c5c715b034083e2ee7916ed7cf5ed4d2cae02a51498956c5232a2d4594).
 <!-- /MAINNET-ADDRESSES -->
+
+## Production network
+
+Live: https://thenar-arc.vercel.app (Arc mainnet, chain 5042). [Hosted mainnet checks](docs/HOSTED-MAINNET.md). Privy sign-in depends on allowed origins; durable database readiness is reported by /api/health. No mainnet transactions were sent during the hosting migration. Historical **Live (testnet)** and **Fork** results below are separate evidence, not production smoke results.

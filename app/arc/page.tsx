@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { DimRule } from "@/components/primitives";
 import { ArcFinality } from "@/components/arc-finality";
-import { appChain, addressUrl, LOCALNET } from "@/lib/chain";
+import { appChain, addressUrl, LOCALNET, IS_MAINNET } from "@/lib/chain";
 import { formatUsdc } from "@/lib/usdc";
 import { ARC_STATUS, STATUS_HELP, STATUS_LABEL, type StackStatus } from "@/lib/arc-status";
 
@@ -80,7 +80,7 @@ export default function ArcStackPage() {
     {
       piece: "ERC-8004",
       status: ARC_STATUS.erc8004,
-      does: "Built so the verifier is an agent in Arc's Identity Registry and every verdict that moved money is written to the Reputation Registry (runVerdict, feedbackHash = run id) by ThenarVerdicts; buyer agents can rate it (corpusQuality) and are logged by agent id. On testnet the verifier is not registered yet, so no verdict has been written there.",
+      does: "Built so the verifier is an agent in Arc's Identity Registry and every verdict that moved money is written to the Reputation Registry (runVerdict, feedbackHash = run id) by ThenarVerdicts; buyer agents can rate it (corpusQuality) and are logged by agent id. The current registration and reputation counts are read below.",
       where: [{ label: "ThenarVerdicts", address: a(C.verdicts) }, { label: "Reputation Registry", address: a(X.reputationRegistry) }],
       live: reading(v ? (v.agentId ? `agent #${v.agentId} · ${v.written} verdicts written · buyers ${v.reputation.corpusQuality.count}` : "verifier not registered yet") : "—"),
       verified: "Fork only: tests on a fork of Arc testnet using its real registries (register, bind, a paid run writes feedback, getSummary reads it back). Not registered or written on the public testnet; the testnet run logs the buyer as not an ERC-8004 agent.",
@@ -90,7 +90,7 @@ export default function ArcStackPage() {
       status: ARC_STATUS.memo,
       does: "A run is submitted through Arc's Memo predeploy with memoId = the run id, so the payout carries what it paid for; the protocol still sees the operator as msg.sender (CallFrom). Where a node doesn't execute CallFrom, the run goes out plain.",
       where: [{ label: "Memo", address: a(X.memo) }],
-      live: reading(data?.memo ? (data.memo.live ? "CallFrom answers on this node: browser submissions are tagged (the scripted testnet proof runs were not)" : "CallFrom not executed here: runs go out untagged") : "—"),
+      live: reading(data?.memo ? (data.memo.live ? "CallFrom answers on this node: browser submissions are tagged (earlier scripted proof runs were not)" : "CallFrom not executed here: runs go out untagged") : "—"),
       verified: "Fork only: a fork test with Arc Foundry (--network arc) saw the Memo event with memoId = trajHash. The testnet proof submitted runs directly through a relayer, not through Memo.",
     },
     {
@@ -135,8 +135,7 @@ export default function ArcStackPage() {
         Thenar pays people per robot run and sells what they record to AI agents. On Arc that is one token and one
         transaction: USDC is the escrow, the payout and the gas, a run is final when its block lands, and an agent pays
         for data in the HTTP request that fetches it. The core loop needs only the first two rows; the rest extend it
-        across chains and identities, and none of them can stop a run from being paid. Only USDC gas and x402 have run on
-        the public testnet; every other row is labelled Fork (run on a local fork or in Chainlink Local) or Not run.
+        across chains and identities, and none of them can stop a run from being paid. Configuration and current reads are shown below. Earlier network proofs, local fork checks and untested integrations are kept distinct; a deployed contract alone is not evidence of a completed flow.
       </p>
       {!data?.deployed && !isLoading ? (
         <p className="mt-3 max-w-[68ch] border-l-2 border-signal pl-3 text-[13px] text-scribe-2">
@@ -173,7 +172,7 @@ export default function ArcStackPage() {
                   ),
                 )}
               </div>
-              <p className="mt-2 text-[12px] leading-relaxed text-scribe-3">Verified: {r.verified}</p>
+              <p className="mt-2 text-[12px] leading-relaxed text-scribe-3">Verified: {IS_MAINNET ? "Current mainnet state is shown above. Earlier transaction-flow verification is documented in the repository." : r.verified}</p>
             </div>
           </section>
         ))}

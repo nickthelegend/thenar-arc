@@ -53,7 +53,7 @@ const ARC_STACK = [
   { tag: "USDC", status: ARC_STATUS.usdc, title: "Paid per run, in USDC", body: "Escrow, payouts, licences and dividends are Circle's USDC. Gas is USDC too, so an operator holds one token." },
   { tag: "Finality", status: ARC_STATUS.finality, title: "Final in under a second", body: "Arc's finality is deterministic: the block that records a run is final when it is made. No confirmations to wait for." },
   { tag: "x402", status: ARC_STATUS.x402, title: "Agents pay per request", body: "An AI agent buys a task's corpus over HTTP with an EIP-3009 USDC authorisation, settled on Arc." },
-  { tag: "ERC-8004", status: ARC_STATUS.erc8004, title: "The verifier can be an agent", body: "Built to register the scorer in Arc's Identity Registry and write each paid verdict to its Reputation Registry. The verifier is not registered on testnet yet." },
+  { tag: "ERC-8004", status: ARC_STATUS.erc8004, title: "The verifier can be an agent", body: "Built to register the scorer in Arc's Identity Registry and write each paid verdict to its Reputation Registry. The Arc stack shows the current verifier registration and reputation." },
   { tag: "CCTP V2", status: ARC_STATUS.cctp, title: "Withdraw to another chain", body: "Operators can burn Arc earnings with CCTP and mint native USDC on Base, Ethereum or Arbitrum. The burn runs on a fork; the attestation and mint are user-run." },
   { tag: "Gateway · CCIP", status: "none", title: "Fund and buy from other chains", body: "Gateway funding is off by default and unrun; a CCIP licence purchase from Base runs in Chainlink Local and on a fork. Neither has been sent between live chains." },
 ] as const;

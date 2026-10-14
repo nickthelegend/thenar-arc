@@ -28,7 +28,7 @@ export default function LocalnetPage() {
     return (
       <div className="mx-auto max-w-[760px] px-5 py-8">
         <h1 className="font-display text-4xl font-600">Local fork</h1>
-        <p className="mt-3 text-[15px] text-scribe-2">This build runs on {appChain.name}, not on a local fork. Its faucet is Circle&rsquo;s.</p>
+        <p className="mt-3 text-[15px] text-scribe-2">This build runs on {appChain.name}, not on a local fork. A local faucet is unavailable on this deployment.</p>
       </div>
     );
   }

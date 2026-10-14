@@ -115,7 +115,7 @@ async function readings(): Promise<Record<string, [string, string][]>> {
 
 export default async function ContractsPage() {
   const [live, prior, reads] = await Promise.all([
-    presence(LIVE_CONTRACTS), SUPERSEDED, IS_DEPLOYED ? readings() : Promise.resolve({} as Record<string, [string, string][]>),
+    presence(LIVE_CONTRACTS), appChain.id === 5042 ? SUPERSEDED.filter((r) => r.chainId === 5042) : SUPERSEDED, IS_DEPLOYED ? readings() : Promise.resolve({} as Record<string, [string, string][]>),
   ]);
   const held = live.some(r => r.balance === null) ? null : live.reduce((n, r) => n + Number(formatUsdc(r.balance!)), 0);
   const dark = live.filter((r) => r.surface === "/contracts").length;
@@ -209,7 +209,7 @@ export default async function ContractsPage() {
       <p className="mt-3 max-w-[74ch] text-[14px] leading-relaxed text-scribe-2">
         The contracts Thenar calls but did not deploy: Circle&rsquo;s USDC (the escrow and the gas), Arc&rsquo;s
         Memo, the ERC-8004 registries, CCTP V2 and Gateway for moving USDC between chains, and Chainlink&rsquo;s CCIP
-        router. Only USDC and x402 have been exercised on the public testnet; the rest ran on a fork. <Link href="/arc" className="text-signal hover:text-signal-hi">What each one does here &rarr;</Link>
+        router. Deployment and current contract reads are shown here; completed flows and fork checks are documented separately. <Link href="/arc" className="text-signal hover:text-signal-hi">What each one does here &rarr;</Link>
       </p>
       <ul className="mt-3">
         {EXTERNAL_CONTRACTS.map((r) => (
@@ -222,7 +222,7 @@ export default async function ContractsPage() {
         ))}
       </ul>
 
-      <DimRule className="mt-10" note="Superseded" />
+      {prior.length > 0 && <DimRule className="mt-10" note="Superseded" />}
 
       {prior.map((r) => (
         <section key={r.key} className="border-t border-rule py-5">

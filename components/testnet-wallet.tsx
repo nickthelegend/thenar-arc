@@ -27,7 +27,7 @@ export function TestnetWalletBanner({ dev }: { dev: boolean }) {
 export function TestnetWalletPanel() {
   const s = useSession();
   const [copied, setCopied] = useState(false);
-  if (ARC_NETWORK !== "testnet") return <p>Dev wallets are available only on Arc testnet.</p>;
+  if (ARC_NETWORK !== "testnet") return <p>Dev wallets are unavailable on this network. Connect a recoverable wallet or use wallet-free practice.</p>;
   return <div className="mx-auto max-w-2xl space-y-5 px-5 py-10">
     <h1 className="font-display text-4xl">Testnet wallet</h1>
     <p>Use the dev-wallet option above if Privy sign-in is not enabled for this site yet. It creates a key in this browser, signs here, and sends real transactions to Arc testnet (5042002). It cannot sign on mainnet.</p>

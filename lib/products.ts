@@ -44,7 +44,7 @@ export const PRODUCTS: Product[] = [
     line: "People teach robots, and get paid in USDC on Arc for every run they record.",
     body:
       "An operator drives a robot arm on a task someone funded. A verifier measures the run against the goal and signs the score, and one Arc transaction records the trajectory and pays the operator in USDC, final in under a second. Every paid run issues the operator a share of the corpus, and AI agents buy each task's data over x402, with every sale logged on chain beside the hash of what was served.",
-    facts: ["Built for Arc testnet", "USDC escrow, USDC gas", "Agents pay per pull over x402", "Passkeys checked by the P-256 precompile"],
+    facts: ["Built for Arc", "USDC escrow, USDC gas", "Agents pay per pull over x402", "Passkeys checked by the P-256 precompile"],
     repo: "nickthelegend/thenar-arc",
     href: "/",
     hrefLabel: "Open the app",

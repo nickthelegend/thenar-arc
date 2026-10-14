@@ -8,17 +8,19 @@
  *
  * One place, so the landing page, /arc and the README cannot drift apart.
  */
+import { IS_MAINNET } from "./chain";
+
 export type StackStatus = "live" | "fork" | "none";
 
 export const STATUS_LABEL: Record<StackStatus, string> = {
-  live: "Live (testnet)",
+  live: IS_MAINNET ? "Earlier live proof" : "Live (testnet)",
   fork: "Fork",
   none: "Not run",
 };
 
 export const STATUS_HELP: Record<StackStatus, string> = {
-  live: "Real transactions on the public Arc testnet; explorer links in docs/E2E-TESTNET.md.",
-  fork: "Run on a local fork of Arc testnet or with Chainlink Local; not sent on the public network.",
+  live: IS_MAINNET ? "Earlier network verification is documented in the repository. Mainnet reads are shown separately." : "Real transactions on the public Arc testnet; explorer links in docs/E2E-TESTNET.md.",
+  fork: "Run on a local Arc fork or with Chainlink Local; not sent on the public network.",
   none: "Code and tests exist; not run end to end.",
 };
 

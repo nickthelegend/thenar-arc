@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useSession } from "@/components/session";
 import { useTaskCatalogue } from "@/components/tasks-provider";
 import { STATION_SEEN } from "@/lib/first-run";
-import { CURRENCY, FAUCET_URL, LOCALNET, LOW_GAS_BALANCE, PASSKEY_ADDRESS, appChain } from "@/lib/chain";
+import { CURRENCY, FAUCET_URL, LOCALNET, IS_MAINNET, LOW_GAS_BALANCE, PASSKEY_ADDRESS, appChain } from "@/lib/chain";
 import { fmtUsdc, shortHash } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -87,7 +87,7 @@ export default function StartPage() {
         ? <>Signed in as <span className="font-mono">{shortHash(address)}</span> on {appChain.name}.</>
         : LOCALNET
           ? "A wallet this browser makes and keeps, on the local Arc fork. The fork's faucet sends it USDC."
-          : "With an email address or a wallet you already have. Privy makes you a wallet on Arc. If sign-in is unavailable, use the testnet dev-wallet option above.",
+          : "With an email address or a wallet you already have. Privy makes you a wallet on Arc. Connect a wallet for this network or use the wallet-free practice station.",
       action: <button type="button" onClick={() => void s.connect()} className={primary}>{LOCALNET ? "Sign in with the local wallet" : "Sign in"}</button>,
     },
     {
@@ -95,7 +95,7 @@ export default function StartPage() {
       title: "USDC for gas",
       state: !s.connected ? "todo" : enoughGas ? "done" : "todo",
       detail: <>You hold {fmtUsdc(s.balance, 4)} {CURRENCY}. Gas on Arc is USDC, the same dollars you are paid in, and a submit costs about a cent or two of it. The station shows the measured cost before you send.</>,
-      action: <a href={FAUCET_URL} className={primary} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })}>{LOCALNET ? "Fund it from the fork's faucet" : "Get testnet USDC"}</a>,
+      action: <a href={IS_MAINNET ? "/portfolio" : FAUCET_URL} className={primary} {...(LOCALNET ? {} : { target: "_blank", rel: "noreferrer" })}>{LOCALNET ? "Fund it from the fork's faucet" : IS_MAINNET ? "Fund your Arc wallet" : "Get testnet USDC"}</a>,
     },
     {
       key: "passkey",

@@ -224,8 +224,7 @@ export default async function LabsHome() {
         ) : null}
         <Reveal className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-[#0B0B0D] px-8 py-6">
           <p className="max-w-[640px] text-sm text-scribe-2">
-            Settled on Arc, Circle&rsquo;s stablecoin chain: USDC for pay and gas and x402 for agents have run on the
-            public testnet. ERC-8004, CCTP, CCIP and passkeys have run on a fork; Gateway has not been run.
+            Settled on Arc, Circle&rsquo;s stablecoin chain: USDC for pay and gas, with deployed contracts on the selected network. The Arc stack separates current reads from earlier live proofs, fork checks and integrations not yet exercised.
           </p>
           <Link href={appHref("/arc")} className="text-sm text-white transition-colors hover:text-lilac">The Arc stack →</Link>
         </Reveal>

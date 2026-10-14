@@ -54,7 +54,7 @@ export function ReceiptTimers({ timers, className }: { timers?: Timers; classNam
           {fork ? (
             <>
               Timed on the local Arc fork, not on Arc: the fork&rsquo;s node mines on demand.
-              {beat.intervalMs !== null ? <> Arc testnet right now makes a block every {ms(beat.intervalMs)}, and a block is final when it is made.</> : null}
+              {beat.intervalMs !== null ? <> Arc right now makes a block every {ms(beat.intervalMs)}, and a block is final when it is made.</> : null}
             </>
           ) : (
             <>Measured in this browser on Arc, from the moment the wallet sent the transaction to its receipt. Arc is final on inclusion, so that is the whole wait.</>

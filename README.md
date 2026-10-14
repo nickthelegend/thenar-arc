@@ -1,6 +1,6 @@
 # Thenar on Arc
 
-**Hosting:** [Live Arc testnet frontend and API](https://thenar-arc.vercel.app). Privy origin approval remains a lead action; testnet dev-wallet access is available. See [hosted checks](docs/HOSTED.md).
+Live: https://thenar-arc.vercel.app (Arc mainnet, chain 5042)
 
 **Robot training data, recorded by people, paid per run in USDC, and bought by AI agents.** An operator drives a robot
 arm in the browser; a verifier scores the recording against the goal and signs; **one Arc transaction records the
@@ -163,3 +163,7 @@ Testnet **5042002: Live**; [testnet deployment](deployments/arc-testnet.json) an
 
 Mainnet smoke: [Smoke: verified recorded trajectory, seed reward <=0.05 USDC](https://explorer.arc.io/tx/0xe3c2d8c5c715b034083e2ee7916ed7cf5ed4d2cae02a51498956c5232a2d4594).
 <!-- /MAINNET-ADDRESSES -->
+
+## Production network
+
+Live: https://thenar-arc.vercel.app (Arc mainnet, chain 5042). [Hosted mainnet checks](docs/HOSTED-MAINNET.md). Privy sign-in depends on allowed origins; durable database readiness is reported by /api/health. No mainnet transactions were sent during the hosting migration. Historical **Live (testnet)** and **Fork** results below are separate evidence, not production smoke results.

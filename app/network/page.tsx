@@ -91,8 +91,8 @@ const p256Valid = (result: unknown) => typeof result === "string" && /^0x0{63}1$
 
 const EXTERNAL: { name: string; address: string; use: string }[] = [
   { name: "USDC (Circle)", address: ARC_EXTERNAL.usdc, use: "Escrow, payouts, licences, dividends, x402 payments, and gas: one token for everything (6-decimal ERC-20 view of the native balance)." },
-  { name: "Memo extension", address: ARC_EXTERNAL.memo, use: "A browser submission is sent through it, tagged with the run id, when CallFrom answers (lib/submit.ts). Run on a fork; not part of the testnet proof." },
-  { name: "ERC-8004 Identity Registry", address: ARC_EXTERNAL.identityRegistry, use: "Where the verifier or a buyer is registered, it is recognised by its id. The verifier is not registered on testnet yet." },
+  { name: "Memo extension", address: ARC_EXTERNAL.memo, use: "A browser submission is sent through it, tagged with the run id, when CallFrom answers (lib/submit.ts). Run on a fork; not part of earlier scripted proofs." },
+  { name: "ERC-8004 Identity Registry", address: ARC_EXTERNAL.identityRegistry, use: "Where the verifier or a buyer is registered, it is recognised by its id. Current registration is available on the Arc stack page." },
   { name: "ERC-8004 Reputation Registry", address: ARC_EXTERNAL.reputationRegistry, use: "ThenarVerdicts writes each paid verdict here once the verifier is registered (run on a fork)." },
   { name: "CCTP TokenMessengerV2", address: ARC_EXTERNAL.tokenMessengerV2, use: "Operators can burn earnings here to mint USDC on another chain (/portfolio). Burn run on a fork; mint not run." },
   { name: "CCTP MessageTransmitterV2", address: ARC_EXTERNAL.messageTransmitterV2, use: "Receives the CCTP half of a cross-chain licence purchase (not run live)." },
