@@ -42,3 +42,23 @@ CCTP withdrawals and CCIP licences are built and tested on a fork; they have not
 2. `/hub` → `/station/0`: drive the simulated arm (W/A/S/D/E/Q, Space for the jaws) and see the practice score. Paying for a run needs sign-in, which needs a Privy app id (see README).
 3. `/agents` lists the x402 sales read from the on-chain SalesLog (the testnet purchase is step 6 in docs/E2E-TESTNET.md). To buy one yourself, `node --import ./test/register.mjs scripts/agent-buy.mjs <app> 0` needs a funded `AGENT_PRIVATE_KEY` (testnet USDC from faucet.circle.com).
 4. `/arc`: every piece of the Arc stack with a live reading, its status label and how it was verified.
+
+<!-- MAINNET-ADDRESSES -->
+## Addresses — live mainnet and testnet
+
+Mainnet **5042: Live**, deployed 2026-10-14. [All mainnet addresses and transaction receipts](docs/MAINNET-DEPLOYMENT.md).
+Testnet **5042002: Live**; [testnet deployment](deployments/arc-testnet.json) and [testnet evidence](docs/E2E-TESTNET.md).
+
+- ccipReceiver: [0x9bC7A8F90e8B26ca1135358938A5542cD9334b92](https://explorer.arc.io/address/0x9bC7A8F90e8B26ca1135358938A5542cD9334b92).
+- contributionRecord: [0x9e38cA5E04c8135e6676D2C6633f9cB5747bE578](https://explorer.arc.io/address/0x9e38cA5E04c8135e6676D2C6633f9cB5747bE578).
+- corpusAudit: [0x69b02DA6F64a2d5962Ef0b4710bAFd85D76e5bC0](https://explorer.arc.io/address/0x69b02DA6F64a2d5962Ef0b4710bAFd85D76e5bC0).
+- corpusManifest: [0x9cAF33dEcfab291D63D451e934eae410a09B0012](https://explorer.arc.io/address/0x9cAF33dEcfab291D63D451e934eae410a09B0012).
+- corpusShares: [0x4E8f310ffc70C9DcaA64f5CaDb5F20a50cE8482d](https://explorer.arc.io/address/0x4E8f310ffc70C9DcaA64f5CaDb5F20a50cE8482d).
+- passkeyRegistry: [0x3a9D0CA0029905dc32f8036BA28DFF33080AC254](https://explorer.arc.io/address/0x3a9D0CA0029905dc32f8036BA28DFF33080AC254).
+- protocol: [0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619](https://explorer.arc.io/address/0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619).
+- salesLog: [0x8095Ea4D12620B4EC116F951C954702832fA6845](https://explorer.arc.io/address/0x8095Ea4D12620B4EC116F951C954702832fA6845).
+- trajectoryCertificate: [0x49082C4AB554003f9b517146a8265E208Ef5067B](https://explorer.arc.io/address/0x49082C4AB554003f9b517146a8265E208Ef5067B).
+- verdicts: [0xe3A583c613B075E61e18da4bFB82b94888721a8e](https://explorer.arc.io/address/0xe3A583c613B075E61e18da4bFB82b94888721a8e).
+
+Mainnet smoke: [Smoke: verified recorded trajectory, seed reward <=0.05 USDC](https://explorer.arc.io/tx/0xe3c2d8c5c715b034083e2ee7916ed7cf5ed4d2cae02a51498956c5232a2d4594).
+<!-- /MAINNET-ADDRESSES -->

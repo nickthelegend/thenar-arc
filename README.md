@@ -13,7 +13,7 @@ confirmations to wait for); and an agent can pay for data in the request that fe
 
 | | |
 |---|---|
-| **Chain** | Arc testnet (5042002), deployed. Arc mainnet (5042) is one command, not run (see [MAINNET.md](MAINNET.md)). |
+| **Chain** | Arc testnet (5042002), deployed. Arc mainnet (5042) is live; see [mainnet receipts](docs/MAINNET-DEPLOYMENT.md). |
 | **Money** | Circle's USDC ERC-20 at `0x3600…0000` (6 decimals) for escrow, payouts, licences and dividends; native USDC for gas. |
 | **Contracts** | [`contracts/src`](contracts/src), deployed by [`contracts/script/Deploy.s.sol`](contracts/script/Deploy.s.sol) into [`deployments/arc-<network>.json`](deployments). |
 | **Status** | **Deployed on Arc testnet** ([`deployments/arc-testnet.json`](deployments/arc-testnet.json), ThenarProtocol `0xa8Ec…8619`). The core loop (escrowed task, verified run paid in one tx, agent buys the corpus over x402, sale logged on chain) ran with real transactions on the public testnet: [docs/E2E-TESTNET.md](docs/E2E-TESTNET.md). Everything else in the table below is labelled Fork or Not run. |
@@ -143,3 +143,23 @@ Deploy: `vercel link --yes --project thenar-arc`, set variables listed in [docs/
 Check: `node scripts/e2e-browser-hosted.mjs`. Allow https://thenar-arc.vercel.app in Privy.
 The optional audit keeper runs on demand; the hardware arm relay runs on the operator's machine.
 Neither is needed to browse tasks or practice. Concurrent on-chain signer nonces and distributed rate limits need hardening.
+
+<!-- MAINNET-ADDRESSES -->
+## Addresses — live mainnet and testnet
+
+Mainnet **5042: Live**, deployed 2026-10-14. [All mainnet addresses and transaction receipts](docs/MAINNET-DEPLOYMENT.md).
+Testnet **5042002: Live**; [testnet deployment](deployments/arc-testnet.json) and [testnet evidence](docs/E2E-TESTNET.md).
+
+- ccipReceiver: [0x9bC7A8F90e8B26ca1135358938A5542cD9334b92](https://explorer.arc.io/address/0x9bC7A8F90e8B26ca1135358938A5542cD9334b92).
+- contributionRecord: [0x9e38cA5E04c8135e6676D2C6633f9cB5747bE578](https://explorer.arc.io/address/0x9e38cA5E04c8135e6676D2C6633f9cB5747bE578).
+- corpusAudit: [0x69b02DA6F64a2d5962Ef0b4710bAFd85D76e5bC0](https://explorer.arc.io/address/0x69b02DA6F64a2d5962Ef0b4710bAFd85D76e5bC0).
+- corpusManifest: [0x9cAF33dEcfab291D63D451e934eae410a09B0012](https://explorer.arc.io/address/0x9cAF33dEcfab291D63D451e934eae410a09B0012).
+- corpusShares: [0x4E8f310ffc70C9DcaA64f5CaDb5F20a50cE8482d](https://explorer.arc.io/address/0x4E8f310ffc70C9DcaA64f5CaDb5F20a50cE8482d).
+- passkeyRegistry: [0x3a9D0CA0029905dc32f8036BA28DFF33080AC254](https://explorer.arc.io/address/0x3a9D0CA0029905dc32f8036BA28DFF33080AC254).
+- protocol: [0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619](https://explorer.arc.io/address/0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619).
+- salesLog: [0x8095Ea4D12620B4EC116F951C954702832fA6845](https://explorer.arc.io/address/0x8095Ea4D12620B4EC116F951C954702832fA6845).
+- trajectoryCertificate: [0x49082C4AB554003f9b517146a8265E208Ef5067B](https://explorer.arc.io/address/0x49082C4AB554003f9b517146a8265E208Ef5067B).
+- verdicts: [0xe3A583c613B075E61e18da4bFB82b94888721a8e](https://explorer.arc.io/address/0xe3A583c613B075E61e18da4bFB82b94888721a8e).
+
+Mainnet smoke: [Smoke: verified recorded trajectory, seed reward <=0.05 USDC](https://explorer.arc.io/tx/0xe3c2d8c5c715b034083e2ee7916ed7cf5ed4d2cae02a51498956c5232a2d4594).
+<!-- /MAINNET-ADDRESSES -->
