@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-14T16:07:21.912Z",
+  "at": "2026-10-14T16:16:33.270Z",
   "base": "https://thenar-arc.vercel.app",
   "readOnly": true,
   "consoleErrors": [
@@ -9,7 +9,13 @@
     "Failed to load resource: the server responded with a status of 500 ()",
     "Failed to load resource: the server responded with a status of 500 ()",
     "Failed to load resource: the server responded with a status of 500 ()",
-    "Failed to load resource: the server responded with a status of 503 ()"
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 503 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 500 ()"
   ],
   "results": [
     {
