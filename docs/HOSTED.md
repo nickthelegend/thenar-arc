@@ -13,10 +13,10 @@ The existing Atlas cluster is reused in `arc_thenar_testnet`; no database servic
 **Checks:** Vercel build and local typecheck pass; lint has zero errors and nine existing warnings.
 The real Atlas integration check preserves eight concurrent increments, survives reconnect, and rejects mutating read queries.
 Both proof recordings were seeded only after their successful Arc testnet receipts were rechecked.
-Initial production browser navigation: all 17 tested routes returned HTTP 200, but seven routes had console errors from failed storage requests.
+Expanded production rerun: all 24 routes returned HTTP 200; eight routes logged backend resource errors. Wallet-free practice starts, testnet bytecode is present, and mobile fits 390 px.
 Atlas works locally; Vercel runtime logs show TLS alert 80 / server selection failures. Check Atlas Network Access for Vercel before calling the backend healthy.
 The live contract/RPC health checks pass. Browser screenshots and exact failures are in `docs/screens/hosted/results.json`.
-The expanded rerun script also checks footer routes, mobile width and starting a wallet-free practice run; those extra checks are not yet verified.
+The rerun retains failed health/feed checks and console errors. It continues after an API failure so the later practice, contract and viewport evidence is not lost.
 
 **Services:** no required always-on server. The hardware serial/WebSocket arm relay belongs on the operator's computer.
 The optional audit/CCIP completion keeper remains an on-demand command; new on-chain actions were not run during hosting.
