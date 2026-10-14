@@ -21,6 +21,12 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/deployments ./deployments
+# Sources the proof seeder needs (railway ssh: node --conditions=react-server --import ./test/register.mjs scripts/seed-proof.mjs)
+COPY --from=build /app/lib ./lib
+COPY --from=build /app/scripts/seed-proof.mjs ./scripts/seed-proof.mjs
+COPY --from=build /app/test/register.mjs /app/test/resolve-ts.mjs ./test/
+COPY --from=build /app/docs/proof ./docs/proof
+COPY --from=build /app/tsconfig.json ./tsconfig.json
 RUN mkdir -p /data && chown node:node /data
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/arc-entrypoint
 ENTRYPOINT ["arc-entrypoint"]

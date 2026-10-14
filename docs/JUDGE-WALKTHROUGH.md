@@ -1,5 +1,7 @@
 # Judge walkthrough (about two minutes)
 
+**Live: https://thenar-production.up.railway.app** (Arc testnet build on Railway). Open [/run/0x4a1e…4462](https://thenar-production.up.railway.app/run/0x4a1efdd8f4c06c0bbd565657a2c776b65fc1f2d95b5d1768faa3ffa0776f4462) for "Integrity verified" with no wallet; also /hub, /station/0, /network, /arc, /api/health.
+
 Thenar pays people to teach robots, per run, in USDC on Arc, and sells what they record to AI agents over x402.
 The evidence in section 0 needs no wallet. The paid browser flow runs on a local Arc fork.
 

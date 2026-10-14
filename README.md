@@ -1,5 +1,7 @@
 # Thenar on Arc
 
+**Live: https://thenar-production.up.railway.app** (Arc testnet build, hosted on Railway; seeded with the two testnet-paid runs, e.g. [/run/0x4a1e…4462](https://thenar-production.up.railway.app/run/0x4a1efdd8f4c06c0bbd565657a2c776b65fc1f2d95b5d1768faa3ffa0776f4462) shows "Integrity verified"; sign-in needs the origin allow-listed in Privy). Screenshots: [docs/screens/hosted](docs/screens/hosted).
+
 **Robot training data, recorded by people, paid per run in USDC, and bought by AI agents.** An operator drives a robot
 arm in the browser; a verifier scores the recording against the goal and signs; **one Arc transaction records the
 trajectory and pays the operator in USDC from the task's escrow**, final in under a second. An AI agent that wants a

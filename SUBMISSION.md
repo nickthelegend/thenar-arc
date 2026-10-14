@@ -1,5 +1,7 @@
 # Thenar on Arc — Arc Microgrants submission
 
+**Live: https://thenar-production.up.railway.app** (Arc testnet build, hosted on Railway; seeded with the two testnet-paid runs, e.g. [/run/0x4a1e…4462](https://thenar-production.up.railway.app/run/0x4a1efdd8f4c06c0bbd565657a2c776b65fc1f2d95b5d1768faa3ffa0776f4462) shows "Integrity verified"; sign-in needs the origin allow-listed in Privy). Screenshots: [docs/screens/hosted](docs/screens/hosted).
+
 **Supersedes** the earlier Thenar build made for ETHOnline 2026 (native-value escrow, several chains). This one is Arc
 only and USDC throughout.
 
