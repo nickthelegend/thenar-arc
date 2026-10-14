@@ -1,0 +1,40 @@
+{
+  "base": "https://thenar-arc.vercel.app",
+  "routes": [
+    "/",
+    "/thenar",
+    "/start",
+    "/hub",
+    "/post",
+    "/portfolio",
+    "/leaderboard",
+    "/passkey",
+    "/corpus",
+    "/agents",
+    "/corpus-token",
+    "/foundry",
+    "/spec/so101",
+    "/arc",
+    "/network",
+    "/station/0",
+    "/run/0x842bcb0fe0cf501035104614264a793836dc4d376c44f207642169bec538e99b",
+    "/inventory",
+    "/lab",
+    "/labs",
+    "/policies",
+    "/archive",
+    "/changelog",
+    "/status"
+  ],
+  "contract": "0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619",
+  "api": [
+    "/api/health",
+    "/api/feed"
+  ],
+  "waitMs": 4000,
+  "firstStep": {
+    "route": "/station/0",
+    "name": "Practise first, no wallet needed",
+    "expect": "End run"
+  }
+}

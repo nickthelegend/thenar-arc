@@ -1,4 +1,5 @@
 import "server-only";
+import type Database from "better-sqlite3";
 
 /**
  * The store, whichever one it is.
@@ -23,7 +24,7 @@ import "server-only";
 export type Row = Record<string, unknown>;
 
 const url = process.env.DATABASE_URL;
-export const ENGINE: "postgres" | "sqlite" = url ? "postgres" : "sqlite";
+export const ENGINE = url ? "postgres" : process.env.MONGODB_URI ? "mongodb" : "sqlite";
 
 // ------------------------------------------------------------------ postgres
 
@@ -72,11 +73,7 @@ function toPg(sql: string): string {
 
 // -------------------------------------------------------------------- sqlite
 
-type SqliteDb = {
-  prepare: (sql: string) => { all: (...p: unknown[]) => unknown[]; run: (...p: unknown[]) => unknown };
-  exec: (sql: string) => unknown;
-  pragma: (s: string) => unknown;
-};
+type SqliteDb = Database.Database;
 
 let sqlite: SqliteDb | null = null;
 
@@ -99,6 +96,10 @@ async function lite(): Promise<SqliteDb> {
 
 export async function query<T = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
   await migrate();
+  if (ENGINE === "mongodb") {
+    const { mongoSql } = await import("./mongo-sql");
+    return await mongoSql(sql, params, false, migrateSqlite) as T[];
+  }
   if (ENGINE === "postgres") {
     const c = await pg();
     const r = await c.query(toPg(sql), params);
@@ -114,6 +115,11 @@ export async function queryOne<T = Row>(sql: string, params: unknown[] = []): Pr
 
 export async function run(sql: string, params: unknown[] = []): Promise<void> {
   await migrate();
+  if (ENGINE === "mongodb") {
+    const { mongoSql } = await import("./mongo-sql");
+    await mongoSql(sql, params, true, migrateSqlite);
+    return;
+  }
   if (ENGINE === "postgres") {
     const c = await pg();
     await c.query(toPg(sql), params);
@@ -155,6 +161,7 @@ let ready: Promise<void> | null = null;
  * with holes in it would hide that behind a diff nobody reads.
  */
 export function migrate(): Promise<void> {
+  if (ENGINE === "mongodb") return Promise.resolve();
   ready ??= (async () => {
     if (ENGINE === "postgres") {
       const c = await pg();
@@ -407,7 +414,43 @@ export function migrate(): Promise<void> {
       return;
     }
 
-    const db = await lite();
+    migrateSqlite(await lite());
+  })();
+  return ready;
+}
+
+/**
+ * Give every pre-existing row the deployment it actually settled against.
+ *
+ * Rows written before the column existed carry no contract, and they are not
+ * all the same one — this project has settled on more than one
+ * deployment. The chain each row already records is enough to say which,
+ * because only one contract was ever live per chain at the time. Run once,
+ * touching only rows that have no contract, so it cannot rewrite a row that
+ * already knows its own answer.
+ */
+export async function backfillContracts(current: string, prior: readonly { address: string; chainId: number }[]) {
+  await migrate();
+  let filled = 0;
+  for (const p of prior) {
+    const before = await count(`SELECT COUNT(*) AS n FROM trajectory WHERE contract IS NULL AND chain_id = ?`, [p.chainId]);
+    if (before === 0) continue;
+    await run(`UPDATE trajectory SET contract = ? WHERE contract IS NULL AND chain_id = ?`,
+      [p.address.toLowerCase(), p.chainId]);
+    filled += before;
+  }
+  // Anything still unattributed settled on a chain no prior deployment claims,
+  // which for this project means the current one.
+  const rest = await count(`SELECT COUNT(*) AS n FROM trajectory WHERE contract IS NULL`);
+  if (rest > 0) {
+    await run(`UPDATE trajectory SET contract = ? WHERE contract IS NULL`, [current.toLowerCase()]);
+    filled += rest;
+  }
+  return filled;
+}
+
+/** Applied to every Mongo snapshot too, so old snapshots receive schema upgrades. */
+function migrateSqlite(db: SqliteDb): void {
     db.exec(`
       CREATE TABLE IF NOT EXISTS prop (
         id          TEXT PRIMARY KEY,
@@ -575,36 +618,4 @@ export function migrate(): Promise<void> {
     // The buyer's ERC-8004 agent id, added with the Arc port.
     const saleCols = (db.prepare(`PRAGMA table_info(corpus_sale)`).all() as { name: string }[]).map((c) => c.name);
     if (!saleCols.includes("buyer_agent")) db.exec(`ALTER TABLE corpus_sale ADD COLUMN buyer_agent TEXT`);
-  })();
-  return ready;
-}
-
-/**
- * Give every pre-existing row the deployment it actually settled against.
- *
- * Rows written before the column existed carry no contract, and they are not
- * all the same one — this project has settled on more than one
- * deployment. The chain each row already records is enough to say which,
- * because only one contract was ever live per chain at the time. Run once,
- * touching only rows that have no contract, so it cannot rewrite a row that
- * already knows its own answer.
- */
-export async function backfillContracts(current: string, prior: readonly { address: string; chainId: number }[]) {
-  await migrate();
-  let filled = 0;
-  for (const p of prior) {
-    const before = await count(`SELECT COUNT(*) AS n FROM trajectory WHERE contract IS NULL AND chain_id = ?`, [p.chainId]);
-    if (before === 0) continue;
-    await run(`UPDATE trajectory SET contract = ? WHERE contract IS NULL AND chain_id = ?`,
-      [p.address.toLowerCase(), p.chainId]);
-    filled += before;
-  }
-  // Anything still unattributed settled on a chain no prior deployment claims,
-  // which for this project means the current one.
-  const rest = await count(`SELECT COUNT(*) AS n FROM trajectory WHERE contract IS NULL`);
-  if (rest > 0) {
-    await run(`UPDATE trajectory SET contract = ? WHERE contract IS NULL`, [current.toLowerCase()]);
-    filled += rest;
-  }
-  return filled;
 }

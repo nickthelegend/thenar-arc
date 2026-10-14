@@ -1,0 +1,204 @@
+{
+  "at": "2026-10-14T13:54:16.635Z",
+  "base": "https://thenar-arc.vercel.app",
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/thenar",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/start",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/hub",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "route": "/post",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "route": "/portfolio",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/leaderboard",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "route": "/passkey",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/corpus",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/agents",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/corpus-token",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/foundry",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "route": "/spec/so101",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "route": "/arc",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/network",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/station/0",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "route": "/run/0x842bcb0fe0cf501035104614264a793836dc4d376c44f207642169bec538e99b",
+      "status": 200,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": false
+    },
+    {
+      "api": "/api/health",
+      "status": 503,
+      "ok": false,
+      "data": {
+        "ok": false,
+        "live": false,
+        "checks": {
+          "verifierKey": {
+            "ok": true,
+            "detail": "configured in this process (no SIGNER_ORIGIN set)"
+          },
+          "contract": {
+            "ok": true,
+            "detail": "0xa8Ec6e8f33F5b5B980336a3cdd3BB799EEA38619"
+          },
+          "database": {
+            "ok": false,
+            "detail": "00894E034B7F0000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:ssl/record/rec_layer_s3.c:918:SSL alert number 80\n"
+          },
+          "rpc": {
+            "ok": true,
+            "detail": "block 67169377"
+          },
+          "verifierMatches": {
+            "ok": true,
+            "detail": "server key matches the contract"
+          },
+          "signingDomain": {
+            "ok": true,
+            "detail": "signing domain matches the contract"
+          }
+        },
+        "audit": {
+          "ledgerMatchesChain": {
+            "ok": false,
+            "detail": "00894E034B7F0000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:ssl/record/rec_layer_s3.c:918:SSL alert number 80\n"
+          }
+        }
+      }
+    },
+    {
+      "ok": false,
+      "error": "SyntaxError: Unexpected end of JSON input"
+    }
+  ]
+}

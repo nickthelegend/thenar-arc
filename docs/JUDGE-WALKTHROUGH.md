@@ -1,6 +1,6 @@
 # Judge walkthrough (about two minutes)
 
-**Hosting:** the former Railway deployment was deleted. Vercel deployment and Privy origin approval are pending verification. Run locally with the commands below; do not use the old Railway URL.
+**Hosting:** [Live Arc testnet frontend and API](https://thenar-arc.vercel.app). Privy origin approval remains a lead action; testnet dev-wallet access is available. See [hosted checks](docs/HOSTED.md).
 
 
 Round 2: follow [BROWSER-ROUND2.md](BROWSER-ROUND2.md) for the complete sponsor → operator → payout → x402 browser flow. It is **Not run** until the lead executes those checks outside the sandbox.

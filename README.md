@@ -1,6 +1,6 @@
 # Thenar on Arc
 
-**Hosting:** the former Railway deployment was deleted. Vercel deployment and Privy origin approval are pending verification. Run locally with the commands below; do not use the old Railway URL.
+**Hosting:** [Live Arc testnet frontend and API](https://thenar-arc.vercel.app). Privy origin approval remains a lead action; testnet dev-wallet access is available. See [hosted checks](docs/HOSTED.md).
 
 **Robot training data, recorded by people, paid per run in USDC, and bought by AI agents.** An operator drives a robot
 arm in the browser; a verifier scores the recording against the goal and signs; **one Arc transaction records the
@@ -113,7 +113,7 @@ THENAR_CONFIRM_MAINNET=1 pnpm deploy:mainnet   # see MAINNET.md
   step was part of it.
 - **ERC-8004 registration is pending.** The verifier is not an ERC-8004 agent on testnet. Registering binds it for good
   (`bindVerifier` is permanent and takes an agentURI), so it is done once, with the production origin.
-- **No verified hosted demo.** The previous Railway deployment was deleted. Run locally or use a separately verified Vercel URL.
+- **Hosted testnet demo:** https://thenar-arc.vercel.app. Browser evidence and limitations: [docs/HOSTED.md](docs/HOSTED.md).
 - **Sign-in configuration:** Privy requires `NEXT_PUBLIC_PRIVY_APP_ID` and the origin allow-listed.
   Without it, the default session is read-only; **Use testnet dev wallet** switches to a browser-held wallet
   only on Arc testnet. Its transactions are real testnet transactions, with confirmation prompts; ordinary
@@ -131,18 +131,15 @@ MIT ([LICENSE](LICENSE)). Built with Next.js, viem/wagmi, Privy, x402 (`@x402/*`
 contracts and Chainlink Local, OpenZeppelin. Poly Haven props (CC0) are credited in `public/props/index.json`. Most of
 the code was written with Claude Code, directed and reviewed by the author.
 
-### Vercel (deployment pending)
+### Vercel
 
-The Next.js UI and API routes can run together on Vercel. Set the server role keys from `.env.example`,
-`NEXT_PUBLIC_ARC_NETWORK=testnet`, a **remotely reachable existing** `DATABASE_URL`, and
-`DATABASE_SCHEMA=thenar_arc_testnet` to isolate this port's rows. No new paid resources are required by the code.
-Vercel refuses local SQLite. `npm run seed:proof` now loads `.env.local` and verifies the two previous payouts
-before seeding the selected database. The reusable local database URL is not usable from Vercel.
+UI and request/response APIs run together on Vercel, against `deployments/arc-testnet.json`.
+Existing Atlas credentials supply durable storage in the isolated `arc_thenar_testnet` database.
+The small-demo adapter stores versioned SQL snapshots with compare-and-swap writes (12 MiB cap);
+use a remote `DATABASE_URL` and `DATABASE_SCHEMA=arc_thenar_testnet` for larger corpora.
+`pnpm seed:proof` verifies the two existing payout receipts before importing their recordings.
 
-Set `PUBLIC_ORIGIN` to the Vercel URL and allow that origin in Privy. Until then, every testnet page links
-**Use testnet dev wallet**, a browser-held wallet that signs real testnet transactions and cannot sign on mainnet.
-The dev wallet still uses the normal passkey registration and operator admission gate; it does not bypass it.
-
-See [round-2 browser commands](docs/BROWSER-ROUND2.md). Chromium is run by the lead outside the Codex sandbox.
-The optional corpus audit keeper can run on demand; the sponsor → operator → payout → x402 loop needs no always-on worker.
-Serverless signer nonce coordination and distributed rate limits still need hardening before concurrent public traffic.
+Deploy: `vercel link --yes --project thenar-arc`, set variables listed in [docs/HOSTED.md](docs/HOSTED.md), then `vercel deploy --prod --yes`.
+Check: `node scripts/e2e-browser-hosted.mjs`. Allow https://thenar-arc.vercel.app in Privy.
+The optional audit keeper runs on demand; the hardware arm relay runs on the operator's machine.
+Neither is needed to browse tasks or practice. Concurrent on-chain signer nonces and distributed rate limits need hardening.

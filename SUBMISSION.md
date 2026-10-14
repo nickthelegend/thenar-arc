@@ -1,6 +1,6 @@
 # Thenar on Arc — Arc Microgrants submission
 
-**Hosting:** the former Railway deployment was deleted. Vercel deployment and Privy origin approval are pending verification. Run locally with the commands below; do not use the old Railway URL.
+**Hosting:** [Live Arc testnet frontend and API](https://thenar-arc.vercel.app). Privy origin approval remains a lead action; testnet dev-wallet access is available. See [hosted checks](docs/HOSTED.md).
 
 **Supersedes** the earlier Thenar build made for ETHOnline 2026 (native-value escrow, several chains). This one is Arc
 only and USDC throughout.
