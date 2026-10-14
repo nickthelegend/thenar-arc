@@ -989,7 +989,7 @@ function MeasurementSnap({
             <div data-testid="run-reward" role="status" className="flex flex-wrap items-end justify-between gap-3 border-t border-rule pt-4">
               <span className="label">{done ? tx.deferred ? "Claimable in your portfolio" : "Paid to your wallet" : practice ? "Practice estimate · no payout" : "Payable on submit"}</span>
               <span className="font-mono text-4xl font-medium leading-none tracking-[-0.02em] text-signal">
-                {done ? <CountUp to={tx.paidUsdc ?? 0} /> : fmtUsdc(verdict.payoutMon, 4)}
+                {done ? <CountUp to={tx.paidUsdc ?? 0} decimals={6} duration={300} /> : fmtUsdc(verdict.payoutMon, 4)}
                 <span className="ml-1.5 text-[12px] text-scribe-3">{CURRENCY}</span>
               </span>
             </div>

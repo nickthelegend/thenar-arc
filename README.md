@@ -1,6 +1,6 @@
 # Thenar on Arc
 
-**Live: https://thenar-production.up.railway.app** (Arc testnet build, hosted on Railway; seeded with the two testnet-paid runs, e.g. [/run/0x4a1e…4462](https://thenar-production.up.railway.app/run/0x4a1efdd8f4c06c0bbd565657a2c776b65fc1f2d95b5d1768faa3ffa0776f4462) shows "Integrity verified"; sign-in needs the origin allow-listed in Privy). Screenshots: [docs/screens/hosted](docs/screens/hosted).
+**Hosting:** the former Railway deployment was deleted. Vercel deployment and Privy origin approval are pending verification. Run locally with the commands below; do not use the old Railway URL.
 
 **Robot training data, recorded by people, paid per run in USDC, and bought by AI agents.** An operator drives a robot
 arm in the browser; a verifier scores the recording against the goal and signs; **one Arc transaction records the
@@ -113,12 +113,11 @@ THENAR_CONFIRM_MAINNET=1 pnpm deploy:mainnet   # see MAINNET.md
   step was part of it.
 - **ERC-8004 registration is pending.** The verifier is not an ERC-8004 agent on testnet. Registering binds it for good
   (`bindVerifier` is permanent and takes an agentURI), so it is done once, with the production origin.
-- **No hosted demo yet.** Judges run it locally (below) or read the recorded evidence; nothing is deployed to a public URL.
-- **Sign-in configuration:** a public-chain build without `NEXT_PUBLIC_PRIVY_APP_ID` still builds and serves public
-  pages and browser practice. It shows “Sign-in is unavailable” and uses a disconnected wagmi configuration with no
-  connectors or persisted wallet storage. It cannot authenticate an operator or submit paid runs. Set a real Privy
-  app id from `.env.example` and rebuild to enable sign-in; no placeholder credentials are supplied. Configured Privy
-  behavior and the explicit local-fork wallet/faucet flow remain unchanged.
+- **No verified hosted demo.** The previous Railway deployment was deleted. Run locally or use a separately verified Vercel URL.
+- **Sign-in configuration:** Privy requires `NEXT_PUBLIC_PRIVY_APP_ID` and the origin allow-listed.
+  Without it, the default session is read-only; **Use testnet dev wallet** switches to a browser-held wallet
+  only on Arc testnet. Its transactions are real testnet transactions, with confirmation prompts; ordinary
+  passkey admission still applies. This fallback is unavailable on mainnet.
 - **Cross-chain steps are untested live.** CCTP attestations and mints, CCIP sends from Base/Ethereum and Gateway mints
   need funds on other chains; they are covered by fork and Chainlink Local tests and by scripts a user would run.
 - **Optional extras are off by default.** The station's “Race the best run” ghost arm (a translucent replay of the
@@ -132,10 +131,18 @@ MIT ([LICENSE](LICENSE)). Built with Next.js, viem/wagmi, Privy, x402 (`@x402/*`
 contracts and Chainlink Local, OpenZeppelin. Poly Haven props (CC0) are credited in `public/props/index.json`. Most of
 the code was written with Claude Code, directed and reviewed by the author.
 
-### Container (not deployed from this repo's phase)
+### Vercel (deployment pending)
 
-`Dockerfile` + `railway.json` package the app for a container host: default Arc testnet, Gateway off, SQLite on a
-mounted `/data` (`AXON_DB_PATH=/data/axon.db`), runs as a non-root user. `/api/live` is a liveness probe; `/api/health`
-reports signer, database, RPC and deployment readiness. The public web container must not hold `VERIFIER_PRIVATE_KEY`:
-run a separate signer service and point `SIGNER_ORIGIN` at it. The Linux image build has not been run in this
-environment.
+The Next.js UI and API routes can run together on Vercel. Set the server role keys from `.env.example`,
+`NEXT_PUBLIC_ARC_NETWORK=testnet`, a **remotely reachable existing** `DATABASE_URL`, and
+`DATABASE_SCHEMA=thenar_arc_testnet` to isolate this port's rows. No new paid resources are required by the code.
+Vercel refuses local SQLite. `npm run seed:proof` now loads `.env.local` and verifies the two previous payouts
+before seeding the selected database. The reusable local database URL is not usable from Vercel.
+
+Set `PUBLIC_ORIGIN` to the Vercel URL and allow that origin in Privy. Until then, every testnet page links
+**Use testnet dev wallet**, a browser-held wallet that signs real testnet transactions and cannot sign on mainnet.
+The dev wallet still uses the normal passkey registration and operator admission gate; it does not bypass it.
+
+See [round-2 browser commands](docs/BROWSER-ROUND2.md). Chromium is run by the lead outside the Codex sandbox.
+The optional corpus audit keeper can run on demand; the sponsor → operator → payout → x402 loop needs no always-on worker.
+Serverless signer nonce coordination and distributed rate limits still need hardening before concurrent public traffic.

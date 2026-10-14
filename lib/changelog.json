@@ -1,5 +1,47 @@
 [
   {
+    "hash": "2cf51fb",
+    "date": "2026-10-14T18:18:36+05:30",
+    "subject": "Enable testnet browser wallets and complete sponsor payout handoffs",
+    "body": "Make task creation discoverable, preserve receipts, expose full-slot escrow refunds, add touch controls, and distinguish practice, paid and deferred rewards.\n\nCo-Authored-By: GPT-6 Astra (Codex) <noreply@openai.com>"
+  },
+  {
+    "hash": "c4bfe7b",
+    "date": "2026-10-14T14:04:05+05:30",
+    "subject": "Host the Arc testnet build on Railway; add live URL, hosted screenshots, seed sources in image",
+    "body": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "0214a30",
+    "date": "2026-10-13T23:46:26+05:30",
+    "subject": "Judge pass: label every Arc-stack claim Live (testnet), Fork or Not run; score report",
+    "body": "Verifier is not an ERC-8004 agent on testnet, and CCTP, CCIP, Gateway, Memo and passkeys have not run live: copy in README, SUBMISSION, walkthrough, /arc, landing and nav now says so. Screens audit at 1440 and 390 wide, docs/JUDGE-REPORT.md.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "fcda3b3",
+    "date": "2026-10-13T23:46:26+05:30",
+    "subject": "Seed the testnet-paid runs into a fresh checkout so /run/<hash> opens without a wallet",
+    "body": "pnpm seed:proof re-reads each paying transaction from Arc testnet before storing the run; the banner links the recorded payout. Adds the status map with a test that only proven pieces are labelled live.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "9cce09f",
+    "date": "2026-10-13T22:19:18+05:30",
+    "subject": "Live core loop on Arc testnet: e2e:testnet target, tx proof, page screenshots",
+    "body": "scripts/e2e-core.mjs now runs on the public Arc testnet as well as the fork\n(no faucet; relayer pays the operator's gas). docs/E2E-TESTNET.md records every\ntransaction with explorer links; /arc cites the testnet proof.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "236608f",
+    "date": "2026-10-13T21:54:05+05:30",
+    "subject": "Live on Arc testnet: 10 contracts, 17 txs; explorer verification no longer aborts a landed deploy",
+    "body": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  },
+  {
+    "hash": "26bdd70",
+    "date": "2026-10-13T20:56:34+05:30",
+    "subject": "Product title on every tab: Thenar — robot data, paid per run in USDC on Arc",
+    "body": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  },
+  {
     "hash": "75ccb57",
     "date": "2026-10-13T20:55:00+05:30",
     "subject": "Changelog page: leave out the port's import commits and refresh-only commits",

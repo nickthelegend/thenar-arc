@@ -1,6 +1,6 @@
 # Thenar on Arc — Arc Microgrants submission
 
-**Live: https://thenar-production.up.railway.app** (Arc testnet build, hosted on Railway; seeded with the two testnet-paid runs, e.g. [/run/0x4a1e…4462](https://thenar-production.up.railway.app/run/0x4a1efdd8f4c06c0bbd565657a2c776b65fc1f2d95b5d1768faa3ffa0776f4462) shows "Integrity verified"; sign-in needs the origin allow-listed in Privy). Screenshots: [docs/screens/hosted](docs/screens/hosted).
+**Hosting:** the former Railway deployment was deleted. Vercel deployment and Privy origin approval are pending verification. Run locally with the commands below; do not use the old Railway URL.
 
 **Supersedes** the earlier Thenar build made for ETHOnline 2026 (native-value escrow, several chains). This one is Arc
 only and USDC throughout.
@@ -23,7 +23,7 @@ CCTP withdrawals and CCIP licences are built and tested on a fork; they have not
   P-256 passkeys, EIP-3009 gasless posting, audit keeper.
 - **Not run**: Circle Gateway funding (off by default); CCTP attestation and mint; any live CCIP send.
 - The verifier is **not** registered as an ERC-8004 agent on testnet yet.
-- No hosted demo: judges run it locally or read the recorded evidence.
+- Vercel URL pending verification. The former Railway deployment was deleted; local browser checks are documented in `docs/BROWSER-ROUND2.md`.
 
 ## What it uses Arc for
 

@@ -1,3 +1,20 @@
+# Round 2 (2026-10-14): browser proof pending
+
+**Not run:** round-2 Chromium checks and the new browser transaction loop, because browser launches are unavailable
+inside this sandbox. [Exact lead commands and recovery](BROWSER-ROUND2.md). No new testnet broadcasts, 0 USDC spent.
+Do not read the historical script proof below as a browser proof.
+
+Implemented browser path: sponsor `/hub` → `/post` → funded task; operator testnet dev wallet or Privy → passkey
+admission → station → exact payout/explorer link → task corpus purchase over x402. Dev-wallet mode is opt-in,
+public Arc testnet only, browser-held keys, explicit signature/transaction confirmation. Existing passkey admission
+is preserved. A completed task now lets its sponsor reclaim the scoring remainder immediately.
+
+Read-only checks this round: 94 HTTP checks against public Arc testnet, all green on SQLite and again on isolated Postgres; prior two settlement receipts
+re-read before seeding their recordings into isolated local Postgres schema `thenar_arc_testnet`. No new
+browser explorer links or screenshots are claimed. The lead runner records them under `screens/testnet/round-2/`.
+
+---
+
 # Core loop on the public Arc testnet: proof
 
 `pnpm e2e:testnet` ([scripts/e2e-core.mjs](../scripts/e2e-core.mjs), the same script as `pnpm e2e:core` pointed at

@@ -49,11 +49,11 @@ settlement 91,621 gas (0.0023 USDC).
 | Role keys' gas for a short demo (issuer, facilitator, relayer, agent purchases) | 0.7 |
 | **Mainnet total for deploy + a short demo** | **≈ 2.5 (fund 5 for headroom)** |
 
-## 4. App env (Vercel / Railway)
+## 4. App env (Vercel)
 
 `NEXT_PUBLIC_ARC_NETWORK=mainnet`, `NEXT_PUBLIC_SITE_ORIGIN`, `PUBLIC_ORIGIN`, `VERIFIER_PRIVATE_KEY`,
 `VERIFIER_AGENT_ID`, `CORPUS_ISSUER_PRIVATE_KEY`, `AUDITOR_PRIVATE_KEY`, `X402_FACILITATOR_PRIVATE_KEY`,
-`RELAYER_PRIVATE_KEY`, `CORPUS_TREASURY`, `DATABASE_URL` (Postgres; SQLite is used when unset),
+`RELAYER_PRIVATE_KEY`, `CORPUS_TREASURY`, `DATABASE_URL` (remote Postgres required on Vercel), `DATABASE_SCHEMA=thenar_arc_mainnet`,
 `NEXT_PUBLIC_PRIVY_APP_ID` / `PRIVY_APP_ID` / `PRIVY_APP_SECRET` (optional: without Privy the app still builds and serves
 public pages and practice, and shows sign-in as unavailable), `NEXT_PUBLIC_FEATURE_GATEWAY=1` only if Gateway funding should be offered. Full list: `.env.example`.
 

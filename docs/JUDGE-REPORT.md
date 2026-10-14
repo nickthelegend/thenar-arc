@@ -1,3 +1,71 @@
+# Product quality round 2 — 2026-10-14
+
+## LEAD: RUN THESE
+
+```bash
+npm run build
+npm run seed:proof
+npm run e2e:browser:thenar
+npm run e2e:browser:thenar -- --flow
+```
+
+Run from this repo outside the sandbox. [Browser method, budget, recovery and Vercel prerequisites](BROWSER-ROUND2.md).
+**Browser status: Not run.** No new screenshots or browser txs are claimed. No new testnet USDC spent.
+
+## Strict scorecard
+
+The baseline is the previous round's final score. Hold scores until the lead returns screenshots and a successful
+browser receipt; code inspection plus HTTP tests cannot earn a browser-usability increase.
+
+| Criterion | Before | After (provisional) | Evidence / remaining gate |
+|---|---:|---:|---|
+| Arc relevance | 8 | 8 | USDC escrow, gas and x402 still live on testnet; cross-chain scope unchanged. |
+| Technical credibility | 7 | 7 | Honest dev-wallet, passkey, practice, deferred-payout and hosting labels; new browser proof pending. |
+| Build quality | 8 | 8 | Wallet safety tests, serverless storage preparation, receipts and reclaim fixes; visual pass pending. |
+| Worth taking further | 7 | 7 | Sponsor and buyer handoffs now explicit; remotely reachable Vercel database/origin still required. |
+| Cold-judge usability | 7 | 7 | Opt-in testnet wallet removes Privy dependency; end-to-end execution and mobile screenshots unverified. |
+
+## Findings and fixes (source/API inspection, not a completed visual audit)
+
+| Problem found | Change |
+|---|---|
+| Privy origin not enabled; paid browser path inaccessible | Every testnet page offers a clearly labelled dev wallet, separate from Privy; mainnet key access and foreign-chain signatures rejected. No faucet/admin bypass. |
+| Sponsor CTA buried in Earn menu; posting immediately lost the receipt | Create a task CTA on hub; funded-task confirmation with explorer, station, task and purchase links. Duplicate submit disabled after success. |
+| Sponsor form defaulted to no deadline; copy said reclaim was impossible | Default seven-day deadline; accurate full-slot-or-expiry reclaim rules. |
+| Filled tasks could not reclaim the scoring remainder in the UI | Close/reclaim shown when full; top-up removed from full tasks; refund explorer receipt survives refreshed state. |
+| Deferred run said paid; practice displayed payable; fallback guessed reward | Exact receipt amount, claimable versus paid labels, practice-only estimate; no estimated amount substituted for a missing receipt. |
+| Result overlay could hide its top on small screens; telemetry did not wrap | Scrollable result aligned from top, reward/telemetry wrap, touch movement/jaw controls for narrow screens. Visual verification pending. |
+| Run completion left buyer flow disconnected | Result links to this task's x402 purchase; settlement explorer link and accurate download-started wording. |
+| Issuer-admitted addresses incorrectly labelled as passkey users | Distinguish admission from actual passkey registration; remove claims that passkeys prove human-authored recordings. |
+| Arc nav tooltip claimed every integration was live | Tooltip describes live, fork-only and untested scope. |
+| Contradictory no-policy copy despite a shipped practice policy | State practice policy exists; minting a contributor cap table does not train a model. |
+| Deleted Railway URL still advertised as live | Removed current hosting claims; Vercel status pending. No Railway resources created. |
+| Vercel cannot preserve a SQLite file | Isolated Postgres schema, verified remote TLS, bounded pool, explicit Vercel SQLite refusal, 60s critical API durations. Local Postgres tested; remote Vercel database not available here. |
+| Proof seeding ignored `.env.local` database configuration | Seed command loads local env before imports and verifies chain receipts before storing. |
+| HTTP tests demanded ERC-8004 registration that UI correctly calls unbound | Test accepts explicitly unbound state and requires a valid id if bound; no fake registration. |
+
+Mocks audit: visible placeholders found are input hints; automated/practice policy modes remain labelled. No paid
+run generator or mocked provider was added to the UI. The lead uses browser keyboard input and a virtual WebAuthn
+authenticator; neither is to be represented as human-collected training data. The old proof remains labelled scripted.
+
+## Checks
+
+- Typecheck and production build: pass.
+- Lint: 0 errors; 9 existing warnings.
+- Unit suite: 150 pass, 1 existing live P-256 test skipped. New tests cover mainnet rejection, foreign-chain signatures,
+  and cancellation before signing/broadcasting.
+- Arc Foundry contract suite: 156 pass, 2 fork tests skipped. No contract changes or broadcasts.
+- HTTP suite against public Arc testnet: 94 pass, 0 fail on SQLite; repeated after storage change: 94 pass, 0 fail on isolated Postgres.
+- Health: HTTP 200 on Postgres; verifier, signing domain, RPC, database and 2/2-run ledger audit green.
+- Prior proof receipts: 2/2 valid; replay data seeded into a separate local Postgres schema. Public chain unchanged.
+- Browser / screenshots / new paid flow: **Not run**; lead script exits 0/1 and prints PASS/FAIL plus tx explorer links.
+
+Still weak: hosted Vercel deployment unverified; no remotely reachable Postgres URL found (reused local connection is
+localhost only); Privy origin approval pending; serverless nonce serialization/rate limiting remains per process;
+no proof of unique humans or data demand; cross-chain legs and ERC-8004 registration unchanged from round 1.
+
+---
+
 # Judge + fix pass, 2026-10-13 (Arc testnet only)
 
 Criteria from the DoraHacks page. Scores are /10, strict. "Before" is the repo at `9cce09f`; "after" is this commit.

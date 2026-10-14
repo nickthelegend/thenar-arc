@@ -99,13 +99,13 @@ try {
   const a = await json("/api/arc");
   check("/api/arc names the chain and the deployment", a.chainId === CHAIN_ID && a.deployed === true && /^0x/.test(a.contracts?.protocol ?? ""));
   check("/api/arc: x402 is USDC on Arc, settled in-process", a.x402?.network === `eip155:${CHAIN_ID}` && a.x402.price === "10000" && a.x402.facilitator === "in-process");
-  check("/api/arc: the verifier is an ERC-8004 agent bound to ThenarVerdicts", a.verifier?.bound === true && /^\d+$/.test(a.verifier?.agentId ?? ""), `agent #${a.verifier?.agentId}`);
+  check("/api/arc: verifier registration is disclosed honestly", typeof a.verifier?.bound === "boolean" && (!a.verifier.bound || /^\d+$/.test(a.verifier.agentId ?? "")), a.verifier?.bound ? `agent #${a.verifier.agentId}` : "Not registered on testnet");
   check("/api/arc: Memo is probed, not assumed", typeof a.memo?.live === "boolean", `live=${a.memo?.live}`);
   check("/api/arc: CCTP domain 26, Gateway and CCIP lanes listed", a.cctp?.domain === 26 && a.gateway?.sources?.length > 0 && a.ccip?.lanes?.length > 0);
   const card = await json("/api/agents/verifier.json");
   check("/api/agents/verifier.json is an ERC-8004 registration file",
     card.type === "https://eips.ethereum.org/EIPS/eip-8004#registration-v1" && card.supportedTrust?.includes("reputation")
-      && card.registrations?.[0]?.agentRegistry?.startsWith(`eip155:${CHAIN_ID}:`));
+      && (card.registrations?.length === 0 || card.registrations?.[0]?.agentRegistry?.startsWith(`eip155:${CHAIN_ID}:`)));
   check("/api/agents/buyer.json is an ERC-8004 registration file", (await json("/api/agents/buyer.json")).type?.endsWith("#registration-v1"));
   const offer = await fetch(`${BASE}/api/agent/corpus?taskId=0`, { headers: { accept: "application/json" } });
   const o = await offer.json().catch(() => ({}));
