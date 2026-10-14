@@ -14,6 +14,7 @@ import { KeyUnavailable } from "@/lib/server/arc";
 import { controlsAgent, parseAgentId } from "@/lib/server/erc8004";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 /**

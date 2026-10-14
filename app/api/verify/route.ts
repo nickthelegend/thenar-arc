@@ -11,6 +11,7 @@ import { canonicalise } from "@/lib/canonical";
 import { keccak256, toHex } from "viem";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 /** Crude per-address throttle: a run takes tens of seconds, so this is generous. */
@@ -116,7 +117,7 @@ async function handlePOST(req: Request) {
     if (!(await isOperator(contributor))) {
       return NextResponse.json(
         {
-          error: "Set up your passkey before contributing. A run earns nothing until a person signs in with one.",
+          error: "Set up your passkey before contributing. This address must be admitted before it can earn.",
           passkeyRequired: true,
         },
         { status: 403 },

@@ -12,6 +12,7 @@ import { isOperator } from "@/lib/server/operator";
 import { issueShares, refusal, sharesFor, TokenError } from "@/lib/server/corpus-shares";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const client = chainClient();

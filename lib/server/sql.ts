@@ -32,9 +32,12 @@ type PgPool = {
 };
 
 let pool: PgPool | null = null;
+let poolReady: Promise<unknown> | null = null;
+const schema = process.env.DATABASE_SCHEMA;
+if (schema && !/^[a-z][a-z0-9_]{0,62}$/.test(schema)) throw new Error("DATABASE_SCHEMA must be a lowercase SQL identifier");
 
 async function pg(): Promise<PgPool> {
-  if (pool) return pool;
+  if (pool) { await poolReady; return pool; }
   const { Pool, types } = await import("pg");
 
   // int8 arrives as a string by default, because Postgres bigints do not all
@@ -47,12 +50,17 @@ async function pg(): Promise<PgPool> {
 
   pool = new Pool({
     connectionString: url,
-    max: 8,
-    // The private network is not the public internet, but Railway's Postgres
-    // presents a self-signed certificate; refusing it would mean no connection
-    // at all rather than a safer one.
-    ssl: url?.includes("railway.internal") ? undefined : { rejectUnauthorized: false },
+    max: 3,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 20_000,
+    ...(schema ? { options: `-c search_path=${schema}` } : {}),
+    // Local development Postgres is plain TCP; hosted databases require verified TLS.
+    ssl: url && ["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname) ? false : { rejectUnauthorized: true },
   }) as unknown as PgPool;
+  if (schema) {
+    poolReady = pool.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+    await poolReady;
+  }
   return pool;
 }
 
@@ -74,6 +82,7 @@ let sqlite: SqliteDb | null = null;
 
 async function lite(): Promise<SqliteDb> {
   if (sqlite) return sqlite;
+  if (process.env.VERCEL) throw new Error("Vercel requires DATABASE_URL and a durable Postgres store; local SQLite is not supported.");
   const path = await import("node:path");
   const fs = await import("node:fs");
   const Database = (await import("better-sqlite3")).default;

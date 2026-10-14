@@ -6,6 +6,7 @@ import { challengeFor, hasPasskey, isOperator, OperatorError, verifyAssertion, t
 import { admitOperator, refusal, TokenError } from "@/lib/server/corpus-shares";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const isAddr = (a: unknown): a is string => typeof a === "string" && /^0x[0-9a-fA-F]{40}$/.test(a);
